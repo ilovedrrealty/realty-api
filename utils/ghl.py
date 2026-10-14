@@ -11,6 +11,7 @@ GHL_API_VERSION = "2021-07-28"
 LEAD_TYPE_TAGS = {
     "buyer_interest":   ["buyer-interest", "website-lead"],
     "seller_interest":  ["seller-interest", "website-lead"],
+    "rental_interest":  ["rental-interest", "website-lead"],
     "property_inquiry": ["property-inquiry", "website-lead"],
     "booking":          ["booking-request", "website-lead"],
 }
@@ -18,6 +19,7 @@ LEAD_TYPE_TAGS = {
 LEAD_TYPE_LABELS = {
     "buyer_interest":   "Buyer Interest",
     "seller_interest":  "Seller Interest",
+    "rental_interest":  "Rental Interest",
     "property_inquiry": "Property Inquiry",
     "booking":          "Booking",
 }
@@ -175,6 +177,14 @@ def create_contact(lead, property_info: dict | None, db: Session) -> None:
                 # Duplicate contact — GHL returns the existing contact ID, reuse it
                 existing_id = (body.get("meta") or {}).get("contactId")
                 if existing_id:
+                    if lead.type == "rental_interest":
+                        # An existing buyer can also inquire about renting.
+                        tag_response = client.post(
+                            f"{GHL_API_BASE}/contacts/{existing_id}/tags",
+                            headers=_headers(),
+                            json={"tags": tags},
+                        )
+                        tag_response.raise_for_status()
                     print(f"[GHL] duplicate contact, reusing existing id {existing_id}")
                     lead.ghl_contact_id = existing_id
                     lead.ghl_synced_at = datetime.now(timezone.utc)
