@@ -2,7 +2,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 from typing import Optional, List, Literal
 from datetime import datetime, timezone
 
@@ -18,6 +18,7 @@ from utils.email import send_upgrade_approved_email, send_realtor_assigned_owner
 from utils import ghl
 from config import settings
 from models.site_settings import SiteSettings
+from utils.phone import normalize_phone
 
 router = APIRouter(tags=["leads"])
 
@@ -26,18 +27,41 @@ router = APIRouter(tags=["leads"])
 
 class LeadCreate(BaseModel):
     type: Literal["property_inquiry", "buyer_interest", "seller_interest", "rental_interest", "booking"] = "property_inquiry"
-    name: str = Field(max_length=200)
-    email: EmailStr
+    name: str = Field(min_length=1, max_length=200)
+    email: Optional[EmailStr] = None
     phone: Optional[str] = Field(default=None, max_length=50)
     message: Optional[str] = Field(default=None, max_length=2000)
     property_id: Optional[str] = None
+
+    @field_validator("name", "email", mode="before")
+    @classmethod
+    def strip_contact_fields(cls, value, info):
+        if isinstance(value, str):
+            value = value.strip()
+            if info.field_name == "email" and not value:
+                return None
+        return value
+
+    @field_validator("phone")
+    @classmethod
+    def validate_phone(cls, value):
+        return normalize_phone(value)
+
+    @model_validator(mode="after")
+    def require_contact(self):
+        if self.type in {"buyer_interest", "seller_interest", "rental_interest"}:
+            if not self.email and not self.phone:
+                raise ValueError("Provide a valid phone number or email address")
+        elif not self.email:
+            raise ValueError("Email is required for property inquiries and bookings")
+        return self
 
 
 class LeadResponse(BaseModel):
     id: str
     type: str
     name: str
-    email: str
+    email: Optional[str]
     phone: Optional[str]
     message: Optional[str]
     property_id: Optional[str]
