@@ -4,6 +4,7 @@ from html import escape
 from sqlalchemy.orm import Session
 
 from config import settings
+from utils.phone import normalize_phone
 
 GHL_API_BASE = "https://services.leadconnectorhq.com"
 GHL_API_VERSION = "2021-07-28"
@@ -82,7 +83,7 @@ def _post_extras(client: httpx.Client, contact_id: str, lead, note_parts: list[s
     label = LEAD_TYPE_LABELS.get(lead.type, lead.type.replace("_", " ").title())
     task_lines = ["New lead from I Love DR Realty Website."]
     if lead.message:
-        task_lines.append(f"<br><b>Message:</b> {lead.message}")
+        task_lines.append(f"<br><b>Message:</b> {escape(lead.message)}")
     property_lines = [l for l in note_parts if l.startswith(("Property:", "Type:", "Location:", "Price:", "Beds"))]
     if property_lines:
         task_lines.append("<br>")
@@ -157,13 +158,18 @@ def create_contact(lead, property_info: dict | None, db: Session) -> None:
         "locationId": settings.ghl_location_id,
         "firstName": first,
         "lastName": last,
-        "email": lead.email,
         "source": "I Love DR Realty Website",
         "tags": tags,
     }
-    # GHL requires E.164 phone format — skip if not clearly valid to avoid a 400
-    if lead.phone and lead.phone.strip().startswith("+"):
-        payload["phone"] = lead.phone.strip()
+    if lead.email:
+        payload["email"] = lead.email
+    # Older booking records can have free-form numbers; do not send invalid values.
+    try:
+        phone = normalize_phone(lead.phone)
+    except ValueError:
+        phone = None
+    if phone:
+        payload["phone"] = phone
 
     try:
         with httpx.Client(timeout=10) as client:

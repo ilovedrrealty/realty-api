@@ -134,6 +134,17 @@ def send_realtor_assigned_owner_email(to_email: str, realtor_name: str, owner_na
     _send(to_email, f"New owner assigned to you — {owner_name}", _email_wrap("Owner assignment", body))
 
 
+def _lead_email_row(lead) -> str:
+    if not lead.email:
+        return ""
+    email = escape(lead.email)
+    return (
+        '<tr><td style="padding:4px 0;color:#888;font-size:13px">Email</td>'
+        '<td style="padding:4px 0;font-size:13px;color:#00102e">'
+        f'<a href="mailto:{email}" style="color:#0b63ab">{email}</a></td></tr>'
+    )
+
+
 def send_lead_notification(lead, property_info: dict | None = None, notify_email: str | None = None) -> None:
     email = notify_email or settings.notify_email
     if not email:
@@ -164,7 +175,7 @@ def send_lead_notification(lead, property_info: dict | None = None, notify_email
       <p style="margin:0 0 20px;color:#888;font-size:13px">{type_label}</p>
       <table style="border-collapse:collapse;width:100%">
         <tr><td style="padding:4px 0;color:#888;font-size:13px;width:90px">Name</td><td style="padding:4px 0;font-size:13.5px;font-weight:600;color:#00102e">{escape(lead.name)}</td></tr>
-        <tr><td style="padding:4px 0;color:#888;font-size:13px">Email</td><td style="padding:4px 0;font-size:13px;color:#00102e"><a href="mailto:{escape(lead.email)}" style="color:#0b63ab">{escape(lead.email)}</a></td></tr>
+        {_lead_email_row(lead)}
         {phone_row}
       </table>
       {message_block}
@@ -214,7 +225,7 @@ def send_realtor_lead_assigned_email(
       <p style="margin:0 0 6px;font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.06em">{type_label}</p>
       <table style="border-collapse:collapse;width:100%;margin-bottom:4px">
         <tr><td style="padding:4px 0;color:#888;font-size:13px;width:90px">Name</td><td style="padding:4px 0;font-size:13.5px;font-weight:600;color:#00102e">{escape(lead.name)}</td></tr>
-        <tr><td style="padding:4px 0;color:#888;font-size:13px">Email</td><td style="padding:4px 0;font-size:13px;color:#00102e"><a href="mailto:{escape(lead.email)}" style="color:#0b63ab">{escape(lead.email)}</a></td></tr>
+        {_lead_email_row(lead)}
         {phone_row}
       </table>
       {message_block}
