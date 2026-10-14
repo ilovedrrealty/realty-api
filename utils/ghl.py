@@ -183,8 +183,8 @@ def create_contact(lead, property_info: dict | None, db: Session) -> None:
                 # Duplicate contact — GHL returns the existing contact ID, reuse it
                 existing_id = (body.get("meta") or {}).get("contactId")
                 if existing_id:
-                    if lead.type == "rental_interest":
-                        # An existing buyer can also inquire about renting.
+                    if lead.type in ("buyer_interest", "seller_interest", "rental_interest"):
+                        # Add the new interest without replacing the contact's other tags.
                         tag_response = client.post(
                             f"{GHL_API_BASE}/contacts/{existing_id}/tags",
                             headers=_headers(),
