@@ -25,7 +25,7 @@ router = APIRouter(tags=["leads"])
 # ── Schemas ──────────────────────────────────────────────────────────────────
 
 class LeadCreate(BaseModel):
-    type: Literal["property_inquiry", "buyer_interest", "seller_interest", "booking"] = "property_inquiry"
+    type: Literal["property_inquiry", "buyer_interest", "seller_interest", "rental_interest", "booking"] = "property_inquiry"
     name: str = Field(max_length=200)
     email: EmailStr
     phone: Optional[str] = Field(default=None, max_length=50)
