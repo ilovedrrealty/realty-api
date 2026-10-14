@@ -8,9 +8,9 @@ class Lead(Base):
     __tablename__ = "leads"
 
     id                  = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    type                = Column(Text, nullable=False)  # property_inquiry | booking | buyer_interest | seller_interest
+    type                = Column(Text, nullable=False)  # property_inquiry | booking | buyer_interest | seller_interest | rental_interest
     name                = Column(Text, nullable=False)
-    email               = Column(Text, nullable=False)
+    email               = Column(Text, nullable=True)
     phone               = Column(Text, nullable=True)
     message             = Column(Text, nullable=True)
     property_id         = Column(UUID(as_uuid=True), ForeignKey("listings.id", ondelete="SET NULL"), nullable=True)
