@@ -142,6 +142,7 @@ def send_lead_notification(lead, property_info: dict | None = None, notify_email
         "property_inquiry": "Property Inquiry",
         "buyer_interest":   "Buyer Interest",
         "seller_interest":  "Seller Interest",
+        "rental_interest":  "Rental Interest",
         "booking":          "Booking Request",
     }
     type_label = type_labels.get(lead.type, escape(lead.type))
@@ -190,6 +191,7 @@ def send_realtor_lead_assigned_email(
         "property_inquiry": "Property Inquiry",
         "buyer_interest":   "Buyer Interest",
         "seller_interest":  "Seller Interest",
+        "rental_interest":  "Rental Interest",
         "booking":          "Booking Request",
     }
     type_label = type_labels.get(lead.type, escape(lead.type))
