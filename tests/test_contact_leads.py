@@ -236,15 +236,51 @@ class LeadContactTests(unittest.TestCase):
         self.assertTrue(any(url.endswith("/notes") and "&lt;Inquiry&gt;" in body["body"] for url, body in calls))
         self.assertTrue(any(url.endswith("/tasks") and "&lt;Inquiry&gt;" in body["body"] for url, body in calls))
 
-    def _run_ghl(self, intent, address, phone, duplicate=False):
+    def test_ghl_duplicate_contacts_add_each_interest_without_replacing_tags(self):
+        for intent in INTEREST_TYPES:
+            for address, phone in ((None, PHONE), ("v@example.com", None), ("v@example.com", PHONE)):
+                with self.subTest(intent=intent, email=address, phone=phone):
+                    lead, calls = self._run_ghl(intent, address, phone, duplicate=True)
+                    expected_tags = [intent.replace("_", "-"), "website-lead"]
+                    self.assertEqual(lead.ghl_contact_id, "synthetic-existing-contact")
+                    self.assertIsNotNone(lead.ghl_synced_at)
+                    self.assertIsNone(lead.ghl_sync_error)
+                    tag_calls = [(url, body) for url, body in calls if url.endswith("/tags")]
+                    self.assertEqual(tag_calls, [(f"{ghl.GHL_API_BASE}/contacts/synthetic-existing-contact/tags", {"tags": expected_tags})])
+                    self.assertEqual(self.ghl_existing_tags, {"existing-segment", *expected_tags})
+                    self.assertEqual(calls[0][1].get("email"), address)
+                    self.assertEqual(calls[0][1].get("phone"), phone)
+                    self.assertTrue(any(url.endswith("/notes") and "&lt;Inquiry&gt;" in body["body"] for url, body in calls))
+                    self.assertTrue(any(url.endswith("/tasks") and ghl.LEAD_TYPE_LABELS[intent] in body["title"] for url, body in calls))
+
+    def test_ghl_duplicate_tag_failure_is_recorded_without_claiming_sync(self):
+        for intent in INTEREST_TYPES:
+            for address, phone in ((None, PHONE), ("v@example.com", None)):
+                with self.subTest(intent=intent, email=address, phone=phone):
+                    lead, calls = self._run_ghl(intent, address, phone, duplicate=True, tag_failure=True)
+                    self.assertIsNone(lead.ghl_contact_id)
+                    self.assertIsNone(lead.ghl_synced_at)
+                    self.assertIn("HTTPStatusError", lead.ghl_sync_error)
+                    self.assertIn("500", lead.ghl_sync_error)
+                    self.assertEqual(self.ghl_existing_tags, {"existing-segment", "website-lead"})
+                    self.assertFalse(any(url.endswith(("/notes", "/tasks")) for url, _ in calls))
+
+    def _run_ghl(self, intent, address, phone, duplicate=False, tag_failure=False):
         calls = []
-        lead = SimpleNamespace(id=uuid4(), type=intent, name="Synthetic Visitor", email=address, phone=phone, message="<Inquiry>", ghl_contact_id=None, ghl_sync_error=None)
+        self.ghl_existing_tags = {"existing-segment", "website-lead"}
+        lead = SimpleNamespace(id=uuid4(), type=intent, name="Synthetic Visitor", email=address, phone=phone, message="<Inquiry>", ghl_contact_id=None, ghl_synced_at=None, ghl_sync_error=None)
         def respond(request):
+            self.assertEqual(request.method, "POST")
             calls.append((str(request.url), json.loads(request.content)))
             if str(request.url).endswith("/contacts/"):
                 if duplicate:
                     return httpx.Response(400, json={"meta": {"contactId": "synthetic-existing-contact"}}, request=request)
                 return httpx.Response(201, json={"contact": {"id": "synthetic-contact"}}, request=request)
+            if str(request.url).endswith("/tags"):
+                if tag_failure:
+                    return httpx.Response(500, json={"message": "Synthetic tag failure"}, request=request)
+                self.ghl_existing_tags.update(json.loads(request.content)["tags"])
+                return httpx.Response(201, json={"tags": sorted(self.ghl_existing_tags)}, request=request)
             return httpx.Response(201, json={}, request=request)
         original_client = httpx.Client
         with patch.object(settings, "ghl_enabled", True), patch.object(settings, "ghl_api_key", "synthetic-not-live"), patch.object(
