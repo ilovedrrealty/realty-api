@@ -1,10 +1,11 @@
 """Explicit business profile contracts, separate from private auth/user schemas."""
 import re
+import unicodedata
 from datetime import datetime
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, StrictBool, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, StrictBool, field_validator, model_validator
 from schemas.website_settings import validate_public_https_url
 from utils.professional_options import CATEGORY_IDS, AREA_IDS, LANGUAGE_IDS
 
@@ -32,6 +33,7 @@ class ProfessionalDraft(StrictModel):
     business_name: str = Field(default="", max_length=120)
     contact_name: str = Field(default="", max_length=100)
     category_ids: list[str] = Field(default_factory=list, max_length=8)
+    custom_services: list[str] = Field(default_factory=list, max_length=8)
     service_area_ids: list[str] = Field(default_factory=list, max_length=20)
     descriptions: Descriptions = Field(default_factory=Descriptions)
     languages: list[str] = Field(default_factory=list, max_length=8)
@@ -56,6 +58,29 @@ class ProfessionalDraft(StrictModel):
         if set(values) - allowed or len(set(values)) != len(values):
             raise ValueError("Select unique known options")
         return values
+
+    @field_validator("custom_services")
+    @classmethod
+    def clean_services(cls, values):
+        cleaned, seen = [], set()
+        for value in values:
+            if any(ord(char) < 32 or ord(char) == 127 for char in value):
+                raise ValueError("Control characters are not allowed")
+            value = " ".join(value.split())
+            if not 2 <= len(value) <= 80:
+                raise ValueError("Each custom service must be 2 to 80 characters")
+            normalized = "".join(char for char in unicodedata.normalize("NFKD", value).casefold() if not unicodedata.combining(char))
+            if normalized in seen:
+                raise ValueError("Custom services must be unique")
+            seen.add(normalized)
+            cleaned.append(value)
+        return cleaned
+
+    @model_validator(mode="after")
+    def custom_services_need_other(self):
+        if self.custom_services and "other_services" not in self.category_ids:
+            raise ValueError("Select Other property services before adding custom services")
+        return self
 
     @field_validator("public_phone", "public_whatsapp")
     @classmethod
@@ -91,6 +116,10 @@ class SaveProfessionalBody(StrictModel):
     draft: ProfessionalDraft
 
 
+class CreateManagedProfessionalBody(StrictModel):
+    draft: ProfessionalDraft
+
+
 class VersionBody(StrictModel):
     expected_version: int = Field(ge=0)
 
@@ -104,6 +133,7 @@ class PublicProfessional(StrictModel):
     business_name: str
     contact_name: str
     category_ids: list[str]
+    custom_services: list[str] = Field(default_factory=list)
     service_area_ids: list[str]
     descriptions: Descriptions
     languages: list[str]
@@ -155,7 +185,8 @@ class ProfessionalHistoryItem(StrictModel):
 
 
 class AdminProfessionalDetail(OwnedProfessional):
-    owner: AdminProfessionalOwner
+    management_type: Literal["admin_managed", "account_owned"]
+    owner: AdminProfessionalOwner | None
     history: list[ProfessionalHistoryItem]
 
 
@@ -167,8 +198,10 @@ class AdminProfessionalSummary(StrictModel):
     business_name: str
     contact_name: str
     category_ids: list[str]
+    custom_services: list[str] = Field(default_factory=list)
     service_area_ids: list[str]
-    owner: AdminProfessionalOwner
+    management_type: Literal["admin_managed", "account_owned"]
+    owner: AdminProfessionalOwner | None
     submitted_at: datetime | None
     reviewed_at: datetime | None
     published_at: datetime | None

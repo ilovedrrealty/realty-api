@@ -7,7 +7,8 @@ from database import Base
 class ProfessionalProfile(Base):
     __tablename__ = "professional_profiles"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True)
+    # NULL means an admin-managed directory entry, never a placeholder account.
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=True, unique=True)
     version = Column(Integer, nullable=False, server_default="1")
     draft_data = Column(JSONB, nullable=False, server_default="{}")
     published_data = Column(JSONB, nullable=True)

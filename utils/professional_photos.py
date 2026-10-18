@@ -43,11 +43,26 @@ def upload_professional_photo(data, user_id):
     return client.storage.from_(settings.storage_bucket).get_public_url(path)
 
 
+def upload_managed_professional_photo(data, profile_id):
+    client = _get_client()
+    path = f"professionals/managed/{profile_id}/{uuid.uuid4()}.webp"
+    client.storage.from_(settings.storage_bucket).upload(path, data, {"content-type": "image/webp", "upsert": "false"})
+    return client.storage.from_(settings.storage_bucket).get_public_url(path)
+
+
 def validate_owned_photo(url, user_id):
+    _validate_photo(url, f"professionals/{user_id}/")
+
+
+def validate_managed_photo(url, profile_id):
+    _validate_photo(url, f"professionals/managed/{profile_id}/")
+
+
+def _validate_photo(url, namespace):
     if not url:
         return
     base = settings.supabase_url.rstrip("/")
-    prefix = f"{base}/storage/v1/object/public/{settings.storage_bucket}/professionals/{user_id}/"
+    prefix = f"{base}/storage/v1/object/public/{settings.storage_bucket}/{namespace}"
     parsed = urlsplit(url)
     suffix = url[len(prefix):] if base and url.startswith(prefix) else ""
     if parsed.query or parsed.fragment or not re.fullmatch(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.webp", suffix):
