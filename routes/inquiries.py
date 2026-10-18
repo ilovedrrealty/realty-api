@@ -108,10 +108,13 @@ def get_inquiries_for_owner(
     user=Depends(require_role("owner", "admin")),
     db: Session = Depends(get_db),
 ):
+    personal_listing = Listing.owner_id == user.id
+    if user.role == "admin":
+        personal_listing = or_(Listing.owner_id == user.id, Listing.submitted_by == user.id)
     rows = (
         db.query(Inquiry, Listing)
         .join(Listing, Listing.id == Inquiry.listing_id)
-        .filter(Listing.owner_id == user.id)
+        .filter(personal_listing)
         .order_by(Inquiry.created_at.desc())
         .all()
     )

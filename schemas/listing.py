@@ -162,6 +162,9 @@ class ListingResponse(BaseModel):
     co_listing_notes: Optional[str] = None
     co_listing_status: Optional[str] = None
     currency: str = "USD"
+    search_price: Optional[Decimal] = None
+    search_price_currency: Optional[str] = None
+    search_price_period: Optional[str] = None
     source_ref: Optional[str] = None
     price_per_day: Optional[Decimal] = None
     price_per_month: Optional[Decimal] = None
@@ -203,6 +206,16 @@ class ListingPageResponse(BaseModel):
     avg_roi: Optional[float] = None
 
     model_config = {"from_attributes": True}
+
+
+class ListingFilterOption(BaseModel):
+    value: str
+    count: int = Field(ge=0)
+
+
+class ListingFilterOptionsResponse(BaseModel):
+    locations: List[ListingFilterOption]
+    types: List[ListingFilterOption]
 
 
 class AdminListingPageResponse(BaseModel):
