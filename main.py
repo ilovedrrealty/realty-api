@@ -15,7 +15,7 @@ from utils.limiter import limiter
 # Import all models so Base.metadata knows about them before create_all
 import models  # noqa: F401
 
-from routes import auth, listings, upgrade_requests, admin, leads, inquiries, saved_homes, bookings, chat, webhooks, stats, website_settings
+from routes import auth, listings, upgrade_requests, admin, leads, inquiries, saved_homes, bookings, chat, webhooks, stats, website_settings, professionals
 
 logger = logging.getLogger(__name__)
 
@@ -178,6 +178,7 @@ app.include_router(bookings.router)
 app.include_router(chat.router)
 app.include_router(webhooks.router)
 app.include_router(stats.router)
+app.include_router(professionals.router)
 app.include_router(website_settings.router)
 
 

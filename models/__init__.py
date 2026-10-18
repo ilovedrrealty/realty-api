@@ -13,3 +13,4 @@ from .lead import Lead
 from .site_settings import SiteSettings
 from .bulk_import_job import BulkImportJob
 from .website_settings import WebsiteSettings, WebsiteSettingsRevision
+from .professional_profile import ProfessionalProfile, ProfessionalProfileRevision
