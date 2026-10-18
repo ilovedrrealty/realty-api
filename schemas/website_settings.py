@@ -16,7 +16,7 @@ MAX_SETTINGS_BODY_BYTES = 256 * 1024
 PROTOTYPE_KEYS = {"__proto__", "prototype", "constructor"}
 LOCALE_NAMESPACES = {
     "common", "landing", "home_showcase", "buying", "selling", "rentals", "team",
-    "contact", "get_started", "lead_capture", "footer", "blog", "search",
+    "contact", "get_started", "lead_capture", "footer", "blog", "search", "professionals",
 }
 IMAGE_KEYS = {
     "home_hero", "founders", "founders_secondary", "buying_hero", "selling_hero",
@@ -24,7 +24,7 @@ IMAGE_KEYS = {
     "contact_story", "category_new", "category_rent", "category_villa", "category_apartment",
     "category_condo", "category_land", "category_commercial", "category_punta_cana", "category_sosua",
 }
-RouteKey = Literal["landing", "buying", "selling", "team", "contact", "get-started", "blog", "rentals", "search", "calculator"]
+RouteKey = Literal["landing", "buying", "selling", "team", "contact", "get-started", "blog", "rentals", "search", "calculator", "professionals"]
 Slug = Annotated[str, StringConstraints(pattern=r"^[a-z0-9][a-z0-9_-]{0,63}$", min_length=1, max_length=64)]
 LocationTerm = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=80)]
 
