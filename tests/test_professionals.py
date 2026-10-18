@@ -119,6 +119,16 @@ class ProfessionalTests(unittest.TestCase):
     def publish(self, data=None, actor="buyer"):
         return self.moderate(self.submit(self.save(data, actor), actor))
 
+    def managed(self, data=None, actor="admin", status=201):
+        return self.call("POST", "/admin/professionals", actor, {"draft": data if data is not None else draft()}, status)
+
+    def managed_save(self, own, data=None, actor="admin_b", status=200):
+        return self.call("PUT", f"/admin/professionals/{own['id']}", actor,
+                         {"expected_version": own["version"], "draft": data if data is not None else own["draft"]}, status)
+
+    def managed_submit(self, own, actor="admin", status=200):
+        return self.call("POST", f"/admin/professionals/{own['id']}/submit", actor, {"expected_version": own["version"]}, status)
+
     def test_options_missing_profile_and_real_roles_unchanged_for_every_account_type(self):
         options = self.call("GET", "/professionals/options", actor=None)
         self.assertGreaterEqual(len(options["categories"]), 20)
@@ -331,6 +341,196 @@ class ProfessionalTests(unittest.TestCase):
         self.assertEqual(content.translations.en["professionals"]["title"], "DR Professionals")
         with self.assertRaises(ValueError):
             WebsiteContentSettings.model_validate({"professional_profiles": [draft()]})
+
+    def test_admin_managed_creation_never_creates_accounts_or_sends_invitations(self):
+        with Session(self.engine) as db:
+            before = {str(user.id): user.role for user in db.query(User).all()}
+        with patch("utils.email._send") as mail, patch("utils.ghl.create_contact") as crm:
+            first = self.managed()
+            second = self.managed(actor="admin_b")
+            mail.assert_not_called()
+            crm.assert_not_called()
+        self.assertNotEqual(first["id"], second["id"])
+        self.assertEqual(first["management_type"], "admin_managed")
+        self.assertIsNone(first["owner"])
+        self.assertEqual(first["history"][0]["action"], "admin_create")
+        self.assertEqual(first["history"][0]["actor_id"], str(self.accounts["admin"]))
+        for actor in ("admin", "admin_b", "buyer", "owner", "realtor"):
+            self.assertIsNone(self.call("GET", "/professional-profile", actor))
+        queue = self.call("GET", "/admin/professionals", "admin_b")
+        self.assertEqual(queue["total"], 2)
+        self.assertTrue(all(row["owner"] is None and row["management_type"] == "admin_managed" for row in queue["items"]))
+        with Session(self.engine) as db:
+            self.assertEqual({str(user.id): user.role for user in db.query(User).all()}, before)
+            self.assertEqual(db.query(ProfessionalProfile).filter(ProfessionalProfile.user_id.is_(None)).count(), 2)
+
+    def test_managed_routes_require_admin_and_never_edit_account_owned_profiles(self):
+        own = self.save()
+        managed = self.managed()
+        for actor in (None, "buyer", "owner", "realtor", "unverified", "suspended"):
+            denied = 401 if actor is None else 403
+            self.managed(actor=actor, status=denied)
+            self.managed_save(managed, actor=actor, status=denied)
+            self.managed_submit(managed, actor=actor, status=denied)
+        self.managed_save(own, status=403)
+        self.managed_submit(own, status=403)
+        response = self.client.post(f"/admin/professionals/{own['id']}/photo", headers=self.headers["admin"], files={"file": ("bad.png", b"image", "image/png")})
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.headers["cache-control"], "no-store")
+        self.call("POST", "/admin/professionals", "admin", {"draft": draft(), "user_id": str(self.accounts["buyer"])}, 422)
+        self.managed(draft(user_id=str(self.accounts["buyer"])), status=422)
+        self.managed(draft(photo_url="https://example.com/forged.webp"), status=422)
+        self.assertEqual(self.call("GET", "/professional-profile")["version"], own["version"])
+
+    def test_managed_submit_and_explicit_approval_require_permission_and_complete_business_data(self):
+        managed = self.managed({})
+        self.managed_submit(managed, status=422)
+        self.moderate(managed, status=409)
+        managed = self.managed_save(managed, draft(public_contact_consent=False))
+        self.managed_submit(managed, status=422)
+        self.managed_save(managed, draft(public_contact_consent="yes"), status=422)
+        managed = self.managed_save(managed, draft())
+        self.managed_save({**managed, "version": managed["version"] - 1}, draft(), status=409)
+        pending = self.managed_submit(managed, actor="admin_b")
+        self.assertEqual(pending["review_status"], "pending")
+        self.assertEqual(self.call("GET", "/professionals", None)["total"], 0)
+        approved = self.moderate(pending, actor="admin")
+        self.assertEqual(approved["listing_status"], "published")
+        self.assertEqual(approved["management_type"], "admin_managed")
+        self.assertIsNone(approved["owner"])
+        self.assertEqual(approved["history"][1]["action"], "admin_submit")
+        public = self.call("GET", f"/professionals/{managed['id']}", None)
+        self.assertEqual(public["business_name"], "Synthetic professional")
+        for private in ("owner", "user_id", "management_type", "history", "review_note", "public_contact_consent"):
+            self.assertNotIn(private, public)
+
+    def test_managed_pending_edits_use_approved_snapshot_and_public_custom_service_search_only(self):
+        data = draft(category_ids=["electrical", "other_services"], custom_services=["Smart home automation", "Gate installation"])
+        approved = self.moderate(self.managed_submit(self.managed(data)))
+        self.assertEqual(self.call("GET", "/professionals?q=automation", None)["total"], 1)
+        changed = self.managed_save(approved, {**data, "custom_services": ["Irrigation systems"]})
+        self.assertEqual(changed["listing_status"], "published")
+        self.assertEqual(self.call("GET", "/professionals?q=Irrigation", None)["total"], 0)
+        self.assertEqual(self.call("GET", "/professionals?q=automation", None)["total"], 1)
+        pending = self.managed_submit(changed, actor="admin_b")
+        rejected = self.moderate(pending, action="reject", actor="admin_b")
+        self.assertEqual(self.call("GET", "/professionals?q=automation&category=electrical&area=sosua", None)["total"], 1)
+        revised = self.moderate(self.managed_submit(self.managed_save(rejected)))
+        self.assertEqual(self.call("GET", "/professionals?q=Irrigation", None)["items"][0]["custom_services"], ["Irrigation systems"])
+        self.assertEqual(self.call("GET", "/professionals?q=automation", None)["total"], 0)
+        self.assertEqual(revised["version"], len(revised["history"]))
+
+    def test_managed_suspension_and_contact_permission_revocation_are_independent(self):
+        approved = self.moderate(self.managed_submit(self.managed()))
+        hidden = self.managed_save(approved, draft(public_contact_consent=False))
+        self.assertEqual(hidden["listing_status"], "hidden")
+        self.call("GET", f"/professionals/{approved['id']}", None, status=404)
+        pending = self.managed_submit(self.managed_save(hidden, draft()))
+        suspended = self.moderate(pending, action="suspend")
+        self.managed_submit(suspended, status=403)
+        reviewed = self.moderate(suspended, actor="admin_b")
+        self.assertEqual(reviewed["listing_status"], "suspended")
+        changed = self.managed_save(reviewed, draft(public_contact_consent=False))
+        self.assertEqual(changed["listing_status"], "suspended")
+        reinstated = self.moderate(changed, action="reinstate")
+        self.assertEqual(reinstated["listing_status"], "hidden")
+        self.assertEqual(reinstated["review_status"], "draft")
+        self.moderate(reinstated, status=409)
+
+    def test_managed_expected_version_blocks_concurrent_admin_lost_updates(self):
+        own = self.managed()
+        def update(actor):
+            return self.client.put(f"/admin/professionals/{own['id']}", headers=self.headers[actor],
+                                   json={"expected_version": own["version"], "draft": draft(actor)})
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+            results = list(pool.map(update, ("admin", "admin_b")))
+        self.assertEqual(sorted(response.status_code for response in results), [200, 409])
+        latest = self.call("GET", f"/admin/professionals/{own['id']}", "admin")
+        self.assertEqual(latest["version"], 2)
+        self.assertEqual(len(latest["history"]), 2)
+
+    def test_custom_services_are_bounded_unique_and_require_other_without_breaking_incomplete_drafts(self):
+        for labels in (["x"], ["x" * 81], ["one", "ONE"], ["Café", "cafe"], ["line\nfeed"], ["   "], [f"service{i}" for i in range(9)]):
+            self.save(draft(category_ids=["other_services"], custom_services=labels), status=422)
+        self.save(draft(custom_services=["Unsupported without Other"]), status=422)
+        incomplete = self.save(draft(category_ids=["other_services"]))
+        self.submit(incomplete, status=422)
+        valid = self.save(draft(category_ids=["electrical", "plumbing", "other_services"], custom_services=["  Smart   controls  ", "Café equipment"]), version=incomplete["version"])
+        self.assertEqual(valid["draft"]["custom_services"], ["Smart controls", "Café equipment"])
+        published = self.moderate(self.submit(valid))
+        self.assertEqual(self.call("GET", f"/professionals/{published['id']}", None)["custom_services"], ["Smart controls", "Café equipment"])
+
+    def test_historical_snapshots_default_custom_services_without_backfilling_or_republishing(self):
+        approved = self.publish()
+        with Session(self.engine) as db:
+            row = db.get(ProfessionalProfile, approved["id"])
+            row.draft_data = {key: value for key, value in row.draft_data.items() if key != "custom_services"}
+            row.published_data = {key: value for key, value in row.published_data.items() if key != "custom_services"}
+            db.commit()
+        public = self.call("GET", f"/professionals/{approved['id']}", None)
+        self.assertEqual(public["custom_services"], [])
+        self.assertEqual(self.call("GET", "/professional-profile")["draft"]["custom_services"], [])
+        summary = self.call("GET", "/admin/professionals", "admin")["items"][0]
+        self.assertEqual(summary["custom_services"], [])
+        self.assertEqual(summary["management_type"], "account_owned")
+        self.assertEqual(summary["version"], approved["version"])
+
+    def test_managed_photo_assets_are_profile_scoped_immutable_and_do_not_change_saved_versions(self):
+        managed, second = self.managed(), self.managed(actor="admin_b")
+        image = io.BytesIO()
+        Image.new("RGB", (24, 16), "blue").save(image, "PNG")
+        original_url = settings.supabase_url
+        settings.supabase_url = "https://synthetic-professional.supabase.co"
+        self.addCleanup(setattr, settings, "supabase_url", original_url)
+        storage = MagicMock()
+        storage.storage.from_.return_value.get_public_url.side_effect = lambda path: f"{settings.supabase_url}/storage/v1/object/public/{settings.storage_bucket}/{path}"
+        with patch.object(professional_photos, "_get_client", return_value=storage):
+            urls = []
+            for actor in ("admin", "admin_b"):
+                response = self.client.post(f"/admin/professionals/{managed['id']}/photo", headers=self.headers[actor], files={"file": ("photo.png", image.getvalue(), "image/png")})
+                self.assertEqual(response.status_code, 200, response.text)
+                urls.append(response.json()["photo_url"])
+            self.assertNotEqual(*urls)
+            self.assertIn(f"/professionals/managed/{managed['id']}/", urls[0])
+            self.assertEqual(self.call("GET", f"/admin/professionals/{managed['id']}", "admin")["version"], managed["version"])
+            self.managed_save(second, draft(photo_url=urls[0]), status=422)
+            self.save(draft(photo_url=urls[0]), status=422)
+            saved = self.managed_save(managed, draft(photo_url=urls[0]))
+            self.assertEqual(self.moderate(self.managed_submit(saved))["published_profile"]["photo_url"], urls[0])
+            for upload in storage.storage.from_.return_value.upload.call_args_list:
+                self.assertEqual(upload.args[2]["upsert"], "false")
+                self.assertEqual(Image.open(io.BytesIO(upload.args[1])).format, "WEBP")
+            storage.storage.from_.return_value.remove.assert_not_called()
+        response = self.client.post(f"/admin/professionals/{managed['id']}/photo", headers=self.headers["buyer"], files={"file": ("photo.png", image.getvalue(), "image/png")})
+        self.assertEqual(response.status_code, 403)
+
+    def test_nullable_owner_migration_retains_managed_rows_history_and_existing_owner_visibility_rules(self):
+        owned = self.publish()
+        path = Path(__file__).parents[1] / "alembic/versions/e77ca75c44ba_allow_admin_managed_professional_.py"
+        spec = importlib.util.spec_from_file_location("managed_professional_migration", path)
+        migration = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(migration)
+        with self.engine.begin() as connection:
+            connection.execute(text("ALTER TABLE professional_profiles ALTER COLUMN user_id SET NOT NULL"))
+            with Operations.context(MigrationContext.configure(connection)):
+                migration.upgrade()
+                migration.upgrade()
+            self.assertFalse(connection.scalar(text("SELECT attnotnull FROM pg_attribute WHERE attrelid='professional_profiles'::regclass AND attname='user_id'")))
+        managed = self.moderate(self.managed_submit(self.managed()))
+        with self.engine.begin() as connection:
+            with Operations.context(MigrationContext.configure(connection)):
+                migration.downgrade()
+            self.assertFalse(connection.scalar(text("SELECT attnotnull FROM pg_attribute WHERE attrelid='professional_profiles'::regclass AND attname='user_id'")))
+            self.assertEqual(connection.scalar(text("SELECT count(*) FROM pg_policies WHERE schemaname=:schema AND tablename LIKE 'professional%'"), {"schema": self.schema}), 0)
+            flags = dict(connection.execute(text("SELECT relname, relrowsecurity FROM pg_class JOIN pg_namespace ON pg_namespace.oid=pg_class.relnamespace WHERE nspname=:schema AND relname IN ('professional_profiles','professional_profile_revisions')"), {"schema": self.schema}).all())
+            self.assertTrue(all(flags.values()))
+        with Session(self.engine) as db:
+            db.get(User, self.accounts["buyer"]).status = "suspended"
+            db.get(User, self.accounts["admin"]).status = "suspended"
+            db.commit()
+        self.call("GET", f"/professionals/{owned['id']}", None, status=404)
+        self.assertEqual(self.call("GET", f"/professionals/{managed['id']}", None)["id"], managed["id"])
+        self.assertEqual(len(self.call("GET", f"/admin/professionals/{managed['id']}", "admin_b")["history"]), managed["version"])
 
 
 if __name__ == "__main__":
