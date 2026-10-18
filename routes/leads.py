@@ -13,6 +13,7 @@ from models.listing import Listing
 from models.booking import Booking
 from utils.auth import get_current_user, get_optional_user
 from utils.permission import require_admin
+from utils.agents import find_eligible_agent
 from utils.limiter import limiter
 from utils.email import send_upgrade_approved_email, send_realtor_assigned_owner_email, send_lead_notification, send_realtor_lead_assigned_email
 from utils import ghl
@@ -360,9 +361,9 @@ def admin_assign_lead(
     lead = db.query(Lead).filter(Lead.id == UUID(lead_id)).first()
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
-    realtor = db.query(User).filter(User.id == UUID(body.realtor_id), User.role == "realtor").first()
+    realtor = find_eligible_agent(db, body.realtor_id)
     if not realtor:
-        raise HTTPException(status_code=404, detail="Realtor not found")
+        raise HTTPException(status_code=404, detail="Active verified agent not found")
     lead.assigned_realtor_id = realtor.id
     lead.status = "assigned"
     _apply_status_timestamp(lead, "assigned")
@@ -376,7 +377,7 @@ def admin_assign_lead(
     # Mirror realtor assignment onto the submitting user so their "My Agent" card reflects it
     if lead.from_user_id:
         submitter = db.query(User).filter(User.id == lead.from_user_id).first()
-        if submitter and submitter.role in ("owner", "buyer"):
+        if submitter and submitter.role in ("owner", "buyer", "admin"):
             submitter.assigned_realtor_id = realtor.id
     db.commit()
 

@@ -33,6 +33,7 @@ from schemas.deal_request import DealRequestResponse, DealRequestRejectBody
 from schemas.listing_edit import ListingEditResponse, ListingEditRejectBody
 from schemas.listing_event import ListingEventResponse
 from utils.permission import require_admin
+from utils.agents import eligible_agent_query, find_eligible_agent
 from utils.security import hash_password
 from utils.share_image import generate_share_image, maybe_regenerate_share_image
 from utils.bulk_import import parse_csv, run_bulk_import
@@ -222,9 +223,9 @@ def assign_listing_realtor(listing_id: UUID, body: AdminAssignListingBody, user=
         raise HTTPException(status_code=404, detail="Listing not found")
 
     if body.realtor_id:
-        realtor = db.query(User).filter(User.id == UUID(body.realtor_id), User.role.in_(["realtor", "admin"])).first()
+        realtor = find_eligible_agent(db, body.realtor_id)
         if not realtor:
-            raise HTTPException(status_code=404, detail="Realtor not found")
+            raise HTTPException(status_code=404, detail="Active verified agent not found")
         listing.assigned_realtor_id = realtor.id
         _log(db, "listing_assigned", f"Listing assigned to {realtor.display_name or realtor.email}: {listing.title}", actor_id=user.id)
         _listing_event(db, listing.id, "realtor_assigned", actor_id=user.id, note=realtor.display_name or realtor.email)
@@ -524,6 +525,27 @@ _VALID_ROLES    = {'buyer', 'owner', 'realtor', 'admin'}
 _VALID_STATUSES = {'active', 'suspended'}
 
 
+class AgentAssignmentChoice(BaseModel):
+    id: UUID
+    display_name: str
+    email: str
+    role: str
+
+
+@router.get("/agents", response_model=List[AgentAssignmentChoice])
+def list_assignment_agents(
+    limit: int = Query(500, ge=1, le=500),
+    q: Optional[str] = Query(None, max_length=80),
+    user=Depends(require_admin), db: Session = Depends(get_db),
+):
+    query = eligible_agent_query(db).with_entities(User.id, User.display_name, User.email, User.role)
+    if q:
+        # Literal substring matching, not wildcard expansion.
+        query = query.filter(or_(User.display_name.icontains(q, autoescape=True), User.email.icontains(q, autoescape=True)))
+    rows = query.order_by(func.lower(User.display_name), User.id).limit(limit).all()
+    return [{"id": row.id, "display_name": row.display_name, "email": row.email, "role": row.role} for row in rows]
+
+
 @router.get("/users")
 def list_users(role: Optional[str] = Query(None), status: Optional[str] = Query(None), user=Depends(require_admin), db: Session = Depends(get_db)):
     if role and role not in _VALID_ROLES:
@@ -611,12 +633,12 @@ def assign_realtor_to_owner(user_id: str, body: AssignRealtorBody, admin=Depends
     target = db.query(User).filter(User.id == UUID(user_id)).first()
     if not target:
         raise HTTPException(status_code=404, detail="User not found")
-    if target.role != "owner":
-        raise HTTPException(status_code=400, detail="Can only assign a realtor to an Owner account")
+    if target.role not in ("owner", "admin"):
+        raise HTTPException(status_code=400, detail="Can only assign an agent to an owner or admin account")
     if body.realtor_id:
-        realtor = db.query(User).filter(User.id == UUID(body.realtor_id), User.role == "realtor").first()
+        realtor = find_eligible_agent(db, body.realtor_id)
         if not realtor:
-            raise HTTPException(status_code=404, detail="Realtor not found")
+            raise HTTPException(status_code=404, detail="Active verified agent not found")
         target.assigned_realtor_id = realtor.id
         _log(db, "realtor_assigned", f"Realtor {realtor.display_name or realtor.email} assigned to owner {target.display_name or target.email}", actor_id=admin.id)
     else:

@@ -12,3 +12,4 @@ from .listing_event import ListingEvent
 from .lead import Lead
 from .site_settings import SiteSettings
 from .bulk_import_job import BulkImportJob
+from .website_settings import WebsiteSettings, WebsiteSettingsRevision
