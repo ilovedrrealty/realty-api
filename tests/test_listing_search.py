@@ -7,6 +7,7 @@ and removed. No production database, keys or external services are used.
 
 import os
 import unittest
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from decimal import Decimal
 from uuid import UUID, uuid4
@@ -100,6 +101,86 @@ class ListingSearchTests(unittest.TestCase):
         response = self.client.get("/listings", params=list(params))
         self.assertEqual(response.status_code, 200, response.text)
         return response.json()
+
+    @contextmanager
+    def map_coordinates(self):
+        originals = {}
+        for number in range(1, 13):
+            row = self.db.get(Listing, UUID(int=number))
+            originals[number] = (row.latitude, row.longitude)
+            row.latitude = Decimal('19.70') + Decimal(number) / 100 if number in (1, 2, 3, 4, 9, 11, 12) else None
+            row.longitude = Decimal('-70.4') if row.latitude is not None else None
+            if number == 5:
+                row.latitude = Decimal('19.7')  # Partial pair remains unplaced.
+            if number == 6:
+                row.latitude, row.longitude = Decimal('19.7'), Decimal('181')
+        self.db.commit()
+        try:
+            yield
+        finally:
+            self.db.rollback()
+            for number, original in originals.items():
+                row = self.db.get(Listing, UUID(int=number))
+                row.latitude, row.longitude = original
+            self.db.commit()
+
+    def get_map(self, params=()):
+        response = self.client.get('/listings/map', params=list(params))
+        self.assertEqual(response.status_code, 200, response.text)
+        return response.json()
+
+    def test_map_covers_all_public_matches_beyond_card_pagination_and_exposes_only_whitelisted_fields(self):
+        with self.map_coordinates():
+            first = self.get_search([('page_size', 2)])
+            second = self.get_search([('page_size', 2), ('page', 2)])
+            result = self.get_map([('page', 2), ('page_size', 2)])
+            self.assertEqual(result['total'], 11)
+            self.assertEqual(result['mapped_total'], 6)
+            self.assertEqual(result['unmapped_total'], 5)
+            self.assertEqual(result['returned'], 6)
+            self.assertEqual(set(self.ids(result)), {1, 2, 3, 4, 9, 11})
+            self.assertTrue(set(self.ids(result)) - set(self.ids(first)) - set(self.ids(second)))
+            self.assertNotIn(12, self.ids(result))  # Archived listing has valid coordinates but stays private.
+            self.assertEqual(sum(area['count'] for area in result['areas']) + result['ungrouped_total'], 5)
+            for item in result['items']:
+                self.assertEqual(set(item), {'id', 'title', 'location', 'latitude', 'longitude', 'price', 'currency', 'transaction', 'price_period'})
+            self.assertFalse(result['truncated'])
+
+    def test_map_uses_the_exact_card_filter_and_currency_contract_including_multiple_areas_and_rental_periods(self):
+        with self.map_coordinates():
+            cases = [
+                [('locations', 'sosua'), ('locations', 'Punta Cana'), ('types', 'villa'), ('types', 'apartment'), ('features', 'Pool')],
+                [('purpose', 'sale'), ('price_currency', 'USD'), ('usd_to_dop', 59.5), ('min_price', 190000), ('max_price', 210000)],
+                [('purpose', 'rent'), ('price_currency', 'USD'), ('usd_to_dop', 59.5), ('rental_period', 'month'), ('max_price', 1000)],
+                [('purpose', 'rent'), ('price_currency', 'USD'), ('usd_to_dop', 59.5), ('rental_period', 'day'), ('max_price', 70)],
+                [('region', 'Sosúa'), ('type', 'villa'), ('beds', 3), ('exclude_ids', str(UUID(int=9)))],
+            ]
+            for params in cases:
+                with self.subTest(params=params):
+                    cards, result = self.get_search(params), self.get_map(params)
+                    self.assertEqual(result['total'], cards['total'])
+                    expected = {item['id']: item for item in cards['items'] if item['latitude'] is not None and item['longitude'] is not None and abs(float(item['longitude'])) <= 180}
+                    self.assertEqual({item['id'] for item in result['items']}, set(expected))
+                    for item in result['items']:
+                        card = expected[item['id']]
+                        self.assertEqual(item['price'], card['search_price'] if card['search_price_currency'] else card['price'])
+                        self.assertEqual(item['currency'], card['search_price_currency'] or card['currency'])
+                        self.assertEqual(item['price_period'], card['search_price_period'])
+
+    def test_map_limits_and_viewport_are_explicit_while_full_filter_totals_and_area_counts_remain_global(self):
+        with self.map_coordinates():
+            limited = self.get_map([('limit', 1)])
+            self.assertTrue(limited['truncated'])
+            self.assertEqual(limited['returned'], 1)
+            self.assertEqual(limited['mapped_total'], 6)
+            viewport = self.get_map([('south', 19.705), ('north', 19.725), ('west', -71), ('east', -70)])
+            self.assertEqual(set(self.ids(viewport)), {1, 2})
+            self.assertEqual(viewport['total'], 11)
+            self.assertEqual(viewport['mapped_total'], 6)
+            self.assertEqual(viewport['areas'], limited['areas'])
+            self.assertEqual(viewport['viewport_total'], 2)
+            for params in ([('limit', 5001)], [('south', 19)], [('south', 20), ('north', 19), ('west', -71), ('east', -70)], [('south', 'nan')]):
+                self.assertEqual(self.client.get('/listings/map', params=params).status_code, 422)
 
     @staticmethod
     def ids(result):

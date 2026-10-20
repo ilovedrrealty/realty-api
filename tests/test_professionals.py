@@ -143,12 +143,45 @@ class ProfessionalTests(unittest.TestCase):
             self.assertEqual(own["review_status"], "draft")
         self.assertEqual(self.call("GET", "/professional-profile", "other"), None)
 
+    def test_directory_requires_verified_active_login_for_search_and_details_for_every_role(self):
+        approved = self.publish()
+        paths = ("/professionals", "/professionals?q=Synthetic", f"/professionals/{approved['id']}", f"/professionals/{uuid4()}")
+        for actor, status in ((None, 401), ("unverified", 403), ("suspended", 403)):
+            for path in paths:
+                self.call("GET", path, actor, status=status)
+        for actor in ("buyer", "owner", "realtor", "admin", "admin_b"):
+            self.assertEqual(self.call("GET", "/professionals", actor)["items"][0]["id"], approved["id"])
+            self.assertEqual(self.call("GET", f"/professionals/{approved['id']}", actor)["id"], approved["id"])
+        response = self.client.get("/professionals", headers={"Authorization": "Bearer not-a-valid-token"})
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.headers.get("cache-control"), "no-store")
+        options = self.call("GET", "/professionals/options", actor=None)
+        self.assertEqual(set(options), {"categories", "areas", "languages"})
+        self.assertNotIn("Synthetic", str(options))
+
+    def test_external_real_estate_service_profile_requires_company_and_never_grants_team_permissions(self):
+        options = self.call("GET", "/professionals/options", actor=None)
+        category = next(item for item in options["categories"] if item["id"] == "real_estate_agent")
+        self.assertTrue(category["label"]["en"] and category["label"]["es"])
+        own = self.save(draft(business_name="", contact_name="Synthetic independent agent", category_ids=["real_estate_agent"]))
+        self.submit(own, status=422)
+        own = self.save(draft(business_name="Synthetic other real estate company", category_ids=["real_estate_agent", "property_management"]), version=own["version"])
+        pending = self.submit(own)
+        self.assertEqual(self.call("GET", "/professionals?category=real_estate_agent", "other")["total"], 0)
+        approved = self.moderate(pending)
+        member_profile = self.call("GET", f"/professionals/{approved['id']}", "owner")
+        self.assertEqual(member_profile["business_name"], "Synthetic other real estate company")
+        self.assertEqual(member_profile["category_ids"], ["real_estate_agent", "property_management"])
+        self.assertEqual(self.call("GET", "/auth/me", "buyer")["role"], "buyer")
+        self.call("GET", "/admin/agents", "buyer", status=403)
+        self.call("GET", "/admin/professionals", "buyer", status=403)
+
     def test_incomplete_draft_is_private_and_submission_requires_explicit_public_contacts(self):
         own = self.save({})
         self.submit(own, status=422)
         self.assertEqual(own["draft"]["public_email"], "")
         self.assertEqual(own["draft"]["public_phone"], "")
-        self.assertEqual(self.call("GET", "/professionals", actor=None)["items"], [])
+        self.assertEqual(self.call("GET", "/professionals", actor="other")["items"], [])
         own = self.save(draft(public_contact_consent=False), version=own["version"])
         self.submit(own, status=422)
         self.save(draft(public_contact_consent="yes"), actor="other", status=422)
@@ -172,7 +205,7 @@ class ProfessionalTests(unittest.TestCase):
 
     def test_public_response_is_whitelisted_and_pending_edits_never_change_public_snapshot(self):
         approved = self.publish()
-        public = self.call("GET", f"/professionals/{approved['id']}", actor=None)
+        public = self.call("GET", f"/professionals/{approved['id']}", actor="other")
         self.assertEqual(set(public), {"id", *professionals.PUBLIC_FIELDS, "approved_at"})
         self.assertNotIn("private@example.com", str(public))
         for key in ("owner", "user_id", "draft", "version", "review_note", "paypal_email", "calendly_url", "public_contact_consent"):
@@ -180,17 +213,17 @@ class ProfessionalTests(unittest.TestCase):
         changed = self.save(draft("Unreviewed name", category_ids=["electrical"]), version=approved["version"])
         self.assertEqual(changed["listing_status"], "published")
         pending = self.submit(changed)
-        self.assertEqual(self.call("GET", f"/professionals/{approved['id']}", actor=None)["business_name"], "Synthetic professional")
-        self.assertEqual(self.call("GET", "/professionals?category=electrical", actor=None)["total"], 0)
+        self.assertEqual(self.call("GET", f"/professionals/{approved['id']}", actor="other")["business_name"], "Synthetic professional")
+        self.assertEqual(self.call("GET", "/professionals?category=electrical", actor="other")["total"], 0)
         rejected = self.moderate(pending, action="reject")
         self.assertEqual(rejected["review_status"], "rejected")
-        self.assertEqual(self.call("GET", f"/professionals/{approved['id']}", actor=None)["business_name"], "Synthetic professional")
+        self.assertEqual(self.call("GET", f"/professionals/{approved['id']}", actor="other")["business_name"], "Synthetic professional")
 
     def test_suspension_survives_edits_approval_and_withdraw_then_reinstate_stays_hidden(self):
         approved = self.publish()
         pending = self.submit(self.save(draft("Pending change"), version=approved["version"]))
         suspended = self.moderate(pending, "suspend")
-        self.call("GET", f"/professionals/{approved['id']}", actor=None, status=404)
+        self.call("GET", f"/professionals/{approved['id']}", actor="other", status=404)
         reviewed = self.moderate(suspended)
         self.assertEqual(reviewed["listing_status"], "suspended")
         own = self.call("POST", "/professional-profile/withdraw", body={"expected_version": reviewed["version"]})
@@ -202,7 +235,7 @@ class ProfessionalTests(unittest.TestCase):
         self.assertEqual(reinstated["listing_status"], "hidden")
         self.assertEqual(reinstated["review_status"], "draft")
         self.moderate(reinstated, status=409)
-        self.assertEqual(self.call("GET", "/professionals", actor=None)["total"], 0)
+        self.assertEqual(self.call("GET", "/professionals", actor="other")["total"], 0)
         self.assertEqual(self.moderate(self.submit(reinstated))["listing_status"], "published")
 
     def test_withdraw_cancels_pending_review_and_consent_revocation_hides_immediately(self):
@@ -210,7 +243,7 @@ class ProfessionalTests(unittest.TestCase):
         own = self.save(draft(public_contact_consent=False), version=approved["version"])
         self.assertEqual(own["listing_status"], "hidden")
         self.assertIsNotNone(own["published_profile"])
-        self.call("GET", f"/professionals/{approved['id']}", actor=None, status=404)
+        self.call("GET", f"/professionals/{approved['id']}", actor="other", status=404)
         self.submit(own, status=422)
         pending = self.submit(self.save(draft(), version=own["version"]))
         withdrawn = self.call("POST", "/professional-profile/withdraw", body={"expected_version": pending["version"]})
@@ -221,15 +254,15 @@ class ProfessionalTests(unittest.TestCase):
     def test_directory_filters_are_bounded_literal_and_use_approved_area_coverage(self):
         self.publish(draft("Alpha law", service_area_ids=["north_coast"]))
         self.publish(draft("Beta electrical", category_ids=["electrical"], service_area_ids=["nationwide"]), "other")
-        page = self.call("GET", "/professionals?area=sosua&limit=1", actor=None)
+        page = self.call("GET", "/professionals?area=sosua&limit=1", actor="other")
         self.assertEqual((page["total"], len(page["items"])), (2, 1))
-        self.assertEqual(self.call("GET", "/professionals?category=property_law&area=sosua", actor=None)["total"], 1)
-        self.assertEqual(self.call("GET", "/professionals?area=nationwide", actor=None)["total"], 1)
-        self.assertEqual(self.call("GET", "/professionals?category=property_law&category=electrical", actor=None)["total"], 2)
-        self.assertEqual(self.call("GET", "/professionals?q=%25", actor=None)["total"], 0)
-        self.assertEqual(self.call("GET", "/professionals?q=Alpha", actor=None)["total"], 1)
+        self.assertEqual(self.call("GET", "/professionals?category=property_law&area=sosua", actor="other")["total"], 1)
+        self.assertEqual(self.call("GET", "/professionals?area=nationwide", actor="other")["total"], 1)
+        self.assertEqual(self.call("GET", "/professionals?category=property_law&category=electrical", actor="other")["total"], 2)
+        self.assertEqual(self.call("GET", "/professionals?q=%25", actor="other")["total"], 0)
+        self.assertEqual(self.call("GET", "/professionals?q=Alpha", actor="other")["total"], 1)
         for path in ("/professionals?category=unknown", "/professionals?area=unknown", "/professionals?limit=51", "/professionals?offset=10001", "/professionals?language=unknown"):
-            self.call("GET", path, actor=None, status=422)
+            self.call("GET", path, actor="other", status=422)
 
     def test_owner_inactivation_or_loss_of_verification_hides_existing_public_profile(self):
         approved = self.publish()
@@ -239,7 +272,7 @@ class ProfessionalTests(unittest.TestCase):
                 owner.status, owner.email_verified = "active", True
                 setattr(owner, field, value)
                 db.commit()
-            self.call("GET", f"/professionals/{approved['id']}", actor=None, status=404)
+            self.call("GET", f"/professionals/{approved['id']}", actor="other", status=404)
 
     def test_stale_versions_and_concurrent_save_reject_lost_updates(self):
         own = self.save()
@@ -393,13 +426,13 @@ class ProfessionalTests(unittest.TestCase):
         self.managed_save({**managed, "version": managed["version"] - 1}, draft(), status=409)
         pending = self.managed_submit(managed, actor="admin_b")
         self.assertEqual(pending["review_status"], "pending")
-        self.assertEqual(self.call("GET", "/professionals", None)["total"], 0)
+        self.assertEqual(self.call("GET", "/professionals", "other")["total"], 0)
         approved = self.moderate(pending, actor="admin")
         self.assertEqual(approved["listing_status"], "published")
         self.assertEqual(approved["management_type"], "admin_managed")
         self.assertIsNone(approved["owner"])
         self.assertEqual(approved["history"][1]["action"], "admin_submit")
-        public = self.call("GET", f"/professionals/{managed['id']}", None)
+        public = self.call("GET", f"/professionals/{managed['id']}", "other")
         self.assertEqual(public["business_name"], "Synthetic professional")
         for private in ("owner", "user_id", "management_type", "history", "review_note", "public_contact_consent"):
             self.assertNotIn(private, public)
@@ -407,24 +440,24 @@ class ProfessionalTests(unittest.TestCase):
     def test_managed_pending_edits_use_approved_snapshot_and_public_custom_service_search_only(self):
         data = draft(category_ids=["electrical", "other_services"], custom_services=["Smart home automation", "Gate installation"])
         approved = self.moderate(self.managed_submit(self.managed(data)))
-        self.assertEqual(self.call("GET", "/professionals?q=automation", None)["total"], 1)
+        self.assertEqual(self.call("GET", "/professionals?q=automation", "other")["total"], 1)
         changed = self.managed_save(approved, {**data, "custom_services": ["Irrigation systems"]})
         self.assertEqual(changed["listing_status"], "published")
-        self.assertEqual(self.call("GET", "/professionals?q=Irrigation", None)["total"], 0)
-        self.assertEqual(self.call("GET", "/professionals?q=automation", None)["total"], 1)
+        self.assertEqual(self.call("GET", "/professionals?q=Irrigation", "other")["total"], 0)
+        self.assertEqual(self.call("GET", "/professionals?q=automation", "other")["total"], 1)
         pending = self.managed_submit(changed, actor="admin_b")
         rejected = self.moderate(pending, action="reject", actor="admin_b")
-        self.assertEqual(self.call("GET", "/professionals?q=automation&category=electrical&area=sosua", None)["total"], 1)
+        self.assertEqual(self.call("GET", "/professionals?q=automation&category=electrical&area=sosua", "other")["total"], 1)
         revised = self.moderate(self.managed_submit(self.managed_save(rejected)))
-        self.assertEqual(self.call("GET", "/professionals?q=Irrigation", None)["items"][0]["custom_services"], ["Irrigation systems"])
-        self.assertEqual(self.call("GET", "/professionals?q=automation", None)["total"], 0)
+        self.assertEqual(self.call("GET", "/professionals?q=Irrigation", "other")["items"][0]["custom_services"], ["Irrigation systems"])
+        self.assertEqual(self.call("GET", "/professionals?q=automation", "other")["total"], 0)
         self.assertEqual(revised["version"], len(revised["history"]))
 
     def test_managed_suspension_and_contact_permission_revocation_are_independent(self):
         approved = self.moderate(self.managed_submit(self.managed()))
         hidden = self.managed_save(approved, draft(public_contact_consent=False))
         self.assertEqual(hidden["listing_status"], "hidden")
-        self.call("GET", f"/professionals/{approved['id']}", None, status=404)
+        self.call("GET", f"/professionals/{approved['id']}", "other", status=404)
         pending = self.managed_submit(self.managed_save(hidden, draft()))
         suspended = self.moderate(pending, action="suspend")
         self.managed_submit(suspended, status=403)
@@ -458,7 +491,7 @@ class ProfessionalTests(unittest.TestCase):
         valid = self.save(draft(category_ids=["electrical", "plumbing", "other_services"], custom_services=["  Smart   controls  ", "Café equipment"]), version=incomplete["version"])
         self.assertEqual(valid["draft"]["custom_services"], ["Smart controls", "Café equipment"])
         published = self.moderate(self.submit(valid))
-        self.assertEqual(self.call("GET", f"/professionals/{published['id']}", None)["custom_services"], ["Smart controls", "Café equipment"])
+        self.assertEqual(self.call("GET", f"/professionals/{published['id']}", "other")["custom_services"], ["Smart controls", "Café equipment"])
 
     def test_historical_snapshots_default_custom_services_without_backfilling_or_republishing(self):
         approved = self.publish()
@@ -467,7 +500,7 @@ class ProfessionalTests(unittest.TestCase):
             row.draft_data = {key: value for key, value in row.draft_data.items() if key != "custom_services"}
             row.published_data = {key: value for key, value in row.published_data.items() if key != "custom_services"}
             db.commit()
-        public = self.call("GET", f"/professionals/{approved['id']}", None)
+        public = self.call("GET", f"/professionals/{approved['id']}", "other")
         self.assertEqual(public["custom_services"], [])
         self.assertEqual(self.call("GET", "/professional-profile")["draft"]["custom_services"], [])
         summary = self.call("GET", "/admin/professionals", "admin")["items"][0]
@@ -528,8 +561,8 @@ class ProfessionalTests(unittest.TestCase):
             db.get(User, self.accounts["buyer"]).status = "suspended"
             db.get(User, self.accounts["admin"]).status = "suspended"
             db.commit()
-        self.call("GET", f"/professionals/{owned['id']}", None, status=404)
-        self.assertEqual(self.call("GET", f"/professionals/{managed['id']}", None)["id"], managed["id"])
+        self.call("GET", f"/professionals/{owned['id']}", "other", status=404)
+        self.assertEqual(self.call("GET", f"/professionals/{managed['id']}", "other")["id"], managed["id"])
         self.assertEqual(len(self.call("GET", f"/admin/professionals/{managed['id']}", "admin_b")["history"]), managed["version"])
 
 
