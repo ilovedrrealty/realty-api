@@ -6,6 +6,7 @@ def option(identifier, en, es):
 
 
 CATEGORIES = [
+    option("real_estate_agent", "Real estate agents and brokerages", "Agentes y empresas inmobiliarias"),
     option("property_law", "Property lawyers", "Abogados inmobiliarios"),
     option("notary", "Notaries", "Notarios"),
     option("surveying", "Land surveyors", "Agrimensores"),

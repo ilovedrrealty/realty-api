@@ -1,4 +1,4 @@
-"""Moderated public business profiles alongside existing authenticated roles."""
+"""Moderated business profiles for verified, signed-in directory members."""
 from copy import deepcopy
 from datetime import datetime, timezone
 import logging
@@ -166,6 +166,8 @@ def _complete(draft):
     data = ProfessionalDraft.model_validate(draft)
     if not (data.business_name or data.contact_name) or not data.category_ids or not data.service_area_ids:
         raise HTTPException(422, "Add your public name, service category and service area before submitting")
+    if "real_estate_agent" in data.category_ids and not data.business_name:
+        raise HTTPException(422, "Add your real estate company or independent business name before submitting")
     if not (data.descriptions.en or data.descriptions.es):
         raise HTTPException(422, "Add an English or Spanish description before submitting")
     if "other_services" in data.category_ids and not data.custom_services:
@@ -191,7 +193,8 @@ def professional_options():
 @router.get("/professionals", response_model=PublicProfessionalPage)
 def directory(category: Optional[list[str]] = Query(None), area: Optional[list[str]] = Query(None),
               language: Optional[str] = Query(None), q: Optional[str] = Query(None, max_length=100),
-              limit: int = Query(24, ge=1, le=50), offset: int = Query(0, ge=0, le=10000), db: Session = Depends(get_db)):
+              limit: int = Query(24, ge=1, le=50), offset: int = Query(0, ge=0, le=10000),
+              user=Depends(get_current_user), db: Session = Depends(get_db)):
     if len(category or []) > 8 or len(area or []) > 20 or set(category or []) - CATEGORY_IDS or set(area or []) - AREA_IDS or (language and language not in LANGUAGE_IDS):
         raise HTTPException(422, "Unknown or excessive professional filters")
     query = _visible(db)
@@ -213,7 +216,7 @@ def directory(category: Optional[list[str]] = Query(None), area: Optional[list[s
 
 
 @router.get("/professionals/{profile_id}", response_model=PublicProfessional)
-def public_profile(profile_id: UUID, db: Session = Depends(get_db)):
+def public_profile(profile_id: UUID, user=Depends(get_current_user), db: Session = Depends(get_db)):
     row = _visible(db).filter(ProfessionalProfile.id == profile_id).first()
     if row is None:
         raise HTTPException(404, "Professional profile not found")

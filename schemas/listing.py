@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Annotated, Optional, List
+from typing import Annotated, Optional, List, Literal
 from decimal import Decimal
 from datetime import datetime
 import uuid
@@ -216,6 +216,44 @@ class ListingFilterOption(BaseModel):
 class ListingFilterOptionsResponse(BaseModel):
     locations: List[ListingFilterOption]
     types: List[ListingFilterOption]
+
+
+class ListingMapPoint(BaseModel):
+    id: uuid.UUID
+    title: str
+    location: str
+    latitude: float
+    longitude: float
+    price: Optional[Decimal] = None
+    currency: str
+    transaction: str
+    price_period: Optional[Literal["month", "day"]] = None
+
+
+class ListingMapArea(BaseModel):
+    location: str
+    count: int = Field(ge=0)
+
+
+class ListingMapBounds(BaseModel):
+    south: float
+    west: float
+    north: float
+    east: float
+
+
+class ListingMapResponse(BaseModel):
+    items: List[ListingMapPoint]
+    total: int = Field(ge=0)
+    mapped_total: int = Field(ge=0)
+    unmapped_total: int = Field(ge=0)
+    areas: List[ListingMapArea]
+    ungrouped_total: int = Field(ge=0)
+    viewport_total: int = Field(ge=0)
+    returned: int = Field(ge=0)
+    limit: int
+    truncated: bool
+    bounds: Optional[ListingMapBounds] = None
 
 
 class AdminListingPageResponse(BaseModel):

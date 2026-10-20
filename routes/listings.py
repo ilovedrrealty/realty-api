@@ -18,7 +18,8 @@ from models.inquiry import Inquiry
 from models.lead import Lead
 from models.user import User
 from models.deal_request import DealRequest
-from schemas.listing import ListingCreate, ListingUpdate, ListingResponse, ListingPageResponse, ListingFilterOptionsResponse
+from schemas.listing import (ListingCreate, ListingUpdate, ListingResponse, ListingPageResponse, ListingFilterOptionsResponse,
+    ListingMapResponse, ListingMapPoint, ListingMapArea, ListingMapBounds)
 from schemas.deal_request import DealRequestCreate
 from utils.auth import get_current_user
 from utils.permission import require_role
@@ -210,6 +211,70 @@ def get_active_listings(
         median_price=float(median_price) if median_price is not None else None,
         avg_roi=float(avg_roi) if avg_roi is not None else None,
     )
+
+
+@router.get("/map", response_model=ListingMapResponse)
+def get_listing_map(
+    purpose: Optional[str] = Query(None), type: Optional[str] = Query(None), region: Optional[str] = Query(None),
+    locations: Optional[List[LocationFilter]] = Query(None, max_length=60),
+    types: Optional[List[PropertyTypeFilter]] = Query(None, max_length=5),
+    price_currency: Optional[Literal["USD", "DOP"]] = Query(None),
+    usd_to_dop: float = Query(59.5, ge=1, le=1000, allow_inf_nan=False),
+    rental_period: Literal["month", "day"] = Query("month"),
+    min_price: Optional[float] = Query(None, ge=0, allow_inf_nan=False),
+    max_price: Optional[float] = Query(None, ge=0, allow_inf_nan=False),
+    beds: Optional[int] = Query(None, ge=0), min_roi: Optional[float] = Query(None, ge=0, allow_inf_nan=False),
+    features: Optional[List[str]] = Query(None), exclude_ids: Optional[List[UUID]] = Query(None),
+    limit: int = Query(5000, ge=1, le=5000),
+    south: Optional[float] = Query(None, ge=-90, le=90, allow_inf_nan=False),
+    north: Optional[float] = Query(None, ge=-90, le=90, allow_inf_nan=False),
+    west: Optional[float] = Query(None, ge=-180, le=180, allow_inf_nan=False),
+    east: Optional[float] = Query(None, ge=-180, le=180, allow_inf_nan=False),
+    db: Session = Depends(get_db),
+):
+    """All matching public inventory, independent of card pagination.
+
+    Exact points are bounded and whitelisted. Missing coordinates become counts
+    by recorded area, never guessed property positions. Bounds refine exact
+    points only; totals and area summaries always describe the full filter.
+    """
+    box = (south, north, west, east)
+    if any(value is not None for value in box) and (any(value is None for value in box) or south > north):
+        raise HTTPException(422, "Provide a complete valid map viewport")
+    search_price = search_price_expression(price_currency, usd_to_dop, rental_period, purpose) if price_currency else None
+    base = _apply_listing_filters(db.query(Listing.id), purpose=purpose, type=type, region=region,
+        min_price=min_price, max_price=max_price, beds=beds, min_roi=min_roi, features=features,
+        locations=locations, types=types, search_price=search_price)
+    if exclude_ids:
+        base = base.filter(~Listing.id.in_(exclude_ids))
+    total = base.with_entities(func.count(Listing.id)).scalar() or 0
+    valid = and_(Listing.latitude.between(-90, 90), Listing.longitude.between(-180, 180))
+    mapped = base.filter(valid)
+    count, min_lat, min_lng, max_lat, max_lng = mapped.with_entities(func.count(Listing.id),
+        func.min(Listing.latitude), func.min(Listing.longitude), func.max(Listing.latitude), func.max(Listing.longitude)).one()
+    count = int(count or 0)
+    # SQL NOT(NULL) is unknown; explicitly include partial and missing pairs.
+    missing = base.filter(or_(Listing.latitude.is_(None), Listing.longitude.is_(None), ~valid))
+    location_key = normalized_location_column()
+    groups = missing.with_entities(func.min(func.btrim(Listing.location)), func.count(Listing.id)).group_by(location_key)
+    area_rows = groups.order_by(func.count(Listing.id).desc(), location_key).limit(200).all()
+    areas = [ListingMapArea(location=area, count=amount) for area, amount in area_rows if area]
+    grouped = sum(area.count for area in areas)
+    visible = mapped
+    if south is not None:
+        visible = visible.filter(Listing.latitude.between(south, north))
+        visible = visible.filter(Listing.longitude.between(west, east) if west <= east else or_(Listing.longitude >= west, Listing.longitude <= east))
+    viewport_total = visible.with_entities(func.count(Listing.id)).scalar() or 0
+    price = search_price if search_price is not None else Listing.price
+    rows = visible.with_entities(Listing.id, Listing.title, Listing.location, Listing.latitude, Listing.longitude,
+        price, Listing.currency, Listing.transaction).order_by(Listing.id).limit(limit).all()
+    items = [ListingMapPoint(id=row[0], title=row[1], location=row[2], latitude=row[3], longitude=row[4], price=row[5],
+        currency=price_currency or row[6], transaction=row[7],
+        price_period=rental_period if search_price is not None and (purpose == "rent" or row[7] == "rent") else None) for row in rows]
+    return ListingMapResponse(items=items, total=total, mapped_total=count, unmapped_total=total-count,
+        areas=areas, ungrouped_total=max(0, total-count-grouped), viewport_total=viewport_total,
+        returned=len(items), limit=limit, truncated=viewport_total > limit,
+        bounds=ListingMapBounds(south=min_lat, west=min_lng, north=max_lat, east=max_lng) if count else None)
 
 
 @router.get("/filter-options", response_model=ListingFilterOptionsResponse)
