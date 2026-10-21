@@ -1,6 +1,7 @@
 from html import escape
 from urllib.parse import quote, urlparse
 from config import settings
+from pydantic import EmailStr, TypeAdapter
 
 CODE_EXPIRE_MINUTES = 15
 
@@ -11,7 +12,22 @@ def _is_google_scheduling_url(url: str | None) -> bool:
     return host in ("calendar.app.google", "calendar.google.com")
 
 
-def _send(to_email: str, subject: str, html: str) -> None:
+def parse_notification_recipients(value: str) -> list[str]:
+    """Validate a comma-separated alert list and preserve each unique mailbox once."""
+    if not value.strip():
+        return []
+    validator = TypeAdapter(EmailStr)
+    recipients = []
+    seen = set()
+    for part in value.split(","):
+        recipient = str(validator.validate_python(part.strip()))
+        if recipient.casefold() not in seen:
+            seen.add(recipient.casefold())
+            recipients.append(recipient)
+    return recipients
+
+
+def _send(to_email: str | list[str], subject: str, html: str) -> None:
     if not settings.resend_api_key:
         print(f"[DEV] Email to {to_email}: {subject}")
         return
@@ -188,7 +204,7 @@ def send_lead_notification(lead, property_info: dict | None = None, notify_email
         </td></tr>
       </table>
     """
-    _send(email, f"New lead: {lead.name}", _email_wrap("Lead notification", body))
+    _send(parse_notification_recipients(email), f"New lead: {lead.name}", _email_wrap("Lead notification", body))
 
 
 def send_realtor_lead_assigned_email(
@@ -611,3 +627,4 @@ def send_payout_request_email(
       </table>
     """
     _send(to_email, f"Payout request — {escape(listing_title)}", _email_wrap("Payout request", body))
+
