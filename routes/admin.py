@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from decimal import Decimal
 from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Query, UploadFile
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, aliased
 from typing import List, Optional
@@ -38,6 +38,7 @@ from utils.security import hash_password
 from utils.share_image import generate_share_image, maybe_regenerate_share_image
 from utils.bulk_import import parse_csv, run_bulk_import
 from utils.email import (
+    parse_notification_recipients,
     send_listing_approved_email,
     send_listing_rejected_email,
     send_upgrade_approved_email,
@@ -811,6 +812,13 @@ def get_settings(user=Depends(require_admin), db: Session = Depends(get_db)):
 class PlatformSettingsBody(BaseModel):
     notify_email: Optional[str] = None
 
+    @field_validator("notify_email")
+    @classmethod
+    def validate_notify_email(cls, value):
+        if value is None:
+            return value
+        return ", ".join(parse_notification_recipients(value))
+
 
 @router.put("/settings", status_code=204)
 def update_settings(body: PlatformSettingsBody, user=Depends(require_admin), db: Session = Depends(get_db)):
@@ -914,3 +922,4 @@ def get_all_bookings(
 
     results.sort(key=lambda r: r.created_at, reverse=True)
     return results
+
