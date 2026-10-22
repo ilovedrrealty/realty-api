@@ -1,4 +1,5 @@
 import httpx
+import re
 from datetime import datetime, timezone, timedelta
 from html import escape
 from sqlalchemy.orm import Session
@@ -57,8 +58,27 @@ def _build_property_lines(property_info: dict, landing_url: str) -> list[str]:
     return lines
 
 
-def _post_extras(client: httpx.Client, contact_id: str, lead, note_parts: list[str]) -> None:
-    """Post note + follow-up task to an existing GHL contact. Never raises."""
+def _safe_failure(stage: str, exc: Exception) -> str:
+    """Keep provider payloads, request headers and customer details out of diagnostics."""
+    if isinstance(exc, httpx.HTTPStatusError):
+        return f"GHL {stage} HTTP {exc.response.status_code}"
+    if isinstance(exc, httpx.RequestError):
+        return f"GHL {stage} transport error"
+    if isinstance(exc, ValueError):
+        return f"GHL {stage} invalid response"
+    return f"GHL {stage} integration error"
+
+
+def _contact_id(value) -> str | None:
+    if not isinstance(value, str):
+        return None
+    value = value.strip()
+    return value if re.fullmatch(r"[A-Za-z0-9_-]{1,200}", value) else None
+
+
+def _post_extras(client: httpx.Client, contact_id: str, lead, note_parts: list[str]) -> list[str]:
+    """Attempt both follow-ups once and report safe failures; never retry either."""
+    failures = []
     if note_parts:
         message_lines = [l for l in note_parts if not l.startswith(("Property:", "Type:", "Location:", "Price:", "Beds"))]
         property_lines = [l for l in note_parts if l.startswith(("Property:", "Type:", "Location:", "Price:", "Beds"))]
@@ -75,10 +95,9 @@ def _post_extras(client: httpx.Client, contact_id: str, lead, note_parts: list[s
                 headers=_headers(),
                 json={"body": "<br>".join(note_body_parts)},
             )
-            if not note_resp.is_success:
-                print(f"[GHL] note failed {note_resp.status_code}: {note_resp.text}")
+            note_resp.raise_for_status()
         except Exception as exc:
-            print(f"[GHL] note failed for contact {contact_id}: {exc}")
+            failures.append(_safe_failure("note", exc))
 
     label = LEAD_TYPE_LABELS.get(lead.type, lead.type.replace("_", " ").title())
     task_lines = ["New lead from I Love DR Realty Website."]
@@ -100,10 +119,10 @@ def _post_extras(client: httpx.Client, contact_id: str, lead, note_parts: list[s
                 "completed": False,
             },
         )
-        if not task_resp.is_success:
-            print(f"[GHL] task failed {task_resp.status_code}: {task_resp.text}")
+        task_resp.raise_for_status()
     except Exception as exc:
-        print(f"[GHL] task failed for contact {contact_id}: {exc}")
+        failures.append(_safe_failure("task", exc))
+    return failures
 
 
 STATUS_TAGS: dict[str, str] = {
@@ -140,7 +159,8 @@ def update_contact_status(ghl_contact_id: str, status: str) -> None:
 def create_contact(lead, property_info: dict | None, db: Session) -> None:
     """
     Push a newly created lead to GHL as a contact.
-    Fire-and-forget: logs errors but never raises.
+    Record contact linkage separately from complete contact/note/task success.
+    Each provider operation is attempted once; this function adds no retries.
     """
     if not settings.ghl_enabled or not settings.ghl_api_key:
         return
@@ -164,6 +184,7 @@ def create_contact(lead, property_info: dict | None, db: Session) -> None:
     if lead.email:
         payload["email"] = lead.email
     # Older booking records can have free-form numbers; do not send invalid values.
+    stage = "contact"
     try:
         phone = normalize_phone(lead.phone)
     except ValueError:
@@ -181,41 +202,48 @@ def create_contact(lead, property_info: dict | None, db: Session) -> None:
             if resp.status_code == 400:
                 body = resp.json()
                 # Duplicate contact — GHL returns the existing contact ID, reuse it
-                existing_id = (body.get("meta") or {}).get("contactId")
+                existing_id = _contact_id((body.get("meta") or {}).get("contactId"))
                 if existing_id:
+                    # Preserve a confirmed link even if tagging or follow-up fails.
+                    lead.ghl_contact_id = existing_id
+                    lead.ghl_synced_at = None
+                    db.commit()
                     if lead.type in ("buyer_interest", "seller_interest", "rental_interest"):
                         # Add the new interest without replacing the contact's other tags.
+                        stage = "contact tags"
                         tag_response = client.post(
                             f"{GHL_API_BASE}/contacts/{existing_id}/tags",
                             headers=_headers(),
                             json={"tags": tags},
                         )
                         tag_response.raise_for_status()
-                    print(f"[GHL] duplicate contact, reusing existing id {existing_id}")
-                    lead.ghl_contact_id = existing_id
-                    lead.ghl_synced_at = datetime.now(timezone.utc)
-                    lead.ghl_sync_error = None
+                    failures = _post_extras(client, existing_id, lead, note_parts)
+                    lead.ghl_synced_at = None if failures else datetime.now(timezone.utc)
+                    lead.ghl_sync_error = "; ".join(failures) or None
                     db.commit()
-                    _post_extras(client, existing_id, lead, note_parts)
                     return
-                print(f"[GHL] contact creation failed 400: {resp.text}")
                 resp.raise_for_status()
             elif not resp.is_success:
-                print(f"[GHL] contact creation failed {resp.status_code}: {resp.text}")
                 resp.raise_for_status()
 
             data = resp.json()
-            contact_id = (data.get("contact") or {}).get("id")
-            if contact_id:
-                lead.ghl_contact_id = contact_id
-                lead.ghl_synced_at = datetime.now(timezone.utc)
-                lead.ghl_sync_error = None
-                db.commit()
-                _post_extras(client, contact_id, lead, note_parts)
+            contact = data.get("contact") if isinstance(data, dict) else None
+            contact_id = _contact_id(contact.get("id") if isinstance(contact, dict) else None)
+            if not contact_id:
+                raise ValueError("Missing valid contact identifier")
+            lead.ghl_contact_id = contact_id
+            lead.ghl_synced_at = None
+            db.commit()
+            failures = _post_extras(client, contact_id, lead, note_parts)
+            lead.ghl_synced_at = None if failures else datetime.now(timezone.utc)
+            lead.ghl_sync_error = "; ".join(failures) or None
+            db.commit()
     except Exception as exc:
+        diagnostic = _safe_failure(stage, exc)
         try:
-            lead.ghl_sync_error = f"{type(exc).__name__}: {exc}"[:500]
+            lead.ghl_synced_at = None
+            lead.ghl_sync_error = diagnostic
             db.commit()
         except Exception:
             pass
-        print(f"[GHL] sync failed for lead {lead.id}: {exc}")
+        print(f"[GHL] sync failed for lead {lead.id}: {diagnostic}")
