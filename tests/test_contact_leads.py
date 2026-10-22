@@ -4,8 +4,10 @@ Run from the repository root: python -m unittest discover -s tests -v
 """
 
 import json
+import io
 import os
 import unittest
+from contextlib import redirect_stdout
 from datetime import date, datetime, timedelta, timezone
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
@@ -258,10 +260,9 @@ class LeadContactTests(unittest.TestCase):
             for address, phone in ((None, PHONE), ("v@example.com", None)):
                 with self.subTest(intent=intent, email=address, phone=phone):
                     lead, calls = self._run_ghl(intent, address, phone, duplicate=True, tag_failure=True)
-                    self.assertIsNone(lead.ghl_contact_id)
+                    self.assertEqual(lead.ghl_contact_id, "synthetic-existing-contact")
                     self.assertIsNone(lead.ghl_synced_at)
-                    self.assertIn("HTTPStatusError", lead.ghl_sync_error)
-                    self.assertIn("500", lead.ghl_sync_error)
+                    self.assertEqual(lead.ghl_sync_error, "GHL contact tags HTTP 500")
                     self.assertEqual(self.ghl_existing_tags, {"existing-segment", "website-lead"})
                     self.assertFalse(any(url.endswith(("/notes", "/tasks")) for url, _ in calls))
 
@@ -288,6 +289,123 @@ class LeadContactTests(unittest.TestCase):
         ):
             ghl.create_contact(lead, None, self.db)
         return lead, calls
+
+
+class GHLDeliveryDiagnosticsTests(unittest.TestCase):
+    """Provider replies are entirely mocked; no contact, note or task is sent."""
+
+    def _run(self, *, duplicate=False, contact_body=None, invalid_json=False,
+             failures=None, message="Private inquiry content"):
+        failures = failures or {}
+        calls = []
+        lead = SimpleNamespace(
+            id=uuid4(), type="rental_interest", name="Private visitor name",
+            email="visitor@example.com", phone=PHONE, message=message,
+            ghl_contact_id=None, ghl_synced_at=None, ghl_sync_error=None,
+        )
+        commits = []
+        db = SimpleNamespace(commit=lambda: commits.append((lead.ghl_contact_id, lead.ghl_synced_at, lead.ghl_sync_error)))
+
+        def respond(request):
+            stage = request.url.path.rstrip("/").split("/")[-1]
+            calls.append(stage)
+            if stage == "contacts":
+                if invalid_json:
+                    return httpx.Response(201, text="private malformed provider content", request=request)
+                if duplicate:
+                    return httpx.Response(400, json={"meta": {"contactId": "existing-contact"}}, request=request)
+                return httpx.Response(201, json={"contact": {"id": "new-contact"}} if contact_body is None else contact_body, request=request)
+            # The confirmed link must already be durable before follow-ups start.
+            self.assertTrue(commits)
+            self.assertEqual(commits[0][0], "existing-contact" if duplicate else "new-contact")
+            self.assertIsNone(commits[0][1])
+            if failures.get(stage) == "timeout":
+                raise httpx.ReadTimeout("private timeout payload with credentials", request=request)
+            return httpx.Response(failures.get(stage, 201), json={"message": "private provider payload with credentials"}, request=request)
+
+        original_client = httpx.Client
+        output = io.StringIO()
+        with patch.object(settings, "ghl_enabled", True), patch.object(settings, "ghl_api_key", "synthetic-only"), patch.object(
+            ghl.httpx, "Client", side_effect=lambda *a, **kw: original_client(transport=httpx.MockTransport(respond), **kw)
+        ), redirect_stdout(output):
+            ghl.create_contact(lead, None, db)
+        return lead, calls, commits, output.getvalue()
+
+    def test_success_marks_complete_after_followups_once(self):
+        lead, calls, commits, _ = self._run()
+        self.assertEqual(calls, ["contacts", "notes", "tasks"])
+        self.assertEqual(lead.ghl_contact_id, "new-contact")
+        self.assertIsNotNone(lead.ghl_synced_at)
+        self.assertIsNone(lead.ghl_sync_error)
+        self.assertEqual(len(commits), 2)
+
+    def test_success_without_valid_contact_id_records_error(self):
+        for body in ({}, [], {"contact": []}, {"contact": {}}, {"contact": {"id": None}},
+                     {"contact": {"id": 123}}, {"contact": {"id": ""}}, {"contact": {"id": "../private"}},
+                     {"contact": {"id": "contact?secret=value"}}, {"contact": {"id": "a" * 201}}):
+            with self.subTest(body=body):
+                lead, calls, _, output = self._run(contact_body=body)
+                self.assertIsNone(lead.ghl_contact_id)
+                self.assertIsNone(lead.ghl_synced_at)
+                self.assertEqual(lead.ghl_sync_error, "GHL contact invalid response")
+                self.assertEqual(calls, ["contacts"])
+                self.assertNotIn("secret=value", output)
+
+    def test_malformed_json_records_safe_error(self):
+        lead, calls, _, output = self._run(invalid_json=True)
+        self.assertEqual(lead.ghl_sync_error, "GHL contact invalid response")
+        self.assertIsNone(lead.ghl_synced_at)
+        self.assertEqual(calls, ["contacts"])
+        self.assertNotIn("private malformed", output)
+
+    def test_note_failure_preserves_link_and_still_attempts_task_once(self):
+        lead, calls, _, _ = self._run(failures={"notes": 503})
+        self.assertEqual(lead.ghl_contact_id, "new-contact")
+        self.assertIsNone(lead.ghl_synced_at)
+        self.assertEqual(lead.ghl_sync_error, "GHL note HTTP 503")
+        self.assertEqual(calls, ["contacts", "notes", "tasks"])
+
+    def test_task_failure_does_not_claim_complete_sync(self):
+        lead, calls, _, _ = self._run(failures={"tasks": 429})
+        self.assertEqual(lead.ghl_contact_id, "new-contact")
+        self.assertIsNone(lead.ghl_synced_at)
+        self.assertEqual(lead.ghl_sync_error, "GHL task HTTP 429")
+        self.assertEqual(calls, ["contacts", "notes", "tasks"])
+
+    def test_duplicate_contact_partial_followup_keeps_existing_link(self):
+        lead, calls, _, _ = self._run(duplicate=True, failures={"tasks": 500})
+        self.assertEqual(lead.ghl_contact_id, "existing-contact")
+        self.assertIsNone(lead.ghl_synced_at)
+        self.assertEqual(lead.ghl_sync_error, "GHL task HTTP 500")
+        self.assertEqual(calls, ["contacts", "tags", "notes", "tasks"])
+
+    def test_both_followup_failures_are_recorded_safely(self):
+        lead, calls, _, output = self._run(failures={"notes": 500, "tasks": 503})
+        self.assertEqual(lead.ghl_sync_error, "GHL note HTTP 500; GHL task HTTP 503")
+        self.assertIsNone(lead.ghl_synced_at)
+        self.assertEqual(calls, ["contacts", "notes", "tasks"])
+        self.assertNotIn("private provider", lead.ghl_sync_error + output)
+
+    def test_transport_failure_is_sanitized_and_never_retried(self):
+        lead, calls, _, output = self._run(failures={"notes": "timeout"})
+        self.assertEqual(lead.ghl_sync_error, "GHL note transport error")
+        self.assertIsNone(lead.ghl_synced_at)
+        self.assertEqual(calls, ["contacts", "notes", "tasks"])
+        self.assertNotIn("private timeout", output + lead.ghl_sync_error)
+
+    def test_tag_failure_keeps_confirmed_contact_without_posting_extras(self):
+        lead, calls, _, output = self._run(duplicate=True, failures={"tags": 500})
+        self.assertEqual(lead.ghl_contact_id, "existing-contact")
+        self.assertIsNone(lead.ghl_synced_at)
+        self.assertEqual(lead.ghl_sync_error, "GHL contact tags HTTP 500")
+        self.assertEqual(calls, ["contacts", "tags"])
+        self.assertNotIn("private provider", output + lead.ghl_sync_error)
+
+    def test_no_note_is_required_when_inquiry_has_no_note(self):
+        lead, calls, _, _ = self._run(message=None)
+        self.assertEqual(calls, ["contacts", "tasks"])
+        self.assertIsNotNone(lead.ghl_synced_at)
+        self.assertIsNone(lead.ghl_sync_error)
 
 
 if __name__ == "__main__":
