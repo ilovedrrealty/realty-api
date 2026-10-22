@@ -109,7 +109,7 @@ class LeadContactTests(unittest.TestCase):
                     self.assertEqual(saved.phone, PHONE if "phone" in contact else None)
                     self.assertIn("Sosua", saved.message)
                     self.assertIs(crm.call_args.args[0], saved)
-                    self.assertEqual(send.call_args.args[0], "owner@example.com")
+                    self.assertEqual(send.call_args.args[0], ["owner@example.com"])
                     self.assertIn("Sosua", send.call_args.args[2])
 
     def test_blank_optional_fields_are_absent(self):
@@ -193,7 +193,7 @@ class LeadContactTests(unittest.TestCase):
             email.send_lead_notification(lead, notify_email="owner@example.com")
             email.send_realtor_lead_assigned_email("agent@example.com", "Agent", lead)
             self.assertEqual(send.call_count, 2)
-            self.assertEqual([call.args[0] for call in send.call_args_list], ["owner@example.com", "agent@example.com"])
+            self.assertEqual([call.args[0] for call in send.call_args_list], [["owner@example.com"], "agent@example.com"])
             for call in send.call_args_list:
                 html = call.args[2]
                 self.assertIn(PHONE, html)

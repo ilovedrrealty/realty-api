@@ -11,6 +11,7 @@ from slowapi.errors import RateLimitExceeded
 from config import settings
 from database import SessionLocal
 from utils.limiter import limiter
+from routes import research_workspaces
 
 # Import all models so Base.metadata knows about them before create_all
 import models  # noqa: F401
@@ -179,6 +180,7 @@ app.include_router(chat.router)
 app.include_router(webhooks.router)
 app.include_router(stats.router)
 app.include_router(professionals.router)
+app.include_router(research_workspaces.router)
 app.include_router(website_settings.router)
 
 

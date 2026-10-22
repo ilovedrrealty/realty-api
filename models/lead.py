@@ -1,11 +1,12 @@
 import uuid
-from sqlalchemy import Column, Text, TIMESTAMP, func, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Column, Text, TIMESTAMP, func, ForeignKey, Index
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 from database import Base
 
 
 class Lead(Base):
     __tablename__ = "leads"
+    __table_args__ = (Index("leads_submission_id_unique", "submission_id", unique=True),)
 
     id                  = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     type                = Column(Text, nullable=False)  # property_inquiry | booking | buyer_interest | seller_interest | rental_interest
@@ -24,3 +25,6 @@ class Lead(Base):
     ghl_contact_id      = Column(Text, nullable=True)
     ghl_sync_error      = Column(Text, nullable=True)
     ghl_synced_at       = Column(TIMESTAMP(timezone=True), nullable=True)
+    # Private operational metadata. Existing and legacy leads remain NULL.
+    submission_id       = Column(UUID(as_uuid=True), nullable=True)
+    tracking            = Column(JSONB, nullable=True)
