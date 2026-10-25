@@ -15,3 +15,6 @@ from .bulk_import_job import BulkImportJob
 from .website_settings import WebsiteSettings, WebsiteSettingsRevision
 from .professional_profile import ProfessionalProfile, ProfessionalProfileRevision
 from .research_workspace import ResearchWorkspace
+from .lead_delivery import LeadDeliveryJob, LeadDeliveryWorkerState
+from .listing_location_review import ListingLocationReview, ListingLocationReviewRevision
+from .property_management import PropertyManagementRecord, PropertyManagementRevision

@@ -151,12 +151,12 @@ class LeadContactTests(unittest.TestCase):
         body = leads.LeadCreate(type="seller_interest", name="Visitor", phone=PHONE)
         self.assertIsNone(body.message)
 
-    def test_property_inquiry_and_booking_still_require_email(self):
-        for intent in ("property_inquiry", "booking"):
-            with self.subTest(intent=intent):
-                with self.assertRaises(ValidationError):
-                    leads.LeadCreate(type=intent, name="Visitor", phone=PHONE)
-                self.assertEqual(leads.LeadCreate(type=intent, name="Visitor", email="v@example.com").email, "v@example.com")
+    def test_property_contact_is_flexible_while_booking_and_legacy_inquiry_keep_email(self):
+        self.assertEqual(leads.LeadCreate(type="property_inquiry", name="Visitor", phone=PHONE).phone, PHONE)
+        self.assertEqual(leads.LeadCreate(type="property_inquiry", name="Visitor", email="v@example.com").email, "v@example.com")
+        with self.assertRaises(ValidationError):
+            leads.LeadCreate(type="booking", name="Visitor", phone=PHONE)
+        self.assertEqual(leads.LeadCreate(type="booking", name="Visitor", email="v@example.com").email, "v@example.com")
         with self.assertRaises(ValidationError):
             InquiryCreate(name="Visitor", phone=PHONE, message="Legacy inquiry")
 

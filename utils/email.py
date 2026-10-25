@@ -161,10 +161,8 @@ def _lead_email_row(lead) -> str:
     )
 
 
-def send_lead_notification(lead, property_info: dict | None = None, notify_email: str | None = None) -> None:
-    email = notify_email or settings.notify_email
-    if not email:
-        return
+def build_lead_notification(lead, property_info: dict | None = None) -> tuple[str, str]:
+    """Render without sending, so the outbox can store an immutable request."""
     type_labels = {
         "property_inquiry": "Property Inquiry",
         "buyer_interest":   "Buyer Interest",
@@ -204,7 +202,15 @@ def send_lead_notification(lead, property_info: dict | None = None, notify_email
         </td></tr>
       </table>
     """
-    _send(parse_notification_recipients(email), f"New lead: {lead.name}", _email_wrap("Lead notification", body))
+    return f"New lead: {lead.name}", _email_wrap("Lead notification", body)
+
+
+def send_lead_notification(lead, property_info: dict | None = None, notify_email: str | None = None) -> None:
+    email = notify_email or settings.notify_email
+    if not email:
+        return
+    subject, html = build_lead_notification(lead, property_info)
+    _send(parse_notification_recipients(email), subject, html)
 
 
 def send_realtor_lead_assigned_email(

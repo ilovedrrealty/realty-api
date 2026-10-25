@@ -9,8 +9,34 @@ from models.listing import Listing
 from schemas.inquiry import InquiryCreate, InquiryResponse
 from utils.auth import get_current_user, get_optional_user
 from utils.permission import require_role
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from fastapi.routing import APIRoute
+from starlette.exceptions import HTTPException
 
-router = APIRouter(prefix="/inquiries", tags=["inquiries"])
+
+class PrivateHistoryRoute(APIRoute):
+    def get_route_handler(self):
+        original = super().get_route_handler()
+        async def handler(request):
+            # Preserve the established legacy POST behavior. History reads are
+            # contact-bearing and must never become shared cached responses.
+            if request.method != "GET":
+                return await original(request)
+            try:
+                response = await original(request)
+            except RequestValidationError:
+                response = JSONResponse({"detail": "Invalid inquiry history request"}, status_code=422)
+            except HTTPException as exc:
+                response = JSONResponse({"detail": exc.detail}, status_code=exc.status_code, headers=exc.headers)
+            except Exception:
+                response = JSONResponse({"detail": "Inquiry history is temporarily unavailable"}, status_code=503)
+            response.headers.update({"Cache-Control": "no-store", "Pragma": "no-cache", "Vary": "Cookie, Authorization"})
+            return response
+        return handler
+
+
+router = APIRouter(prefix="/inquiries", tags=["inquiries"], route_class=PrivateHistoryRoute)
 
 
 @router.post("", response_model=InquiryResponse, status_code=201)

@@ -1,8 +1,12 @@
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi.exceptions import RequestValidationError
+from fastapi.routing import APIRoute
+from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.responses import JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 from typing import Optional, List, Literal
 from datetime import datetime, timezone
@@ -23,8 +27,30 @@ from models.site_settings import SiteSettings
 from utils.phone import normalize_phone
 from schemas.lead_tracking import LeadTracking
 from utils.lead_tracking import tracking_metadata, measurement_receipt, private_tracking_summary
+from services import lead_delivery
 
-router = APIRouter(tags=["leads"])
+class PrivateMineRoute(APIRoute):
+    def get_route_handler(self):
+        handler = super().get_route_handler()
+        if self.path != "/leads/mine":
+            return handler
+
+        async def private_read(request: Request):
+            try:
+                response = await handler(request)
+            except StarletteHTTPException as exc:
+                response = JSONResponse({"detail": exc.detail}, status_code=exc.status_code, headers=exc.headers)
+            except RequestValidationError:
+                response = JSONResponse({"detail": "Invalid inquiry request"}, status_code=422)
+            except Exception:
+                response = JSONResponse({"detail": "Inquiries are temporarily unavailable"}, status_code=503)
+            response.headers.update({"Cache-Control": "no-store", "Pragma": "no-cache", "Vary": "Cookie, Authorization"})
+            return response
+
+        return private_read
+
+
+router = APIRouter(tags=["leads"], route_class=PrivateMineRoute)
 
 
 # ── Schemas ──────────────────────────────────────────────────────────────────
@@ -35,7 +61,7 @@ class LeadCreate(BaseModel):
     email: Optional[EmailStr] = None
     phone: Optional[str] = Field(default=None, max_length=50)
     message: Optional[str] = Field(default=None, max_length=2000)
-    property_id: Optional[str] = None
+    property_id: Optional[UUID] = None
     submission_id: Optional[UUID] = None
     tracking: Optional[LeadTracking] = None
 
@@ -55,11 +81,11 @@ class LeadCreate(BaseModel):
 
     @model_validator(mode="after")
     def require_contact(self):
-        if self.type in {"buyer_interest", "seller_interest", "rental_interest"}:
+        if self.type in {"buyer_interest", "seller_interest", "rental_interest", "property_inquiry"}:
             if not self.email and not self.phone:
                 raise ValueError("Provide a valid phone number or email address")
         elif not self.email:
-            raise ValueError("Email is required for property inquiries and bookings")
+            raise ValueError("Email is required for bookings")
         return self
 
 
@@ -238,21 +264,57 @@ def _persist_submission(body: LeadCreate, db: Session, user=None, legacy: bool =
     existing = _existing_submission(body, db, user, legacy)
     if existing:
         return existing, False
+    if body.type == "property_inquiry":
+        # Backend-first rollout temporarily accepts the existing email-bearing
+        # untracked form. Never invent permission for it. Phone-only requests,
+        # any tracked request and the final strict phase need explicit consent,
+        # including through the legacy capture endpoint.
+        strict = settings.property_inquiry_require_consent or not body.email or body.tracking is not None
+        if strict and (body.tracking is None or not body.tracking.contact_consent):
+            raise HTTPException(422, "Please agree to be contacted about this property", headers={"Cache-Control": "no-store"})
+    if body.type == "property_inquiry" and not legacy:
+        # This public form can reference only a currently public listing. Owner
+        # change/account requests use seller_interest and retain their scope.
+        if body.property_id is None:
+            raise HTTPException(422, "Choose a property for this inquiry", headers={"Cache-Control": "no-store"})
+        try:
+            public_property = db.query(Listing.id).filter(Listing.id == body.property_id, Listing.status == "active").first()
+        except SQLAlchemyError:
+            db.rollback()
+            raise HTTPException(503, "Inquiry could not be confirmed. Refresh before trying again.",
+                                headers={"Cache-Control": "no-store"}) from None
+        if public_property is None:
+            raise HTTPException(404, "Property is not available for inquiries", headers={"Cache-Control": "no-store"})
     lead = Lead(type=body.type, name=body.name, email=body.email, phone=body.phone, message=body.message,
-                property_id=UUID(body.property_id) if body.property_id and not legacy else None,
+                property_id=body.property_id if not legacy else None,
                 from_user_id=user.id if user and not legacy else None, status="new",
                 submission_id=body.submission_id, tracking=tracking_metadata(body))
     db.add(lead)
+    queued = lead_delivery.enabled()
     try:
+        if queued:
+            db.flush()
+            lead_delivery.enqueue_lead_delivery(db, lead, lead_delivery.property_snapshot(db, lead), include_crm=not legacy)
         db.commit()
     except IntegrityError:
         db.rollback()
         # Concurrent retry: the database's unique index decides the winner.
-        existing = _existing_submission(body, db, user, legacy)
+        try:
+            existing = _existing_submission(body, db, user, legacy)
+        except SQLAlchemyError:
+            db.rollback()
+            raise HTTPException(503, "Inquiry could not be confirmed. Refresh before trying again.",
+                                headers={"Cache-Control": "no-store"}) from None
         if existing is None:
-            raise
+            raise HTTPException(503, "Inquiry could not be confirmed. Refresh before trying again.",
+                                headers={"Cache-Control": "no-store"}) from None
         return existing, False
+    except SQLAlchemyError:
+        db.rollback()
+        raise HTTPException(503, "Inquiry could not be confirmed. Refresh before trying again.",
+                            headers={"Cache-Control": "no-store"}) from None
     db.refresh(lead)
+    lead._delivery_enqueued = queued
     return lead, True
 
 @router.post("/leads", status_code=201)
@@ -266,7 +328,7 @@ def create_lead(
 ):
     response.headers["Cache-Control"] = "no-store"
     lead, created = _persist_submission(body, db, user)
-    if not created:
+    if not created or getattr(lead, "_delivery_enqueued", False):
         return _receipt(lead)
 
     property_info = None
@@ -302,7 +364,7 @@ def capture_lead(
 ):
     response.headers["Cache-Control"] = "no-store"
     lead, created = _persist_submission(body, db, legacy=True)
-    if not created:
+    if not created or getattr(lead, "_delivery_enqueued", False):
         return _receipt(lead)
     try:
         send_lead_notification(lead, notify_email=_get_notify_email(db))

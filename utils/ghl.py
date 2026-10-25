@@ -151,9 +151,9 @@ def update_contact_status(ghl_contact_id: str, status: str) -> None:
                 json={"tags": [tag]},
             )
             if not r.is_success:
-                print(f"[GHL] status tag update failed {r.status_code}: {r.text}")
+                print(f"[GHL] status tag update failed HTTP {r.status_code}")
     except Exception as exc:
-        print(f"[GHL] status tag update failed for contact {ghl_contact_id}: {exc}")
+        print(f"[GHL] status tag update failed: {_safe_failure('status tag', exc)}")
 
 
 def create_contact(lead, property_info: dict | None, db: Session) -> None:
@@ -246,4 +246,4 @@ def create_contact(lead, property_info: dict | None, db: Session) -> None:
             db.commit()
         except Exception:
             pass
-        print(f"[GHL] sync failed for lead {lead.id}: {diagnostic}")
+        print(f"[GHL] sync failed: {diagnostic}")

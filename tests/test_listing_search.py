@@ -143,7 +143,8 @@ class ListingSearchTests(unittest.TestCase):
             self.assertNotIn(12, self.ids(result))  # Archived listing has valid coordinates but stays private.
             self.assertEqual(sum(area['count'] for area in result['areas']) + result['ungrouped_total'], 5)
             for item in result['items']:
-                self.assertEqual(set(item), {'id', 'title', 'location', 'latitude', 'longitude', 'price', 'currency', 'transaction', 'price_period'})
+                self.assertEqual(set(item), {'id', 'title', 'location', 'latitude', 'longitude', 'price', 'currency', 'transaction', 'price_period', 'location_verified'})
+                self.assertFalse(item['location_verified'])  # Legacy fixtures have no Admin source review.
             self.assertFalse(result['truncated'])
 
     def test_map_uses_the_exact_card_filter_and_currency_contract_including_multiple_areas_and_rental_periods(self):

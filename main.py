@@ -12,6 +12,7 @@ from config import settings
 from database import SessionLocal
 from utils.limiter import limiter
 from routes import research_workspaces
+from routes import analytics, lead_delivery as lead_delivery_routes, property_management, location_review, owner_leads
 
 # Import all models so Base.metadata knows about them before create_all
 import models  # noqa: F401
@@ -132,9 +133,14 @@ async def _payout_cron() -> None:
 async def lifespan(app: FastAPI):
     cleanup_task = asyncio.create_task(_cleanup_pending_users())
     payout_task = asyncio.create_task(_payout_cron())
-    yield
-    cleanup_task.cancel()
-    payout_task.cancel()
+    from services.lead_delivery import worker_loop
+    delivery_task = asyncio.create_task(worker_loop(SessionLocal))
+    try:
+        yield
+    finally:
+        for task in (cleanup_task, payout_task, delivery_task):
+            task.cancel()
+        await asyncio.gather(cleanup_task, payout_task, delivery_task, return_exceptions=True)
 
 
 app = FastAPI(title="I Love DR Realty API", lifespan=lifespan)
@@ -153,7 +159,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"],
 )
 
@@ -181,6 +187,11 @@ app.include_router(webhooks.router)
 app.include_router(stats.router)
 app.include_router(professionals.router)
 app.include_router(research_workspaces.router)
+app.include_router(analytics.router)
+app.include_router(lead_delivery_routes.router)
+app.include_router(property_management.router)
+app.include_router(location_review.router)
+app.include_router(owner_leads.router)
 app.include_router(website_settings.router)
 
 

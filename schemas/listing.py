@@ -208,6 +208,15 @@ class ListingPageResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class PublicListingResponse(ListingResponse):
+    location_precision: Literal["exact", "area", "hidden"] = "exact"
+    location_verified: bool = False
+
+
+class PublicListingPageResponse(ListingPageResponse):
+    items: List[PublicListingResponse]
+
+
 class ListingFilterOption(BaseModel):
     value: str
     count: int = Field(ge=0)
@@ -228,6 +237,7 @@ class ListingMapPoint(BaseModel):
     currency: str
     transaction: str
     price_period: Optional[Literal["month", "day"]] = None
+    location_verified: bool = False
 
 
 class ListingMapArea(BaseModel):
