@@ -1,7 +1,8 @@
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
+from sqlalchemy.exc import IntegrityError
 from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 from typing import Optional, List, Literal
 from datetime import datetime, timezone
@@ -20,6 +21,8 @@ from utils import ghl
 from config import settings
 from models.site_settings import SiteSettings
 from utils.phone import normalize_phone
+from schemas.lead_tracking import LeadTracking
+from utils.lead_tracking import tracking_metadata, measurement_receipt, private_tracking_summary
 
 router = APIRouter(tags=["leads"])
 
@@ -33,6 +36,8 @@ class LeadCreate(BaseModel):
     phone: Optional[str] = Field(default=None, max_length=50)
     message: Optional[str] = Field(default=None, max_length=2000)
     property_id: Optional[str] = None
+    submission_id: Optional[UUID] = None
+    tracking: Optional[LeadTracking] = None
 
     @field_validator("name", "email", mode="before")
     @classmethod
@@ -84,6 +89,7 @@ class LeadResponse(BaseModel):
     closed_at: Optional[datetime]
     ghl_contact_url: Optional[str]
     booking_status: Optional[str] = None
+    tracking_summary: Optional[dict] = None
 
     class Config:
         from_attributes = True
@@ -114,7 +120,7 @@ def _apply_status_timestamp(lead: Lead, status: str) -> None:
         lead.closed_at = now
 
 
-def _build_response(lead: Lead, db: Session, include_ghl: bool = False) -> LeadResponse:
+def _build_response(lead: Lead, db: Session, include_ghl: bool = False, include_tracking: bool = False) -> LeadResponse:
     property_title = None
     listing_realtor_id = None
     listing_realtor_name = None
@@ -191,6 +197,7 @@ def _build_response(lead: Lead, db: Session, include_ghl: bool = False) -> LeadR
         closed_at=lead.closed_at,
         ghl_contact_url=ghl_contact_url,
         booking_status=booking_status,
+        tracking_summary=private_tracking_summary(lead) if include_tracking else None,
     )
 
 
@@ -203,27 +210,64 @@ def _get_notify_email(db: Session) -> str:
 
 # ── Public endpoints ──────────────────────────────────────────────────────────
 
+def _receipt(lead: Lead) -> dict:
+    return {"id": str(lead.id), "status": lead.status, "measurement": measurement_receipt(lead)}
+
+
+def _existing_submission(body: LeadCreate, db: Session, user, legacy: bool = False):
+    if not body.submission_id:
+        return None
+    lead = db.query(Lead).filter(Lead.submission_id == body.submission_id).first()
+    if lead is None:
+        return None
+    # A UUID is an idempotency key, not permission to read someone else's lead.
+    expected = (body.type, body.name, str(body.email) if body.email else None, body.phone, body.message,
+                None if legacy else (str(body.property_id) if body.property_id else None),
+                None if legacy or not user else str(user.id))
+    actual = (lead.type, lead.name, lead.email, lead.phone, lead.message,
+              str(lead.property_id) if lead.property_id else None,
+              str(lead.from_user_id) if lead.from_user_id else None)
+    submitted_tracking = body.tracking.model_dump(mode="json", exclude_none=True) if body.tracking else None
+    saved_tracking = {k: v for k, v in (lead.tracking or {}).items() if k not in {"received_at", "version"}} or None
+    if actual != expected or submitted_tracking != saved_tracking:
+        raise HTTPException(status_code=409, detail="This submission identifier was already used. Start a new request.")
+    return lead
+
+
+def _persist_submission(body: LeadCreate, db: Session, user=None, legacy: bool = False):
+    existing = _existing_submission(body, db, user, legacy)
+    if existing:
+        return existing, False
+    lead = Lead(type=body.type, name=body.name, email=body.email, phone=body.phone, message=body.message,
+                property_id=UUID(body.property_id) if body.property_id and not legacy else None,
+                from_user_id=user.id if user and not legacy else None, status="new",
+                submission_id=body.submission_id, tracking=tracking_metadata(body))
+    db.add(lead)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        # Concurrent retry: the database's unique index decides the winner.
+        existing = _existing_submission(body, db, user, legacy)
+        if existing is None:
+            raise
+        return existing, False
+    db.refresh(lead)
+    return lead, True
+
 @router.post("/leads", status_code=201)
 @limiter.limit("3/minute")
 def create_lead(
     request: Request,
+    response: Response,
     body: LeadCreate,
     db: Session = Depends(get_db),
     user=Depends(get_optional_user),
 ):
-    lead = Lead(
-        type=body.type,
-        name=body.name,
-        email=body.email,
-        phone=body.phone,
-        message=body.message,
-        property_id=UUID(body.property_id) if body.property_id else None,
-        from_user_id=user.id if user else None,
-        status="new",
-    )
-    db.add(lead)
-    db.commit()
-    db.refresh(lead)
+    response.headers["Cache-Control"] = "no-store"
+    lead, created = _persist_submission(body, db, user)
+    if not created:
+        return _receipt(lead)
 
     property_info = None
     if lead.property_id:
@@ -244,7 +288,7 @@ def create_lead(
     except Exception:
         pass
 
-    return {"id": str(lead.id), "status": lead.status}
+    return _receipt(lead)
 
 
 # Legacy capture endpoint — keeps existing callers working
@@ -252,25 +296,19 @@ def create_lead(
 @limiter.limit("5/minute")
 def capture_lead(
     request: Request,
+    response: Response,
     body: LeadCreate,
     db: Session = Depends(get_db),
 ):
-    lead = Lead(
-        type=body.type or "buyer_interest",
-        name=body.name,
-        email=body.email,
-        phone=body.phone,
-        message=body.message,
-        status="new",
-    )
-    db.add(lead)
-    db.commit()
-    db.refresh(lead)
+    response.headers["Cache-Control"] = "no-store"
+    lead, created = _persist_submission(body, db, legacy=True)
+    if not created:
+        return _receipt(lead)
     try:
         send_lead_notification(lead, notify_email=_get_notify_email(db))
     except Exception:
         pass
-    return {"id": str(lead.id), "status": "new"}
+    return _receipt(lead)
 
 
 # ── Buyer ─────────────────────────────────────────────────────────────────────
@@ -334,12 +372,14 @@ def realtor_update_lead_status(
 
 @router.get("/admin/leads", response_model=List[LeadResponse])
 def admin_get_leads(
+    response: Response,
     type: Optional[str] = None,
     status: Optional[str] = None,
     assigned_realtor_id: Optional[str] = None,
     user=Depends(require_admin),
     db: Session = Depends(get_db),
 ):
+    response.headers["Cache-Control"] = "no-store"
     q = db.query(Lead)
     if type:
         q = q.filter(Lead.type == type)
@@ -348,7 +388,32 @@ def admin_get_leads(
     if assigned_realtor_id:
         q = q.filter(Lead.assigned_realtor_id == UUID(assigned_realtor_id))
     leads = q.order_by(Lead.created_at.desc()).all()
-    return [_build_response(l, db, include_ghl=True) for l in leads]
+    return [_build_response(l, db, include_ghl=True, include_tracking=True) for l in leads]
+
+
+@router.get("/admin/leads/tracking-summary")
+def admin_lead_tracking_summary(response: Response, user=Depends(require_admin), db: Session = Depends(get_db)):
+    # Aggregate only. No names, contacts, free text or raw advertising IDs.
+    response.headers["Cache-Control"] = "no-store"
+    from datetime import timedelta
+    since = datetime.now(timezone.utc) - timedelta(days=30)
+    rows = db.query(Lead.type, Lead.tracking, Lead.ghl_contact_id, Lead.ghl_sync_error).filter(Lead.created_at >= since).all()
+    result = {"window_days": 30, "total": len(rows), "tracked_submissions": 0, "internal_tests": 0,
+              "measurement_granted": 0, "with_ad_click_id": 0, "crm_linked": 0, "crm_errors": 0, "by_intent": {}}
+    for row in rows:
+        tracking = row.tracking or {}
+        result["tracked_submissions"] += bool(tracking)
+        result["internal_tests"] += tracking.get("internal_test") is True
+        if tracking.get("internal_test") is not True:
+            intent = tracking.get("intent")
+            intent_key = intent if intent in {"buy", "sell", "rent", "general"} else "legacy_" + row.type
+            result["by_intent"][intent_key] = result["by_intent"].get(intent_key, 0) + 1
+            result["measurement_granted"] += tracking.get("measurement_consent") == "granted"
+            result["with_ad_click_id"] += any((tracking.get("attribution") or {}).get(k) for k in ("gclid", "gbraid", "wbraid"))
+        result["crm_linked"] += bool(row.ghl_contact_id)
+        result["crm_errors"] += bool(row.ghl_sync_error)
+    result["note"] = "Stored inquiry coverage, not Google Ads conversion totals. Legacy records have unknown measurement/test status."
+    return result
 
 
 @router.put("/admin/leads/{lead_id}/assign", status_code=204)

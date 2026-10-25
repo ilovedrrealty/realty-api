@@ -6,7 +6,7 @@ import socket
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from typing import Optional
-from urllib.parse import urljoin, urlparse
+from urllib.parse import parse_qsl, unquote, urljoin, urlparse
 
 import filetype
 import httpx
@@ -98,6 +98,59 @@ def _parse_int(value: Optional[str]) -> Optional[int]:
         return None
 
 
+def _parse_location_fields(row: dict) -> tuple[Optional[str], Optional[Decimal], Optional[Decimal], list[str]]:
+    """Preserve supplied location fields only; never fetch or geocode a link.
+
+    A Maps link may identify a business, search or viewport, so it is not
+    evidence of the property's exact coordinates. Only an explicit CSV pair
+    can populate latitude/longitude.
+    """
+    errors = []
+    maps_url = (row.get("maps_url") or "").strip() or None
+    if maps_url:
+        valid_url = False
+        try:
+            parsed = urlparse(maps_url)
+            host = parsed.hostname
+            decoded_path = unquote(parsed.path).lower()
+            credential_keys = {"key", "api_key", "access_token", "token"}
+            valid_base = (parsed.scheme == "https" and host and len(maps_url) <= 2048
+                          and parsed.username is None and parsed.password is None
+                          and parsed.port in (None, 443) and "\\" not in maps_url
+                          and not any(c.isspace() or ord(c) < 32 or ord(c) == 127 for c in maps_url)
+                          and not any(part in {".", ".."} for part in decoded_path.split("/"))
+                          and decoded_path != "/maps/api" and not decoded_path.startswith("/maps/api/")
+                          and not any(key.strip().lower() in credential_keys for key, _ in parse_qsl(parsed.query, keep_blank_values=True)))
+            if valid_base:
+                if host in {"google.com", "www.google.com"}:
+                    valid_url = parsed.path == "/maps" or parsed.path.startswith("/maps/")
+                elif host == "maps.google.com":
+                    valid_url = parsed.path in {"", "/", "/maps"} or parsed.path.startswith("/maps/")
+                elif host == "maps.app.goo.gl":
+                    valid_url = bool(parsed.path.strip("/"))
+                elif host == "goo.gl":
+                    valid_url = parsed.path.startswith("/maps/") and bool(parsed.path[len("/maps/"):].strip("/"))
+        except ValueError:
+            pass
+        if not valid_url:
+            errors.append("maps_url must be a Google Maps HTTPS share link without API credentials (google.com/maps, maps.google.com, maps.app.goo.gl or goo.gl/maps)")
+
+    values = {key: (row.get(key) or "").strip() for key in ("latitude", "longitude")}
+    coordinates: dict[str, Optional[Decimal]] = {"latitude": None, "longitude": None}
+    if bool(values["latitude"]) != bool(values["longitude"]):
+        errors.append("latitude and longitude must be provided together, or both left blank")
+    elif values["latitude"]:
+        for key, bound in (("latitude", 90), ("longitude", 180)):
+            try:
+                coordinate = Decimal(values[key])
+                if not coordinate.is_finite() or not -bound <= coordinate <= bound:
+                    raise ValueError()
+                coordinates[key] = coordinate
+            except (InvalidOperation, ValueError):
+                errors.append(f"{key} must be a finite number between {-bound} and {bound}")
+    return maps_url, coordinates["latitude"], coordinates["longitude"], errors
+
+
 MAX_PHOTO_REDIRECTS = 3
 
 
@@ -176,7 +229,7 @@ def _import_row(db: Session, row: dict, admin_user_id) -> dict:
     price = _parse_decimal(row.get("price"))
     agent_code_raw = (row.get("assigned_agent_id") or "").strip()
 
-    errors = []
+    maps_url, latitude, longitude, errors = _parse_location_fields(row)
     if not title:
         errors.append("title is required")
     if property_type not in VALID_TYPES:
@@ -244,6 +297,9 @@ def _import_row(db: Session, row: dict, admin_user_id) -> dict:
         transaction=purpose,
         price=price,
         location=region,
+        maps_url=maps_url,
+        latitude=latitude,
+        longitude=longitude,
         bedrooms=_parse_int(row.get("bedrooms")),
         bathrooms=_parse_decimal(row.get("bathrooms")),
         area_sqft=_parse_int(row.get("living_area_sqft")),
