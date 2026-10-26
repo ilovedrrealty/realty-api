@@ -17,7 +17,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import make_url
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.exc import SQLAlchemyError
 from alembic.migration import MigrationContext
 from alembic.operations import Operations
@@ -28,9 +28,11 @@ from models.user import User
 from models.listing import Listing
 from models.listing_edit import ListingEdit
 from models.listing_event import ListingEvent
+from models.bulk_import_job import BulkImportJob
 from models.listing_location_review import ListingLocationReview as Review, ListingLocationReviewRevision as Revision
 from routes import location_review, listings, admin
 from utils.location_quality import coordinate_pair, map_destination_coordinates
+from utils import bulk_import, location_quality
 from utils.limiter import limiter
 
 
@@ -90,7 +92,7 @@ class LocationReviewTests(unittest.TestCase):
 
     def setUp(self):
         with Session(self.engine) as db:
-            db.query(Revision).delete(); db.query(Review).delete(); db.query(ListingEvent).delete(); db.query(ListingEdit).delete(); db.query(Listing).delete()
+            db.query(BulkImportJob).delete(); db.query(Revision).delete(); db.query(Review).delete(); db.query(ListingEvent).delete(); db.query(ListingEdit).delete(); db.query(Listing).delete()
             self.listing_ids = []
             for index in range(4):
                 row = Listing(title="Synthetic property "+str(index), location="Cabarete" if index < 3 else "Hidden synthetic area",
@@ -164,8 +166,11 @@ class LocationReviewTests(unittest.TestCase):
         self.assertNotIn("review_note", public)
         self.assertEqual(len(result["history"]), 1)
 
-    def assert_private_projection(self, listing_id, precision):
-        for path in ("/listings/"+listing_id, "/listings?page_size=60&include_aggregates=false", "/listings/deal"):
+    def assert_private_projection(self, listing_id, precision, include_deal=True):
+        paths = ["/listings/"+listing_id, "/listings?page_size=60&include_aggregates=false"]
+        if include_deal:
+            paths.append("/listings/deal")
+        for path in paths:
             response = self.client.get(path)
             self.assertEqual(response.status_code, 200, response.text)
             self.assertEqual(response.headers.get("cache-control"), "no-store")
@@ -181,6 +186,158 @@ class LocationReviewTests(unittest.TestCase):
             listing, review = db.get(Listing, listing_id), db.get(Review, listing_id)
             self.assertEqual((listing.latitude,listing.longitude,listing.maps_url),(None,None,None))
             self.assertEqual(review.latitude, Decimal("19.7543"))
+
+    def create_body(self, **changes):
+        return {"title": "SYNTHETIC newly submitted position", "type": "villa", "transaction": "sale",
+            "price": "199000", "currency": "USD", "location": "Cabarete", "features": [], "images": [],
+            "latitude": 19.7543, "longitude": -70.4125,
+            "maps_url": "https://maps.google.com/?q=19.7543,-70.4125", **changes}
+
+    def test_actual_admin_create_stages_candidate_before_active_public_response(self):
+        with patch.object(listings, "generate_share_image", return_value=None):
+            response = self.client.post("/listings", json=self.create_body(), headers=self.headers["admin"])
+        self.assertEqual(response.status_code, 201, response.text)
+        created = response.json()
+        self.assertEqual(created["status"], "active")
+        self.assertIsNone(created["latitude"]); self.assertIsNone(created["longitude"]); self.assertIsNone(created["maps_url"])
+        self.assert_private_projection(created["id"], "area", include_deal=False)
+        detail = self.call("GET", "/"+created["id"])
+        self.assertEqual((detail["version"], detail["review_status"], detail["public_precision"]), (1, "unreviewed", "area"))
+        self.assertTrue(detail["has_coordinates"]); self.assertFalse(detail["public_mapped"])
+        self.assertEqual(len(detail["history"]), 1)
+        self.assertEqual(detail["history"][0]["action"], "listing_location_submitted")
+
+    def test_created_candidates_publish_only_after_explicit_precision_review(self):
+        for precision in ("exact", "area", "hidden"):
+            with self.subTest(precision=precision), patch.object(listings, "generate_share_image", return_value=None):
+                response = self.client.post("/listings", json=self.create_body(title="SYNTHETIC review "+precision), headers=self.headers["admin"])
+                self.assertEqual(response.status_code, 201, response.text)
+                listing_id = response.json()["id"]
+                self.assert_private_projection(listing_id, "area", include_deal=False)
+                reviewed = self.call("PATCH", "/"+listing_id, body=self.body(listing_id, public_precision=precision))
+                self.assertEqual((reviewed["version"], reviewed["review_status"]), (2, "verified"))
+                if precision == "exact":
+                    public = self.client.get("/listings/"+listing_id).json()
+                    self.assertTrue(public["location_verified"])
+                    self.assertEqual(Decimal(str(public["latitude"])), Decimal("19.7543"))
+                    self.assertIn(listing_id, [item["id"] for item in self.client.get("/listings/map").json()["items"]])
+                else:
+                    self.assert_private_projection(listing_id, precision, include_deal=False)
+
+    def test_create_review_failure_rolls_back_listing_review_and_events_together(self):
+        with patch.object(location_quality, "add_revision", side_effect=SQLAlchemyError("synthetic revision failure")), patch.object(listings, "generate_share_image") as share:
+            with self.assertRaises(SQLAlchemyError):
+                self.client.post("/listings", json=self.create_body(), headers=self.headers["admin"])
+        share.assert_not_called()
+        with Session(self.engine) as db:
+            self.assertEqual(db.query(Listing).filter(Listing.title == "SYNTHETIC newly submitted position").count(), 0)
+            self.assertEqual(db.query(Review).count(), 0)
+            self.assertEqual(db.query(Revision).count(), 0)
+            self.assertEqual(db.query(ListingEvent).count(), 0)
+
+    def test_new_create_rejects_partial_or_invalid_position_before_share_generation(self):
+        for changes in ({"longitude": None}, {"latitude": 91}, {"maps_url": "https://localhost/maps"}):
+            with self.subTest(changes=changes), patch.object(listings, "generate_share_image") as share:
+                response = self.client.post("/listings", json=self.create_body(**changes), headers=self.headers["admin"])
+                self.assertEqual(response.status_code, 422, response.text)
+                share.assert_not_called()
+        with Session(self.engine) as db:
+            self.assertEqual(db.query(Listing).count(), 4)
+            self.assertEqual(db.query(Review).count(), 0)
+
+    def test_unchanged_legacy_pair_remains_public_without_fabricating_a_review(self):
+        listing_id = self.listing_ids[0]
+        with patch.object(listings, "maybe_regenerate_share_image"):
+            response = self.client.put("/listings/"+listing_id, json={"title": "SYNTHETIC unchanged legacy position",
+                "latitude": 19.75, "longitude": -70.4, "maps_url": "https://maps.google.com/?q=19.75,-70.4"}, headers=self.headers["admin"])
+        self.assertEqual(response.status_code, 200, response.text)
+        with Session(self.engine) as db:
+            self.assertIsNone(db.get(Review, listing_id))
+        public = self.client.get("/listings/"+listing_id).json()
+        self.assertEqual(public["latitude"], 19.75)
+        self.assertFalse(public["location_verified"])
+        self.assertIn(listing_id, [item["id"] for item in self.client.get("/listings/map").json()["items"]])
+
+    def test_same_candidate_round_trip_preserves_review_and_public_precision(self):
+        listing_id = self.listing_ids[1]
+        for precision in ("exact", "area", "hidden"):
+            with self.subTest(precision=precision):
+                before = self.call("PATCH", "/"+listing_id, body=self.body(listing_id, public_precision=precision))
+                url = self.client.get("/listings/"+listing_id).json()["maps_url"] if precision == "exact" else before["maps_url"]
+                with patch.object(listings, "maybe_regenerate_share_image"):
+                    response = self.client.put("/listings/"+listing_id, json={"title": "SYNTHETIC unrelated "+precision,
+                        "latitude": 19.7543, "longitude": -70.4125, "maps_url": url}, headers=self.headers["admin"])
+                self.assertEqual(response.status_code, 200, response.text)
+                after = self.call("GET", "/"+listing_id)
+                for key in ("version", "review_status", "public_precision", "reviewed_at", "reviewed_by", "source_reference", "history"):
+                    self.assertEqual(after[key], before[key], key)
+                if precision != "exact":
+                    self.assert_private_projection(listing_id, precision)
+                else:
+                    self.assertTrue(self.client.get("/listings/"+listing_id).json()["location_verified"])
+
+    def test_explicit_nulls_clear_legacy_or_private_reviewed_coordinates(self):
+        private_id = self.listing_ids[1]
+        before = self.call("PATCH", "/"+private_id, body=self.body(private_id, public_precision="hidden"))
+        for listing_id, version, precision in ((self.listing_ids[0], 1, "exact"), (private_id, before["version"]+1, "hidden")):
+            with self.subTest(listing_id=listing_id), patch.object(listings, "maybe_regenerate_share_image"):
+                response = self.client.put("/listings/"+listing_id,
+                    json={"latitude": None, "longitude": None, "maps_url": None}, headers=self.headers["admin"])
+                self.assertEqual(response.status_code, 200, response.text)
+                detail = self.call("GET", "/"+listing_id)
+                self.assertEqual((detail["version"], detail["review_status"], detail["public_precision"]), (version, "unreviewed", precision))
+                self.assertFalse(detail["has_coordinates"]); self.assertFalse(detail["public_mapped"])
+                for key in ("latitude", "longitude", "maps_url"):
+                    self.assertIsNone(detail[key])
+                    self.assertIsNone(self.client.get("/listings/"+listing_id).json()[key])
+                self.assertNotIn(listing_id, [item["id"] for item in self.client.get("/listings/map").json()["items"]])
+
+    def import_job(self, **changes):
+        with Session(self.engine) as db:
+            admin_code = db.get(User, self.ids["admin"]).user_code
+            job = BulkImportJob(created_by=self.ids["admin"], total_rows=1)
+            db.add(job); db.commit(); job_id = job.id
+        row = {"title": "SYNTHETIC imported pending position", "property_type": "villa", "purpose": "sale", "region": "Cabarete",
+            "currency": "USD", "price": "199000", "description_en": "SYNTHETIC location review only", "co_listing_enabled": "no",
+            "assigned_agent_id": str(admin_code), "source_ref": "SYNTHETIC-import-"+uuid4().hex,
+            "latitude": "19.7543000", "longitude": "-70.4125000", "maps_url": "https://maps.google.com/?q=19.7543,-70.4125", **changes}
+        with patch.object(bulk_import, "_download_photo") as download, patch.object(bulk_import, "upload_image") as upload:
+            bulk_import.run_bulk_import(job_id, [row], self.ids["admin"], sessionmaker(bind=self.engine))
+        download.assert_not_called(); upload.assert_not_called()
+        with Session(self.engine) as db:
+            job = db.get(BulkImportJob, job_id)
+            return {"status": job.status, "succeeded": job.succeeded_count, "failed": job.failed_count,
+                    "skipped": job.skipped_count, "results": job.results}
+
+    def test_actual_import_worker_commits_only_private_candidate_then_review_can_publish(self):
+        job = self.import_job()
+        self.assertEqual((job["status"], job["succeeded"], job["failed"]), ("completed", 1, 0), job)
+        listing_id = job["results"][0]["listing_id"]
+        self.assert_private_projection(listing_id, "area", include_deal=False)
+        detail = self.call("GET", "/"+listing_id)
+        self.assertEqual((detail["version"], detail["review_status"]), (1, "unreviewed"))
+        self.call("PATCH", "/"+listing_id, body=self.body(listing_id))
+        self.assertTrue(self.client.get("/listings/"+listing_id).json()["location_verified"])
+        self.assertIn(listing_id, [item["id"] for item in self.client.get("/listings/map").json()["items"]])
+
+    def test_import_review_failure_rolls_back_new_listing_before_worker_commit(self):
+        with patch.object(location_quality, "add_revision", side_effect=SQLAlchemyError("synthetic review failure")), patch.object(bulk_import.logger, "exception"):
+            job = self.import_job()
+        self.assertEqual((job["status"], job["succeeded"], job["failed"]), ("completed", 0, 1), job)
+        with Session(self.engine) as db:
+            self.assertEqual(db.query(Listing).count(), 4)
+            self.assertEqual(db.query(Review).count(), 0)
+            self.assertEqual(db.query(Revision).count(), 0)
+            self.assertEqual(db.query(ListingEvent).count(), 0)
+
+    def test_import_duplicate_keeps_real_legacy_coordinates_without_review_or_provider_calls(self):
+        job = self.import_job(source_ref="synthetic-property-0", latitude="NaN", longitude="99", maps_url="https://localhost/maps")
+        self.assertEqual((job["status"], job["skipped"], job["succeeded"]), ("completed", 1, 0), job)
+        with Session(self.engine) as db:
+            self.assertIsNone(db.get(Review, self.listing_ids[0]))
+        public = self.client.get("/listings/"+self.listing_ids[0]).json()
+        self.assertEqual((public["latitude"], public["longitude"]), (19.75, -70.4))
+        self.assertFalse(public["location_verified"])
 
     def test_area_precision_retains_raw_only_in_private_table(self):
         listing_id = self.listing_ids[1]

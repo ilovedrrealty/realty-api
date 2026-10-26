@@ -419,14 +419,17 @@ def create_listing(body: ListingCreate, user=Depends(require_role("realtor", "ad
     extra: dict = {}
     if user.role == "owner":
         extra["owner_id"] = user.id
+    submitted = body.model_dump()
+    location_evidence = {key: submitted.pop(key) for key in ("latitude", "longitude", "maps_url")}
     listing = Listing(
-        **body.model_dump(),
+        **submitted,
         submitted_by=user.id,
         status="active" if user.role == "admin" else "pending_approval",
         **extra,
     )
     db.add(listing)
     db.flush()  # get listing.id before commit
+    stage_location_change(db, listing, location_evidence, user.id, new_submission=True)
     db.add(ListingEvent(listing_id=listing.id, event_type="submitted", actor_id=user.id))
     try:
         listing.share_image_url = generate_share_image(listing)
@@ -533,7 +536,10 @@ def update_listing(listing_id: UUID, body: ListingUpdate, user=Depends(get_curre
         return listing
 
     was_rejected = listing.status == "rejected"
-    changed = body.model_dump(exclude_none=True)
+    # Explicit null location fields clear candidate evidence. Other nullable
+    # input keeps the existing generic-edit behavior of ignoring null values.
+    changed = {key: value for key, value in body.model_dump(exclude_unset=True).items()
+               if value is not None or key in {"latitude", "longitude", "maps_url"}}
     stage_location_change(db, listing, changed, user.id)
     for field, value in changed.items():
         setattr(listing, field, value)

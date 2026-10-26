@@ -102,17 +102,44 @@ def add_revision(db, review, actor_id, action):
         actor_id=actor_id, action=action, snapshot=review_snapshot(review)))
 
 
-def stage_location_change(db, listing, changes, actor_id):
+def _same_location_value(key, value, previous):
+    if key in {"latitude", "longitude"} and value is not None and previous is not None:
+        try:
+            return Decimal(str(value)) == Decimal(str(previous))
+        except (InvalidOperation, ValueError, TypeError):
+            return False
+    return value == previous
+
+
+def stage_location_change(db, listing, changes, actor_id, *, new_submission=False):
     """Call with Listing row locked, before applying a generic edit.
 
     New/edit/imported coordinates are candidate evidence, never an Admin review.
     Public fields remain empty after an edit until that candidate is confirmed.
-    An existing area/hidden choice survives all generic edit paths.
+    An existing area/hidden choice survives all generic edit paths. For a new
+    listing, pass supplied location fields separately while Listing's public
+    fields are still empty; the review and listing must commit together.
     """
-    if not any(key in changes and changes[key] != getattr(listing, key) for key in LOCATION_FIELDS):
-        return False
     review = db.get(ListingLocationReview, listing.id)
+    if new_submission and (review is not None or any(getattr(listing, key) is not None for key in ("latitude", "longitude", "maps_url"))):
+        raise ValueError("New location evidence requires an empty public projection")
     current = review if review else listing
+    def unchanged(key):
+        previous = getattr(listing if key == "location" else current, key)
+        if _same_location_value(key, changes[key], previous):
+            return True
+        # A normal exact-listing edit can round-trip the canonical public link
+        # instead of the private evidence URL without invalidating its review.
+        return key == "maps_url" and changes[key] is not None and review is not None and (
+            review.review_status == "verified" and review.public_precision == "exact"
+            and not projection_mismatch(listing, review) and changes[key] == listing.maps_url)
+    if not any(key in changes and not unchanged(key) for key in LOCATION_FIELDS):
+        if review is not None:
+            # Unchanged private candidate values are not generic public writes.
+            # Keep the already approved projection/precision exactly as stored.
+            for key in ("latitude", "longitude", "maps_url"):
+                changes.pop(key, None)
+        return False
     candidate_latitude = changes.get("latitude", current.latitude)
     candidate_longitude = changes.get("longitude", current.longitude)
     if any(key in changes for key in ("latitude", "longitude")) and (
@@ -121,25 +148,27 @@ def stage_location_change(db, listing, changes, actor_id):
     if changes.get("maps_url") and not safe_maps_url(changes["maps_url"]):
         raise HTTPException(422, "Use an allowlisted Google Maps HTTPS share without credentials")
     if review is None:
-        review = ListingLocationReview(listing_id=listing.id, version=1, public_precision="exact")
+        review = ListingLocationReview(listing_id=listing.id, version=1, public_precision="area" if new_submission else "exact")
         db.add(review)
         previous = {"latitude": listing.latitude, "longitude": listing.longitude, "maps_url": listing.maps_url}
     else:
         review.version += 1
         previous = {"latitude": review.latitude, "longitude": review.longitude, "maps_url": review.maps_url}
     for key in ("latitude", "longitude", "maps_url"):
-        setattr(review, key, changes.get(key, previous[key]))
+        value = changes.get(key, previous[key])
+        setattr(review, key, Decimal(str(value)) if key in {"latitude", "longitude"} and value is not None else value)
     if not safe_maps_url(review.maps_url):
         review.maps_url = None
     if not coordinate_pair(review.latitude, review.longitude):
         review.latitude = review.longitude = None
     review.review_status = "unreviewed"
-    review.source_type = "listing_edit"
+    review.source_type = "listing_submission" if new_submission else "listing_edit"
     review.source_reference = None
-    review.review_note = "Location fields changed; confirm the property position before publishing a point."
+    review.review_note = ("New listing supplied location evidence; confirm the property position before publishing a point."
+                          if new_submission else "Location fields changed; confirm the property position before publishing a point.")
     review.reviewed_at = review.reviewed_by = None
     review.updated_at = datetime.now(timezone.utc)
     changes.update(latitude=None, longitude=None, maps_url=None)
     db.flush()
-    add_revision(db, review, actor_id, "listing_location_changed")
+    add_revision(db, review, actor_id, "listing_location_submitted" if new_submission else "listing_location_changed")
     return True
