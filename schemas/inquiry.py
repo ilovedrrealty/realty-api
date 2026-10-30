@@ -19,7 +19,7 @@ class InquiryResponse(BaseModel):
     name: str
     email: str
     phone: Optional[str] = None
-    message: str
+    message: Optional[str] = None
     created_at: datetime
 
     model_config = {"from_attributes": True}

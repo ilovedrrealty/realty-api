@@ -443,12 +443,14 @@ def approve_listing_edit(edit_id: UUID, user=Depends(require_admin), db: Session
     if edit.status != "pending":
         raise HTTPException(status_code=409, detail="Edit already reviewed")
 
-    listing = db.query(Listing).filter(Listing.id == edit.listing_id).first()
+    listing = db.query(Listing).filter(Listing.id == edit.listing_id).with_for_update().first()
     if not listing:
         raise HTTPException(status_code=404, detail="Listing not found")
 
-    proposed = edit.proposed_data or {}
+    proposed = dict(edit.proposed_data or {})
     before = _listing_snapshot(listing)
+    from utils.location_quality import stage_location_change
+    stage_location_change(db, listing, proposed, user.id)
     _NOT_NULL_BOOLEANS = {"seller_financing", "hoa", "tax_exempt", "gated_community", "co_listing_enabled"}
     for field in EDIT_FIELDS:
         if field in proposed:

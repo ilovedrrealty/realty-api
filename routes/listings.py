@@ -1,6 +1,6 @@
 import logging
 import filetype
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, UploadFile, File
 from sqlalchemy.orm import Session, aliased
 from sqlalchemy import and_, func, or_
 from typing import Annotated, List, Literal, Optional
@@ -18,8 +18,9 @@ from models.inquiry import Inquiry
 from models.lead import Lead
 from models.user import User
 from models.deal_request import DealRequest
+from models.listing_location_review import ListingLocationReview
 from schemas.listing import (ListingCreate, ListingUpdate, ListingResponse, ListingPageResponse, ListingFilterOptionsResponse,
-    ListingMapResponse, ListingMapPoint, ListingMapArea, ListingMapBounds)
+    ListingMapResponse, ListingMapPoint, ListingMapArea, ListingMapBounds, PublicListingResponse, PublicListingPageResponse)
 from schemas.deal_request import DealRequestCreate
 from utils.auth import get_current_user
 from utils.permission import require_role
@@ -28,6 +29,7 @@ from utils.share_image import generate_share_image, maybe_regenerate_share_image
 from utils.limiter import limiter
 from utils.listing_constants import ALL_REGIONS
 from utils.listing_search import normalized_location, normalized_location_column, escape_like, search_price_expression
+from utils.location_quality import public_location, public_coordinate_expression, stage_location_change
 
 router = APIRouter(prefix="/listings", tags=["listings"])
 
@@ -146,8 +148,17 @@ def _apply_listing_filters(
     return query
 
 
-@router.get("", response_model=ListingPageResponse)
+def public_responses(db, rows):
+    """Batch evidence lookup; expose policy/result only, never private evidence."""
+    if not rows:
+        return []
+    reviews = {row.listing_id: row for row in db.query(ListingLocationReview).filter(ListingLocationReview.listing_id.in_([item.id for item in rows])).all()}
+    return [PublicListingResponse.model_validate(item).model_copy(update=public_location(item, reviews.get(item.id))) for item in rows]
+
+
+@router.get("", response_model=PublicListingPageResponse)
 def get_active_listings(
+    response: Response,
     page: int = Query(1, ge=1),
     page_size: int = Query(24, ge=1, le=60),
     purpose: Optional[str] = Query(None, description="sale | rent | investment (omit for all)"),
@@ -168,6 +179,7 @@ def get_active_listings(
     include_aggregates: bool = Query(True),
     db: Session = Depends(get_db),
 ):
+    response.headers["Cache-Control"] = "no-store"
     search_price = search_price_expression(price_currency, usd_to_dop, rental_period, purpose) if price_currency else None
     base = _apply_listing_filters(
         db.query(Listing), purpose=purpose, type=type, region=region,
@@ -185,13 +197,13 @@ def get_active_listings(
     page_query = base.order_by(order_by, Listing.id.desc()).offset((page - 1) * page_size).limit(page_size)
     if search_price is not None:
         rows = page_query.add_columns(search_price.label("search_price")).all()
-        items = [ListingResponse.model_validate(listing).model_copy(update={
+        items = [item.model_copy(update={
             "search_price": amount,
             "search_price_currency": price_currency,
             "search_price_period": rental_period if purpose == "rent" or listing.transaction == "rent" else None,
-        }) for listing, amount in rows]
+        }) for item, (listing, amount) in zip(public_responses(db, [row[0] for row in rows]), rows)]
     else:
-        items = page_query.all()
+        items = public_responses(db, page_query.all())
 
     median_price = None
     avg_roi = None
@@ -203,7 +215,7 @@ def get_active_listings(
         ).scalar()
         avg_roi = base.filter(Listing.roi > 0).with_entities(func.avg(Listing.roi)).scalar()
 
-    return ListingPageResponse(
+    return PublicListingPageResponse(
         items=items,
         total=total,
         page=page,
@@ -215,6 +227,7 @@ def get_active_listings(
 
 @router.get("/map", response_model=ListingMapResponse)
 def get_listing_map(
+    response: Response,
     purpose: Optional[str] = Query(None), type: Optional[str] = Query(None), region: Optional[str] = Query(None),
     locations: Optional[List[LocationFilter]] = Query(None, max_length=60),
     types: Optional[List[PropertyTypeFilter]] = Query(None, max_length=5),
@@ -238,6 +251,7 @@ def get_listing_map(
     by recorded area, never guessed property positions. Bounds refine exact
     points only; totals and area summaries always describe the full filter.
     """
+    response.headers["Cache-Control"] = "no-store"
     box = (south, north, west, east)
     if any(value is not None for value in box) and (any(value is None for value in box) or south > north):
         raise HTTPException(422, "Provide a complete valid map viewport")
@@ -245,10 +259,11 @@ def get_listing_map(
     base = _apply_listing_filters(db.query(Listing.id), purpose=purpose, type=type, region=region,
         min_price=min_price, max_price=max_price, beds=beds, min_roi=min_roi, features=features,
         locations=locations, types=types, search_price=search_price)
+    base = base.outerjoin(ListingLocationReview, ListingLocationReview.listing_id == Listing.id)
     if exclude_ids:
         base = base.filter(~Listing.id.in_(exclude_ids))
     total = base.with_entities(func.count(Listing.id)).scalar() or 0
-    valid = and_(Listing.latitude.between(-90, 90), Listing.longitude.between(-180, 180))
+    valid = public_coordinate_expression()
     mapped = base.filter(valid)
     count, min_lat, min_lng, max_lat, max_lng = mapped.with_entities(func.count(Listing.id),
         func.min(Listing.latitude), func.min(Listing.longitude), func.max(Listing.latitude), func.max(Listing.longitude)).one()
@@ -256,7 +271,7 @@ def get_listing_map(
     # SQL NOT(NULL) is unknown; explicitly include partial and missing pairs.
     missing = base.filter(or_(Listing.latitude.is_(None), Listing.longitude.is_(None), ~valid))
     location_key = normalized_location_column()
-    groups = missing.with_entities(func.min(func.btrim(Listing.location)), func.count(Listing.id)).group_by(location_key)
+    groups = missing.filter(or_(ListingLocationReview.listing_id.is_(None), ListingLocationReview.public_precision != "hidden")).with_entities(func.min(func.btrim(Listing.location)), func.count(Listing.id)).group_by(location_key)
     area_rows = groups.order_by(func.count(Listing.id).desc(), location_key).limit(200).all()
     areas = [ListingMapArea(location=area, count=amount) for area, amount in area_rows if area]
     grouped = sum(area.count for area in areas)
@@ -267,10 +282,11 @@ def get_listing_map(
     viewport_total = visible.with_entities(func.count(Listing.id)).scalar() or 0
     price = search_price if search_price is not None else Listing.price
     rows = visible.with_entities(Listing.id, Listing.title, Listing.location, Listing.latitude, Listing.longitude,
-        price, Listing.currency, Listing.transaction).order_by(Listing.id).limit(limit).all()
+        price, Listing.currency, Listing.transaction, ListingLocationReview.review_status).order_by(Listing.id).limit(limit).all()
     items = [ListingMapPoint(id=row[0], title=row[1], location=row[2], latitude=row[3], longitude=row[4], price=row[5],
         currency=price_currency or row[6], transaction=row[7],
-        price_period=rental_period if search_price is not None and (purpose == "rent" or row[7] == "rent") else None) for row in rows]
+        price_period=rental_period if search_price is not None and (purpose == "rent" or row[7] == "rent") else None,
+        location_verified=row[8] == "verified") for row in rows]
     return ListingMapResponse(items=items, total=total, mapped_total=count, unmapped_total=total-count,
         areas=areas, ungrouped_total=max(0, total-count-grouped), viewport_total=viewport_total,
         returned=len(items), limit=limit, truncated=viewport_total > limit,
@@ -390,9 +406,10 @@ def get_my_listings_page(
     return ListingPageResponse(items=items, total=total, page=page, page_size=page_size)
 
 
-@router.get("/deal", response_model=List[ListingResponse])
-def get_deal_listings(db: Session = Depends(get_db)):
-    return db.query(Listing).filter(Listing.is_deal == True, Listing.status == "active").all()
+@router.get("/deal", response_model=List[PublicListingResponse])
+def get_deal_listings(response: Response, db: Session = Depends(get_db)):
+    response.headers["Cache-Control"] = "no-store"
+    return public_responses(db, db.query(Listing).filter(Listing.is_deal == True, Listing.status == "active").all())
 
 
 @router.post("", response_model=ListingResponse, status_code=201)
@@ -402,14 +419,17 @@ def create_listing(body: ListingCreate, user=Depends(require_role("realtor", "ad
     extra: dict = {}
     if user.role == "owner":
         extra["owner_id"] = user.id
+    submitted = body.model_dump()
+    location_evidence = {key: submitted.pop(key) for key in ("latitude", "longitude", "maps_url")}
     listing = Listing(
-        **body.model_dump(),
+        **submitted,
         submitted_by=user.id,
         status="active" if user.role == "admin" else "pending_approval",
         **extra,
     )
     db.add(listing)
     db.flush()  # get listing.id before commit
+    stage_location_change(db, listing, location_evidence, user.id, new_submission=True)
     db.add(ListingEvent(listing_id=listing.id, event_type="submitted", actor_id=user.id))
     try:
         listing.share_image_url = generate_share_image(listing)
@@ -420,8 +440,9 @@ def create_listing(body: ListingCreate, user=Depends(require_role("realtor", "ad
     return listing
 
 
-@router.get("/{listing_id}", response_model=ListingResponse)
-def get_listing(listing_id: UUID, db: Session = Depends(get_db)):
+@router.get("/{listing_id}", response_model=PublicListingResponse)
+def get_listing(listing_id: UUID, response: Response, db: Session = Depends(get_db)):
+    response.headers["Cache-Control"] = "no-store"
     AssignedRealtor = aliased(User)
     row = (
         db.query(Listing, User, AssignedRealtor)
@@ -431,14 +452,11 @@ def get_listing(listing_id: UUID, db: Session = Depends(get_db)):
         .first()
     )
     if not row:
-        raise HTTPException(status_code=404, detail="Listing not found")
+        raise HTTPException(status_code=404, detail="Listing not found", headers={"Cache-Control": "no-store"})
     listing, submitter, assigned_realtor = row
     # The assigned realtor (if any) takes over as the public "Listed by" contact.
     contact = assigned_realtor or submitter
-    return ListingResponse(
-        **{c.key: getattr(listing, c.key) for c in Listing.__table__.columns},
-        submitted_by_name=contact.display_name,
-    )
+    return public_responses(db, [listing])[0].model_copy(update={"submitted_by_name": contact.display_name})
 
 
 @router.post("/{listing_id}/deal-request", status_code=201)
@@ -486,7 +504,7 @@ def record_view(request: Request, listing_id: UUID, db: Session = Depends(get_db
 
 @router.put("/{listing_id}", response_model=ListingResponse)
 def update_listing(listing_id: UUID, body: ListingUpdate, user=Depends(get_current_user), db: Session = Depends(get_db)):
-    listing = db.query(Listing).filter(Listing.id == listing_id).first()
+    listing = db.query(Listing).filter(Listing.id == listing_id).with_for_update().first()
     if not listing:
         raise HTTPException(status_code=404, detail="Listing not found")
 
@@ -518,7 +536,11 @@ def update_listing(listing_id: UUID, body: ListingUpdate, user=Depends(get_curre
         return listing
 
     was_rejected = listing.status == "rejected"
-    changed = body.model_dump(exclude_none=True)
+    # Explicit null location fields clear candidate evidence. Other nullable
+    # input keeps the existing generic-edit behavior of ignoring null values.
+    changed = {key: value for key, value in body.model_dump(exclude_unset=True).items()
+               if value is not None or key in {"latitude", "longitude", "maps_url"}}
+    stage_location_change(db, listing, changed, user.id)
     for field, value in changed.items():
         setattr(listing, field, value)
     if was_rejected:
