@@ -13,6 +13,7 @@ import re
 import threading
 import unittest
 from datetime import date, datetime, timedelta, timezone
+from dataclasses import replace
 from unittest.mock import patch
 from uuid import UUID, uuid4
 
@@ -331,7 +332,7 @@ class LeadDeliveryTests(unittest.TestCase):
         self.assertEqual(rows["crm_contact"].provider_id, "synthetic-existing")
         self.assertTrue(any(r.url.path == "/contacts/synthetic-existing/tags" for r in self.calls))
 
-    def test_known_connection_failure_retries_only_the_failed_step_with_delay(self):
+    def test_known_connection_failure_needs_one_explicit_manual_action_after_delay(self):
         lead_id = self.submit()
         first = True
         def handler(request):
@@ -342,13 +343,24 @@ class LeadDeliveryTests(unittest.TestCase):
         with self.transport(handler) as client:
             service.run_batch(self.factory, client=client)
             row = self.jobs(lead_id)["crm_contact"]
-            self.assertEqual(row.status, "retry_wait")
+            self.assertEqual(row.status, "failed")
             self.assertFalse(row.outcome_uncertain)
             self.assertGreater(row.next_attempt_at, row.last_attempt_at)
             self.assertEqual(service.run_batch(self.factory, client=client)["processed"], 0)
             self.due_now(row.id)
+            before = len(self.calls)
+            for _ in range(4):
+                self.assertEqual(service.run_batch(self.factory, client=client)["processed"], 0)
+            self.assertEqual(len(self.calls), before)
+            first_at, body_before = row.first_attempt_at, row.payload
+            response = self.client.post(f"/admin/lead-deliveries/{row.id}/retry", json={}, headers=self.headers["admin"])
+            self.assertEqual(response.status_code, 200, response.text)
+            self.assertEqual(response.json()["status"], "pending")
             service.run_batch(self.factory, client=client)
-        self.assertEqual(self.jobs(lead_id)["crm_contact"].attempt_count, 2)
+        updated = self.jobs(lead_id)["crm_contact"]
+        self.assertEqual(updated.attempt_count, 2)
+        self.assertEqual(updated.first_attempt_at, first_at)
+        self.assertEqual(updated.payload, body_before)
         self.assertTrue(all(row.status == "accepted" for row in self.jobs(lead_id).values()))
 
     def test_rate_limit_respects_provider_delay_and_manual_action_cannot_bypass_it(self):
@@ -359,10 +371,12 @@ class LeadDeliveryTests(unittest.TestCase):
         with self.transport(handler) as client:
             service.run_batch(self.factory, client=client)
         row = self.jobs(lead_id)["crm_task"]
-        self.assertEqual(row.status, "retry_wait")
+        self.assertEqual(row.status, "failed")
         self.assertGreaterEqual((row.next_attempt_at-row.last_attempt_at).total_seconds(), 600)
         response = self.client.post(f"/admin/lead-deliveries/{row.id}/retry", json={}, headers=self.headers["admin"])
         self.assertEqual(response.status_code, 409)
+        status = self.client.get(f"/admin/leads/{lead_id}/delivery", headers=self.headers["admin"]).json()
+        self.assertFalse(next(item for item in status["jobs"] if item["id"] == str(row.id))["can_retry"])
 
     def test_safe_retries_stop_at_the_durable_attempt_limit(self):
         lead_id = self.submit()
@@ -370,17 +384,24 @@ class LeadDeliveryTests(unittest.TestCase):
             if request.url.path == "/contacts/":
                 raise httpx.ConnectError("Synthetic pre-send failure", request=request)
         with self.transport(handler) as client:
-            for _ in range(4):
+            for attempt in range(4):
                 row = self.jobs(lead_id)["crm_contact"]
                 self.due_now(row.id)
+                if attempt:
+                    response = self.client.post(f"/admin/lead-deliveries/{row.id}/retry", json={}, headers=self.headers["admin"])
+                    self.assertEqual(response.status_code, 200, response.text)
                 service.run_batch(self.factory, client=client)
+                self.due_now(row.id)
+                for _ in range(2):
+                    self.assertEqual(service.run_batch(self.factory, client=client)["processed"], 0)
             self.assertEqual(service.run_batch(self.factory, client=client)["processed"], 0)
         row = self.jobs(lead_id)["crm_contact"]
         self.assertEqual(row.attempt_count, 4)
         self.assertEqual(row.status, "failed")
         self.assertEqual(len([r for r in self.calls if r.url.path == "/contacts/"]), 4)
+        self.assertEqual(self.client.post(f"/admin/lead-deliveries/{row.id}/retry", json={}, headers=self.headers["admin"]).status_code, 409)
 
-    def test_resend_uncertainty_reuses_exact_key_and_payload_inside_window(self):
+    def test_resend_uncertainty_is_never_repeated_even_inside_idempotency_window(self):
         lead_id = self.submit()
         first = True
         def handler(request):
@@ -391,15 +412,15 @@ class LeadDeliveryTests(unittest.TestCase):
         with self.transport(handler) as client:
             service.run_batch(self.factory, client=client)
             row = self.jobs(lead_id)["email_1"]
-            self.assertEqual(row.status, "retry_wait")
+            self.assertEqual(row.status, "needs_review")
             self.assertTrue(row.outcome_uncertain)
             self.due_now(row.id)
-            service.run_batch(self.factory, client=client)
+            for _ in range(4):
+                service.run_batch(self.factory, client=client)
+            self.assertEqual(self.client.post(f"/admin/lead-deliveries/{row.id}/retry", json={}, headers=self.headers["admin"]).status_code, 409)
         requests = [r for r in self.calls if r.url.host == "api.resend.com" and json.loads(r.content)["to"] == ["owner@example.com"]]
-        self.assertEqual(len(requests), 2)
-        self.assertEqual(requests[0].headers["Idempotency-Key"], requests[1].headers["Idempotency-Key"])
-        self.assertEqual(requests[0].content, requests[1].content)
-        self.assertEqual(self.jobs(lead_id)["email_1"].status, "accepted")
+        self.assertEqual(len(requests), 1)
+        self.assertEqual(self.jobs(lead_id)["email_1"].status, "needs_review")
 
     def test_uncertain_email_after_retention_window_never_calls_provider(self):
         lead_id = self.submit()
@@ -411,7 +432,8 @@ class LeadDeliveryTests(unittest.TestCase):
             row.attempt_count = 1; db.commit()
         with self.transport() as client:
             service.run_batch(self.factory, client=client)
-        self.assertEqual(self.jobs(lead_id)["email_1"].status, "needs_review")
+        self.assertEqual(self.jobs(lead_id)["email_1"].status, "retry_wait")
+        self.assertEqual(self.client.post(f"/admin/lead-deliveries/{self.jobs(lead_id)['email_1'].id}/retry", json={}, headers=self.headers["admin"]).status_code, 409)
         self.assertFalse(any(r.url.host == "api.resend.com" and json.loads(r.content)["to"] == ["owner@example.com"] for r in self.calls))
 
     def test_later_rejection_does_not_erase_an_earlier_uncertain_email_outcome(self):
@@ -455,11 +477,18 @@ class LeadDeliveryTests(unittest.TestCase):
             service.run_batch(self.factory, client=client)
         row = self.jobs(lead_id)["crm_contact"]
         self.assertEqual(row.status, "failed")
+        self.due_now(row.id)
         with patch.object(service, "_provider_result", side_effect=AssertionError("Admin retry sent a provider request")):
             response = self.client.post(f"/admin/lead-deliveries/{row.id}/retry", json={}, headers=self.headers["admin"])
         self.assertEqual(response.status_code, 200, response.text)
         self.assertEqual(response.headers["cache-control"], "no-store")
-        self.assertEqual(self.jobs(lead_id)["crm_contact"].status, "retry_wait")
+        queued = self.jobs(lead_id)["crm_contact"]
+        self.assertEqual(queued.status, "pending")
+        self.assertEqual(service.manual_retry_prior_code(queued.error_code), row.error_code)
+        status = self.client.get(f"/admin/leads/{lead_id}/delivery", headers=self.headers["admin"]).json()
+        item = next(item for item in status["jobs"] if item["id"] == str(row.id))
+        self.assertEqual(item["error_code"], row.error_code)
+        self.assertFalse(item["can_retry"])
 
     def test_status_endpoints_are_admin_only_private_and_do_not_expose_payloads(self):
         lead_id = self.submit()
@@ -517,6 +546,7 @@ class LeadDeliveryTests(unittest.TestCase):
         with self.factory() as db:
             for row in db.query(LeadDeliveryJob).filter(LeadDeliveryJob.lead_id == lead_id, LeadDeliveryJob.step.in_(("email_1", "email_2"))):
                 row.status = "failed"; row.safe_to_retry = True; row.error_code = "email_provider_not_configured"
+                row.attempt_count = 1; row.next_attempt_at = service.utcnow()-timedelta(seconds=1)
             job_id = db.query(LeadDeliveryJob).filter_by(lead_id=lead_id, step="email_1").one().id
             cookie_job_id = db.query(LeadDeliveryJob).filter_by(lead_id=lead_id, step="email_2").one().id
             db.commit()
@@ -547,8 +577,8 @@ class LeadDeliveryTests(unittest.TestCase):
                                              headers={**cookie_headers, "Origin": "http://testserver"})
         self.assertEqual(result.status_code, 200, result.text)
         self.assertEqual(cookie_result.status_code, 200, cookie_result.text)
-        self.assertEqual(self.jobs(lead_id)["email_1"].status, "retry_wait")
-        self.assertEqual(self.jobs(lead_id)["email_2"].status, "retry_wait")
+        self.assertEqual(self.jobs(lead_id)["email_1"].status, "pending")
+        self.assertEqual(self.jobs(lead_id)["email_2"].status, "pending")
 
     def test_stopped_worker_does_not_open_database_or_claim_any_job(self):
         stopped = threading.Event(); stopped.set()
@@ -629,6 +659,9 @@ class LeadDeliveryTests(unittest.TestCase):
                     row.first_attempt_at = previous; row.last_attempt_at = previous
                     row.next_attempt_at = previous; row.error_code = "resend_connection_not_established"
             db.commit()
+        job_id = self.jobs(lead_id)["email_1"].id
+        response = self.client.post(f"/admin/lead-deliveries/{job_id}/retry", json={}, headers=self.headers["admin"])
+        self.assertEqual(response.status_code, 200, response.text)
         stopped = threading.Event()
         original = service._provider_result
         def stop_before_send(*args, **kwargs):
@@ -640,10 +673,10 @@ class LeadDeliveryTests(unittest.TestCase):
                 self.assertFalse(service.process_claimed_job(db, claim, client=client, stop_event=stopped))
         self.assertEqual(self.calls, [])
         row = self.jobs(lead_id)["email_1"]
-        self.assertEqual((row.status, row.attempt_count, row.safe_to_retry), ("retry_wait", 1, True))
+        self.assertEqual((row.status, row.attempt_count, row.safe_to_retry), ("pending", 1, True))
         self.assertEqual(row.first_attempt_at, previous)
         self.assertEqual(row.last_attempt_at, previous)
-        self.assertEqual(row.error_code, "resend_connection_not_established")
+        self.assertEqual(service.manual_retry_prior_code(row.error_code), "resend_connection_not_established")
 
     def test_summary_is_atomic_and_queue_filters_are_bounded_metadata_only(self):
         lead_id = self.submit()
@@ -676,6 +709,193 @@ class LeadDeliveryTests(unittest.TestCase):
         self.assertTrue(all(row["lead_id"] == str(lead_id) and row["status"] == "pending" for row in queue["items"]))
         self.assertNotIn(str(other_id), result.text)
         self.assertTrue(all("payload" not in row and "provider_id" not in row for row in queue["items"]))
+
+    def isolate_step(self, lead_id, step):
+        with self.factory() as db:
+            db.query(LeadDeliveryJob).filter(LeadDeliveryJob.lead_id == lead_id,
+                LeadDeliveryJob.step != step).update({"status": "skipped"})
+            row = db.query(LeadDeliveryJob).filter_by(lead_id=lead_id, step=step).one()
+            job_id = row.id
+            db.commit()
+        return job_id
+
+    def test_both_providers_hold_each_known_connection_failure_across_due_polls(self):
+        for step in ("crm_contact", "email_1"):
+            for error_class in (httpx.ConnectError, httpx.ConnectTimeout, httpx.PoolTimeout):
+                with self.subTest(step=step, error=error_class.__name__):
+                    lead_id = self.submit()
+                    job_id = self.isolate_step(lead_id, step)
+                    def handler(request):
+                        raise error_class("Synthetic known pre-send failure", request=request)
+                    with self.transport(handler) as client:
+                        self.assertEqual(service.run_batch(self.factory, client=client)["processed"], 1)
+                        self.due_now(job_id)
+                        for _ in range(4):
+                            self.assertEqual(service.run_batch(self.factory, client=client)["processed"], 0)
+                        self.assertEqual(len(self.calls), 1)
+                    row = self.jobs(lead_id)[step]
+                    self.assertEqual((row.status, row.attempt_count, row.safe_to_retry, row.outcome_uncertain),
+                                     ("failed", 1, True, False))
+
+    def test_uncertain_provider_failures_cannot_be_worker_or_admin_repeated(self):
+        cases = (("crm_contact", "read_timeout"), ("crm_contact", "http_503"),
+                 ("email_1", "read_timeout"), ("email_1", "http_503"),
+                 ("email_1", "concurrent_key"))
+        for step, failure in cases:
+            with self.subTest(step=step, failure=failure):
+                lead_id = self.submit()
+                job_id = self.isolate_step(lead_id, step)
+                def handler(request):
+                    if failure == "read_timeout":
+                        raise httpx.ReadTimeout("Synthetic uncertain write", request=request)
+                    if failure == "concurrent_key":
+                        return httpx.Response(409, json={"name": "concurrent_idempotent_requests"})
+                    return httpx.Response(503, json={})
+                with self.transport(handler) as client:
+                    service.run_batch(self.factory, client=client)
+                    self.due_now(job_id)
+                    for _ in range(4):
+                        service.run_batch(self.factory, client=client)
+                    self.assertEqual(len(self.calls), 1)
+                row = self.jobs(lead_id)[step]
+                self.assertEqual((row.status, row.outcome_uncertain, row.safe_to_retry), ("needs_review", True, False))
+                self.assertEqual(self.client.post(f"/admin/lead-deliveries/{job_id}/retry", json={}, headers=self.headers["admin"]).status_code, 409)
+
+    def test_rate_limit_unsupported_or_oversized_delay_is_held_for_review(self):
+        for step in ("crm_contact", "email_1"):
+            for header in (None, "Thu, 01 Jan 2099 00:00:00 GMT", "86401", "-1", "1.5", "999999999999"):
+                with self.subTest(step=step, header=header):
+                    lead_id = self.submit()
+                    job_id = self.isolate_step(lead_id, step)
+                    def handler(_request):
+                        return httpx.Response(429, headers={} if header is None else {"Retry-After": header}, json={})
+                    with self.transport(handler) as client:
+                        service.run_batch(self.factory, client=client)
+                        self.due_now(job_id)
+                        for _ in range(2):
+                            service.run_batch(self.factory, client=client)
+                        self.assertEqual(len(self.calls), 1)
+                    row = self.jobs(lead_id)[step]
+                    self.assertEqual((row.status, row.safe_to_retry), ("needs_review", False))
+                    self.assertEqual(row.error_code, f"{row.provider}_retry_after_unverified")
+                    self.assertEqual(self.client.post(f"/admin/lead-deliveries/{job_id}/retry", json={}, headers=self.headers["admin"]).status_code, 409)
+
+    def test_rate_limit_manual_approval_never_shortens_recorded_cooldown(self):
+        lead_id = self.submit()
+        job_id = self.isolate_step(lead_id, "email_1")
+        with self.transport(lambda _: httpx.Response(429, headers={"Retry-After": "86400"}, json={})) as client:
+            service.run_batch(self.factory, client=client)
+        row = self.jobs(lead_id)["email_1"]
+        self.assertEqual((row.next_attempt_at-row.last_attempt_at).total_seconds(), 86400)
+        self.assertEqual(self.client.post(f"/admin/lead-deliveries/{job_id}/retry", json={}, headers=self.headers["admin"]).status_code, 409)
+        self.due_now(job_id)
+        before = self.jobs(lead_id)["email_1"]
+        self.assertEqual(self.client.post(f"/admin/lead-deliveries/{job_id}/retry", json={}, headers=self.headers["admin"]).status_code, 200)
+        after = self.jobs(lead_id)["email_1"]
+        self.assertEqual((after.next_attempt_at, after.first_attempt_at, after.last_attempt_at, after.payload, after.payload_sha256),
+                         (before.next_attempt_at, before.first_attempt_at, before.last_attempt_at, before.payload, before.payload_sha256))
+
+    def test_one_concurrent_admin_approval_and_worker_claim_means_one_exact_request(self):
+        lead_id = self.submit()
+        job_id = self.isolate_step(lead_id, "email_1")
+        with self.transport(lambda _: httpx.Response(401, json={})) as client:
+            service.run_batch(self.factory, client=client)
+            original = self.calls[0]
+        self.due_now(job_id)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+            responses = list(executor.map(lambda _: self.client.post(f"/admin/lead-deliveries/{job_id}/retry",
+                json={}, headers=self.headers["admin"]), range(2)))
+        self.assertCountEqual([result.status_code for result in responses], [200, 409])
+        with self.transport() as client:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+                results = list(executor.map(lambda _: service.run_batch(self.factory, client=client), range(3)))
+            self.assertEqual(sum(result["processed"] for result in results), 1)
+            self.assertEqual(len(self.calls), 1)
+            self.assertEqual(self.calls[0].headers["Idempotency-Key"], original.headers["Idempotency-Key"])
+            self.assertEqual(self.calls[0].content, original.content)
+        row = self.jobs(lead_id)["email_1"]
+        self.assertEqual((row.status, row.attempt_count), ("accepted", 2))
+
+    def test_every_further_failure_requires_a_separate_manual_approval(self):
+        lead_id = self.submit()
+        job_id = self.isolate_step(lead_id, "email_1")
+        with self.transport(lambda _: httpx.Response(401, json={})) as client:
+            service.run_batch(self.factory, client=client)
+            for permitted_attempt in (2, 3):
+                self.due_now(job_id)
+                for _ in range(4):
+                    self.assertEqual(service.run_batch(self.factory, client=client)["processed"], 0)
+                self.assertEqual(len(self.calls), permitted_attempt-1)
+                response = self.client.post(f"/admin/lead-deliveries/{job_id}/retry", json={}, headers=self.headers["admin"])
+                self.assertEqual(response.status_code, 200, response.text)
+                service.run_batch(self.factory, client=client)
+                self.assertEqual(len(self.calls), permitted_attempt)
+                row = self.jobs(lead_id)["email_1"]
+                self.assertEqual((row.status, row.attempt_count), ("failed", permitted_attempt))
+
+    def test_legacy_safe_retry_wait_is_held_until_explicit_due_admin_action(self):
+        lead_id = self.submit()
+        job_id = self.isolate_step(lead_id, "email_1")
+        previous = service.utcnow()-timedelta(hours=1)
+        with self.factory() as db:
+            row = db.get(LeadDeliveryJob, job_id)
+            row.status = "retry_wait"; row.attempt_count = 1; row.safe_to_retry = True
+            row.first_attempt_at = previous; row.last_attempt_at = previous
+            row.next_attempt_at = previous; row.error_code = "resend_connection_not_established"
+            db.commit()
+        with self.transport() as client:
+            for _ in range(4):
+                self.assertEqual(service.run_batch(self.factory, client=client)["processed"], 0)
+            self.assertEqual(self.calls, [])
+            detail = self.client.get(f"/admin/leads/{lead_id}/delivery", headers=self.headers["admin"]).json()
+            self.assertTrue(next(item for item in detail["jobs"] if item["id"] == str(job_id))["can_retry"])
+            response = self.client.post(f"/admin/lead-deliveries/{job_id}/retry", json={}, headers=self.headers["admin"])
+            self.assertEqual(response.status_code, 200, response.text)
+            service.run_batch(self.factory, client=client)
+            self.assertEqual(len(self.calls), 1)
+
+    def test_unexplained_or_malformed_pending_retry_refuses_worker_dispatch(self):
+        for code in (None, "resend_connection_not_established", service.MANUAL_RETRY_PREFIX + "x"*121):
+            with self.subTest(code=code):
+                lead_id = self.submit()
+                job_id = self.isolate_step(lead_id, "email_1")
+                with self.factory() as db:
+                    row = db.get(LeadDeliveryJob, job_id)
+                    row.attempt_count = 1; row.safe_to_retry = True
+                    row.error_code = code; row.next_attempt_at = service.utcnow()-timedelta(seconds=1)
+                    db.commit()
+                with self.transport() as client:
+                    result = service.run_batch(self.factory, client=client)
+                    self.assertEqual(result["error_code"], "pending_retry_authorization_unknown")
+                    self.assertEqual(result["processed"], 0)
+                    self.assertEqual(self.calls, [])
+                with self.factory() as db:
+                    self.assertEqual(db.get(LeadDeliveryWorkerState, 1).error_code, "pending_retry_authorization_unknown")
+                    row = db.get(LeadDeliveryJob, job_id)
+                    self.assertEqual((row.status, row.attempt_count), ("pending", 1))
+                    row.status = "needs_review"; db.commit()
+
+    def test_processing_claim_rejects_uncertainty_or_fabricated_prior_permit(self):
+        for uncertain in (True, False):
+            with self.subTest(uncertain=uncertain):
+                lead_id = self.submit()
+                job_id = self.isolate_step(lead_id, "email_1")
+                with self.factory() as db:
+                    claim = service.claim_next_job(db)
+                    self.assertEqual(claim.job_id, job_id)
+                    row = db.get(LeadDeliveryJob, job_id)
+                    row.outcome_uncertain = uncertain
+                    if not uncertain:
+                        row.attempt_count = 2
+                        claim = replace(claim, prior_attempt_count=1, prior_safe_to_retry=True,
+                            prior_error_code=service.MANUAL_RETRY_PREFIX + "resend_http_401")
+                    db.commit()
+                    with self.transport() as client:
+                        service.process_claimed_job(db, claim, client=client)
+                        self.assertEqual(self.calls, [])
+                row = self.jobs(lead_id)["email_1"]
+                self.assertEqual(row.status, "needs_review")
+                self.assertFalse(row.safe_to_retry)
 
     def test_changed_payload_or_recipient_configuration_does_not_send(self):
         lead_id = self.submit()

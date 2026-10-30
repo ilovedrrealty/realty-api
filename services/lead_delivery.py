@@ -1,9 +1,9 @@
-"""Durable delivery for new lead events, with conservative retry semantics.
+"""Durable delivery for new lead events, with explicit manual-only retries.
 
 No import, migration, GET or retry request sends anything. Only an explicitly
 enabled worker calls providers. HTTP success is provider acceptance, NOT proof
-that a notification reached the recipient's inbox. Resend idempotency is bounded
-to a conservative 23-hour window when an earlier outcome is uncertain.
+that a notification reached the recipient's inbox. An uncertain provider outcome
+is always held for review, even when the provider supports idempotency keys.
 """
 import asyncio
 import hashlib
@@ -36,11 +36,13 @@ LEASE_SECONDS = 120
 POLL_SECONDS = 15
 MAX_BATCH = 10
 PROVIDER_TIMEOUT = httpx.Timeout(connect=3, read=10, write=5, pool=1)
-RESEND_SAFE_WINDOW = timedelta(hours=23)
 BACKOFF_SECONDS = (60, 300, 900, 3600)
 CRM_STEPS = ("crm_contact", "crm_tags", "crm_note", "crm_task")
 SAFE_REJECTIONS = {400, 401, 403, 404, 422}
 PROVIDER_ID = re.compile(r"[A-Za-z0-9_-]{1,200}")
+SAFE_ERROR_CODE = re.compile(r"[a-z0-9_]{1,120}")
+MANUAL_RETRY_PREFIX = "manual_retry_authorized:"
+MANUAL_RETRY_PATTERN = r"^manual_retry_authorized:[a-z0-9_]{1,120}$"
 
 
 @event.listens_for(Session, "after_flush")
@@ -180,6 +182,7 @@ class Claim:
     prior_first_attempt_at: datetime | None
     prior_last_attempt_at: datetime | None
     prior_safe_to_retry: bool
+    prior_error_code: str | None
 
 
 class _DispatchStopped(Exception):
@@ -214,20 +217,57 @@ def _stopping(stop_event):
     return stop_event is not None and stop_event.is_set()
 
 
+def manual_retry_prior_code(value):
+    """Decode the single unconsumed Admin permit without losing its safe result.
+
+    The marker is operational state, not proof against a privileged DB writer.
+    Only the guarded Admin mutation writes it in application code. Processing
+    consumes it under the same atomic claim token; an unsent claim restores it.
+    """
+    if not isinstance(value, str) or not value.startswith(MANUAL_RETRY_PREFIX):
+        return None
+    prior = value[len(MANUAL_RETRY_PREFIX):]
+    return prior if SAFE_ERROR_CODE.fullmatch(prior) else None
+
+
+def delivery_error_code(value):
+    decoded = manual_retry_prior_code(value)
+    return decoded or (value if isinstance(value, str) and SAFE_ERROR_CODE.fullmatch(value) else None)
+
+
+def manual_retry_marker_sql():
+    # Regex is bounded and identical to the Python decoder's accepted suffix.
+    return LeadDeliveryJob.error_code.op("~")(MANUAL_RETRY_PATTERN)
+
+
+def unexplained_pending_retry_exists(db: Session):
+    """Bounded metadata-only activation check; never interpret legacy rows as permits."""
+    return bool(db.scalar(select(exists().where(
+        LeadDeliveryJob.status == "pending", LeadDeliveryJob.attempt_count > 0,
+        or_(LeadDeliveryJob.safe_to_retry.is_(False),
+            LeadDeliveryJob.outcome_uncertain.is_(True),
+            LeadDeliveryJob.error_code.is_(None), ~manual_retry_marker_sql()),
+    ))))
+
+
 def claim_next_job(db: Session, now: datetime | None = None, *, stop_event=None) -> Claim | None:
     if not enabled() or _stopping(stop_event):
         return None
     now = now or utcnow()
     parent = aliased(LeadDeliveryJob)
-    eligible = and_(LeadDeliveryJob.status.in_(("pending", "retry_wait")),
+    eligible = and_(LeadDeliveryJob.status == "pending",
                     LeadDeliveryJob.next_attempt_at <= now,
-                    LeadDeliveryJob.attempt_count < MAX_ATTEMPTS)
+                    LeadDeliveryJob.outcome_uncertain.is_(False),
+                    LeadDeliveryJob.attempt_count < MAX_ATTEMPTS,
+                    or_(LeadDeliveryJob.attempt_count == 0,
+                        and_(LeadDeliveryJob.safe_to_retry.is_(True), manual_retry_marker_sql())))
     dependency_ready = or_(LeadDeliveryJob.depends_on.is_(None), exists(select(parent.id).where(
         parent.lead_id == LeadDeliveryJob.lead_id, parent.step == LeadDeliveryJob.depends_on,
         parent.status == "accepted")))
     previous = db.execute(select(LeadDeliveryJob.id, LeadDeliveryJob.status,
         LeadDeliveryJob.attempt_count, LeadDeliveryJob.first_attempt_at,
-        LeadDeliveryJob.last_attempt_at, LeadDeliveryJob.safe_to_retry).where(eligible, dependency_ready)
+        LeadDeliveryJob.last_attempt_at, LeadDeliveryJob.safe_to_retry,
+        LeadDeliveryJob.error_code).where(eligible, dependency_ready)
         .order_by(LeadDeliveryJob.next_attempt_at, LeadDeliveryJob.created_at, LeadDeliveryJob.id)
         .with_for_update(skip_locked=True).limit(1)).mappings().one_or_none()
     if previous is None or _stopping(stop_event):
@@ -245,7 +285,8 @@ def claim_next_job(db: Session, now: datetime | None = None, *, stop_event=None)
         return None
     db.commit()
     return Claim(row_id, token, previous["status"], previous["attempt_count"],
-                 previous["first_attempt_at"], previous["last_attempt_at"], previous["safe_to_retry"])
+                 previous["first_attempt_at"], previous["last_attempt_at"],
+                 previous["safe_to_retry"], previous["error_code"])
 
 
 def release_unsent_claim(db: Session, claim: Claim):
@@ -260,45 +301,41 @@ def release_unsent_claim(db: Session, claim: Claim):
     return changed.rowcount == 1
 
 
-def _resend_window_open(job, now):
-    first = _aware(job.first_attempt_at)
-    return first is not None and now < first + RESEND_SAFE_WINDOW
-
-
-def _retry(job, now, code, *, uncertain=False, retry_after=0):
+def _hold_failure(job, now, code, *, uncertain=False, retry_after=0):
+    """Record an outcome; elapsed time alone never schedules another request."""
     uncertain = uncertain or bool(job.outcome_uncertain)
-    if uncertain and (job.provider != "resend" or not _resend_window_open(job, now)):
+    if uncertain:
         return Outcome("needs_review", code, uncertain=True)
-    if job.attempt_count >= MAX_ATTEMPTS:
-        return Outcome("needs_review" if uncertain else "failed", code,
-                       safe_to_retry=not uncertain, uncertain=uncertain)
-    delay = max(BACKOFF_SECONDS[min(job.attempt_count - 1, len(BACKOFF_SECONDS)-1)], retry_after)
-    return Outcome("retry_wait", code, safe_to_retry=True, uncertain=uncertain,
-                   next_attempt_at=now + timedelta(seconds=delay))
+    delay = max(BACKOFF_SECONDS[max(0, min(job.attempt_count - 1, len(BACKOFF_SECONDS)-1))], retry_after)
+    next_manual_at = max(_aware(job.next_attempt_at), now + timedelta(seconds=delay))
+    return Outcome("failed", code, safe_to_retry=True, next_attempt_at=next_manual_at)
 
 
 def _rate_delay(response):
-    try:
-        return max(0, min(86400, int(response.headers.get("Retry-After", "0"))))
-    except (ValueError, TypeError):
-        return 0
+    value = response.headers.get("Retry-After")
+    # Missing, date-form, negative, oversized and malformed values are held for
+    # review, rather than silently shortening an unestablished provider delay.
+    if not isinstance(value, str) or not re.fullmatch(r"[0-9]{1,6}", value.strip()):
+        return None
+    seconds = int(value.strip())
+    return seconds if seconds <= 86400 else None
 
 
 def _provider_result(job, client: httpx.Client, now: datetime, contact_id: str | None, *, stop_event=None) -> Outcome:
+    if job.outcome_uncertain:
+        return Outcome("needs_review", "prior_provider_outcome_unknown", uncertain=True)
     body = job.payload.get("body")
     if not isinstance(body, dict):
         return Outcome("needs_review", "invalid_delivery_payload")
     if job.provider == "resend":
         if not settings.resend_api_key:
-            return Outcome("failed", "email_provider_not_configured", safe_to_retry=True)
-        if job.outcome_uncertain and not _resend_window_open(job, now):
-            return Outcome("needs_review", "email_idempotency_window_expired", uncertain=True)
+            return _hold_failure(job, now, "email_provider_not_configured")
         url = "https://api.resend.com/emails"
         headers = {"Authorization": f"Bearer {settings.resend_api_key}", "Content-Type": "application/json",
                    "Idempotency-Key": f"website-lead/{job.lead_id}/{job.step}/v1"}
     else:
         if not settings.ghl_enabled or not settings.ghl_api_key or not settings.ghl_location_id:
-            return Outcome("failed", "crm_provider_not_configured", safe_to_retry=True)
+            return _hold_failure(job, now, "crm_provider_not_configured")
         if job.payload.get("location_id") != settings.ghl_location_id:
             return Outcome("needs_review", "crm_destination_configuration_changed")
         path = {"crm_contact": "/contacts/", "crm_tags": "/contacts/{id}/tags",
@@ -315,11 +352,9 @@ def _provider_result(job, client: httpx.Client, now: datetime, contact_id: str |
     try:
         response = client.post(url, headers=headers, json=body, timeout=PROVIDER_TIMEOUT)
     except (httpx.ConnectError, httpx.ConnectTimeout, httpx.PoolTimeout):
-        return _retry(job, now, f"{job.provider}_connection_not_established")
+        return _hold_failure(job, now, f"{job.provider}_connection_not_established")
     except httpx.RequestError:
-        # Resend's exact-body idempotency contract permits this bounded retry.
-        # GHL notes/tasks/contact POSTs do not share that guarantee.
-        return _retry(job, now, f"{job.provider}_outcome_unknown", uncertain=True)
+        return _hold_failure(job, now, f"{job.provider}_outcome_unknown", uncertain=True)
     except Exception:
         return Outcome("needs_review", "provider_call_outcome_unknown", uncertain=True)
 
@@ -348,18 +383,19 @@ def _provider_result(job, client: httpx.Client, now: datetime, contact_id: str |
         return Outcome("accepted", provider_id=found if isinstance(found, str) and PROVIDER_ID.fullmatch(found) else None)
     code = f"{job.provider}_http_{response.status_code}"
     if response.status_code == 429:
-        return _retry(job, now, code, retry_after=_rate_delay(response))
+        delay = _rate_delay(response)
+        if delay is None:
+            return Outcome("needs_review", f"{job.provider}_retry_after_unverified")
+        return _hold_failure(job, now, code, retry_after=delay)
     if job.provider == "resend" and response.status_code == 409:
         name = data.get("name") if isinstance(data, dict) else None
         if name == "concurrent_idempotent_requests":
-            return _retry(job, now, "email_idempotent_request_in_progress", uncertain=True)
+            return _hold_failure(job, now, "email_idempotent_request_in_progress", uncertain=True)
         return Outcome("needs_review", "email_idempotency_conflict", uncertain=True)
     if response.status_code in SAFE_REJECTIONS:
-        if job.outcome_uncertain:
-            return Outcome("needs_review", code, uncertain=True)
-        return Outcome("failed", code, safe_to_retry=True)
+        return _hold_failure(job, now, code)
     if job.provider == "resend" and response.status_code >= 500:
-        return _retry(job, now, code, uncertain=True)
+        return _hold_failure(job, now, code, uncertain=True)
     # A server failure/timeout or unclassified response may follow a committed POST.
     return Outcome("needs_review", code, uncertain=True)
 
@@ -377,7 +413,7 @@ def _project_crm_state(db: Session, lead_id, now):
     contact = next((row for row in rows if row.step == "crm_contact"), None)
     if contact and contact.status == "accepted" and ghl._contact_id(contact.provider_id):
         lead.ghl_contact_id = contact.provider_id
-    failures = [f"{row.step}:{row.error_code}" for row in rows if row.status in ("failed", "needs_review", "retry_wait") and row.error_code]
+    failures = [f"{row.step}:{delivery_error_code(row.error_code)}" for row in rows if row.status in ("failed", "needs_review", "retry_wait") and row.error_code]
     complete = contact and contact.status == "accepted" and all(row.status in ("accepted", "skipped") for row in rows)
     lead.ghl_synced_at = now if complete else None
     lead.ghl_sync_error = "; ".join(failures)[:2000] or None
@@ -413,6 +449,17 @@ def process_claimed_job(db: Session, claim: Claim, *, client: httpx.Client | Non
         return False
     if _aware(job.lease_until) <= now:
         return finish_claim(db, claim, Outcome("needs_review", "worker_lease_expired", uncertain=True), now)
+    if job.outcome_uncertain:
+        return finish_claim(db, claim, Outcome("needs_review", "prior_provider_outcome_unknown", uncertain=True), now)
+    first_dispatch = (claim.prior_attempt_count == 0 and job.attempt_count == 1
+                      and job.safe_to_retry is False)
+    manual_dispatch = (claim.prior_attempt_count > 0 and claim.prior_safe_to_retry
+                       and manual_retry_prior_code(claim.prior_error_code) is not None
+                       and job.error_code == claim.prior_error_code
+                       and job.safe_to_retry is False
+                       and job.attempt_count == claim.prior_attempt_count + 1)
+    if claim.prior_status != "pending" or not (first_dispatch or manual_dispatch):
+        return finish_claim(db, claim, Outcome("needs_review", "manual_retry_authorization_missing"), now)
     if payload_digest(job.payload) != job.payload_sha256:
         return finish_claim(db, claim, Outcome("needs_review", "delivery_payload_changed"), now)
     if job.provider == "resend":
@@ -460,6 +507,9 @@ def run_batch(session_factory, *, max_jobs=MAX_BATCH, client: httpx.Client | Non
     processed = 0
     try:
         with session_factory() as db:
+            if unexplained_pending_retry_exists(db):
+                _heartbeat(db, utcnow(), completed=True, error="pending_retry_authorization_unknown")
+                return {"enabled": True, "processed": 0, "error_code": "pending_retry_authorization_unknown"}
             _heartbeat(db, utcnow())
             expire_stale_claims(db, utcnow())
         for _ in range(max_jobs):

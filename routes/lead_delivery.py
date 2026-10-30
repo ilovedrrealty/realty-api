@@ -14,7 +14,8 @@ from sqlalchemy.orm import Session, load_only
 from database import get_db
 from models.lead import Lead
 from models.lead_delivery import DELIVERY_STATUSES, LeadDeliveryJob
-from services.lead_delivery import MAX_ATTEMPTS, enabled
+from services.lead_delivery import (MANUAL_RETRY_PREFIX, MAX_ATTEMPTS, SAFE_ERROR_CODE,
+                                   delivery_error_code, enabled)
 from utils.permission import require_admin
 from utils.request_security import require_json_mutation
 
@@ -67,7 +68,13 @@ def _private(response):
 
 
 def _can_retry(row, now):
-    return row.status == "failed" and row.safe_to_retry and not row.outcome_uncertain and row.attempt_count < MAX_ATTEMPTS
+    due = row.next_attempt_at
+    if due is not None and due.tzinfo is None:
+        due = due.replace(tzinfo=timezone.utc)
+    return (row.status in ("failed", "retry_wait") and row.safe_to_retry
+            and not row.outcome_uncertain and 0 < row.attempt_count < MAX_ATTEMPTS
+            and due is not None and due <= now
+            and isinstance(row.error_code, str) and SAFE_ERROR_CODE.fullmatch(row.error_code) is not None)
 
 
 def _status(row, parents, now):
@@ -78,7 +85,7 @@ def _status(row, parents, now):
             "max_attempts": MAX_ATTEMPTS, "created_at": row.created_at,
             "first_attempt_at": row.first_attempt_at, "last_attempt_at": row.last_attempt_at,
             "next_attempt_at": row.next_attempt_at, "accepted_at": row.accepted_at,
-            "error_code": row.error_code, "blocked_by": blocked,
+            "error_code": delivery_error_code(row.error_code), "blocked_by": blocked,
             "outcome_uncertain": row.outcome_uncertain, "can_retry": _can_retry(row, now)}
 
 
@@ -143,19 +150,22 @@ def delivery_queue(response: Response, status: str | None = None, lead_id: UUID 
 @router.post("/admin/lead-deliveries/{job_id}/retry")
 def retry_delivery(job_id: UUID, request: RetryDeliveryRequest, response: Response,
                    user=Depends(require_admin), db: Session = Depends(get_db)):
-    """Requeue only a known rejected attempt; this HTTP request never sends."""
+    """Authorize one due, known-safe attempt; this HTTP request never sends."""
     _private(response)
     if db.scalar(select(LeadDeliveryJob.id).where(LeadDeliveryJob.id == job_id)) is None:
         raise HTTPException(status_code=404, detail="Delivery record not found")
     now = datetime.now(timezone.utc)
     changed = db.execute(update(LeadDeliveryJob).where(
-        LeadDeliveryJob.id == job_id, LeadDeliveryJob.status == "failed",
+        LeadDeliveryJob.id == job_id, LeadDeliveryJob.status.in_(("failed", "retry_wait")),
         LeadDeliveryJob.safe_to_retry.is_(True), LeadDeliveryJob.outcome_uncertain.is_(False),
-        LeadDeliveryJob.attempt_count < MAX_ATTEMPTS,
-    ).values(status="retry_wait", next_attempt_at=now, updated_at=now, safe_to_retry=True))
+        LeadDeliveryJob.attempt_count > 0, LeadDeliveryJob.attempt_count < MAX_ATTEMPTS,
+        LeadDeliveryJob.next_attempt_at <= now,
+        LeadDeliveryJob.error_code.op("~")(r"^[a-z0-9_]{1,120}$"),
+    ).values(status="pending", updated_at=now, safe_to_retry=True,
+             error_code=MANUAL_RETRY_PREFIX + LeadDeliveryJob.error_code))
     if changed.rowcount != 1:
         db.rollback()
-        raise HTTPException(status_code=409, detail="This delivery cannot be safely retried. Review its provider outcome or attempt limit.")
+        raise HTTPException(status_code=409, detail="This delivery is not eligible for one manual retry. Review its provider outcome, cooldown or attempt limit.")
     db.commit()
-    return {"id": str(job_id), "status": "retry_wait", "enabled": enabled(),
-            "note": "Queued for the enabled worker; no provider request was made by this action."}
+    return {"id": str(job_id), "status": "pending", "enabled": enabled(),
+            "note": "One attempt authorized for the enabled worker; further failures require a new manual action. This action made no provider request."}
