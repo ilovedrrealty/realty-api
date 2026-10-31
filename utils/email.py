@@ -161,6 +161,26 @@ def _lead_email_row(lead) -> str:
     )
 
 
+def send_new_user_notification(user, notify_email: str | None = None) -> None:
+    """Notify configured Admin recipients of a newly committed verified signup."""
+    recipients = parse_notification_recipients(notify_email or settings.notify_email)
+    if not recipients:
+        return
+    body = f"""
+      <h2 style="margin:0 0 16px;color:#00102e;font-size:20px;font-weight:700">New verified signup</h2>
+      <table style="border-collapse:collapse;width:100%">
+        <tr><td>Name</td><td>{escape(user.display_name)}</td></tr>
+        <tr><td>Email</td><td>{escape(user.email)}</td></tr>
+        <tr><td>Role</td><td>{escape(user.role)}</td></tr>
+        <tr><td>Registered at</td><td>{escape(user.created_at.isoformat())}</td></tr>
+      </table>
+      <p style="margin:24px 0">
+        <a href="https://app.ilovedrrealty.com/users?workspace=admin">View users in Admin</a>
+      </p>
+    """
+    _send(recipients, "New verified signup — I Love DR Realty", _email_wrap("New verified signup", body))
+
+
 def send_lead_notification(lead, property_info: dict | None = None, notify_email: str | None = None) -> None:
     email = notify_email or settings.notify_email
     if not email:
