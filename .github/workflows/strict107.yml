@@ -1,11 +1,11 @@
-# V4 DIAGNOSTIC SOURCE ONLY: no new-branch push or run is authorized here.
+# V5 ENVIRONMENT RECONCILIATION SOURCE ONLY: no push or run authorized here.
 # Official index/config pins are bound to reviewed registry-digest-proof.json.
-name: Strict 107 isolated diagnostic source rehearsal
+name: Strict 107 reconciled environment rehearsal
 
 on:
   push:
     branches:
-      - codex-ci-strict107-diag-20261101
+      - codex-ci-strict107-reconciled-20261101
 
 permissions:
   contents: read
@@ -19,7 +19,7 @@ jobs:
     if: >-
       github.event_name == 'push' &&
       github.repository == 'ilovedrrealty/realty-api' &&
-      github.ref == 'refs/heads/codex-ci-strict107-diag-20261101' &&
+      github.ref == 'refs/heads/codex-ci-strict107-reconciled-20261101' &&
       github.event.created == true &&
       github.event.before == '0000000000000000000000000000000000000000' &&
       github.event.deleted == false && github.event.forced == false &&
@@ -46,7 +46,7 @@ jobs:
         run: |
           set -euo pipefail
           [[ "$GITHUB_REPOSITORY" == ilovedrrealty/realty-api ]]
-          [[ "$GITHUB_EVENT_NAME" == push && "$GITHUB_REF" == refs/heads/codex-ci-strict107-diag-20261101 ]]
+          [[ "$GITHUB_EVENT_NAME" == push && "$GITHUB_REF" == refs/heads/codex-ci-strict107-reconciled-20261101 ]]
           [[ "$PUSH_CREATED" == true && "$PUSH_DELETED" == false && "$PUSH_FORCED" == false ]]
           [[ "$PUSH_BEFORE" == 0000000000000000000000000000000000000000 ]]
           [[ "$GITHUB_RUN_ATTEMPT" == 1 ]]
