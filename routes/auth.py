@@ -14,11 +14,12 @@ from database import get_db
 from models.user import User
 from models.pending_user import PendingUser
 from models.lead import Lead
+from models.site_settings import SiteSettings
 from schemas.auth import RegisterRequest, RegisterResponse, LoginRequest, VerifyRequest, ResendCodeRequest, TokenResponse, GoogleAuthRequest, UpdateProfileRequest, ChangePasswordRequest, SetPasswordRequest, ForgotPasswordRequest, ResetPasswordRequest
 from utils.security import hash_password, verify_password
 from utils.jwt import create_access_token, TOKEN_EXPIRE_HOURS
 from utils.verification import generate_verification_code
-from utils.email import send_verification_email, send_password_reset_email, send_password_changed_email, CODE_EXPIRE_MINUTES
+from utils.email import send_verification_email, send_password_reset_email, send_password_changed_email, send_new_user_notification, CODE_EXPIRE_MINUTES
 from utils.auth import get_current_user
 from utils.limiter import limiter
 from utils.storage import upload_avatar
@@ -29,6 +30,18 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 PENDING_USER_TTL_HOURS = 48
 RESET_TOKEN_EXPIRE_HOURS = 1
+
+
+def _notify_verified_signup(db: Session, user: User) -> None:
+    """One best-effort alert after this request commits a brand-new account."""
+    try:
+        row = db.query(SiteSettings).filter(SiteSettings.id == 1).first()
+        notify_email = (row.data or {}).get("notify_email") if row else None
+        send_new_user_notification(user, notify_email=notify_email)
+    except Exception:
+        # A committed signup remains successful. Do not log contact data or
+        # provider exception text, and never retry an uncertain send here.
+        logger.error("verified_signup_notification_failed")
 
 
 def _set_auth_cookie(response: Response, token: str) -> None:
@@ -129,6 +142,7 @@ def verify_email(request: Request, body: VerifyRequest, response: Response, db: 
     db.delete(pending)
     db.commit()
     db.refresh(user)
+    _notify_verified_signup(db, user)
 
     token = create_access_token(user)
     _set_auth_cookie(response, token)
@@ -350,6 +364,7 @@ def google_auth(body: GoogleAuthRequest, response: Response, db: Session = Depen
             db.add(user)
             db.commit()
             db.refresh(user)
+            _notify_verified_signup(db, user)
     elif picture and not user.avatar_url:
         user.avatar_url = picture
         db.commit()
