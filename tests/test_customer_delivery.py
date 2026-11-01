@@ -368,7 +368,7 @@ class CustomerDeliveryTests(unittest.TestCase):
         self.assertEqual(accepted.attempt_count, 2)
 
     def test_legacy_lead_admin_views_exclude_signups_and_generic_metadata_has_no_payload_or_contact(self):
-        self.verify()
+        self.assertEqual(self.verify().status_code, 200)
         user_id, jobs = self.user_and_jobs()
         self.assertEqual(self.client.get("/admin/lead-deliveries", headers=self.admin_headers).json()["total"], 0)
         self.assertEqual(self.client.get("/admin/leads/delivery-summary", headers=self.admin_headers).json()["total_jobs"], 0)
@@ -378,6 +378,10 @@ class CustomerDeliveryTests(unittest.TestCase):
         self.assertEqual(result.json()["total"], 5)
         for private in ("payload", "html", "text", "new@example.com", "Synthetic New Buyer", str(user_id), "owner1@example.com"):
             self.assertNotIn(private, result.text)
+        # Verification signed this client in as a buyer; missing an Admin
+        # header is not an anonymous request while that cookie remains.
+        self.assertEqual(self.client.get("/admin/communications").status_code, 403)
+        self.client.cookies.clear()
         self.assertEqual(self.client.get("/admin/communications").status_code, 401)
         self.assertEqual(self.client.post(f"/admin/lead-deliveries/{jobs['customer_email'].id}/retry", json={}, headers=self.admin_headers).status_code, 404)
 

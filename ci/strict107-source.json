@@ -4,8 +4,8 @@
   "derived_from_reviewed_working_manifest_sha256": "66ca11a10c5d68cbf56cc62abafa5704e406b6fe8f870e95c4c964745a2dbedf",
   "baseline_worktree_head_metadata": "2751d36f3a480334d8f28fd86a53162043b858d1",
   "candidate_commit": "ROOT_REVIEWED_EXACT_INITIAL_BRANCH_PUSH_COMMIT_NOT_YET_CREATED",
-  "proposed_ci_branch": "refs/heads/codex-ci-strict107-20261101",
-  "activation_state": "REFUSE_UNTIL_REAL_IMAGE_PINS_SOURCE_REVIEW_COST_AND_ROOT_EMPTY_REF_LEASE_APPROVAL",
+  "proposed_ci_branch": "refs/heads/codex-ci-strict107-fixtures-20261101",
+  "activation_state": "REFUSE_UNTIL_FIXTURE_REVIEWS_EXACT190_SOURCE_REVIEW_AND_ROOT_NEW_EMPTY_REF_LEASE_APPROVAL",
   "v3_source_renewal": {
     "preserved_v2_manifest_sha256": "8450964ebbb307c772c20e551d697ab9f3c41be4f2eceeabe5e00ad7aee9ff59",
     "changed_application_path": "models/lead_delivery.py",
@@ -909,9 +909,9 @@
       "binary_nul_detected": false
     },
     "tests/test_customer_delivery.py": {
-      "sha256": "4a8a8c047b280e5b82ad9d38628fd52b1f4ac985cd4b92870fbe0285da4690a5",
-      "git_blob_oid": "4eed742b3bc691ee291c41dc017c11ad53d92416",
-      "bytes": 25579,
+      "sha256": "de35acabebdf9e19d0711ab1730b2700e7da4b4f7b8d606908e26a98b0146be0",
+      "git_blob_oid": "c5fc15ef7f595416b512dd65069f635833e423a7",
+      "bytes": 25880,
       "binary_nul_detected": false
     },
     "tests/test_customer_messages.py": {
@@ -921,9 +921,9 @@
       "binary_nul_detected": false
     },
     "tests/test_lead_delivery.py": {
-      "sha256": "8bc2a96ce14ec4c40bddd251818ce5dcded3ea3525d2afbcd65fafe702b89651",
-      "git_blob_oid": "f3b1398e121f51a6164d43447cf1a957b65d640d",
-      "bytes": 67858,
+      "sha256": "3a1b288cc6f9b7bc72e510d8a8a5e1757bdc8b867a6f0b0b39893058869dcc6e",
+      "git_blob_oid": "e2dba072352ba61a6c66fa5f2256d81df44a3681",
+      "bytes": 68138,
       "binary_nul_detected": false
     },
     "tests/test_lead_tracking.py": {
@@ -1150,5 +1150,57 @@
     }
   },
   "bootstrap_and_full_migration_chain_proven": false,
-  "author_runtime_execution": false
+  "author_runtime_execution": false,
+  "fixture_v6_renewal": {
+    "base_manifest_sha256": "8c04962d996355412505684fc1229be032b9c269cff3ce792a0c0a46ab804f27",
+    "changed_entries": {
+      "tests/test_customer_delivery.py": {
+        "old": {
+          "sha256": "4a8a8c047b280e5b82ad9d38628fd52b1f4ac985cd4b92870fbe0285da4690a5",
+          "git_blob_oid": "4eed742b3bc691ee291c41dc017c11ad53d92416",
+          "bytes": 25579,
+          "binary_nul_detected": false
+        },
+        "new": {
+          "sha256": "de35acabebdf9e19d0711ab1730b2700e7da4b4f7b8d606908e26a98b0146be0",
+          "git_blob_oid": "c5fc15ef7f595416b512dd65069f635833e423a7",
+          "bytes": 25880,
+          "binary_nul_detected": false
+        },
+        "working_raw_sha256": "de35acabebdf9e19d0711ab1730b2700e7da4b4f7b8d606908e26a98b0146be0"
+      },
+      "tests/test_lead_delivery.py": {
+        "old": {
+          "sha256": "8bc2a96ce14ec4c40bddd251818ce5dcded3ea3525d2afbcd65fafe702b89651",
+          "git_blob_oid": "f3b1398e121f51a6164d43447cf1a957b65d640d",
+          "bytes": 67858,
+          "binary_nul_detected": false
+        },
+        "new": {
+          "sha256": "3a1b288cc6f9b7bc72e510d8a8a5e1757bdc8b867a6f0b0b39893058869dcc6e",
+          "git_blob_oid": "e2dba072352ba61a6c66fa5f2256d81df44a3681",
+          "bytes": 68138,
+          "binary_nul_detected": false
+        },
+        "working_raw_sha256": "1de96b53e7c421b40034873a0791adef85f95dd0c59b697b174f2d6b42c986f9"
+      }
+    },
+    "other_application_entries_unchanged": 184,
+    "historical_v3_worker_renewal_unchanged": true,
+    "customer_fixture": "Assert successful verification; existing Buyer cookie must receive403, then clear cookie before requiring anonymous401. Existing privacy/metadata assertions retained.",
+    "lead_fixture": "Pin synthetic claim/dispatch utcnow to one instant; retain exact86400-second Retry-After assertion. No production service/clock change.",
+    "actual_prior_failed_run": {
+      "run_id": "41360610884",
+      "commit": "dea171f1687722a67af766c294a1b9d4bce40f49",
+      "tests_run": 107,
+      "passed": 105,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0,
+      "accepted": false
+    },
+    "historical_failure_not_rebound": true,
+    "new_execution_or_pass_claim": false,
+    "independent_reviews_and_root_gates_pending": true
+  }
 }

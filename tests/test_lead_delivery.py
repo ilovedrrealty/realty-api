@@ -783,7 +783,12 @@ class LeadDeliveryTests(unittest.TestCase):
     def test_rate_limit_manual_approval_never_shortens_recorded_cooldown(self):
         lead_id = self.submit()
         job_id = self.isolate_step(lead_id, "email_1")
-        with self.transport(lambda _: httpx.Response(429, headers={"Retry-After": "86400"}, json={})) as client:
+        # Claim and dispatch read the clock independently. Bind this synthetic
+        # dispatch to one instant so its exact-duration assertion is stable.
+        dispatch_time = service.utcnow()
+        with patch.object(service, "utcnow", return_value=dispatch_time), self.transport(
+            lambda _: httpx.Response(429, headers={"Retry-After": "86400"}, json={})
+        ) as client:
             service.run_batch(self.factory, client=client)
         row = self.jobs(lead_id)["email_1"]
         self.assertEqual((row.next_attempt_at-row.last_attempt_at).total_seconds(), 86400)
