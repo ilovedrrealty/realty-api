@@ -1,11 +1,11 @@
-# V3 SOURCE CANDIDATE ONLY: no push, Actions activation or run is authorized.
+# V4 DIAGNOSTIC SOURCE ONLY: no new-branch push or run is authorized here.
 # Official index/config pins are bound to reviewed registry-digest-proof.json.
-name: Strict 107 isolated source rehearsal
+name: Strict 107 isolated diagnostic source rehearsal
 
 on:
   push:
     branches:
-      - codex-ci-strict107-20261101
+      - codex-ci-strict107-diag-20261101
 
 permissions:
   contents: read
@@ -19,7 +19,7 @@ jobs:
     if: >-
       github.event_name == 'push' &&
       github.repository == 'ilovedrrealty/realty-api' &&
-      github.ref == 'refs/heads/codex-ci-strict107-20261101' &&
+      github.ref == 'refs/heads/codex-ci-strict107-diag-20261101' &&
       github.event.created == true &&
       github.event.before == '0000000000000000000000000000000000000000' &&
       github.event.deleted == false && github.event.forced == false &&
@@ -46,7 +46,7 @@ jobs:
         run: |
           set -euo pipefail
           [[ "$GITHUB_REPOSITORY" == ilovedrrealty/realty-api ]]
-          [[ "$GITHUB_EVENT_NAME" == push && "$GITHUB_REF" == refs/heads/codex-ci-strict107-20261101 ]]
+          [[ "$GITHUB_EVENT_NAME" == push && "$GITHUB_REF" == refs/heads/codex-ci-strict107-diag-20261101 ]]
           [[ "$PUSH_CREATED" == true && "$PUSH_DELETED" == false && "$PUSH_FORCED" == false ]]
           [[ "$PUSH_BEFORE" == 0000000000000000000000000000000000000000 ]]
           [[ "$GITHUB_RUN_ATTEMPT" == 1 ]]
@@ -234,6 +234,7 @@ jobs:
             --mount "type=bind,src=$ARTIFACTS,dst=/artifacts" \
             --tmpfs /scratch:rw,noexec,nosuid,nodev,size=128m,mode=1777 \
             --env HOME=/scratch --env TMPDIR=/scratch --workdir /scratch \
+            --env "GITHUB_RUN_ID=$GITHUB_RUN_ID" --env "GITHUB_RUN_ATTEMPT=$GITHUB_RUN_ATTEMPT" \
             "$IMAGE_ID" /usr/local/bin/python -I -S -B /application/ci/strict107.py \
             --repo /application --artifacts /artifacts --expected-commit "$CANDIDATE_COMMIT" 2>/dev/null)"
           owned_container "$TEST_ID"
@@ -244,15 +245,53 @@ jobs:
           set -e
           CONTAINER_EXIT="$(timeout --kill-after=5s 15s docker inspect --format '{{.State.ExitCode}}' "$TEST_ID" 2>/dev/null)"
           CONTAINER_RUNNING="$(timeout --kill-after=5s 15s docker inspect --format '{{.State.Running}}' "$TEST_ID" 2>/dev/null)"
+          CONTAINER_OOM="$(timeout --kill-after=5s 15s docker inspect --format '{{.State.OOMKilled}}' "$TEST_ID" 2>/dev/null)"
           [[ "$CONTAINER_EXIT" =~ ^[0-9]+$ && "$CONTAINER_RUNNING" =~ ^(true|false)$ ]]
+          [[ "$CONTAINER_OOM" =~ ^(true|false)$ ]]
+          printf 'STRICT107_NATIVE_OBSERVATION commit=%s run=%s attempt=1 client_exit=%s container_exit=%s running=%s oom_killed=%s\n' "$CANDIDATE_COMMIT" "$GITHUB_RUN_ID" "$test_exit" "$CONTAINER_EXIT" "$CONTAINER_RUNNING" "$CONTAINER_OOM"
 
           # No artifact/cache/snapshot service. Emit only the two validated
           # bounded metadata reports, including honest FAIL reports, to logs.
           timeout --kill-after=2s 15s python3 -I -S -B - "$ARTIFACTS" "$test_exit" "$CONTAINER_EXIT" "$CANDIDATE_COMMIT" "$GITHUB_RUN_ID" <<'PY'
-          import hashlib, json, pathlib, re, sys
+          import hashlib, json, os, pathlib, re, sys
           root = pathlib.Path(sys.argv[1])
           allowed = {'strict107-result.json', 'strict107-linux-inventory.json'}
-          if {p.name for p in root.iterdir()} != allowed:
+          observed = {p.name for p in root.iterdir()}
+          diagnostic_name = 'strict107-entry-diagnostic.json'
+          diagnostic_seen = diagnostic_name in observed
+          if diagnostic_seen:
+              path = root / diagnostic_name
+              if path.is_symlink() or not path.is_file() or not 0 < path.stat().st_size <= 4096:
+                  raise SystemExit('STRICT107_DIAGNOSTIC_BOUND_REQUIRED_NO_ACCEPTANCE')
+              try:
+                  diagnostic = json.loads(path.read_bytes())
+              except Exception:
+                  raise SystemExit('STRICT107_DIAGNOSTIC_JSON_REQUIRED_NO_ACCEPTANCE')
+              check_diag = lambda value: value or sys.exit('STRICT107_DIAGNOSTIC_SCHEMA_REQUIRED_NO_ACCEPTANCE')
+              diagnostic_keys = {'schema_version','status','source_commit','source_manifest_sha256','runner_sha256','ci_run_id','ci_run_attempt','stage','code','exception_class','native_exit','distribution_name','record_path_sha256','record_reason'}
+              stages = {'ENTRY_ARGS','BOOTSTRAP_SITES','MANIFEST_READ','PARENT_PATHS','PARENT_MEMORY','GIT_SOURCE','PILLOW_CHECK','DISTRIBUTION_RECORDS','REQUIREMENTS_CHECK','PG_IDENTITY','SCHEMA_PRECHECK','CHILD_MEMORY','CHILD_EXECUTION','CHILD_RESULT','SOURCE_RECHECK','REPORT_WRITE'}
+              codes = {'UNCLASSIFIED_ENTRY_EXCEPTION','LINUX_PYTHON311_I_S_B_REQUIRED','FIXED_IMAGE_SITE_PACKAGES_REQUIRED','SOURCE_MANIFEST_REQUIRED','EXACT_186_SOURCE_107_SCOPE_REQUIRED','FIXED_NEW_CI_PATHS_REQUIRED','INITIAL_MEMORY_BELOW_600_MIB','EXPLICIT_EXACT_CANDIDATE_COMMIT_REQUIRED','REGULAR_GIT_BLOBS_ONLY','ONLY_REVIEWED_SOURCE_AND_FOUR_CI_FILES','ACTUAL_GIT_BLOB_LF_IDENTITY_REQUIRED','CLEAN_EXACT_CANDIDATE_CHECKOUT_REQUIRED','REGULAR_IN_REPOSITORY_SOURCE_REQUIRED','EXACT_LF_WORKING_SOURCE_REQUIRED','EXACT_PILLOW104_WEBP_REQUIRED','INSTALLED_DISTRIBUTION_FILE_INVENTORY_REQUIRED','REGULAR_IMAGE_DEPENDENCY_FILE_REQUIRED','UNIQUE_INSTALLED_DISTRIBUTIONS_REQUIRED','PRODUCTION_REQUIREMENT_VERSION_MISMATCH','LINUX_AVAILABLE_MEMORY_REQUIRED','CGROUP_V2_MEMORY_ACCOUNTING_REQUIRED','OWNED_NAMESPACE_EXACT_PG17_IDENTITY_REQUIRED','OLD_SYNTHETIC_SCHEMAS_REFUSED','PRE_CHILD_MEMORY_BELOW_600_MIB','BOUNDED_CHILD_AGGREGATE_REQUIRED','CHILD_300_SECOND_DEADLINE','AVAILABLE_MEMORY_BELOW_320_MIB','CHILD_OUTPUT_BOUND'}
+              classes = {'ValueError','OSError','FileNotFoundError','PermissionError','TimeoutExpired','CalledProcessError','ImportError','ModuleNotFoundError','RuntimeError','KeyError','TypeError','UnicodeDecodeError','JSONDecodeError','AttributeError','Exception'}
+              check_diag(isinstance(diagnostic, dict) and set(diagnostic) == diagnostic_keys)
+              check_diag(diagnostic['schema_version'] == 1 and diagnostic['status'] == 'ENTRY_FAILURE_DIAGNOSTIC_ONLY_NO_ACCEPTANCE')
+              check_diag(diagnostic['source_commit'] == sys.argv[4] and diagnostic['ci_run_id'] == sys.argv[5] and diagnostic['ci_run_attempt'] == '1')
+              runner_path = pathlib.Path(os.environ['GITHUB_WORKSPACE'])/'ci/strict107.py'
+              check_diag(runner_path.is_file() and not runner_path.is_symlink() and diagnostic['runner_sha256'] == hashlib.sha256(runner_path.read_bytes()).hexdigest())
+              check_diag(diagnostic['source_manifest_sha256'] is None or diagnostic['source_manifest_sha256'] == '8c04962d996355412505684fc1229be032b9c269cff3ce792a0c0a46ab804f27')
+              check_diag(diagnostic['stage'] in stages and diagnostic['code'] in codes and diagnostic['exception_class'] in classes)
+              check_diag(diagnostic['native_exit'] is None or type(diagnostic['native_exit']) is int and -255 <= diagnostic['native_exit'] <= 255)
+              check_diag(diagnostic['distribution_name'] is None or isinstance(diagnostic['distribution_name'], str) and re.fullmatch(r'[A-Za-z0-9_.-]{1,100}', diagnostic['distribution_name']))
+              check_diag(diagnostic['record_path_sha256'] is None or isinstance(diagnostic['record_path_sha256'], str) and re.fullmatch(r'[0-9a-f]{64}', diagnostic['record_path_sha256']))
+              check_diag((diagnostic['record_reason'] is None and diagnostic['record_path_sha256'] is None) or diagnostic['record_reason'] == 'NOT_REGULAR_OR_SYMLINK_OR_OUTSIDE_PREFIX' and diagnostic['record_path_sha256'] is not None)
+              payload = (json.dumps(diagnostic, sort_keys=True, indent=2, allow_nan=False)+'\n').encode('ascii')
+              check_diag(len(payload) <= 4096)
+              digest = hashlib.sha256(payload).hexdigest()
+              marker = f'file={diagnostic_name} commit={sys.argv[4]} run={sys.argv[5]} attempt=1 sha256={digest} bytes={len(payload)}'
+              print('STRICT107_FAILURE_DIAGNOSTIC_BEGIN '+marker)
+              sys.stdout.write(payload.decode('ascii'))
+              print('STRICT107_FAILURE_DIAGNOSTIC_END '+marker)
+              raise SystemExit('STRICT107_FAILURE_DIAGNOSTIC_CANNOT_SATISFY_ACCEPTANCE')
+          if observed != allowed:
               raise SystemExit('STRICT107_AGGREGATE_ALLOWLIST_REQUIRED')
           reports = {}
           for name in allowed:

@@ -38,6 +38,69 @@ TARGETS = (
 )
 OPERATIONAL_PATHS = ('ci/strict107.py', 'ci/strict107-source.json',
                      'ci/strict107.Dockerfile', '.github/workflows/strict107.yml')
+DIAGNOSTIC = ARTIFACTS/'strict107-entry-diagnostic.json'
+DIAGNOSTIC_STAGES = frozenset(('ENTRY_ARGS', 'BOOTSTRAP_SITES', 'MANIFEST_READ',
+    'PARENT_PATHS', 'PARENT_MEMORY', 'GIT_SOURCE', 'PILLOW_CHECK', 'DISTRIBUTION_RECORDS',
+    'REQUIREMENTS_CHECK', 'PG_IDENTITY', 'SCHEMA_PRECHECK', 'CHILD_MEMORY',
+    'CHILD_EXECUTION', 'CHILD_RESULT', 'SOURCE_RECHECK', 'REPORT_WRITE'))
+DIAGNOSTIC_CODES = frozenset(('LINUX_PYTHON311_I_S_B_REQUIRED', 'FIXED_IMAGE_SITE_PACKAGES_REQUIRED',
+    'SOURCE_MANIFEST_REQUIRED', 'EXACT_186_SOURCE_107_SCOPE_REQUIRED', 'FIXED_NEW_CI_PATHS_REQUIRED',
+    'INITIAL_MEMORY_BELOW_600_MIB', 'EXPLICIT_EXACT_CANDIDATE_COMMIT_REQUIRED', 'REGULAR_GIT_BLOBS_ONLY',
+    'ONLY_REVIEWED_SOURCE_AND_FOUR_CI_FILES', 'ACTUAL_GIT_BLOB_LF_IDENTITY_REQUIRED',
+    'CLEAN_EXACT_CANDIDATE_CHECKOUT_REQUIRED', 'REGULAR_IN_REPOSITORY_SOURCE_REQUIRED',
+    'EXACT_LF_WORKING_SOURCE_REQUIRED', 'EXACT_PILLOW104_WEBP_REQUIRED',
+    'INSTALLED_DISTRIBUTION_FILE_INVENTORY_REQUIRED', 'REGULAR_IMAGE_DEPENDENCY_FILE_REQUIRED',
+    'UNIQUE_INSTALLED_DISTRIBUTIONS_REQUIRED', 'PRODUCTION_REQUIREMENT_VERSION_MISMATCH',
+    'LINUX_AVAILABLE_MEMORY_REQUIRED', 'CGROUP_V2_MEMORY_ACCOUNTING_REQUIRED',
+    'OWNED_NAMESPACE_EXACT_PG17_IDENTITY_REQUIRED', 'OLD_SYNTHETIC_SCHEMAS_REFUSED',
+    'PRE_CHILD_MEMORY_BELOW_600_MIB', 'BOUNDED_CHILD_AGGREGATE_REQUIRED',
+    'CHILD_300_SECOND_DEADLINE', 'AVAILABLE_MEMORY_BELOW_320_MIB', 'CHILD_OUTPUT_BOUND'))
+DIAGNOSTIC_CLASSES = frozenset(('ValueError', 'OSError', 'FileNotFoundError', 'PermissionError',
+    'TimeoutExpired', 'CalledProcessError', 'ImportError', 'ModuleNotFoundError', 'RuntimeError',
+    'KeyError', 'TypeError', 'UnicodeDecodeError', 'JSONDecodeError', 'AttributeError', 'Exception'))
+diagnostic_stage = 'ENTRY_ARGS'
+diagnostic_commit = diagnostic_manifest = diagnostic_native_exit = None
+diagnostic_child = diagnostic_written = False
+diagnostic_package = diagnostic_record_sha256 = diagnostic_record_reason = None
+
+
+def enter_stage(value):
+    global diagnostic_stage, diagnostic_package, diagnostic_record_sha256, diagnostic_record_reason
+    if value not in DIAGNOSTIC_STAGES:
+        raise ValueError('DIAGNOSTIC_STAGE_REFUSED')
+    diagnostic_stage = value
+    diagnostic_package = diagnostic_record_sha256 = diagnostic_record_reason = None
+
+
+def failure_diagnostic(error):
+    """Failure-only fixed metadata; never an inventory/result or acceptance."""
+    global diagnostic_written
+    if diagnostic_child or diagnostic_written:
+        return
+    diagnostic_written = True
+    try:
+        if not ARTIFACTS.is_dir() or ARTIFACTS.is_symlink() or ARTIFACTS.resolve() != ARTIFACTS:
+            return
+        value = error.args[0] if type(error) is ValueError and error.args else None
+        code = value if isinstance(value, str) and value in DIAGNOSTIC_CODES else 'UNCLASSIFIED_ENTRY_EXCEPTION'
+        name = type(error).__name__
+        name = name if name in DIAGNOSTIC_CLASSES else 'Exception'
+        native_exit = error.returncode if isinstance(error, subprocess.CalledProcessError) else diagnostic_native_exit
+        native_exit = native_exit if type(native_exit) is int and -255 <= native_exit <= 255 else None
+        run, attempt = os.environ.get('GITHUB_RUN_ID', ''), os.environ.get('GITHUB_RUN_ATTEMPT', '')
+        report = {'schema_version': 1, 'status': 'ENTRY_FAILURE_DIAGNOSTIC_ONLY_NO_ACCEPTANCE',
+            'source_commit': diagnostic_commit, 'source_manifest_sha256': diagnostic_manifest,
+            'runner_sha256': file_sha(SELF), 'ci_run_id': run if re.fullmatch(r'[1-9][0-9]{0,19}', run) else None,
+            'ci_run_attempt': attempt if attempt == '1' else None,
+            'stage': diagnostic_stage, 'code': code, 'exception_class': name, 'native_exit': native_exit,
+            'distribution_name': diagnostic_package, 'record_path_sha256': diagnostic_record_sha256,
+            'record_reason': diagnostic_record_reason}
+        if len(canonical(report)) <= 4096:
+            write_json(DIAGNOSTIC, report)
+    except Exception:
+        # An unusable output path remains unknown; no raw exception/traceback,
+        # overwrite, fallback inventory or repeated diagnostic write.
+        return
 
 
 def need(ok, code):
@@ -125,23 +188,32 @@ def git_source(manifest, commit):
 
 
 def linux_inventory(manifest_pin, commit, operational):
+    global diagnostic_package, diagnostic_record_sha256, diagnostic_record_reason
+    enter_stage('PILLOW_CHECK')
     import PIL
     from PIL import _imaging, features
     need(PIL.__version__ == '10.4.0' and features.check('webp'), 'EXACT_PILLOW104_WEBP_REQUIRED')
     packages = []
     for distribution in importlib.metadata.distributions():
+        enter_stage('DISTRIBUTION_RECORDS')
+        package = distribution.metadata.get('Name', '')
+        diagnostic_package = package if isinstance(package, str) and re.fullmatch(r'[A-Za-z0-9_.-]{1,100}', package) else None
         records = []
         need(distribution.files is not None, 'INSTALLED_DISTRIBUTION_FILE_INVENTORY_REQUIRED')
         for member in distribution.files:
             path = Path(distribution.locate_file(member))
-            need(path.is_file() and not path.is_symlink() and path.resolve().is_relative_to(Path('/usr/local')),
-                 'REGULAR_IMAGE_DEPENDENCY_FILE_REQUIRED')
+            regular = path.is_file() and not path.is_symlink() and path.resolve().is_relative_to(Path('/usr/local'))
+            if not regular:
+                diagnostic_record_sha256 = sha(str(member).encode('utf-8'))
+                diagnostic_record_reason = 'NOT_REGULAR_OR_SYMLINK_OR_OUTSIDE_PREFIX'
+            need(regular, 'REGULAR_IMAGE_DEPENDENCY_FILE_REQUIRED')
             records.append((str(member), path.stat().st_size, file_sha(path)))
         packages.append({'name': distribution.metadata['Name'], 'version': distribution.version,
                          'file_count': len(records), 'files_sha256': sha(canonical(sorted(records)))})
     packages.sort(key=lambda row: row['name'].lower())
     installed = {re.sub(r'[-_.]+', '-', row['name']).lower(): row['version'] for row in packages}
     need(len(installed) == len(packages), 'UNIQUE_INSTALLED_DISTRIBUTIONS_REQUIRED')
+    enter_stage('REQUIREMENTS_CHECK')
     for line in (REPO/'requirements.txt').read_text().splitlines():
         if not line.strip():
             continue
@@ -307,9 +379,13 @@ def run_child(arguments, cwd):
 
 
 def parent(args, manifest, manifest_pin):
+    global diagnostic_native_exit
+    enter_stage('PARENT_PATHS')
     need(REPO == args.repo and ARTIFACTS == args.artifacts and SCRATCH.is_dir() and ARTIFACTS.is_dir()
          and not any(ARTIFACTS.iterdir()), 'FIXED_NEW_CI_PATHS_REQUIRED')
+    enter_stage('PARENT_MEMORY')
     need(available_mib() >= 600, 'INITIAL_MEMORY_BELOW_600_MIB')
+    enter_stage('GIT_SOURCE')
     operational = git_source(manifest, args.expected_commit)
     inventory = linux_inventory(manifest_pin, args.expected_commit, operational)
     nonce = uuid4().hex
@@ -320,20 +396,26 @@ def parent(args, manifest, manifest_pin):
         'bootstrap_and_full_migration_chain_proven': False, 'real_provider_or_production_actions': False}
     tests_attempted = False
     try:
+        enter_stage('PG_IDENTITY')
         connection, version = local_connection()
         try:
+            enter_stage('SCHEMA_PRECHECK')
             with connection.cursor() as cursor:
                 cursor.execute("SELECT count(*) FROM pg_namespace WHERE nspname ~ '^(network_test_|customer_delivery_test_|lead_delivery_test_)[a-f0-9]{32}$'")
                 need(cursor.fetchone()[0] == 0, 'OLD_SYNTHETIC_SCHEMAS_REFUSED')
         finally:
             connection.close()
         inventory['postgres_server_version_num'] = version
+        enter_stage('CHILD_MEMORY')
         need(available_mib() >= 600, 'PRE_CHILD_MEMORY_BELOW_600_MIB')
         work = SCRATCH/('strict107-'+nonce)
         work.mkdir(exist_ok=False)
         tests_attempted = True
+        enter_stage('CHILD_EXECUTION')
         code, minimum, lengths = run_child([sys.executable, '-I', '-S', '-B', str(SELF), '--child', '--nonce', nonce,
             '--manifest-sha256', manifest_pin, '--expected-commit', args.expected_commit], work)
+        diagnostic_native_exit = code
+        enter_stage('CHILD_RESULT')
         need((work/'child-result.json').stat().st_size < 65536, 'BOUNDED_CHILD_AGGREGATE_REQUIRED')
         child_report = json.loads((work/'child-result.json').read_bytes())
         report.update(native_child_exit=code, minimum_available_mib=minimum, child_output_bytes=lengths, assertions=child_report)
@@ -346,6 +428,7 @@ def parent(args, manifest, manifest_pin):
             and child_report.get('schema_uuid_consumed') == {name: True for name, _, prefix in TARGETS if prefix}
             and child_report.get('source_unchanged') is True and child_report.get('denied_guard_events') == [])
     except Exception as error:
+        failure_diagnostic(error)
         value = error.args[0] if type(error) is ValueError and error.args else None
         report['failure_code'] = value if isinstance(value, str) and re.fullmatch(r'[A-Z0-9_]{1,90}', value) else 'CI_SETUP_OR_CHILD_FAILED'
     finally:
@@ -370,12 +453,14 @@ def parent(args, manifest, manifest_pin):
             except Exception:
                 report['cleanup_errors'].append('EXACT_OWNED_SCHEMA_CLEANUP_UNRESOLVED')
         try:
+            enter_stage('SOURCE_RECHECK')
             working_source(manifest)
             report['source_unchanged'] = True
         except Exception:
             report['cleanup_errors'].append('SOURCE_CHANGED')
         if report['tests_pass'] and report['exact_schemas_absent'] and not report['cleanup_errors']:
             report['status'] = 'PASS_107_ASSERTIONS_AND_EXACT_SCHEMA_CLEANUP_PG_CONTAINER_CLEANUP_PENDING'
+        enter_stage('REPORT_WRITE')
         write_json(ARTIFACTS/'strict107-linux-inventory.json', inventory)
         write_json(ARTIFACTS/'strict107-result.json', report)
     print(json.dumps({'status': report['status'], 'tests': report.get('assertions', {}).get('tests_run'),
@@ -384,6 +469,7 @@ def parent(args, manifest, manifest_pin):
 
 
 def main():
+    global diagnostic_commit, diagnostic_manifest, diagnostic_child
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--repo', type=Path, default=REPO)
     parser.add_argument('--artifacts', type=Path, default=ARTIFACTS)
@@ -392,14 +478,20 @@ def main():
     parser.add_argument('--nonce')
     parser.add_argument('--manifest-sha256')
     args = parser.parse_args()
+    diagnostic_commit = args.expected_commit if re.fullmatch(r'[0-9a-f]{40}', args.expected_commit or '') else None
+    diagnostic_child = args.child
+    enter_stage('BOOTSTRAP_SITES')
     bootstrap_sites()
+    enter_stage('MANIFEST_READ')
     manifest, manifest_pin = load_manifest()
+    diagnostic_manifest = manifest_pin
     return child(args, manifest, manifest_pin) if args.child else parent(args, manifest, manifest_pin)
 
 
 if __name__ == '__main__':
     try:
         raise SystemExit(main())
-    except Exception:
+    except Exception as error:
+        failure_diagnostic(error)
         print('{"status":"STRICT107_STOPPED_NO_ACCEPTANCE_CLAIM"}')
         raise SystemExit(1)
