@@ -1,0 +1,1154 @@
+{
+  "format": 1,
+  "scope": "EXACT_107_NETWORK_EMAIL_SOURCE_SNAPSHOT_NOT_MIGRATION_OR_RELEASE_ACCEPTANCE",
+  "derived_from_reviewed_working_manifest_sha256": "66ca11a10c5d68cbf56cc62abafa5704e406b6fe8f870e95c4c964745a2dbedf",
+  "baseline_worktree_head_metadata": "2751d36f3a480334d8f28fd86a53162043b858d1",
+  "candidate_commit": "ROOT_REVIEWED_EXACT_INITIAL_BRANCH_PUSH_COMMIT_NOT_YET_CREATED",
+  "proposed_ci_branch": "refs/heads/codex-ci-strict107-20261101",
+  "activation_state": "REFUSE_UNTIL_REAL_IMAGE_PINS_SOURCE_REVIEW_COST_AND_ROOT_EMPTY_REF_LEASE_APPROVAL",
+  "v3_source_renewal": {
+    "preserved_v2_manifest_sha256": "8450964ebbb307c772c20e551d697ab9f3c41be4f2eceeabe5e00ad7aee9ff59",
+    "changed_application_path": "models/lead_delivery.py",
+    "old_working_sha256": "5ec0500043e3f602d27921a86ccb2e0abb79f3d150b0d25b6917c5cdfc504b67",
+    "new_working_sha256": "5b3ceea52826dc21963af09fd6c8ba6fed495c65b8763c8d19bc485cbff057a8",
+    "reason": "Root explicitly disabled implicit autoincrement on the singleton worker id; no service/test/migration or other application source change.",
+    "other_application_entries_unchanged": 185,
+    "historical_v2_execution_or_review_not_rebound": true,
+    "runtime_or_full_migration_acceptance_provided": false
+  },
+  "normalization": "Binary files containing NUL preserved; text only CRLF-to-LF. Actual future Git blobs and working checkout must independently match both digests before tests.",
+  "expected_tests": 107,
+  "expected_classes": {
+    "PropertyNetworkRoutes": 18,
+    "PrivateImageContracts": 4,
+    "CustomerDeliveryTests": 18,
+    "LeadDeliveryTests": 52,
+    "SignupNotificationTests": 15
+  },
+  "operational_paths": [
+    "ci/strict107.py",
+    "ci/strict107-source.json",
+    "ci/strict107.Dockerfile",
+    ".github/workflows/strict107.yml"
+  ],
+  "files": {
+    ".env.example": {
+      "sha256": "fb7249b1f05f33755bc13062dc35793d1d6155ffd967f58ccaba4283dc540e3d",
+      "git_blob_oid": "21ab79c8d8f4655f8f92a22a48196fec3107a125",
+      "bytes": 4586,
+      "binary_nul_detected": false
+    },
+    ".gitignore": {
+      "sha256": "8c1da974c202f5997e00ce9d5bfb0b3280e936075b72eac7a4fb8229877e6abc",
+      "git_blob_oid": "31ad0d4369ca8d41943c4ba08efe66a549eac7f0",
+      "bytes": 319,
+      "binary_nul_detected": false
+    },
+    "alembic.ini": {
+      "sha256": "1de444e5202747246718c3f80264c8fe64eabc697267869670771edb140050fd",
+      "git_blob_oid": "807ded2d51659e78e03f0078187d54724b7658d8",
+      "bytes": 5008,
+      "binary_nul_detected": false
+    },
+    "alembic/env.py": {
+      "sha256": "f8ab44215532141f594a99e1c3ee53e46b12d9b4b2f22f16075a6de117f7c925",
+      "git_blob_oid": "74f807b9344d5de8d80223c74f7ed5fd56555bb8",
+      "bytes": 1259,
+      "binary_nul_detected": false
+    },
+    "alembic/README": {
+      "sha256": "31595cf53626af9ed16e15c44fa43183209cc163fbc3ebcb904b22ac436a8884",
+      "git_blob_oid": "98e4f9c44effe479ed38c66ba922e7bcc672916f",
+      "bytes": 38,
+      "binary_nul_detected": false
+    },
+    "alembic/script.py.mako": {
+      "sha256": "d38920781b4d31ae1c0a71bc09f41c2ade8feab9e5a087e3f30cb4bbf0c1c9d3",
+      "git_blob_oid": "11016301e749297acb67822efc7974ee53c905c6",
+      "bytes": 704,
+      "binary_nul_detected": false
+    },
+    "alembic/versions/0049637f62fa_add_paypal_email_to_users.py": {
+      "sha256": "6ac32190fa645e0d824b7fcda84664b49392db5d48f1e2585c495dfebc80bae5",
+      "git_blob_oid": "ca6527b8b26cab358c997ebd60eb41a16f2c6593",
+      "bytes": 542,
+      "binary_nul_detected": false
+    },
+    "alembic/versions/39df1ce8f562_allow_phone_only_interest_leads.py": {
+      "sha256": "1e70e027eeca68c6c2606bc5b54c84fc4db22e014e94a41590b7fa701d943770",
+      "git_blob_oid": "e3cc6c7fcac13dc7665e8664665e8e3e8faec10b",
+      "bytes": 1279,
+      "binary_nul_detected": false
+    },
+    "alembic/versions/434d4c5bb8b6_add_email_verification_columns_to_users.py": {
+      "sha256": "f2179d6a3cbc7aac7d0b0137c43a3ad4ddf489a0619b83d93024216eb56c918c",
+      "git_blob_oid": "be001ee4a71b29237e9fceedb043ce0c642505ef",
+      "bytes": 997,
+      "binary_nul_detected": false
+    },
+    "alembic/versions/4614c6845ccd_add_moderated_professional_profiles.py": {
+      "sha256": "35be6ea51c3112c1a015cc19906371cb6b24bd62f9a82ba48d4b8cdf873bee6e",
+      "git_blob_oid": "ec010ab924d4e5d46f0c5d5b0a1541a75f202a89",
+      "bytes": 3099,
+      "binary_nul_detected": false
+    },
+    "alembic/versions/49d50da0e05b_add_private_lead_tracking_and_.py": {
+      "sha256": "171731ec524cea13e19fc7c043d72927ace152686cface5f85af67aafdf0c32a",
+      "git_blob_oid": "6f29e95dc822db88d178a095b35725adb7941685",
+      "bytes": 1186,
+      "binary_nul_detected": false
+    },
+    "alembic/versions/4f1c3506e1d4_add_assigned_realtor_to_users.py": {
+      "sha256": "cf8e37b2a315a55feb228bb0538f920a9737394ec2b1097c4d72e8cea7bc55b3",
+      "git_blob_oid": "1e775fd8943e371e4db4d5d3da074ccbad5bbcb1",
+      "bytes": 895,
+      "binary_nul_detected": false
+    },
+    "alembic/versions/52b2edc810ad_private_research_workspaces.py": {
+      "sha256": "6e7869d6b55914fc6c0f19286ff8058e3438c0541058063192a79eba65d62d6b",
+      "git_blob_oid": "0844abb1e1022226e1a5bf9fec9c2d6fabb67312",
+      "bytes": 1725,
+      "binary_nul_detected": false
+    },
+    "alembic/versions/6c8499222d3a_add_payout_fee_fields_to_bookings.py": {
+      "sha256": "87875fc8264caaab949fa659710c21056c28bb4ac06142bc5510d6a9d370f538",
+      "git_blob_oid": "a073590e37ad53b99bbe99721013e5108b69b4ec",
+      "bytes": 727,
+      "binary_nul_detected": false
+    },
+    "alembic/versions/7c5858ba04a9_add_brokerage_email_phone_to_listings.py": {
+      "sha256": "a1db5131d9b0f435e52ed92127b954b048e1363324ff8f8b6c1a218fc933948c",
+      "git_blob_oid": "48d1e3e62a94078519ddd705a3bcd85f7e092278",
+      "bytes": 943,
+      "binary_nul_detected": false
+    },
+    "alembic/versions/82e1a7c4d9b0_private_lead_delivery_outbox.py": {
+      "sha256": "df7aaa7d9d885ceec65553f6adb65828f585c891af0640344d33d81c635ab7eb",
+      "git_blob_oid": "4f731954d3f1a8c49e8a263f752567b1d8d56493",
+      "bytes": 3028,
+      "binary_nul_detected": false
+    },
+    "alembic/versions/a1b2c3d4e5f6_add_deal_of_week.py": {
+      "sha256": "52fea39008cb15255b91d21e03cf843eb6e23b65f0f4cd5198dcd54014184f94",
+      "git_blob_oid": "7fde29820bd90852521c94fc5867aa01092e24cb",
+      "bytes": 2549,
+      "binary_nul_detected": false
+    },
+    "alembic/versions/a2b3c4d5e6f7_add_lat_lng_to_listings.py": {
+      "sha256": "57414d062bffd4b4a1ec26c7f808c3c033ceff2a1855707c8dff198bcc367bac",
+      "git_blob_oid": "124bfa26c20cfa4b074c9143ce80e2fb06b740a3",
+      "bytes": 734,
+      "binary_nul_detected": false
+    },
+    "alembic/versions/a3b4c5d6e7f8_add_listing_media_and_rent_fields.py": {
+      "sha256": "4b5d6f23072f4a1239629b9562ea5c232f84350e3449194b259b73dddba25499",
+      "git_blob_oid": "bbb771d3713ca07accbc8115d7731a968d68ab56",
+      "bytes": 1613,
+      "binary_nul_detected": false
+    },
+    "alembic/versions/b12d41e2c9f0_private_listing_location_review.py": {
+      "sha256": "aff05c917ec6d609945e6b34b49d7c5ae7967bf4ca5c2da3cc213c2ae0fdbd77",
+      "git_blob_oid": "4ef4c358addd2662e8b897809061345c7877e090",
+      "bytes": 2752,
+      "binary_nul_detected": false
+    },
+    "alembic/versions/b1c2d3e4f5a6_add_listing_edits_table.py": {
+      "sha256": "3fe4c1bc4a677256358ba63bd9039aa1b19220635ecec5824c1fb0f46aa88072",
+      "git_blob_oid": "e9211f77a5b2a8d0f1dcfdbe1d73939e60e9d555",
+      "bytes": 1484,
+      "binary_nul_detected": false
+    },
+    "alembic/versions/b2c3d4e5f6a7_add_deal_discount_type.py": {
+      "sha256": "39967334e33da765804c39706a96173e03255e4745be4760f31834acf1a4e8d1",
+      "git_blob_oid": "fa970b974cef6c975db1ac50c5f6906979d997fd",
+      "bytes": 2898,
+      "binary_nul_detected": false
+    },
+    "alembic/versions/b3d3d4b931c8_add_listing_fields.py": {
+      "sha256": "678e36a8e16a35c299d9bd02957a7f06139d3b2657871dff676a4b098cf1f7b8",
+      "git_blob_oid": "d10481de5ef6aae4b54f313b9a05559a32fa1633",
+      "bytes": 2426,
+      "binary_nul_detected": false
+    },
+    "alembic/versions/b813c2be2e88_add_payment_fields_to_bookings.py": {
+      "sha256": "24050982ea8f8053455d036541279059124f5510c1cef561b056ef2c13ffb142",
+      "git_blob_oid": "1dde02a2e30052f7c90321f3a4e14aec9bfa38fa",
+      "bytes": 1712,
+      "binary_nul_detected": false
+    },
+    "alembic/versions/bc364345c64b_add_owner_paypal_email_to_listings.py": {
+      "sha256": "b34f0031ec58bed546d1024722d54bc2461e4ed0ef801b453ae0fe1487479811",
+      "git_blob_oid": "ce7b78ed6d7ad5b21c137da8c5b9629f837d6561",
+      "bytes": 553,
+      "binary_nul_detected": false
+    },
+    "alembic/versions/bcf3e5feca73_add_versioned_website_content_settings.py": {
+      "sha256": "531970877e15fcd446397398c2945caa565fa3763d72515cbb8965074a39f719",
+      "git_blob_oid": "8f0d58f1d0a96d50fea3167e8e869bb7b453b4e7",
+      "bytes": 1863,
+      "binary_nul_detected": false
+    },
+    "alembic/versions/c1e5f8a2d934_add_verification_rate_limit_columns.py": {
+      "sha256": "250ad817603ae4340b4c88b8853c6f200841800f340e174643b8f18f54ad6c05",
+      "git_blob_oid": "e67151c595575197a41f73d446cbb84a67b96304",
+      "bytes": 803,
+      "binary_nul_detected": false
+    },
+    "alembic/versions/c3d4e5f6a7b8_add_google_auth.py": {
+      "sha256": "7069a0d93a811cf07dc0d36c6863fa6eb3ea01e6495150f9578a8179f23c910e",
+      "git_blob_oid": "48e29fdda8b4cf95ed42c417cff704e996f662e4",
+      "bytes": 1021,
+      "binary_nul_detected": false
+    },
+    "alembic/versions/c90e75f2a6d1_private_property_management.py": {
+      "sha256": "90b38af9ca27344f3d0ceac24e3b7598102eec1fe59a9c8d3254242c396bfb59",
+      "git_blob_oid": "e595eea2f227fd6d504f5866f6e18cce38b330d6",
+      "bytes": 2782,
+      "binary_nul_detected": false
+    },
+    "alembic/versions/d1e3f7a9b521_private_property_network.py": {
+      "sha256": "478e621df6c6d945701756f225a08300d1aebbd1b51f334f7bc578e10ced454e",
+      "git_blob_oid": "b6e81ef759250dd17337a08e8d903e624fe53601",
+      "bytes": 11323,
+      "binary_nul_detected": false
+    },
+    "alembic/versions/d4e5f6a7b8c9_add_avatar_url.py": {
+      "sha256": "543b77ef369c5c30b5d56638bbec3c9c5b17d4a93f7e76994b68f0290e6bd8d0",
+      "git_blob_oid": "92f74ffe73932fcbe9fb7269374366ee332ec896",
+      "bytes": 425,
+      "binary_nul_detected": false
+    },
+    "alembic/versions/d5e6f7a8b9c0_bathrooms_integer_to_numeric.py": {
+      "sha256": "92665ac39330a721208f70b5b2c9c694e607f8849ac63eebb12191b4416ab6fa",
+      "git_blob_oid": "becfc9b1d9dc1ddaf7a33afad440306849410c99",
+      "bytes": 1251,
+      "binary_nul_detected": false
+    },
+    "alembic/versions/e2f3a4b5c6d7_add_activity_log_table.py": {
+      "sha256": "d6012e54fcd35c7c99bef2626ffd2b1e775be16236efe350d34b784a6648e50a",
+      "git_blob_oid": "1781e38f3778190b7d3af83671a4f8501884c819",
+      "bytes": 993,
+      "binary_nul_detected": false
+    },
+    "alembic/versions/e2f4a8b0c612_signup_delivery_events.py": {
+      "sha256": "802d52f16084e1ecb0d8f875c96e74a6a79baa68f3b4bab24161ef15086ac822",
+      "git_blob_oid": "5d221217b0da10a41202dd9d24f08eab2e7082bc",
+      "bytes": 1656,
+      "binary_nul_detected": false
+    },
+    "alembic/versions/e5f6a7b8c9d0_add_user_code.py": {
+      "sha256": "281fefc3a3c3e4668bbc021efe5f3c596ac018c2088a7677e766a9893fa1e8e5",
+      "git_blob_oid": "4ace671dcae22ed01410a50c52167e00ef522337",
+      "bytes": 1928,
+      "binary_nul_detected": false
+    },
+    "alembic/versions/e5f6a7b8c9d1_add_pending_users.py": {
+      "sha256": "290dd15a4613dacf4d1fb6d880eb12c0a9d8d710315364874ab14cf9ef9f4397",
+      "git_blob_oid": "c665b45da6579e4275a2cd362ecc4fee4b84a665",
+      "bytes": 1531,
+      "binary_nul_detected": false
+    },
+    "alembic/versions/e77ca75c44ba_allow_admin_managed_professional_.py": {
+      "sha256": "91f4e131df7a2d9d700f77deac650c63a9fadf7f719567ce2bb5a24cc634afbb",
+      "git_blob_oid": "20da0402962875ae9d707f003b094e3e42e8b73a",
+      "bytes": 1147,
+      "binary_nul_detected": false
+    },
+    "alembic/versions/ed856ef1081c_add_rental_prices_colisting_pdf_calendly.py": {
+      "sha256": "87a92111b3098370a7a1122e16556615aa2ce10d6b0c74ef71b7f205616d9111",
+      "git_blob_oid": "8ce768108a32a7f76e89e2548f632994dcec0409",
+      "bytes": 1467,
+      "binary_nul_detected": false
+    },
+    "alembic/versions/f4a6b8c2d0e1_add_view_count_and_updated_at.py": {
+      "sha256": "041a5245894bdcf73f8060c59f141c6e0d1d986fe7e33bc7bbc43ee09c4a7111",
+      "git_blob_oid": "c2df1edc7bb2f22aea52e4c9b5cbf832d2b6eaa6",
+      "bytes": 837,
+      "binary_nul_detected": false
+    },
+    "alembic/versions/f7a8b9c0d1e2_add_listing_events_table.py": {
+      "sha256": "308abf2a05d874917e37819908ed58af44945996cb16eda2d4b5c4e2f92d2df1",
+      "git_blob_oid": "cae4dd63ef5c1ebe0d90ff9504f4bc23ef55cc46",
+      "bytes": 1126,
+      "binary_nul_detected": false
+    },
+    "alembic/versions/f9901a9c3ae1_guest_booking_fields.py": {
+      "sha256": "f77a927c33ae56ff36e7821e1423b4bddab76a07c8073599e7109e5d4ecf2e68",
+      "git_blob_oid": "e63545cb65e890949f5ff85cd649dc60e38145c8",
+      "bytes": 1280,
+      "binary_nul_detected": false
+    },
+    "alembic/versions/g8h9i0j1k2l3_add_leads_table.py": {
+      "sha256": "2f4e1183626c9e85fd0ec9cf1a44adcb717f76767ab5388198cf2641771740a4",
+      "git_blob_oid": "71a70e7d0c523ccc1c3fb6daff7f4d500cb64b89",
+      "bytes": 1384,
+      "binary_nul_detected": false
+    },
+    "alembic/versions/h9i0j1k2l3m4_add_lead_status_timestamps.py": {
+      "sha256": "26688af19354c87dd6adb3b9c085161028eaf9d22a423f1d3e47b19c9b27a000",
+      "git_blob_oid": "a7b8ac80e70e10265e0a1f2623790220bab088bc",
+      "bytes": 700,
+      "binary_nul_detected": false
+    },
+    "alembic/versions/i0j1k2l3m4n5_add_realtor_questionnaire_fields.py": {
+      "sha256": "324e8ccf8b9186bd10719df35ce58707a43e774156b45a00f9e28a6098de4496",
+      "git_blob_oid": "ca8a9a5c4cada55f12bcc561d7a980012381bb84",
+      "bytes": 801,
+      "binary_nul_detected": false
+    },
+    "alembic/versions/j1k2l3m4n5o6_add_ghl_columns_to_leads.py": {
+      "sha256": "bec2143ce479eaf4574d150a985e15f56152664ad351de471739bf2967cb9694",
+      "git_blob_oid": "e2bd0ed90864573dc023ab60d955400e66366b2c",
+      "bytes": 702,
+      "binary_nul_detected": false
+    },
+    "alembic/versions/k2l3m4n5o6p7_add_co_listing_columns_to_listings.py": {
+      "sha256": "fe4d8ed43322ac0a12de7ef0d0fa6d0e18020bcf96fdbaf06482ef52e8df2f42",
+      "git_blob_oid": "d2ad268930806f1698e8cff651de6373489dfa5a",
+      "bytes": 1369,
+      "binary_nul_detected": false
+    },
+    "alembic/versions/l3m4n5o6p7q8_add_settings_table.py": {
+      "sha256": "5628cac71259ba07d86409486b0458c9e50e299010b2d554cbbfc441a65ced42",
+      "git_blob_oid": "0c7cd07f91a6e1c2a9f83c79b115f376f2ad0da3",
+      "bytes": 852,
+      "binary_nul_detected": false
+    },
+    "alembic/versions/m1n2o3p4q5r6_add_deletion_request_fields.py": {
+      "sha256": "4564387f6cd2ea41f36ba7cd01d15c58c50cd0a42865488a523a42d2a363e776",
+      "git_blob_oid": "ddad372d8749a7b18ca0d713391a95102e67283f",
+      "bytes": 554,
+      "binary_nul_detected": false
+    },
+    "alembic/versions/n2o3p4q5r6s7_add_password_reset_fields.py": {
+      "sha256": "c3230f949fd815a07f6a02693a8fcfec505fc36291a6d5f10bb4fdc83ecc0544",
+      "git_blob_oid": "de160794ca94f29a4397194062770377322b9ba3",
+      "bytes": 882,
+      "binary_nul_detected": false
+    },
+    "alembic/versions/o3p4q5r6s7t8_add_share_image_url_to_listings.py": {
+      "sha256": "18751f268f69480e21c34f728fd15d979a39f701cce0b28fc06e72bf2b572271",
+      "git_blob_oid": "fa5589261900f0e5e21264144825a98ac7425a16",
+      "bytes": 435,
+      "binary_nul_detected": false
+    },
+    "alembic/versions/p4q5r6s7t8u9_add_assigned_realtor_to_listings.py": {
+      "sha256": "05f3ddbe441da1e30297393564b404bb12c746120792be1eefa54afe3f7b475f",
+      "git_blob_oid": "576ccee9fb1bb15d986003bef17e83355838b5c3",
+      "bytes": 709,
+      "binary_nul_detected": false
+    },
+    "alembic/versions/q5r6s7t8u9v0_add_source_ref_currency_to_listings.py": {
+      "sha256": "425a40a6cd9a307f7b119bebbe2177caceee7b05b5ea183f7d666f678712b678",
+      "git_blob_oid": "6a027137c9153970c1a771c6a5803a9e7d50d420",
+      "bytes": 926,
+      "binary_nul_detected": false
+    },
+    "alembic/versions/r6s7t8u9v0w1_add_bulk_import_jobs_table.py": {
+      "sha256": "3970dac11855babd69c6cd143b165500781805ff6545e88c86c5adcf9b4cca6a",
+      "git_blob_oid": "d11dca292cb6ce4289c3b251f5abf3e79cf2df53",
+      "bytes": 1220,
+      "binary_nul_detected": false
+    },
+    "alembic/versions/s7t8u9v0w1x2_backfill_missing_user_code.py": {
+      "sha256": "71420b9358242bb3e4b0aeed17f3329094821c60e61f91a4cebe08f0a7f47595",
+      "git_blob_oid": "7498fef70055a7bc408d8e9f2455d1a398582436",
+      "bytes": 1475,
+      "binary_nul_detected": false
+    },
+    "alembic/versions/t8u9v0w1x2y3_add_description_es_to_listings.py": {
+      "sha256": "bc65c527dbf5c4a850bd049b5402abec79c68b300e5b3296a99cf34cdbfbba78",
+      "git_blob_oid": "7bf64c59f21e45ac06a65f90940b105a6c2578ec",
+      "bytes": 442,
+      "binary_nul_detected": false
+    },
+    "alembic/versions/u9v0w1x2y3z4_add_status_created_at_index_to_listings.py": {
+      "sha256": "cbdb55f8c2dcf79cdb08531cc8dafb82677fb439ffc8f27cbd53720541a31801",
+      "git_blob_oid": "dd1865f6b9420530feeb2d939045090c86ecb3af",
+      "bytes": 526,
+      "binary_nul_detected": false
+    },
+    "assets/fonts/LICENSE.txt": {
+      "sha256": "5a7816a9496347d78b9f9e6a702f07dcec3594b35a3d57f891854ba1d5cd7378",
+      "git_blob_oid": "c2bdb909219ed8ff5cba25941c40e6cf376ca4a5",
+      "bytes": 4403,
+      "binary_nul_detected": false
+    },
+    "assets/fonts/MonaSans-Bold.ttf": {
+      "sha256": "5ccaea90ac9d61a1503efb7b138bf4440313e7214432bdaa584189aba177e807",
+      "git_blob_oid": "88c582ec985f241147eb78a3caab0858d575116a",
+      "bytes": 143920,
+      "binary_nul_detected": true
+    },
+    "assets/fonts/MonaSans-ExtraBold.ttf": {
+      "sha256": "beecc55ec6abe7674db95253f4cd76a06a49767bac04f619784c48e86d834da8",
+      "git_blob_oid": "b1d07e5f5a83221b8c306d64edc775985dbe6b89",
+      "bytes": 146228,
+      "binary_nul_detected": true
+    },
+    "assets/fonts/MonaSans-SemiBold.ttf": {
+      "sha256": "67636cd715fc8637df3d0f215f478af37924fa3f2c9ee0d3ed8f3147211811f2",
+      "git_blob_oid": "fe49e4890c0b60a5c375343bce13fa249482288f",
+      "bytes": 142900,
+      "binary_nul_detected": true
+    },
+    "bootstrap_db.py": {
+      "sha256": "fd714c611416a7716bae52ad21e8115863d6cf8fb16bb6bba474584f2756bbc0",
+      "git_blob_oid": "2ab9ebbe1de366f885f9a68d181a78680e83430a",
+      "bytes": 2253,
+      "binary_nul_detected": false
+    },
+    "config.py": {
+      "sha256": "66de4a2abb4d67c8059092208ea4e3c227ea00997c629525feb20e97006722ae",
+      "git_blob_oid": "30dc5be5b74264504362be345a0535848f799640",
+      "bytes": 1424,
+      "binary_nul_detected": false
+    },
+    "database.py": {
+      "sha256": "1ebdc973777c0ab46b8c422e4b3ae17271530b35221804eafdcc53c89b7b7912",
+      "git_blob_oid": "5dd0b5f568c7df7897fc03af0e3a15c6b530fc35",
+      "bytes": 383,
+      "binary_nul_detected": false
+    },
+    "dependencies/__init__.py": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "git_blob_oid": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "bytes": 0,
+      "binary_nul_detected": false
+    },
+    "dependencies/auth.py": {
+      "sha256": "2d533e1e85f68e2aa83bd752ad3b35e28895ac28825c2aa2abec0796d06794de",
+      "git_blob_oid": "0dacb7110b7c6fc0e326b7c293849705e5306f54",
+      "bytes": 202,
+      "binary_nul_detected": false
+    },
+    "Dockerfile": {
+      "sha256": "865e0d8d920546337e7f1325390d83ad5ab9192ad4fed88c61d9da162120399b",
+      "git_blob_oid": "1b8b639a14092e6f67ec38f4d87ce29f4664b0f7",
+      "bytes": 259,
+      "binary_nul_detected": false
+    },
+    "LEAD-DELIVERY.md": {
+      "sha256": "93354664860b5eb880cae491bf9512e89bb205a2332a9e59c85a75c8493f5058",
+      "git_blob_oid": "e11201a3d2ea6ac42cb63438460fc6da31016b24",
+      "bytes": 8022,
+      "binary_nul_detected": false
+    },
+    "main.py": {
+      "sha256": "94d6ba7e4bd4e62b324096d3ed339134bae7f920a1249b7299dfb30040b8adcf",
+      "git_blob_oid": "dd222d86acbe26bd28e2e22a20630f01ec424b83",
+      "bytes": 8608,
+      "binary_nul_detected": false
+    },
+    "models/__init__.py": {
+      "sha256": "f9a2a79db78c2ec734419b649866d44153c7b4390b25e0f1f1058c25cd49287c",
+      "git_blob_oid": "d0ec8c4a45df0ad46b46bd39318d8262a1a58ce8",
+      "bytes": 1182,
+      "binary_nul_detected": false
+    },
+    "models/activity_log.py": {
+      "sha256": "02e30f4d865872d111de8d084ab100cd53e3adda051063591840ccd86f6042d2",
+      "git_blob_oid": "f6d79986d675db221753f56c28f1444ff3fd47b4",
+      "bytes": 529,
+      "binary_nul_detected": false
+    },
+    "models/booking.py": {
+      "sha256": "0aababdd8aa6b76f0af2523be84046ffdd49bc93e419c3ea6e6585617a3ade55",
+      "git_blob_oid": "8ad85cb623f6e98dd8497edc603091061158c7f2",
+      "bytes": 1690,
+      "binary_nul_detected": false
+    },
+    "models/bulk_import_job.py": {
+      "sha256": "8442f4ca5d751980ed3b5cbcc0c1b34f4b961fe5b9a30ed20c7d22bbc43c0e71",
+      "git_blob_oid": "a953e52910865b8af98aaf2fc9affdd0fe541a96",
+      "bytes": 1162,
+      "binary_nul_detected": false
+    },
+    "models/deal_request.py": {
+      "sha256": "71a0bee0747821d84b8e756fd60887aaa95347db96ebd75f269572beffef715c",
+      "git_blob_oid": "a56fda8b5164d3f813932968deb98d53b584445e",
+      "bytes": 1116,
+      "binary_nul_detected": false
+    },
+    "models/inquiry.py": {
+      "sha256": "72f360200374a1219be53d7b36eb214e7035e91e4b420f536409356bb519f162",
+      "git_blob_oid": "b8bfa629eda61e9c4d9e319a80cc1581185447f0",
+      "bytes": 1039,
+      "binary_nul_detected": false
+    },
+    "models/lead_delivery.py": {
+      "sha256": "b35f9ef0e781ce9e8ce67ce177e46349f1fc2853aaf4199b63c5499ffac69cf8",
+      "git_blob_oid": "51f6e002d09db98c3b63da4a00eefb94400c4d70",
+      "bytes": 3268,
+      "binary_nul_detected": false
+    },
+    "models/lead.py": {
+      "sha256": "e86f416361e91fb756403107ca6477395d8abab6694d6bc0556455bf4ca9a1d2",
+      "git_blob_oid": "75fed29add69b0c4903edeb6daca366a6eaae4b3",
+      "bytes": 1912,
+      "binary_nul_detected": false
+    },
+    "models/listing_edit.py": {
+      "sha256": "da4369939cb814e189dad12c48a2c61925d6d4aedcb2d8b3120fda7eec66fdc2",
+      "git_blob_oid": "f02441dba048c67abfb375c6325dcd54b778ca3f",
+      "bytes": 1061,
+      "binary_nul_detected": false
+    },
+    "models/listing_event.py": {
+      "sha256": "2d306215be12160a05118fbefed0117db8c05817db43b5a52fd011cdd51438d9",
+      "git_blob_oid": "6c79a34fe21b1f47b1e206590e3c0c74400799bf",
+      "bytes": 1010,
+      "binary_nul_detected": false
+    },
+    "models/listing_location_review.py": {
+      "sha256": "5edd0eacb178943764ae3571bc0ab87680b8d13740b2f58862285e90cd2de5bd",
+      "git_blob_oid": "22c907d3519bcc7a86f12976b741c52be2a533da",
+      "bytes": 2334,
+      "binary_nul_detected": false
+    },
+    "models/listing.py": {
+      "sha256": "f7472dc36cf6c4bc0395fd01c30ca6066e96d9ead74d6ceabeb5331457a36828",
+      "git_blob_oid": "a18f1a5b8f7b20e098f0204c79518fbb530b5d24",
+      "bytes": 4047,
+      "binary_nul_detected": false
+    },
+    "models/pending_user.py": {
+      "sha256": "71c9b0bf97d08318c56c958370662fd17414165c72f7c89121a54aff771d4d09",
+      "git_blob_oid": "fbcb3f2be3fbf3486f149b0ad4f15c4f6b921624",
+      "bytes": 1015,
+      "binary_nul_detected": false
+    },
+    "models/professional_profile.py": {
+      "sha256": "e52038cb43543f7737f97b77b817edb2c2b82640ef8f2572d18a7509a8ee3025",
+      "git_blob_oid": "50389cf06c5670d6fd19a7c0a1ef9238e4f8824c",
+      "bytes": 2528,
+      "binary_nul_detected": false
+    },
+    "models/property_management.py": {
+      "sha256": "cade6aef04e7f9338c1d29778e4d8b3f51063b770f7b6862df7dd14b66049d4f",
+      "git_blob_oid": "bd77749b113f7e15e040faf801c3cc6e63b5df9f",
+      "bytes": 2929,
+      "binary_nul_detected": false
+    },
+    "models/property_network.py": {
+      "sha256": "44d3ad9d95fcf8398649196f6550392771b7c9472e9a4b5ca6865a5206dea88f",
+      "git_blob_oid": "64c6df841a7f8cc72f650fc499cda25b5907f7ae",
+      "bytes": 9772,
+      "binary_nul_detected": false
+    },
+    "models/research_workspace.py": {
+      "sha256": "10a0fcc00d3fb6354c51638514440f131653219a265301af0a5bb269d59d51dd",
+      "git_blob_oid": "60f93455315e8436625f3a10e3e5fbfd389aa0eb",
+      "bytes": 961,
+      "binary_nul_detected": false
+    },
+    "models/saved_home.py": {
+      "sha256": "c4415e53495a9f3f63014d242544d2889915d14faafb30f4a278c17107411080",
+      "git_blob_oid": "8f767ef5f9e7c91e75723d3261bb8ec48e5b7e65",
+      "bytes": 624,
+      "binary_nul_detected": false
+    },
+    "models/site_settings.py": {
+      "sha256": "b6c2fa6cf59fb63854fd5a6163dd5403a5b899d7a3951a702eb60778c090e29f",
+      "git_blob_oid": "57c926e2995949c92d8c293de67a3699d7cb2174",
+      "bytes": 430,
+      "binary_nul_detected": false
+    },
+    "models/upgrade_request.py": {
+      "sha256": "ce03ec79b7e90697ab0e7f8635d8b08e0ee0536424383915d755a3ef686606da",
+      "git_blob_oid": "3e223dbdcbc5b8c803af52ea95fc173a9f7fb9eb",
+      "bytes": 1173,
+      "binary_nul_detected": false
+    },
+    "models/user.py": {
+      "sha256": "42a45d66217d51ad380bc13fa97476fc72987ad72877f424e9bd5f9f5f1c84f0",
+      "git_blob_oid": "f14d51e1d8f09dd5d3327403c36c91b743184a34",
+      "bytes": 2299,
+      "binary_nul_detected": false
+    },
+    "models/website_settings.py": {
+      "sha256": "f0f8bea191bb768155025d7db65c80cd8a79d91f8f8b07ca042e5946a3e1a68b",
+      "git_blob_oid": "84637ef4349f68285118cf98c23fc47b077fcdf4",
+      "bytes": 1274,
+      "binary_nul_detected": false
+    },
+    "Procfile": {
+      "sha256": "e1f7058014b835215667d4f3b1c86850048eeded5611f913f1d81868f5f448ac",
+      "git_blob_oid": "f3d60bb22361afc7de0ccaee8c88940b2a8ce82b",
+      "bytes": 108,
+      "binary_nul_detected": false
+    },
+    "railway.toml": {
+      "sha256": "7e9c267d14b1dee2ea6a26b8b461a869f80bc62e41fe0a3bcf8274a2634a5c5a",
+      "git_blob_oid": "3a91e411594b22230fc34f21304ad12a5f4da3a3",
+      "bytes": 184,
+      "binary_nul_detected": false
+    },
+    "README.md": {
+      "sha256": "e6d9e3900a2342569364040d402745050d3c17bd160f936df3633f3bd62dd264",
+      "git_blob_oid": "993cb493115704b9f57ac5ce66b7ece98c3247b6",
+      "bytes": 2720,
+      "binary_nul_detected": false
+    },
+    "requirements.txt": {
+      "sha256": "d96f6782adb8ffaf24c4729e88c6086f533ff2caed1c55efd8c096c09f429308",
+      "git_blob_oid": "df5cbc0b7d40904464401335a3db7a0d4148c08b",
+      "bytes": 335,
+      "binary_nul_detected": false
+    },
+    "routes/__init__.py": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "git_blob_oid": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "bytes": 0,
+      "binary_nul_detected": false
+    },
+    "routes/admin.py": {
+      "sha256": "470fcb978d54ebca893040ab427df458c3478a2703023947059756ccb3cfcc14",
+      "git_blob_oid": "ccba449f7e8440e549839d29392efea8413c92f5",
+      "bytes": 39818,
+      "binary_nul_detected": false
+    },
+    "routes/analytics.py": {
+      "sha256": "631902391be171071847822f3651d2fd04ef856dfccf3bd4acb48c802df29b31",
+      "git_blob_oid": "48185b5b79702982d234dc7d71e4fe15f4dd064a",
+      "bytes": 2253,
+      "binary_nul_detected": false
+    },
+    "routes/auth.py": {
+      "sha256": "352e157eb7df142f8e03d1ee2c668c79c01aca6ea2435e00eb278f2979c69b8f",
+      "git_blob_oid": "d48b65261f8e1f4f25a08668196834b5262e4070",
+      "bytes": 20930,
+      "binary_nul_detected": false
+    },
+    "routes/bookings.py": {
+      "sha256": "3c7052c746966f25dcddb9b888eba5f419463fd7af42f008323aa5fad1e3935d",
+      "git_blob_oid": "da27cdae81acc43de8778607a3320f15d21d9ade",
+      "bytes": 31673,
+      "binary_nul_detected": false
+    },
+    "routes/chat.py": {
+      "sha256": "134a8c807ddcb15f7b4c25f5aded801638e57ad3e72a2c3c6a37afbb1ef8e846",
+      "git_blob_oid": "4d48fffc7e59bd7a236ab83bc82339f39c51ac2a",
+      "bytes": 4860,
+      "binary_nul_detected": false
+    },
+    "routes/inquiries.py": {
+      "sha256": "8eb27e4da96c8b92af5f7f4009f5fd37c25bc949d3ee409be246867ea2cdd865",
+      "git_blob_oid": "a7758fab863fe57e4395de7bade5f2cb301e7591",
+      "bytes": 5355,
+      "binary_nul_detected": false
+    },
+    "routes/lead_delivery.py": {
+      "sha256": "201415f0664fb263653f875288c907d79bea7f1a14033e20e532aaa85cf37078",
+      "git_blob_oid": "53ad88c753d99c4370c4af13fbf5aa69857f4f74",
+      "bytes": 12799,
+      "binary_nul_detected": false
+    },
+    "routes/leads.py": {
+      "sha256": "0578e94a9e47aded67860d1c30802c66f35d8a8b75ef66273b50e693b9ed19f7",
+      "git_blob_oid": "392297f7c610e5f310597cee0879c2401655c442",
+      "bytes": 24314,
+      "binary_nul_detected": false
+    },
+    "routes/listings.py": {
+      "sha256": "b3e907a040c5c444315c80688e0bcd1cd582ab58691eecc15e86ea9a5e9dba19",
+      "git_blob_oid": "6f4a83f087ae6108ebb0dab977acc1d5a02a0375",
+      "bytes": 27540,
+      "binary_nul_detected": false
+    },
+    "routes/location_review.py": {
+      "sha256": "2e6fab4a73c2ee9b84fcf227245f13706dfc7153af515142ddba477860d101ed",
+      "git_blob_oid": "126681fdb31a02005430a1052c621a3c2e6e2c24",
+      "bytes": 12777,
+      "binary_nul_detected": false
+    },
+    "routes/owner_leads.py": {
+      "sha256": "0b0a9f46443821605fa76084f83b97d59f11904dd45c4da48a089b9801b71f54",
+      "git_blob_oid": "4b5b992d6c1aef14d3fb95ce7f8c81288a5c61e0",
+      "bytes": 2010,
+      "binary_nul_detected": false
+    },
+    "routes/professionals.py": {
+      "sha256": "dc67983a9fc518452febd90627e66ae72550b07603163a882d2a1b6bc6724014",
+      "git_blob_oid": "bb9b51756366e2da150a02e3085715757887debc",
+      "bytes": 23218,
+      "binary_nul_detected": false
+    },
+    "routes/property_management.py": {
+      "sha256": "71babd2b8d3e5350d41392756d6c1d9898e3b59e42b3a9043f6409f69499f6c7",
+      "git_blob_oid": "5ace22f7ad7938b0104ed0ac61a2a754028d94e0",
+      "bytes": 6792,
+      "binary_nul_detected": false
+    },
+    "routes/property_network.py": {
+      "sha256": "3ab49debce43ad491ef1a4d423cacaefc041df0b97a49d7f2f07d11c7a16e401",
+      "git_blob_oid": "8006f3722c9f0bb59c617f271eb5d2d587c56dd7",
+      "bytes": 13461,
+      "binary_nul_detected": false
+    },
+    "routes/research_workspaces.py": {
+      "sha256": "e0b3afb91ea36153f82f20d2b4ba748e2ab971f11fea5df8cc7394884d28e1c2",
+      "git_blob_oid": "f41712be22d24080445050b7068ec13a1d6c2082",
+      "bytes": 4610,
+      "binary_nul_detected": false
+    },
+    "routes/saved_homes.py": {
+      "sha256": "d93796892f6ef6436f0b3d96a5e3540336ac9adc6452a6bbbff17f578417f613",
+      "git_blob_oid": "8dc4f634a5e42bbca05ddaf15130145219204d72",
+      "bytes": 2355,
+      "binary_nul_detected": false
+    },
+    "routes/stats.py": {
+      "sha256": "058a934c975fc3481e6c85d7328bd8b05ce146526c9640dc5f22b0deb38fa992",
+      "git_blob_oid": "83823969f7acb6ffcf2ac26ee5b9f07bada17e02",
+      "bytes": 1289,
+      "binary_nul_detected": false
+    },
+    "routes/upgrade_requests.py": {
+      "sha256": "b264a7fb92431651b93f5154b3c2f7cb4ea3287b164f0ed4c82b45e20e4f1821",
+      "git_blob_oid": "4ffbc62b1282d523cf9c03721fa279d63601115f",
+      "bytes": 1738,
+      "binary_nul_detected": false
+    },
+    "routes/webhooks.py": {
+      "sha256": "ba34902c8e70aa346321431120e4a19df29ed0355f668d0b3f6af015a7819a4d",
+      "git_blob_oid": "ae5013d9b26f2aeb5016a53b35b741c0f3969db0",
+      "bytes": 6928,
+      "binary_nul_detected": false
+    },
+    "routes/website_settings.py": {
+      "sha256": "0dd20719b2c4ef630b0c72a0e715a7eee8724199674c753bbb2a2dcf1c28007e",
+      "git_blob_oid": "3825e9b3d299983654be0264541e923f929652a6",
+      "bytes": 7919,
+      "binary_nul_detected": false
+    },
+    "schemas/__init__.py": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "git_blob_oid": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "bytes": 0,
+      "binary_nul_detected": false
+    },
+    "schemas/analytics.py": {
+      "sha256": "5620abe0d88ff2cdd85f7569a678520de2be585d11434491502c523e79e4b91b",
+      "git_blob_oid": "d2bde085699ecf144380e1e4fc61ac759cc1c952",
+      "bytes": 1714,
+      "binary_nul_detected": false
+    },
+    "schemas/auth.py": {
+      "sha256": "74cc20e86194cb112389d145737f2280950cfcca6f6932a00cc756619d44ca42",
+      "git_blob_oid": "2d863ee4698ee11440a68a4bde8a323768a4fbc3",
+      "bytes": 1845,
+      "binary_nul_detected": false
+    },
+    "schemas/booking.py": {
+      "sha256": "0c7f7a7ca373c4526d937c3a6de2f3dd8557ffc55a0dd3dc1cb667b5dfb88880",
+      "git_blob_oid": "9caf3d4892db3f07ebb97d20c732ec9b85d94da9",
+      "bytes": 2222,
+      "binary_nul_detected": false
+    },
+    "schemas/deal_request.py": {
+      "sha256": "fc7bad54405b99f57a79d6bd6f7844fb653d21e4afe2949366bfd4e94d419250",
+      "git_blob_oid": "dce7e7007619002892ba29e3dc17bd0edd497439",
+      "bytes": 1192,
+      "binary_nul_detected": false
+    },
+    "schemas/inquiry.py": {
+      "sha256": "40dbb562d5fb879362f1025053108eb54b8add0568e26fbf321fb538ad9ecf5b",
+      "git_blob_oid": "9dd690e3c3b66b63c89417b38724f067e5aa94c4",
+      "bytes": 653,
+      "binary_nul_detected": false
+    },
+    "schemas/lead_tracking.py": {
+      "sha256": "8bc5f640d57d1b7d902d79be5b02f0fcad3db2d3349691d996799993c03b9a78",
+      "git_blob_oid": "bd320e5ae917664634b1a83311e6838656ce4b84",
+      "bytes": 2476,
+      "binary_nul_detected": false
+    },
+    "schemas/listing_edit.py": {
+      "sha256": "473f73343fb0bef400d80b97fca91e19d83207a6ac47e5b1feb352ba25afba30",
+      "git_blob_oid": "c907b439709f04cc2c81c8eb5b60603812c81143",
+      "bytes": 601,
+      "binary_nul_detected": false
+    },
+    "schemas/listing_event.py": {
+      "sha256": "66cc60b5ab6fd47d874cd3774122b1d459be10125e11f59acb31b3a82b86b048",
+      "git_blob_oid": "11005a33f1b179f9f75fcfe74e890633306031fa",
+      "bytes": 511,
+      "binary_nul_detected": false
+    },
+    "schemas/listing.py": {
+      "sha256": "7949319523cbce99040cbd1d0ef5a0d35178520c9ef14ec5ab37e25cc1581f3d",
+      "git_blob_oid": "8c337ac7cad14cf64ecaa562ce595002edfaaf88",
+      "bytes": 9617,
+      "binary_nul_detected": false
+    },
+    "schemas/location_review.py": {
+      "sha256": "d76c25132515b6db5d4b08b5574c2465c5bdf20b53c997f2fe637f9caf96704a",
+      "git_blob_oid": "d111ccaef6f8122e263c398aec78b2b1f7a76f75",
+      "bytes": 2660,
+      "binary_nul_detected": false
+    },
+    "schemas/owner_leads.py": {
+      "sha256": "7d45cdff2a320e3e840df29a9102f34204815958b2188dbe155c045d28d4c043",
+      "git_blob_oid": "330d685ac370d000d98db1a8ed0b7fcf544b68ee",
+      "bytes": 1136,
+      "binary_nul_detected": false
+    },
+    "schemas/professionals.py": {
+      "sha256": "a7881cab496e32dfeb3489f2fd80edf27750500d21859319c43f2f769fdde8f1",
+      "git_blob_oid": "e1caa8989e4c674af4968a75adbd3580f3c6a030",
+      "bytes": 7135,
+      "binary_nul_detected": false
+    },
+    "schemas/property_management.py": {
+      "sha256": "103f84056eac2deefef952d769045a8ee22e087ac6b575ee1afcb2fac1ea3050",
+      "git_blob_oid": "2e4b081630f88f37405767176cdedd3c54b6136c",
+      "bytes": 6865,
+      "binary_nul_detected": false
+    },
+    "schemas/property_network.py": {
+      "sha256": "aa73eff82cb724e576ab6eba2c3ff2557f1f1e3732dbf2730abc82621d7d5820",
+      "git_blob_oid": "75405f130cac0217ed0571f3f707a8c9be024a8f",
+      "bytes": 3551,
+      "binary_nul_detected": false
+    },
+    "schemas/research_workspace.py": {
+      "sha256": "0e94f94d09cef374d9b1dfca51f7ece29103ac919568ca86862a902dcae8a5af",
+      "git_blob_oid": "a7ce0f02a9c6e711bbde8da79bd53591e877ed03",
+      "bytes": 2133,
+      "binary_nul_detected": false
+    },
+    "schemas/saved_home.py": {
+      "sha256": "c76b596e59b0edcbc158cbc7d69437fdf2079f8559a408538ae3249b8f0268fd",
+      "git_blob_oid": "dfd6a90def42decf7de7c483a2d6fff4f97fee93",
+      "bytes": 450,
+      "binary_nul_detected": false
+    },
+    "schemas/upgrade_request.py": {
+      "sha256": "1d79455b85ee713c1a9d6ae7314df769dc720dc210580aec0bbdd2749bc98377",
+      "git_blob_oid": "cd2e382079dcdbb55a09d9fc92095fb675f91f30",
+      "bytes": 1261,
+      "binary_nul_detected": false
+    },
+    "schemas/website_settings.py": {
+      "sha256": "f50645e98c819b0b0d33eb4913231aead25a5da380724b3e0f98cfb64cfc7421",
+      "git_blob_oid": "0e1c6b51fb4e4e5d222203aef8ac719fc128732c",
+      "bytes": 10315,
+      "binary_nul_detected": false
+    },
+    "services/__init__.py": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "git_blob_oid": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "bytes": 0,
+      "binary_nul_detected": false
+    },
+    "services/analytics.py": {
+      "sha256": "debbe0c32a9df554f74f9a4a1c96053ecb175c7f60c9da8485969ff2e908af38",
+      "git_blob_oid": "159ce92d2b0e55298829815451c95b75527b619a",
+      "bytes": 8577,
+      "binary_nul_detected": false
+    },
+    "services/lead_delivery.py": {
+      "sha256": "74d466a1f9155db34e676cff2db60a4471d4a66e98790395280800e742549c69",
+      "git_blob_oid": "9dd3c87a8463c7eb71af9dada6fcaaee2e683f92",
+      "bytes": 35211,
+      "binary_nul_detected": false
+    },
+    "services/owner_leads.py": {
+      "sha256": "c6608be1c063f51b78294beaf13c65e210db3997992631f142ebd62092e6b7ea",
+      "git_blob_oid": "79eacffb0e866519f1bb4212b008174bddf79152",
+      "bytes": 3319,
+      "binary_nul_detected": false
+    },
+    "services/paypal.py": {
+      "sha256": "45878d233efd22d0be2a4c428fda79e64a33f473e83fe1cdbcc9e3ffe4add1d4",
+      "git_blob_oid": "c3afe5cd2523c56bd400f0f9a41c520fb0b45235",
+      "bytes": 6676,
+      "binary_nul_detected": false
+    },
+    "services/property_management.py": {
+      "sha256": "5f8b9e1c10602e1087ef4ff86358092cde522124799c08e66d69767f3236c02d",
+      "git_blob_oid": "3378422d07c28a0ef5375ff0b87ec6555a200064",
+      "bytes": 17513,
+      "binary_nul_detected": false
+    },
+    "services/property_network.py": {
+      "sha256": "7360dfb8c0509a1327aeb6ba2d685e1ea7e44376ed67c520343d2a3024173dea",
+      "git_blob_oid": "c40799fbb8d7719f4500f8b15a78ab661f59a2a9",
+      "bytes": 25532,
+      "binary_nul_detected": false
+    },
+    "tests/test_admin_agent_assignments.py": {
+      "sha256": "66df5954e25b7ea9549ffbdf544f65b71a06481bf97b43ddd4e27b6a363b1163",
+      "git_blob_oid": "4c6a1880bbe2ff65bb9575233133133ca5bf5395",
+      "bytes": 11233,
+      "binary_nul_detected": false
+    },
+    "tests/test_admin_analytics.py": {
+      "sha256": "357cf5301f042e8e00e41b432df8acf53e3f10f00bbc1d96c91d72bf61e3a566",
+      "git_blob_oid": "5eadc278f3debf51345709b3738e02104c5fc598",
+      "bytes": 15414,
+      "binary_nul_detected": false
+    },
+    "tests/test_admin_workspace_access.py": {
+      "sha256": "2a085b1fdf9ee8175daf0b028b4c8a64d6719c0b3e748bef338a293bf9009eb5",
+      "git_blob_oid": "22ef16b4963144e86bd3b7a5e6c19723d004ad64",
+      "bytes": 9619,
+      "binary_nul_detected": false
+    },
+    "tests/test_bulk_import_location.py": {
+      "sha256": "4e30f0bb4370c20e9c5cf19f63fd4fda46dc769b39553eacd53e1ff5bbd30e72",
+      "git_blob_oid": "1e6112c524b772b2c89f5fc7c7c4e0d35672c7e7",
+      "bytes": 12130,
+      "binary_nul_detected": false
+    },
+    "tests/test_contact_leads.py": {
+      "sha256": "eb3a3cf56c5a53e136ffd741c620237a70fd583b3f89c4bcf07f99fb0ce9ede8",
+      "git_blob_oid": "fa15e4510cf3f3c57c5fb01ac05aa15096dbc03f",
+      "bytes": 22400,
+      "binary_nul_detected": false
+    },
+    "tests/test_customer_delivery.py": {
+      "sha256": "4a8a8c047b280e5b82ad9d38628fd52b1f4ac985cd4b92870fbe0285da4690a5",
+      "git_blob_oid": "4eed742b3bc691ee291c41dc017c11ad53d92416",
+      "bytes": 25579,
+      "binary_nul_detected": false
+    },
+    "tests/test_customer_messages.py": {
+      "sha256": "c269203a097af7d5a826b717d1aeb3677910ba4e69ad745cbbbf94acecd4f68d",
+      "git_blob_oid": "be9bb2a173980e7d82f6d87c4f26930a9d626042",
+      "bytes": 2785,
+      "binary_nul_detected": false
+    },
+    "tests/test_lead_delivery.py": {
+      "sha256": "8bc2a96ce14ec4c40bddd251818ce5dcded3ea3525d2afbcd65fafe702b89651",
+      "git_blob_oid": "f3b1398e121f51a6164d43447cf1a957b65d640d",
+      "bytes": 67858,
+      "binary_nul_detected": false
+    },
+    "tests/test_lead_tracking.py": {
+      "sha256": "43383c64fe4629367406d01594bf1c3cc514c95e330576c848ee886657073575",
+      "git_blob_oid": "31b172215de8edefce12f526e84433cc33d04695",
+      "bytes": 13902,
+      "binary_nul_detected": false
+    },
+    "tests/test_listing_search.py": {
+      "sha256": "f712053ac4d164271d5b6dcefdbdd002aa748822847eefc37f738570a6f9e8c0",
+      "git_blob_oid": "658c599275aad7c145365865694495cd5cb6d8dc",
+      "bytes": 16975,
+      "binary_nul_detected": false
+    },
+    "tests/test_location_review.py": {
+      "sha256": "6e5f35afcd83a791242bbf600c8f74ac9f94356450dcd7251376f733c421a2b2",
+      "git_blob_oid": "8d42ba3df57560db7d2e0f6bc642ab892c21c057",
+      "bytes": 30908,
+      "binary_nul_detected": false
+    },
+    "tests/test_owner_leads.py": {
+      "sha256": "586de734890ab95821cf3d52e72453ad22967d7785f7181d796a8bac963bf9f8",
+      "git_blob_oid": "ac1fc0465f2189c41e865ba919014c06364b1eea",
+      "bytes": 12186,
+      "binary_nul_detected": false
+    },
+    "tests/test_platform_migrations.py": {
+      "sha256": "a9025f510f9fced0ec1fa3297cac0f27a3c0bcf5551449e239bed0244678eeae",
+      "git_blob_oid": "40435548cad3db8438241cc14b514d47dcf02dac",
+      "bytes": 29695,
+      "binary_nul_detected": false
+    },
+    "tests/test_professional_catalog.py": {
+      "sha256": "d058c169ea7bd2580aafc72fb9ab3204c634b3762ae21f9b3879ce0979c5c3f8",
+      "git_blob_oid": "d530a95fa0448be99d1c6c217ba1982df224ed8b",
+      "bytes": 6871,
+      "binary_nul_detected": false
+    },
+    "tests/test_professionals.py": {
+      "sha256": "b264aa0fc137c692200c25882dbad8ea109b1e9857916133ff70b360c120f593",
+      "git_blob_oid": "fcfc730d7ca2665dd84aed45b9f26c842828dbc0",
+      "bytes": 38672,
+      "binary_nul_detected": false
+    },
+    "tests/test_property_inquiry.py": {
+      "sha256": "e2352a0a18b27c2caaf923e622080d9697dad2ca6b57c65f56c6ad39689ad369",
+      "git_blob_oid": "f478542ab9d14dee82676754c95fa69911d3d56e",
+      "bytes": 15365,
+      "binary_nul_detected": false
+    },
+    "tests/test_property_management.py": {
+      "sha256": "7c739fefdf407ecd9e91589abad9c5430ab5817234f568573f689852b6f2981b",
+      "git_blob_oid": "652fe9c69210a18d125aef86682c8ea5e3392a64",
+      "bytes": 22324,
+      "binary_nul_detected": false
+    },
+    "tests/test_property_network.py": {
+      "sha256": "472c8492844383cd7bb7ba359c2846500166d0441b44ed36bd4ec2a9d21a3083",
+      "git_blob_oid": "68a3640b103783077aa373c8a7537680fb2ff13a",
+      "bytes": 26785,
+      "binary_nul_detected": false
+    },
+    "tests/test_request_security.py": {
+      "sha256": "d06b2e1f02ba9a565c1bd8f912160a3fa05adde3bd31daecf295cf83d9962832",
+      "git_blob_oid": "e22ef937c26a432883265b6a50d8a9cd7691621d",
+      "bytes": 3098,
+      "binary_nul_detected": false
+    },
+    "tests/test_research_workspaces.py": {
+      "sha256": "57bd7cbbca55adfe68e3d3565a4733e11a471ad3526aa5ee55ec452ec4a69ed9",
+      "git_blob_oid": "2e18d315ba2c6c5bc55e06dced2a9e14301a7aac",
+      "bytes": 9713,
+      "binary_nul_detected": false
+    },
+    "tests/test_signup_notifications.py": {
+      "sha256": "f8b8f4dc6635e71f7f0bcc6b5774a3fb94b0cd13be9a789bf54202f0c4ad0524",
+      "git_blob_oid": "84d428bc29efbc91ee72de92ae5931e039a9d858",
+      "bytes": 15400,
+      "binary_nul_detected": false
+    },
+    "tests/test_website_settings.py": {
+      "sha256": "0c65449e786344276bfa1ca321fa002e76bcdedd1e2581d7ae19a85f6c80ee26",
+      "git_blob_oid": "f57ef6e5d266c71ca98a51ccb9974b69cac44b86",
+      "bytes": 18520,
+      "binary_nul_detected": false
+    },
+    "utils/__init__.py": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "git_blob_oid": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "bytes": 0,
+      "binary_nul_detected": false
+    },
+    "utils/agents.py": {
+      "sha256": "debd0902a381ba0c3d3d84842ffde130c82c84a0371968d622123136b620f7dc",
+      "git_blob_oid": "2d5799ff661b6cf77a0a08c3f980bb38e309c4af",
+      "bytes": 645,
+      "binary_nul_detected": false
+    },
+    "utils/auth.py": {
+      "sha256": "26327b9f16a8a803f2e2f1317a6e87a78168e0c34eeea8efd78775483643d936",
+      "git_blob_oid": "8f049bcbb1314e7b4dff633520e7be243a1b491e",
+      "bytes": 1980,
+      "binary_nul_detected": false
+    },
+    "utils/bulk_import.py": {
+      "sha256": "caaca15af5060710b9239f043e025fdfda5abffa32a6e0cb111d6a357ffde863",
+      "git_blob_oid": "d76e26d8591ac92a1095ec70f50082ff0aa84035",
+      "bytes": 15344,
+      "binary_nul_detected": false
+    },
+    "utils/customer_messages.py": {
+      "sha256": "be84b2d210c14b25d09c043452c0d2554b08ee93967de7c252052bffa353004f",
+      "git_blob_oid": "0bab7b02fba82d74b8dba5e2b80a8b29cba827c1",
+      "bytes": 7004,
+      "binary_nul_detected": false
+    },
+    "utils/email.py": {
+      "sha256": "5401d876affb002dbd4d9f6465443a3447d6ca12ca0742cbe48ba71f67d7b1e2",
+      "git_blob_oid": "89ade86e0aea1d1b2111644136ffbbdd4cbe6173",
+      "bytes": 34093,
+      "binary_nul_detected": false
+    },
+    "utils/ghl.py": {
+      "sha256": "639fbe5d196f81960601ee7a92bdc90aa79b7465eb8940b03dbab42f3759bf23",
+      "git_blob_oid": "80a15199ec92d5bac54aa6bf65438e61cc33c52f",
+      "bytes": 9690,
+      "binary_nul_detected": false
+    },
+    "utils/jwt.py": {
+      "sha256": "d34e096b801d7612f4d7299e89d07194e494d88a42971a2247be113dfc3a0331",
+      "git_blob_oid": "a951a434c6d7e561a315c996b71bc2e9fe83fa26",
+      "bytes": 463,
+      "binary_nul_detected": false
+    },
+    "utils/lead_tracking.py": {
+      "sha256": "8d817dcbed00e5ad02fded11c285048296c141ecd24c09809d10f0343dec3466",
+      "git_blob_oid": "3990d9dc78d59eee247e3ec869ceb1fb599d3497",
+      "bytes": 2145,
+      "binary_nul_detected": false
+    },
+    "utils/limiter.py": {
+      "sha256": "90968233198956874a2ce971beccb2dba0d4a1b27063b3ce9b4be02b01bb7a9e",
+      "git_blob_oid": "38404a8a6d7dbaca01db045351560a102db07613",
+      "bytes": 120,
+      "binary_nul_detected": false
+    },
+    "utils/listing_constants.py": {
+      "sha256": "b008263d1a3e720df6b8b22c595bbd54706fa1cc18ee7b68187d990ce971f164",
+      "git_blob_oid": "c35b0a82c3eab15df30977b0d37cf4d23ca23835",
+      "bytes": 1392,
+      "binary_nul_detected": false
+    },
+    "utils/listing_search.py": {
+      "sha256": "3575b3096a249b9ff91f12907aa5fb3f4281d6ebe4fbafae6a7b5ac8ddcc488d",
+      "git_blob_oid": "7841828f0ed6f79947c55ff1ec678babeeb52416",
+      "bytes": 2142,
+      "binary_nul_detected": false
+    },
+    "utils/location_quality.py": {
+      "sha256": "00c99349dfea4fd865fc12f36bed32edad613a36840a8ebf2b92c1250bbbbf9b",
+      "git_blob_oid": "77525ed65582fc2842276037bbcd0590aa53c0fa",
+      "bytes": 10042,
+      "binary_nul_detected": false
+    },
+    "utils/permission.py": {
+      "sha256": "f7615972fd8f466b0c3e5885eb5ba0537d876798d17ed05674d1ba9bcf78ca46",
+      "git_blob_oid": "e7b50c24c46505b0f6603e546f838ae5b3e39c67",
+      "bytes": 551,
+      "binary_nul_detected": false
+    },
+    "utils/phone.py": {
+      "sha256": "03d10264e381e0724f79b2daa38617c24d3d8389c887ab4b3f548f0f1446f418",
+      "git_blob_oid": "ab9018a23a4235c52f728d142c160b2c301f840b",
+      "bytes": 804,
+      "binary_nul_detected": false
+    },
+    "utils/private_network_media.py": {
+      "sha256": "2fcac25711b1bbabe156fa3f9d9fc9b541a095c31ece969cfa582ebf8b9cc69b",
+      "git_blob_oid": "683b407b72299d421c6697c8524ccf846eb3ae83",
+      "bytes": 2555,
+      "binary_nul_detected": false
+    },
+    "utils/professional_options.py": {
+      "sha256": "dca145600afbece7bf49fab160f754ca77f51f2d88093a8a216722ecf05aec56",
+      "git_blob_oid": "4ad3c1eea93ee4de1c734e0e2552665febe7fb0f",
+      "bytes": 6968,
+      "binary_nul_detected": false
+    },
+    "utils/professional_photos.py": {
+      "sha256": "845df492cd677feb8682832eab594232766ef943b4c2e396ee5e92d4087c817d",
+      "git_blob_oid": "3b074e4faf4d3fea50eee3f35bdf88a61da11807",
+      "bytes": 2978,
+      "binary_nul_detected": false
+    },
+    "utils/request_security.py": {
+      "sha256": "c2d048bfcbb93bb5f5d977f2cea9b770c887e78685a14f1617c65ce9a502a307",
+      "git_blob_oid": "1263ce67a2243ddd7f539f1dfc6fef94e57cf8bd",
+      "bytes": 1493,
+      "binary_nul_detected": false
+    },
+    "utils/security.py": {
+      "sha256": "ef101deeab681e6de00e755cd21e966558460f1bf947eb44a28adc4de40c75e2",
+      "git_blob_oid": "6f57ba0cd3033558439cd48ab7e7c4e163b42fcf",
+      "bytes": 263,
+      "binary_nul_detected": false
+    },
+    "utils/share_image.py": {
+      "sha256": "fb6959604cb7f90a77f9ded021e4ff7f92e435bce130e7082d158ee89055fda2",
+      "git_blob_oid": "41299aa028a50c33ed044398e60ecf032ef68513",
+      "bytes": 7487,
+      "binary_nul_detected": false
+    },
+    "utils/storage.py": {
+      "sha256": "dc4783e14c74ebd27490c87172bb100c84924cdbbd0f37f624cc161cbc27216a",
+      "git_blob_oid": "9ae3ef28921569d17496b86c6b4eee5ffe626ef7",
+      "bytes": 3193,
+      "binary_nul_detected": false
+    },
+    "utils/verification.py": {
+      "sha256": "010a9c5a02c44785547225b6da982f0947b6c500d620259d0602a687db2614d5",
+      "git_blob_oid": "b431b3939d8af21eafc83c63324aa7cdbd9e4749",
+      "bytes": 140,
+      "binary_nul_detected": false
+    }
+  },
+  "bootstrap_and_full_migration_chain_proven": false,
+  "author_runtime_execution": false
+}

@@ -18,3 +18,5 @@ from .research_workspace import ResearchWorkspace
 from .lead_delivery import LeadDeliveryJob, LeadDeliveryWorkerState
 from .listing_location_review import ListingLocationReview, ListingLocationReviewRevision
 from .property_management import PropertyManagementRecord, PropertyManagementRevision
+from .property_network import (NetworkProject, NetworkProjectMember, NetworkMilestone, NetworkProjectUpdate,
+    NetworkProjectComment, SocialNetworkProfile, NetworkPost, NetworkPostComment, NetworkBlock, NetworkMedia, NetworkAudit)

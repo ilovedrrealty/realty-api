@@ -26,8 +26,10 @@ from models.lead import Lead
 from models.lead_delivery import LeadDeliveryJob, LeadDeliveryWorkerState
 from models.listing import Listing
 from models.site_settings import SiteSettings
+from models.user import User
 from utils import ghl
-from utils.email import build_lead_notification, parse_notification_recipients
+from utils.email import build_lead_notification, build_new_user_notification, parse_notification_recipients
+from utils.customer_messages import customer_message
 from utils.phone import normalize_phone
 
 logger = logging.getLogger(__name__)
@@ -50,12 +52,16 @@ def _remember_new_lead_events(db, _context):
     ids = {row.id for row in db.new if isinstance(row, Lead) and row.id is not None}
     if ids:
         db.info.setdefault("new_lead_delivery_ids", set()).update(ids)
+    user_ids = {row.id for row in db.new if isinstance(row, User) and row.id is not None}
+    if user_ids:
+        db.info.setdefault("new_signup_delivery_ids", set()).update(user_ids)
 
 
 @event.listens_for(Session, "after_transaction_end")
 def _forget_committed_lead_events(db, transaction):
     if transaction.parent is None:
         db.info.pop("new_lead_delivery_ids", None)
+        db.info.pop("new_signup_delivery_ids", None)
 
 
 def utcnow():
@@ -68,6 +74,19 @@ def _aware(value):
 
 def enabled() -> bool:
     return bool(getattr(settings, "lead_delivery_enabled", False))
+
+
+def signup_enabled() -> bool:
+    """The existing worker AND the new customer-email feature must be enabled."""
+    return enabled() and bool(getattr(settings, "customer_messages_enabled", False))
+
+
+def _single_recipient(value):
+    try:
+        recipients = parse_notification_recipients(value or "")
+        return recipients[0] if len(recipients) == 1 else None
+    except Exception:
+        return None
 
 
 def payload_digest(value: dict) -> str:
@@ -170,6 +189,67 @@ def enqueue_lead_delivery(db: Session, lead: Lead, property_info: dict | None = 
             add(f"email_{number}", "resend", {"body": {
                 "from": settings.email_from, "to": [target], "subject": subject, "html": html,
             }})
+    tracking = lead.tracking or {}
+    recipient = _single_recipient(lead.email)
+    if (signup_enabled() and recipient and tracking.get("contact_consent") is True
+            and tracking.get("internal_test") is not True
+            and lead.type in {"buyer_interest", "seller_interest", "rental_interest", "property_inquiry"}):
+        # The stored snapshot supplied by the caller is not permission to link a
+        # private/archived listing. Check the actual public record independently.
+        public_id = db.query(Listing.id).filter(Listing.id == lead.property_id, Listing.status == "active").scalar() if lead.property_id else None
+        message = customer_message(lead.type, lead.name, tracking.get("locale", "en"), public_listing_id=public_id)
+        add("customer_email", "resend", {"event_type": lead.type,
+            "public_listing_id": str(public_id) if public_id and lead.type == "property_inquiry" else None,
+            "body": {"from": settings.email_from, "to": [recipient], "subject": message.subject,
+                     "html": message.html, "text": message.text}})
+    return rows
+
+
+def enqueue_signup_delivery(db: Session, user: User, *, locale: str = "en", now: datetime | None = None):
+    """Only the original new verified-user transaction can create signup jobs.
+
+    No commit, account scan, backfill, provider request or fake lead is made.
+    Existing logins/Google linking cannot supply the new-user transaction marker.
+    """
+    if not signup_enabled():
+        return []
+    if locale not in {"en", "es"}:
+        raise ValueError("Unsupported signup locale")
+    if user.id is None or user.id not in db.info.get("new_signup_delivery_ids", set()):
+        raise ValueError("Signup delivery requires the original new user transaction")
+    if user.email_verified is not True or user.status != "active":
+        raise ValueError("Signup delivery requires a new active verified account")
+    now = now or utcnow()
+    rows = []
+    recipient = _single_recipient(user.email)
+
+    def add(step, body, *, status="pending", code=None):
+        payload = {"signup_email": recipient, "body": body}
+        row = LeadDeliveryJob(id=uuid4(), user_id=user.id, lead_id=None, step=step, provider="resend",
+            payload=payload, payload_sha256=payload_digest(payload), status=status, error_code=code,
+            attempt_count=0, safe_to_retry=False, outcome_uncertain=False,
+            next_attempt_at=now, created_at=now, updated_at=now)
+        db.add(row); rows.append(row)
+
+    try:
+        targets = notification_recipients(db)
+        if len(targets) > 10:
+            raise ValueError("Notification recipient limit exceeded")
+    except Exception:
+        targets = []
+        add("email_configuration", {}, status="failed", code="invalid_notification_configuration")
+    if not targets and not rows:
+        add("email_configuration", {}, status="failed", code="missing_notification_configuration")
+    if targets:
+        subject, html = build_new_user_notification(user)
+        for number, target in enumerate(targets, 1):
+            add(f"email_{number}", {"from": settings.email_from, "to": [target], "subject": subject, "html": html})
+    if recipient:
+        message = customer_message("signup", user.display_name, locale)
+        add("customer_email", {"from": settings.email_from, "to": [recipient], "subject": message.subject,
+                               "html": message.html, "text": message.text})
+    else:
+        add("customer_email_configuration", {}, status="failed", code="invalid_customer_email")
     return rows
 
 
@@ -207,7 +287,7 @@ def expire_stale_claims(db: Session, now: datetime):
              safe_to_retry=False, outcome_uncertain=True, lease_token=None,
              lease_until=None, updated_at=now)
              .returning(LeadDeliveryJob.lead_id, LeadDeliveryJob.provider)).all()
-    for lead_id in {row.lead_id for row in changed if row.provider == "ghl"}:
+    for lead_id in {row.lead_id for row in changed if row.provider == "ghl" and row.lead_id is not None}:
         _project_crm_state(db, lead_id, now)
     db.commit()
     return len(changed)
@@ -261,8 +341,11 @@ def claim_next_job(db: Session, now: datetime | None = None, *, stop_event=None)
                     LeadDeliveryJob.attempt_count < MAX_ATTEMPTS,
                     or_(LeadDeliveryJob.attempt_count == 0,
                         and_(LeadDeliveryJob.safe_to_retry.is_(True), manual_retry_marker_sql())))
+    same_event = or_(
+        and_(LeadDeliveryJob.lead_id.isnot(None), parent.lead_id == LeadDeliveryJob.lead_id, parent.user_id.is_(None)),
+        and_(LeadDeliveryJob.user_id.isnot(None), parent.user_id == LeadDeliveryJob.user_id, parent.lead_id.is_(None)))
     dependency_ready = or_(LeadDeliveryJob.depends_on.is_(None), exists(select(parent.id).where(
-        parent.lead_id == LeadDeliveryJob.lead_id, parent.step == LeadDeliveryJob.depends_on,
+        same_event, parent.step == LeadDeliveryJob.depends_on,
         parent.status == "accepted")))
     previous = db.execute(select(LeadDeliveryJob.id, LeadDeliveryJob.status,
         LeadDeliveryJob.attempt_count, LeadDeliveryJob.first_attempt_at,
@@ -331,8 +414,9 @@ def _provider_result(job, client: httpx.Client, now: datetime, contact_id: str |
         if not settings.resend_api_key:
             return _hold_failure(job, now, "email_provider_not_configured")
         url = "https://api.resend.com/emails"
+        event_key = f"website-signup/{job.user_id}" if job.user_id is not None else f"website-lead/{job.lead_id}"
         headers = {"Authorization": f"Bearer {settings.resend_api_key}", "Content-Type": "application/json",
-                   "Idempotency-Key": f"website-lead/{job.lead_id}/{job.step}/v1"}
+                   "Idempotency-Key": f"{event_key}/{job.step}/v1"}
     else:
         if not settings.ghl_enabled or not settings.ghl_api_key or not settings.ghl_location_id:
             return _hold_failure(job, now, "crm_provider_not_configured")
@@ -431,10 +515,45 @@ def finish_claim(db: Session, claim: Claim, outcome: Outcome, now: datetime):
     if changed.rowcount == 1:
         lead_id, provider = db.execute(select(LeadDeliveryJob.lead_id, LeadDeliveryJob.provider)
             .where(LeadDeliveryJob.id == claim.job_id)).one()
-        if provider == "ghl":
+        if provider == "ghl" and lead_id is not None:
             _project_crm_state(db, lead_id, now)
     db.commit()
     return changed.rowcount == 1
+
+
+def _email_destination_error(db, job):
+    recipients = (job.payload.get("body") or {}).get("to")
+    if not isinstance(recipients, list) or len(recipients) != 1 or not isinstance(recipients[0], str):
+        return "email_destination_configuration_changed"
+    target = recipients[0]
+    if job.user_id is not None:
+        if not signup_enabled():
+            return "customer_messages_disabled"
+        user = db.get(User, job.user_id)
+        if (user is None or user.status != "active" or user.email_verified is not True or _single_recipient(user.email) is None
+                or _single_recipient(user.email) != job.payload.get("signup_email")):
+            return "signup_destination_changed"
+        if job.step == "customer_email":
+            return None if target == _single_recipient(user.email) else "signup_destination_changed"
+    elif job.step == "customer_email":
+        if not signup_enabled():
+            return "customer_messages_disabled"
+        lead = db.get(Lead, job.lead_id)
+        tracking = (lead.tracking or {}) if lead else {}
+        if (lead is None or target != _single_recipient(lead.email)
+                or tracking.get("contact_consent") is not True or tracking.get("internal_test") is True
+                or lead.type != job.payload.get("event_type")
+                or lead.type not in {"buyer_interest", "seller_interest", "rental_interest", "property_inquiry"}):
+            return "customer_destination_changed"
+        listing_id = job.payload.get("public_listing_id")
+        if listing_id and db.query(Listing.id).filter(Listing.id == listing_id, Listing.status == "active").first() is None:
+            return "customer_listing_context_changed"
+        return None
+    try:
+        current = {address.casefold() for address in notification_recipients(db)}
+        return None if target.casefold() in current else "email_destination_configuration_changed"
+    except Exception:
+        return "email_destination_configuration_changed"
 
 
 def process_claimed_job(db: Session, claim: Claim, *, client: httpx.Client | None = None,
@@ -462,19 +581,17 @@ def process_claimed_job(db: Session, claim: Claim, *, client: httpx.Client | Non
         return finish_claim(db, claim, Outcome("needs_review", "manual_retry_authorization_missing"), now)
     if payload_digest(job.payload) != job.payload_sha256:
         return finish_claim(db, claim, Outcome("needs_review", "delivery_payload_changed"), now)
+    if (job.lead_id is None) == (job.user_id is None) or (job.user_id is not None and job.provider != "resend"):
+        return finish_claim(db, claim, Outcome("needs_review", "invalid_delivery_event"), now)
     if job.provider == "resend":
-        try:
-            current = {target.casefold() for target in notification_recipients(db)}
-            recipients = (job.payload.get("body") or {}).get("to")
-            valid = isinstance(recipients, list) and len(recipients) == 1 and isinstance(recipients[0], str) and recipients[0].casefold() in current
-        except Exception:
-            valid = False
-        if not valid:
-            return finish_claim(db, claim, Outcome("needs_review", "email_destination_configuration_changed"), now)
+        error = _email_destination_error(db, job)
+        if error:
+            return finish_claim(db, claim, Outcome("needs_review", error), now)
     contact_id = None
     if job.depends_on:
         parent = db.query(LeadDeliveryJob).filter(LeadDeliveryJob.lead_id == job.lead_id,
-            LeadDeliveryJob.step == job.depends_on, LeadDeliveryJob.status == "accepted").first()
+            LeadDeliveryJob.user_id == job.user_id, LeadDeliveryJob.step == job.depends_on,
+            LeadDeliveryJob.status == "accepted").first()
         contact_id = parent.provider_id if parent else None
     try:
         if client is None:

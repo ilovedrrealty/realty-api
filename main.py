@@ -12,6 +12,7 @@ from config import settings
 from database import SessionLocal
 from utils.limiter import limiter
 from routes import research_workspaces
+from routes import property_network
 from routes import analytics, lead_delivery as lead_delivery_routes, property_management, location_review, owner_leads
 
 # Import all models so Base.metadata knows about them before create_all
@@ -190,6 +191,7 @@ app.include_router(research_workspaces.router)
 app.include_router(analytics.router)
 app.include_router(lead_delivery_routes.router)
 app.include_router(property_management.router)
+app.include_router(property_network.router)
 app.include_router(location_review.router)
 app.include_router(owner_leads.router)
 app.include_router(website_settings.router)

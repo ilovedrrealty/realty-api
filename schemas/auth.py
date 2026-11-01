@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr, Field
-from typing import Optional
+from typing import Optional, Literal
 import uuid
 
 
@@ -23,6 +23,7 @@ class RegisterResponse(BaseModel):
 class VerifyRequest(BaseModel):
     email: EmailStr
     code: str
+    locale: Literal["en", "es"] = "en"
 
 
 class ResendCodeRequest(BaseModel):
@@ -42,6 +43,7 @@ class CreateAdminUserBody(BaseModel):
 
 class GoogleAuthRequest(BaseModel):
     access_token: str
+    locale: Literal["en", "es"] = "en"
 
 
 class UpdateProfileRequest(BaseModel):

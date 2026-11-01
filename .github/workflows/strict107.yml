@@ -1,0 +1,314 @@
+# V3 SOURCE CANDIDATE ONLY: no push, Actions activation or run is authorized.
+# Official index/config pins are bound to reviewed registry-digest-proof.json.
+name: Strict 107 isolated source rehearsal
+
+on:
+  push:
+    branches:
+      - codex-ci-strict107-20261101
+
+permissions:
+  contents: read
+
+concurrency:
+  group: strict107-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  strict107:
+    if: >-
+      github.event_name == 'push' &&
+      github.repository == 'ilovedrrealty/realty-api' &&
+      github.ref == 'refs/heads/codex-ci-strict107-20261101' &&
+      github.event.created == true &&
+      github.event.before == '0000000000000000000000000000000000000000' &&
+      github.event.deleted == false && github.event.forced == false &&
+      github.run_attempt == 1 && github.event.after == github.sha
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      CANDIDATE_COMMIT: ${{ github.sha }}
+      PYTHON_DIGEST: sha256:673719e071ecf27434fd2635bbd8d00f49f4fdd81f243143438a42ced8bedf60
+      PYTHON_CONFIG_DIGEST: sha256:de8d79606beff46114d4abd5c392116c62142cbe582f8ede92cf4a64e1a10ff5
+      POSTGRES_DIGEST: sha256:3b0cda93be7c8dba2ed484d19393d93845dc3dafb88973e248ba8e6d99d784e1
+      POSTGRES_CONFIG_DIGEST: sha256:81edcaa5ff2923f7be9c1f43d3e5076f29c6c9c216c86964b5fd038959404429
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Require exact new-branch event and reviewed image literals
+        env:
+          PUSH_CREATED: ${{ github.event.created }}
+          PUSH_DELETED: ${{ github.event.deleted }}
+          PUSH_FORCED: ${{ github.event.forced }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          PUSH_AFTER: ${{ github.event.after }}
+        run: |
+          set -euo pipefail
+          [[ "$GITHUB_REPOSITORY" == ilovedrrealty/realty-api ]]
+          [[ "$GITHUB_EVENT_NAME" == push && "$GITHUB_REF" == refs/heads/codex-ci-strict107-20261101 ]]
+          [[ "$PUSH_CREATED" == true && "$PUSH_DELETED" == false && "$PUSH_FORCED" == false ]]
+          [[ "$PUSH_BEFORE" == 0000000000000000000000000000000000000000 ]]
+          [[ "$GITHUB_RUN_ATTEMPT" == 1 ]]
+          [[ "$CANDIDATE_COMMIT" =~ ^[0-9a-f]{40}$ && "$CANDIDATE_COMMIT" == "$GITHUB_SHA" ]]
+          [[ "$PUSH_AFTER" == "$CANDIDATE_COMMIT" ]]
+          [[ "$PYTHON_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+          [[ "$POSTGRES_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+          [[ "$PYTHON_CONFIG_DIGEST" =~ ^sha256:[0-9a-f]{64}$ && "$POSTGRES_CONFIG_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+
+      - name: Read only the exact reviewed commit
+        # Official actions/checkout v7.0.1, verified immutable source commit.
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: ilovedrrealty/realty-api
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+          set-safe-directory: false
+          show-progress: false
+          lfs: false
+          submodules: false
+
+      - name: One bounded internal-network rehearsal and owned cleanup
+        id: rehearsal
+        timeout-minutes: 29
+        run: |
+          set -euo pipefail
+          umask 077
+          [[ "$CANDIDATE_COMMIT" =~ ^[0-9a-f]{40}$ && "$CANDIDATE_COMMIT" == "$GITHUB_SHA" ]]
+          [[ "$PYTHON_DIGEST" =~ ^sha256:[0-9a-f]{64}$ && "$POSTGRES_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+          [[ "$(git -c safe.directory="$GITHUB_WORKSPACE" rev-parse HEAD)" == "$CANDIDATE_COMMIT" ]]
+          [[ -z "$(git -c safe.directory="$GITHUB_WORKSPACE" status --porcelain)" ]]
+          RUN_KEY="r${GITHUB_RUN_ID}a${GITHUB_RUN_ATTEMPT}-$(cat /proc/sys/kernel/random/uuid)"
+          [[ "$RUN_KEY" =~ ^r[0-9]+a1-[0-9a-f-]{36}$ ]]
+          STATE="$RUNNER_TEMP/ildr-strict107-$RUN_KEY"
+          [[ ! -e "$STATE" && ! -L "$STATE" ]]
+          mkdir -m 700 "$STATE"
+          ARTIFACTS="$STATE/artifacts"
+          mkdir -m 700 "$ARTIFACTS"
+          LABEL=org.ilovedrrealty.strict107.run
+          PY_REF="docker.io/library/python:3.11-slim@$PYTHON_DIGEST"
+          PG_REF="docker.io/library/postgres:17@$POSTGRES_DIGEST"
+          IMAGE_ID=''; NETWORK_ID=''; PG_ID=''; TEST_ID=''; PG_VOLUMES=''
+          BUILD_CAPTURE_UNCERTAIN=0; NETWORK_CAPTURE_UNCERTAIN=0
+          PG_CAPTURE_UNCERTAIN=0; TEST_CAPTURE_UNCERTAIN=0
+
+          owned_container() {
+            local captured_container_id captured_container_label
+            [[ "$1" =~ ^[0-9a-f]{64}$ ]] || return 1
+            captured_container_id="$(timeout --kill-after=5s 15s docker inspect --type container --format '{{.Id}}' "$1" 2>/dev/null)" || return 1
+            [[ "$captured_container_id" == "$1" ]] || return 1
+            captured_container_label="$(timeout --kill-after=5s 15s docker inspect --type container --format '{{index .Config.Labels "org.ilovedrrealty.strict107.run"}}' "$1" 2>/dev/null)" || return 1
+            [[ "$captured_container_label" == "$RUN_KEY" ]]
+          }
+          cleanup() {
+            result=$?
+            trap - EXIT INT TERM
+            cleanup_failed=0
+            # A possibly successful creation without complete identity/volume
+            # capture permanently disqualifies this run's cleanup proof.
+            if [[ "$BUILD_CAPTURE_UNCERTAIN$NETWORK_CAPTURE_UNCERTAIN$PG_CAPTURE_UNCERTAIN$TEST_CAPTURE_UNCERTAIN" != 0000 ]]; then cleanup_failed=1; fi
+            for id in "$TEST_ID" "$PG_ID"; do
+              if [[ -n "$id" ]]; then
+                if owned_container "$id"; then
+                  timeout --kill-after=5s 45s docker rm --force --volumes "$id" >/dev/null 2>&1 || cleanup_failed=1
+                  if timeout --kill-after=5s 15s docker inspect --type container "$id" >/dev/null 2>&1; then cleanup_failed=1
+                  else probe_rc=$?; if [[ "$probe_rc" != 1 ]]; then cleanup_failed=1; fi; fi
+                else cleanup_failed=1; fi
+              fi
+            done
+            if [[ -n "$PG_VOLUMES" ]]; then
+              if volume_inventory="$(timeout --kill-after=5s 15s docker volume ls --quiet 2>/dev/null)"; then
+                for volume in $PG_VOLUMES; do
+                  if [[ ! "$volume" =~ ^[0-9a-f]{64}$ ]]; then cleanup_failed=1; continue; fi
+                  while IFS= read -r observed_volume; do
+                    if [[ "$observed_volume" == "$volume" ]]; then cleanup_failed=1; fi
+                  done <<< "$volume_inventory"
+                done
+              else cleanup_failed=1; fi
+            fi
+            if [[ -n "$NETWORK_ID" ]]; then
+              if [[ "$NETWORK_ID" =~ ^[0-9a-f]{64}$ ]] &&
+                 cleanup_network_id="$(timeout --kill-after=5s 15s docker network inspect --format '{{.Id}}' "$NETWORK_ID" 2>/dev/null)" &&
+                 [[ "$cleanup_network_id" == "$NETWORK_ID" ]] &&
+                 cleanup_network_label="$(timeout --kill-after=5s 15s docker network inspect --format '{{index .Labels "org.ilovedrrealty.strict107.run"}}' "$NETWORK_ID" 2>/dev/null)" &&
+                 [[ "$cleanup_network_label" == "$RUN_KEY" ]]; then
+                timeout --kill-after=5s 30s docker network rm "$NETWORK_ID" >/dev/null 2>&1 || cleanup_failed=1
+                if timeout --kill-after=5s 15s docker network inspect "$NETWORK_ID" >/dev/null 2>&1; then cleanup_failed=1
+                else probe_rc=$?; if [[ "$probe_rc" != 1 ]]; then cleanup_failed=1; fi; fi
+              else cleanup_failed=1; fi
+            fi
+            if [[ -n "$IMAGE_ID" ]]; then
+              if [[ "$IMAGE_ID" =~ ^sha256:[0-9a-f]{64}$ ]] &&
+                 cleanup_image_id="$(timeout --kill-after=5s 15s docker image inspect --format '{{.Id}}' "$IMAGE_ID" 2>/dev/null)" &&
+                 [[ "$cleanup_image_id" == "$IMAGE_ID" ]] &&
+                 cleanup_image_label="$(timeout --kill-after=5s 15s docker image inspect --format '{{index .Config.Labels "org.ilovedrrealty.strict107.run"}}' "$IMAGE_ID" 2>/dev/null)" &&
+                 [[ "$cleanup_image_label" == "$RUN_KEY" ]]; then
+                timeout --kill-after=5s 30s docker image rm "$IMAGE_ID" >/dev/null 2>&1 || cleanup_failed=1
+                if timeout --kill-after=5s 15s docker image inspect "$IMAGE_ID" >/dev/null 2>&1; then cleanup_failed=1
+                else probe_rc=$?; if [[ "$probe_rc" != 1 ]]; then cleanup_failed=1; fi; fi
+              else cleanup_failed=1; fi
+            fi
+            # An inspect exit1 is not proof of absence. Timeout/other exits
+            # already refuse; successful positive scans below are mandatory.
+            timeout --kill-after=5s 15s docker info --format '{{.ServerVersion}}' >/dev/null 2>&1 || cleanup_failed=1
+            # Successful exact-run-label scans must also be empty. Inspect
+            # failures or uncaptured anonymous volumes cannot prove absence.
+            if ! residual="$(timeout --kill-after=5s 15s docker container ls --all --quiet --no-trunc --filter "label=$LABEL=$RUN_KEY" 2>/dev/null)"; then cleanup_failed=1
+            elif [[ -n "$residual" ]]; then cleanup_failed=1; fi
+            if ! residual="$(timeout --kill-after=5s 15s docker network ls --quiet --no-trunc --filter "label=$LABEL=$RUN_KEY" 2>/dev/null)"; then cleanup_failed=1
+            elif [[ -n "$residual" ]]; then cleanup_failed=1; fi
+            if ! residual="$(timeout --kill-after=5s 15s docker image ls --quiet --no-trunc --filter "label=$LABEL=$RUN_KEY" 2>/dev/null)"; then cleanup_failed=1
+            elif [[ -n "$residual" ]]; then cleanup_failed=1; fi
+            timeout --kill-after=5s 15s docker info --format '{{.ServerVersion}}' >/dev/null 2>&1 || cleanup_failed=1
+            if [[ "$cleanup_failed" != 0 ]]; then
+              printf '%s\n' 'STRICT107_OWNED_CLEANUP_NOT_VERIFIED'
+              exit 1
+            fi
+            printf 'owned_cleanup_verified=true\n' >> "$GITHUB_OUTPUT"
+            printf 'STRICT107_OWNED_CLEANUP_VERIFIED commit=%s run=%s attempt=1\n' "$CANDIDATE_COMMIT" "$GITHUB_RUN_ID"
+            exit "$result"
+          }
+          trap cleanup EXIT
+          trap 'exit 130' INT TERM
+
+          # Pull/build online before creating the isolated runtime namespace.
+          timeout --kill-after=5s 180s docker pull --platform linux/amd64 "$PY_REF" >/dev/null 2>&1
+          timeout --kill-after=5s 180s docker pull --platform linux/amd64 "$PG_REF" >/dev/null 2>&1
+          PY_IMAGE_ID="$(timeout --kill-after=5s 15s docker image inspect --format '{{.Id}}' "$PY_REF" 2>/dev/null)"
+          PG_IMAGE_ID="$(timeout --kill-after=5s 15s docker image inspect --format '{{.Id}}' "$PG_REF" 2>/dev/null)"
+          [[ "$PY_IMAGE_ID" == "$PYTHON_CONFIG_DIGEST" && "$PG_IMAGE_ID" == "$POSTGRES_CONFIG_DIGEST" ]]
+          BUILD_CAPTURE_UNCERTAIN=1
+          timeout --kill-after=5s 600s docker build --platform linux/amd64 --pull=false --quiet \
+            --label "$LABEL=$RUN_KEY" --build-arg "PYTHON_DIGEST=$PYTHON_DIGEST" \
+            --file ci/strict107.Dockerfile --iidfile "$STATE/image.id" . >/dev/null 2>&1
+          IMAGE_ID="$(cat "$STATE/image.id")"
+          [[ "$IMAGE_ID" =~ ^sha256:[0-9a-f]{64}$ ]]
+          captured_image_id="$(timeout --kill-after=5s 15s docker image inspect --format '{{.Id}}' "$IMAGE_ID" 2>/dev/null)" || exit 1
+          [[ "$captured_image_id" == "$IMAGE_ID" ]]
+          captured_image_label="$(timeout --kill-after=5s 15s docker image inspect --format '{{index .Config.Labels "org.ilovedrrealty.strict107.run"}}' "$IMAGE_ID" 2>/dev/null)" || exit 1
+          [[ "$captured_image_label" == "$RUN_KEY" ]]
+          BUILD_CAPTURE_UNCERTAIN=0
+          {
+            printf 'Official Python ref: `%s`; observed image: `%s`\n' "$PY_REF" "$PY_IMAGE_ID"
+            printf 'Official PostgreSQL ref: `%s`; observed image: `%s`\n' "$PG_REF" "$PG_IMAGE_ID"
+            printf 'Owned test image: `%s`; source: `%s`\n' "$IMAGE_ID" "$CANDIDATE_COMMIT"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          NETWORK_CAPTURE_UNCERTAIN=1
+          NETWORK_ID="$(timeout --kill-after=5s 30s docker network create --internal --label "$LABEL=$RUN_KEY" "ildr-strict107-$RUN_KEY" 2>/dev/null)"
+          [[ "$NETWORK_ID" =~ ^[0-9a-f]{64}$ ]]
+          captured_network_id="$(timeout --kill-after=5s 15s docker network inspect --format '{{.Id}}' "$NETWORK_ID" 2>/dev/null)" || exit 1
+          [[ "$captured_network_id" == "$NETWORK_ID" ]]
+          captured_network_label="$(timeout --kill-after=5s 15s docker network inspect --format '{{index .Labels "org.ilovedrrealty.strict107.run"}}' "$NETWORK_ID" 2>/dev/null)" || exit 1
+          [[ "$captured_network_label" == "$RUN_KEY" ]]
+          captured_network_internal="$(timeout --kill-after=5s 15s docker network inspect --format '{{.Internal}}' "$NETWORK_ID" 2>/dev/null)" || exit 1
+          [[ "$captured_network_internal" == true ]]
+          NETWORK_CAPTURE_UNCERTAIN=0
+          PG_CAPTURE_UNCERTAIN=1
+          PG_ID="$(timeout --kill-after=5s 30s docker create --label "$LABEL=$RUN_KEY" --network "$NETWORK_ID" \
+            --memory 512m --memory-swap 512m --pids-limit 64 --cpus 1 \
+            --security-opt no-new-privileges:true \
+            --env POSTGRES_HOST_AUTH_METHOD=trust --env POSTGRES_DB=ildr_platform_test_20261025 \
+            "$PG_REF" postgres -p 55449 -h 127.0.0.1 2>/dev/null)"
+          owned_container "$PG_ID"
+          PORT_BINDINGS="$(timeout --kill-after=5s 15s docker inspect --format '{{json .HostConfig.PortBindings}}' "$PG_ID" 2>/dev/null)"
+          [[ "$PORT_BINDINGS" == '{}' || "$PORT_BINDINGS" == 'null' ]]
+          PG_VOLUMES="$(timeout --kill-after=5s 15s docker inspect --format '{{range .Mounts}}{{if eq .Type "volume"}}{{println .Name}}{{end}}{{end}}' "$PG_ID" 2>/dev/null)"
+          [[ -n "$PG_VOLUMES" ]]
+          for volume in $PG_VOLUMES; do [[ "$volume" =~ ^[0-9a-f]{64}$ ]]; done
+          PG_CAPTURE_UNCERTAIN=0
+          timeout --kill-after=5s 30s docker start "$PG_ID" >/dev/null 2>&1
+          ready=0
+          for check in {1..45}; do
+            if timeout --kill-after=2s 5s docker exec "$PG_ID" pg_isready -h 127.0.0.1 -p 55449 -U postgres -d ildr_platform_test_20261025 >/dev/null 2>&1; then ready=1; break; fi
+            sleep 1
+          done
+          [[ "$ready" == 1 ]]
+
+          TEST_CAPTURE_UNCERTAIN=1
+          TEST_ID="$(timeout --kill-after=5s 30s docker create --label "$LABEL=$RUN_KEY" --network "container:$PG_ID" \
+            --read-only --cap-drop ALL --security-opt no-new-privileges:true \
+            --user "$(id -u):$(id -g)" --memory 2g --memory-swap 2g --pids-limit 128 --cpus 2 \
+            --mount "type=bind,src=$GITHUB_WORKSPACE,dst=/application,readonly" \
+            --mount "type=bind,src=$ARTIFACTS,dst=/artifacts" \
+            --tmpfs /scratch:rw,noexec,nosuid,nodev,size=128m,mode=1777 \
+            --env HOME=/scratch --env TMPDIR=/scratch --workdir /scratch \
+            "$IMAGE_ID" /usr/local/bin/python -I -S -B /application/ci/strict107.py \
+            --repo /application --artifacts /artifacts --expected-commit "$CANDIDATE_COMMIT" 2>/dev/null)"
+          owned_container "$TEST_ID"
+          TEST_CAPTURE_UNCERTAIN=0
+          set +e
+          timeout --signal=TERM --kill-after=20s 420s docker start --attach "$TEST_ID" >/dev/null 2>&1
+          test_exit=$?
+          set -e
+          CONTAINER_EXIT="$(timeout --kill-after=5s 15s docker inspect --format '{{.State.ExitCode}}' "$TEST_ID" 2>/dev/null)"
+          CONTAINER_RUNNING="$(timeout --kill-after=5s 15s docker inspect --format '{{.State.Running}}' "$TEST_ID" 2>/dev/null)"
+          [[ "$CONTAINER_EXIT" =~ ^[0-9]+$ && "$CONTAINER_RUNNING" =~ ^(true|false)$ ]]
+
+          # No artifact/cache/snapshot service. Emit only the two validated
+          # bounded metadata reports, including honest FAIL reports, to logs.
+          timeout --kill-after=2s 15s python3 -I -S -B - "$ARTIFACTS" "$test_exit" "$CONTAINER_EXIT" "$CANDIDATE_COMMIT" "$GITHUB_RUN_ID" <<'PY'
+          import hashlib, json, pathlib, re, sys
+          root = pathlib.Path(sys.argv[1])
+          allowed = {'strict107-result.json', 'strict107-linux-inventory.json'}
+          if {p.name for p in root.iterdir()} != allowed:
+              raise SystemExit('STRICT107_AGGREGATE_ALLOWLIST_REQUIRED')
+          reports = {}
+          for name in allowed:
+              path = root / name
+              if path.is_symlink() or not path.is_file() or not 0 < path.stat().st_size <= 1048576:
+                  raise SystemExit('STRICT107_AGGREGATE_BOUND_REQUIRED')
+              reports[name] = json.loads(path.read_bytes())
+          result, inventory = reports['strict107-result.json'], reports['strict107-linux-inventory.json']
+          result_keys = {'status','source_commit','source_manifest_sha256','runner_sha256','expected_tests','tests_pass','exact_schemas_absent','cleanup_errors','bootstrap_and_full_migration_chain_proven','real_provider_or_production_actions','failure_code','source_unchanged','native_child_exit','minimum_available_mib','child_output_bytes','assertions'}
+          inventory_keys = {'scope','source_commit','source_manifest_sha256','operational_git_blobs','python_version','python_executable_sha256','git_executable_sha256','platform','machine','packages','pillow_version','pillow_imaging_sha256','webp_available','webp_version','requirements_sha256','windows_native_pins_reused','bootstrap_and_full_migration_chain_proven','postgres_server_version_num'}
+          child_keys = {'status','tests_run','schema_uuid_consumed','expected_schemas','class_counts','denied_guard_events','source_unchanged','failures','errors','skipped','expected_failures','unexpected_successes','failed_test_ids','failure_kind'}
+          operational = {'ci/strict107.py','ci/strict107-source.json','ci/strict107.Dockerfile','.github/workflows/strict107.yml'}
+          need = lambda value: value or sys.exit('STRICT107_SAFE_AGGREGATE_SCHEMA_REQUIRED')
+          need(isinstance(result, dict) and set(result) <= result_keys and isinstance(inventory, dict) and set(inventory) <= inventory_keys)
+          need(result.get('source_commit') == inventory.get('source_commit') == sys.argv[4] and re.fullmatch(r'[0-9a-f]{40}', sys.argv[4]) and re.fullmatch(r'[0-9]+', sys.argv[5]))
+          need(result.get('expected_tests') == 107 and result.get('bootstrap_and_full_migration_chain_proven') is False and result.get('real_provider_or_production_actions') is False)
+          need(inventory.get('scope') == 'LINUX_RUNTIME_OBSERVATION_NOT_RELEASE_ACCEPTANCE' and inventory.get('windows_native_pins_reused') is False and inventory.get('bootstrap_and_full_migration_chain_proven') is False)
+          need(result.get('source_manifest_sha256') == inventory.get('source_manifest_sha256') and re.fullmatch(r'[0-9a-f]{64}', result.get('source_manifest_sha256', '')))
+          need(isinstance(inventory.get('operational_git_blobs'), dict) and set(inventory['operational_git_blobs']) == operational and all(re.fullmatch(r'[0-9a-f]{40}', value) for value in inventory['operational_git_blobs'].values()))
+          need(isinstance(inventory.get('packages'), list) and len(inventory['packages']) <= 500)
+          for package in inventory['packages']:
+              need(isinstance(package, dict) and set(package) == {'name','version','file_count','files_sha256'} and isinstance(package['name'], str) and isinstance(package['version'], str) and type(package['file_count']) is int and package['file_count'] > 0 and re.fullmatch(r'[0-9a-f]{64}', package['files_sha256']))
+          if 'assertions' in result:
+              child = result['assertions']
+              need(isinstance(child, dict) and set(child) <= child_keys)
+              need(set(child.get('class_counts', {})) <= {'PropertyNetworkRoutes','PrivateImageContracts','CustomerDeliveryTests','LeadDeliveryTests','SignupNotificationTests'})
+              for key in ('schema_uuid_consumed','expected_schemas'):
+                  need(isinstance(child.get(key), dict) and set(child[key]) <= {'tests/test_property_network.py','tests/test_customer_delivery.py','tests/test_lead_delivery.py'})
+              need(all(re.fullmatch(r'(network_test_|customer_delivery_test_|lead_delivery_test_)[0-9a-f]{32}', value) for value in child['expected_schemas'].values()))
+          # All emitted strings are bounded printable metadata; no raw output,
+          # addresses, URLs, control characters or extra object fields.
+          def safe_metadata(value):
+              if isinstance(value, dict):
+                  return all(isinstance(key, str) and re.fullmatch(r'[A-Za-z0-9_./-]{1,120}', key) and safe_metadata(item) for key, item in value.items())
+              if isinstance(value, list):
+                  return len(value) <= 500 and all(safe_metadata(item) for item in value)
+              if isinstance(value, str):
+                  return len(value) <= 300 and re.fullmatch(r'[A-Za-z0-9_./ ()+:=,\-]*', value) is not None and '://' not in value
+              return value is None or type(value) in (bool, int, float)
+          need(all(safe_metadata(value) for value in reports.values()))
+          if sys.argv[2:4] == ['0', '0']:
+              assertions = result.get('assertions', {})
+              if not (result.get('status') == 'PASS_107_ASSERTIONS_AND_EXACT_SCHEMA_CLEANUP_PG_CONTAINER_CLEANUP_PENDING'
+                  and result.get('source_commit') == sys.argv[4] and result.get('tests_pass') is True
+                  and result.get('exact_schemas_absent') is True and result.get('source_unchanged') is True
+                  and result.get('cleanup_errors') == [] and result.get('native_child_exit') == 0
+                  and assertions.get('tests_run') == 107
+                  and all(assertions.get(key) == 0 for key in ('failures', 'errors', 'skipped', 'expected_failures', 'unexpected_successes'))):
+                  raise SystemExit('STRICT107_PARENT_ACCEPTANCE_REQUIRED')
+          for name in sorted(allowed):
+              payload = (json.dumps(reports[name], sort_keys=True, indent=2, allow_nan=False)+'\n').encode('ascii')
+              need(0 < len(payload) <= 1048576 and max(map(len, payload.splitlines()), default=0) <= 8192)
+              digest = hashlib.sha256(payload).hexdigest()
+              marker = f'file={name} commit={sys.argv[4]} run={sys.argv[5]} attempt=1 sha256={digest} bytes={len(payload)}'
+              print('STRICT107_AGGREGATE_BEGIN '+marker)
+              sys.stdout.write(payload.decode('ascii'))
+              print('STRICT107_AGGREGATE_END '+marker)
+          PY
+          [[ "$test_exit" == 0 && "$CONTAINER_EXIT" == 0 && "$CONTAINER_RUNNING" == false ]]

@@ -1,4 +1,4 @@
-"""Private operational records for newly accepted lead notifications.
+"""Private operational records for new lead and verified-signup notifications.
 
 Payloads are immutable snapshots and may contain contact data. They must never
 be returned by public or Admin status endpoints, or included in log messages.
@@ -16,13 +16,17 @@ class LeadDeliveryJob(Base):
     __tablename__ = "lead_delivery_jobs"
     __table_args__ = (
         UniqueConstraint("lead_id", "step", name="uq_lead_delivery_step"),
+        UniqueConstraint("user_id", "step", name="uq_signup_delivery_step"),
+        CheckConstraint("(lead_id IS NULL) <> (user_id IS NULL)", name="ck_delivery_exactly_one_event"),
         CheckConstraint("status IN ('pending','processing','retry_wait','accepted','failed','needs_review','skipped')", name="ck_lead_delivery_status"),
         CheckConstraint("attempt_count >= 0 AND attempt_count <= 4", name="ck_lead_delivery_attempts"),
         Index("ix_lead_delivery_due", "status", "next_attempt_at"),
         Index("ix_lead_delivery_lead", "lead_id", "created_at"),
+        Index("ix_delivery_signup", "user_id", "created_at"),
     )
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    lead_id = Column(UUID(as_uuid=True), ForeignKey("leads.id", ondelete="CASCADE"), nullable=False)
+    lead_id = Column(UUID(as_uuid=True), ForeignKey("leads.id", ondelete="CASCADE"), nullable=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", name="fk_delivery_signup_user", ondelete="RESTRICT"), nullable=True)
     step = Column(Text, nullable=False)
     provider = Column(Text, nullable=False)
     depends_on = Column(Text)
@@ -47,7 +51,7 @@ class LeadDeliveryJob(Base):
 class LeadDeliveryWorkerState(Base):
     __tablename__ = "lead_delivery_worker_state"
     __table_args__ = (CheckConstraint("id = 1", name="ck_lead_delivery_worker_singleton"),)
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=False)
     last_poll_at = Column(TIMESTAMP(timezone=True), nullable=False)
     last_completed_at = Column(TIMESTAMP(timezone=True))
     last_batch_count = Column(Integer, nullable=False, server_default="0")

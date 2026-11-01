@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     ghl_location_id: str = ""
     ghl_enabled: bool = False
     lead_delivery_enabled: bool = False
+    customer_messages_enabled: bool = False
     property_inquiry_require_consent: bool = False
     ghl_webhook_secret: str = ""
     notify_email: str = ""  # set to ilovedrrealty@gmail.com in Railway
