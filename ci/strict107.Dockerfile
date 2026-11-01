@@ -15,7 +15,7 @@ RUN apt-get -o Acquire::Retries=0 update \
 COPY requirements.txt /opt/strict107/requirements.txt
 # The pinned base removes compiled caches after ensurepip. Reinstall its exact
 # two bundled tool versions without compiling, rebuilding consistent RECORDs.
-# Keep the base's unversioned pip alias outside the recorded console scripts.
+# Do not regenerate an unversioned pip wrapper; commands use python -m pip.
 RUN /usr/local/bin/python -I -B -c "import importlib.metadata as m; assert m.version('pip') == '24.0' and m.version('setuptools') == '79.0.1'" \
     && printf '%s\n' \
       'pip==24.0 --hash=sha256:ba0d021a166865d2265246961bec0152ff124de910c5cc39f1156ce3fa7c69dc' \
