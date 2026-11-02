@@ -1,0 +1,104 @@
+{
+  "all_tools": "Open all tools",
+  "open": "Open tool",
+  "open_buyer": "Open buyer tools",
+  "restricted_title": "Choose the tools for your account",
+  "restricted_description": "Your account can use buyer tools and the shared resource library. Seller / owner and realtor workspaces require the corresponding account access.",
+  "start_title": "Where to start",
+  "join": {
+    "title": "Join DR Professionals",
+    "description": "Offer property-related services? Create your professional profile, list your specialties and submit it for Admin approval."
+  },
+  "workspaces": {
+    "Buyer": {
+      "title": "Buyer tools",
+      "description": "Find a property, compare an investment and prepare for your purchase. Your practical tools are here, alongside your saved homes and inquiries.",
+      "start": "Browse homes or rentals, save your favorites, then use the ROI calculator and resource library to prepare questions for your agent. Find approved service providers in the signed-in professional directory."
+    },
+    "Owner": {
+      "title": "Seller / owner tools",
+      "description": "Manage your property, plan rental income and find help with selling, maintenance and ownership.",
+      "start": "Start with your listings and booking calendar. Use the resource library for taxes, permits and utilities, and search the professional directory for legal, design or maintenance support."
+    },
+    "Realtor": {
+      "title": "Realtor tools",
+      "description": "Open maps, parcel and title services, organize your clients and find property professionals from one place.",
+      "start": "Open GIS, title and official sources to research a property. The map locates parcels; request the appropriate official certificate and professional review to check current legal status. Leads and pipeline show only information your account is permitted to access."
+    }
+  },
+  "cards": {
+    "network": { "title": "Property projects & member community", "description": "Follow private property work, share progress with an assigned team and manage your member profile." },
+    "buy": {
+      "title": "Homes for sale & map",
+      "description": "Search by area, price, property type and features."
+    },
+    "rent": {
+      "title": "Find a rental",
+      "description": "Browse the rental listings and compare locations."
+    },
+    "map": {
+      "title": "Property search & map",
+      "description": "Locate listings and compare properties across the country."
+    },
+    "saved": {
+      "title": "Saved homes",
+      "description": "Return to the properties you saved to your account."
+    },
+    "calculator": {
+      "title": "ROI calculator",
+      "description": "Explore estimated rental income, costs and returns using your assumptions."
+    },
+    "professionals": {
+      "title": "Find a professional",
+      "description": "Search approved property service profiles while signed in."
+    },
+    "resources": {
+      "title": "DR resource library",
+      "description": "Find taxes, financing, permits, utilities and official services by topic."
+    },
+    "buying": {
+      "title": "Buying guide",
+      "description": "Understand the next steps and connect with our real estate team."
+    },
+    "selling": {
+      "title": "Selling guide",
+      "description": "Prepare your property and ask our team about selling."
+    },
+    "contact": {
+      "title": "Talk with our team",
+      "description": "Send a short request so we can contact you about your plans."
+    },
+    "owner_listings": {
+      "title": "Manage my listings",
+      "description": "Review your listings, status and property details."
+    },
+    "calendar": {
+      "title": "Booking calendar",
+      "description": "Review your property's calendar and availability."
+    },
+    "owner_leads": {
+      "title": "Property inquiries",
+      "description": "Review inquiries about the properties you manage."
+    },
+    "research": {
+      "title": "GIS, title & official sources",
+      "description": "Open parcel maps, title records, verified sources and research tools."
+    },
+    "realtor_listings": {
+      "title": "Manage my listings",
+      "description": "Review the listings and updates assigned to your account."
+    },
+    "realtor_leads": {
+      "title": "My leads",
+      "description": "Follow up with the clients assigned to you."
+    },
+    "pipeline": {
+      "title": "Sales pipeline",
+      "description": "Track your clients and the next step in each transaction."
+    },
+    "management": {
+      "title": "Property management",
+      "description": "Manage leases, rent records, maintenance, inspections, owner approvals and tasks for your properties."
+    }
+  }
+}

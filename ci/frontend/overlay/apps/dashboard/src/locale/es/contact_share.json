@@ -1,0 +1,23 @@
+{
+  "open": "Compartir contacto",
+  "title": "Revisa el contacto antes de compartir",
+  "close": "Cerrar compartir contacto",
+  "explanation": "Elige los datos que deseas incluir. Solo la vista previa exacta de abajo se copiará al borrador de correo o WhatsApp. Elige allí al destinatario.",
+  "choose_fields": "Datos para compartir",
+  "name": "Nombre / empresa",
+  "email": "Correo electrónico",
+  "phone": "Teléfono",
+  "listing": "Anuncio público",
+  "unavailable": "No disponible o no válido",
+  "permission": "Tengo permiso para compartir los datos de contacto seleccionados de esta persona con el destinatario que elija.",
+  "permission_needed": "Confirma el permiso antes de abrir un borrador o copiar el contacto.",
+  "preview": "Vista previa exacta del mensaje",
+  "empty": "Selecciona un dato disponible para compartir.",
+  "compose_email": "Abrir borrador de correo",
+  "compose_whatsapp": "Abrir borrador de WhatsApp",
+  "subject": "Contacto compartido desde iLoveDRRealty",
+  "copy": "Copiar vista previa",
+  "copied": "Vista previa copiada. No se ha enviado nada.",
+  "copy_failed": "No se pudo copiar. Puedes seleccionar y copiar la vista previa manualmente.",
+  "no_delivery_claim": "Revisa al destinatario y envía desde tu propia aplicación. Abrir un borrador no envía un mensaje ni confirma su entrega."
+}

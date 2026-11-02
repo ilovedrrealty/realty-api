@@ -1,0 +1,104 @@
+{
+  "all_tools": "Abrir todas las herramientas",
+  "open": "Abrir herramienta",
+  "open_buyer": "Abrir herramientas de comprador",
+  "restricted_title": "Elige las herramientas de tu cuenta",
+  "restricted_description": "Tu cuenta puede usar las herramientas de comprador y la biblioteca compartida. Los espacios de vendedor / propietario y agente requieren el acceso correspondiente.",
+  "start_title": "Por dónde empezar",
+  "join": {
+    "title": "Únete a DR Professionals",
+    "description": "¿Ofreces servicios relacionados con propiedades? Crea tu perfil profesional, indica tus especialidades y envíalo para aprobación de Admin."
+  },
+  "workspaces": {
+    "Buyer": {
+      "title": "Herramientas de comprador",
+      "description": "Encuentra una propiedad, compara una inversión y prepara tu compra. Aquí tienes herramientas prácticas junto a tus propiedades guardadas y consultas.",
+      "start": "Busca propiedades en venta o alquiler, guarda tus favoritas y usa la calculadora ROI y la biblioteca para preparar preguntas para tu agente. Encuentra proveedores aprobados en el directorio de profesionales con tu sesión iniciada."
+    },
+    "Owner": {
+      "title": "Herramientas de vendedor / propietario",
+      "description": "Administra tu propiedad, planifica ingresos por alquiler y encuentra apoyo para vender, mantener y cuidar tu inmueble.",
+      "start": "Empieza por tus propiedades y el calendario de reservas. Consulta impuestos, permisos y servicios en la biblioteca y busca apoyo legal, de diseño o mantenimiento en el directorio de profesionales."
+    },
+    "Realtor": {
+      "title": "Herramientas de agente",
+      "description": "Abre mapas y servicios de parcelas y títulos, organiza tus clientes y encuentra profesionales inmobiliarios desde un solo lugar.",
+      "start": "Abre SIG, títulos y fuentes oficiales para investigar una propiedad. El mapa localiza parcelas; solicita la certificación oficial y la revisión profesional adecuadas para comprobar el estado jurídico vigente. Los contactos y el embudo muestran solo la información autorizada para tu cuenta."
+    }
+  },
+  "cards": {
+    "network": { "title": "Proyectos y comunidad de miembros", "description": "Sigue el trabajo privado de propiedades, comparte avances con el equipo asignado y administra tu perfil de miembro." },
+    "buy": {
+      "title": "Propiedades en venta y mapa",
+      "description": "Busca por zona, precio, tipo de propiedad y características."
+    },
+    "rent": {
+      "title": "Buscar alquiler",
+      "description": "Explora las propiedades en alquiler y compara ubicaciones."
+    },
+    "map": {
+      "title": "Búsqueda de propiedades y mapa",
+      "description": "Ubica y compara propiedades en todo el país."
+    },
+    "saved": {
+      "title": "Propiedades guardadas",
+      "description": "Vuelve a las propiedades que guardaste en tu cuenta."
+    },
+    "calculator": {
+      "title": "Calculadora ROI",
+      "description": "Explora ingresos por alquiler, gastos y rendimientos estimados con tus propios supuestos."
+    },
+    "professionals": {
+      "title": "Buscar profesional",
+      "description": "Busca perfiles aprobados de servicios inmobiliarios con tu sesión iniciada."
+    },
+    "resources": {
+      "title": "Biblioteca de recursos de RD",
+      "description": "Encuentra impuestos, financiamiento, permisos, servicios y fuentes oficiales por tema."
+    },
+    "buying": {
+      "title": "Guía de compra",
+      "description": "Conoce los próximos pasos y contacta a nuestro equipo inmobiliario."
+    },
+    "selling": {
+      "title": "Guía de venta",
+      "description": "Prepara tu propiedad y consulta a nuestro equipo sobre la venta."
+    },
+    "contact": {
+      "title": "Habla con nuestro equipo",
+      "description": "Envía una solicitud breve para que te contactemos sobre tus planes."
+    },
+    "owner_listings": {
+      "title": "Administrar mis propiedades",
+      "description": "Revisa tus propiedades, su estado y sus detalles."
+    },
+    "calendar": {
+      "title": "Calendario de reservas",
+      "description": "Revisa el calendario y la disponibilidad de tu propiedad."
+    },
+    "owner_leads": {
+      "title": "Consultas de propiedades",
+      "description": "Revisa consultas sobre las propiedades que administras."
+    },
+    "research": {
+      "title": "SIG, títulos y fuentes oficiales",
+      "description": "Abre mapas parcelarios, registros de títulos, fuentes verificadas y herramientas de investigación."
+    },
+    "realtor_listings": {
+      "title": "Administrar mis propiedades",
+      "description": "Revisa las propiedades y actualizaciones asignadas a tu cuenta."
+    },
+    "realtor_leads": {
+      "title": "Mis contactos",
+      "description": "Da seguimiento a los clientes que tienes asignados."
+    },
+    "pipeline": {
+      "title": "Embudo de ventas",
+      "description": "Organiza tus clientes y el próximo paso de cada operación."
+    },
+    "management": {
+      "title": "Administración de propiedades",
+      "description": "Gestiona contratos, registros de alquiler, mantenimiento, inspecciones, aprobaciones del propietario y tareas."
+    }
+  }
+}

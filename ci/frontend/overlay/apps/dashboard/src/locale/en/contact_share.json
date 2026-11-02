@@ -1,0 +1,23 @@
+{
+  "open": "Share contact",
+  "title": "Review contact before sharing",
+  "close": "Close contact sharing",
+  "explanation": "Choose the details to include. Only the exact preview below will be copied into your email or WhatsApp composer. Choose the recipient there.",
+  "choose_fields": "Details to share",
+  "name": "Name / business",
+  "email": "Email",
+  "phone": "Phone",
+  "listing": "Public listing",
+  "unavailable": "Unavailable or invalid",
+  "permission": "I have permission to share the selected person's contact details with my chosen recipient.",
+  "permission_needed": "Confirm permission before opening a composer or copying the contact.",
+  "preview": "Exact message preview",
+  "empty": "Select an available detail to share.",
+  "compose_email": "Open email draft",
+  "compose_whatsapp": "Open WhatsApp draft",
+  "subject": "Contact shared from iLoveDRRealty",
+  "copy": "Copy preview",
+  "copied": "Preview copied. Nothing has been sent.",
+  "copy_failed": "Could not copy. You can select and copy the preview manually.",
+  "no_delivery_claim": "You review the recipient and send in your own app. Opening a draft does not send a message or confirm delivery."
+}

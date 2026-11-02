@@ -1,0 +1,52 @@
+{
+  "denied": "Email operations are available only in the Admin workspace of an Admin account.",
+  "intro": "Review recorded email processing for new inquiries and newly verified accounts. This view contains operational metadata only, without recipient addresses or message content.",
+  "accepted_note": "Accepted means the email provider acknowledged the request. It does not confirm inbox delivery, reading or a reply.",
+  "history_note": "Historical inquiries and accounts are not replayed. This page does not send messages or enable processing.",
+  "refresh": "Refresh status",
+  "loading": "Loading recorded email status…",
+  "load_error": "Email status is unavailable. No empty queue or delivery outcome has been inferred. Refresh to check again.",
+  "records": "Recorded email jobs",
+  "updated": "Status loaded {{date}}",
+  "not_recorded": "Not recorded",
+  "reference": "Job reference: {{id}}",
+  "attempts": "Attempts recorded",
+  "created": "Created",
+  "last_attempt": "Last attempt",
+  "accepted_at": "Provider acceptance",
+  "uncertain": "The provider outcome is uncertain. A retry is held for review to avoid duplicate email.",
+  "error_code": "Review code: {{code}}",
+  "eligible_after": "Earliest review time: {{date}}. A time alone does not authorize a retry.",
+  "retry": "Review one retry",
+  "no_retry": "No manual retry is currently authorized by this status record.",
+  "empty": "No email jobs were returned for this page and these filters. This does not prove that an earlier email was delivered or recreate historical records.",
+  "total": "Recorded matching jobs: {{count}}",
+  "previous": "Previous page",
+  "next": "Next page",
+  "cancel": "Cancel",
+  "filters": { "title": "Email status filters", "event": "Event", "status": "Status", "all": "All" },
+  "events": { "lead": "New inquiry", "signup": "New verified account" },
+  "flags": {
+    "title": "Server processing settings",
+    "worker": "Email processing",
+    "customer": "Customer acknowledgements",
+    "enabled": "Enabled in the server settings. This is not proof that a worker is running or an email was delivered.",
+    "paused": "Paused in the server settings. No activation is available on this page.",
+    "note": "These are the flags returned with this status report. A retry authorization cannot enable either setting. No SMS or automated WhatsApp service is activated here."
+  },
+  "steps": { "owner_email": "Team notification {{number}}", "email_configuration": "Team email configuration", "customer_email": "Customer acknowledgement", "customer_email_configuration": "Customer email configuration" },
+  "statuses": { "pending": "Pending", "processing": "Processing", "retry_wait": "Waiting for retry review", "accepted": "Provider accepted", "failed": "Attempt failed", "needs_review": "Review required", "skipped": "Skipped" },
+  "confirm": {
+    "title": "Authorize one eligible attempt?",
+    "body": "The server will recheck this job's eligibility, cooldown and attempt limit. This action authorizes one attempt for the enabled worker; it makes no provider request itself and does not confirm delivery. Paused processing stays paused. A later failure needs a new manual review.",
+    "authorize": "Authorize one attempt",
+    "waiting": "Checking authorization…"
+  },
+  "notices": {
+    "authorized_active": "The server authorized one pending attempt. Processing is enabled, but no worker execution or inbox delivery has been confirmed. Status is being reloaded.",
+    "authorized_paused": "The server authorized one pending attempt, but processing is paused. This action did not enable processing or send an email. Status is being reloaded.",
+    "not_retryable": "The server declined the retry because this job is no longer eligible. No attempt was authorized by this action. Review the refreshed status.",
+    "unconfirmed": "The authorization result could not be confirmed. It may have been recorded. No automatic retry will be made; review the refreshed status before another action.",
+    "stale": "This status is no longer fresh enough to authorize a retry. It is being refreshed; review the current record before choosing again."
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "denied": "Las operaciones de correo solo están disponibles en el espacio de Administración de una cuenta administradora.",
+  "intro": "Revisa el procesamiento de correo registrado para nuevas consultas y cuentas recién verificadas. Esta vista solo contiene metadatos operativos, sin direcciones de destinatarios ni contenido de mensajes.",
+  "accepted_note": "Aceptado significa que el proveedor de correo reconoció la solicitud. No confirma la entrega en la bandeja de entrada, la lectura ni una respuesta.",
+  "history_note": "No se reenvían consultas ni cuentas históricas. Esta página no envía mensajes ni activa el procesamiento.",
+  "refresh": "Actualizar estado",
+  "loading": "Cargando el estado de correo registrado…",
+  "load_error": "El estado del correo no está disponible. No se ha supuesto que la cola esté vacía ni se ha deducido una entrega. Actualiza para consultar de nuevo.",
+  "records": "Trabajos de correo registrados",
+  "updated": "Estado cargado el {{date}}",
+  "not_recorded": "No registrado",
+  "reference": "Referencia del trabajo: {{id}}",
+  "attempts": "Intentos registrados",
+  "created": "Creado",
+  "last_attempt": "Último intento",
+  "accepted_at": "Aceptación del proveedor",
+  "uncertain": "El resultado del proveedor es incierto. El reintento queda retenido para revisión y evitar correos duplicados.",
+  "error_code": "Código de revisión: {{code}}",
+  "eligible_after": "Primera fecha de revisión: {{date}}. La fecha por sí sola no autoriza un reintento.",
+  "retry": "Revisar un reintento",
+  "no_retry": "Este registro de estado no autoriza actualmente un reintento manual.",
+  "empty": "No se devolvieron trabajos de correo para esta página y estos filtros. Esto no demuestra que un correo anterior se haya entregado ni recrea registros históricos.",
+  "total": "Trabajos registrados que coinciden: {{count}}",
+  "previous": "Página anterior",
+  "next": "Página siguiente",
+  "cancel": "Cancelar",
+  "filters": { "title": "Filtros del estado de correo", "event": "Evento", "status": "Estado", "all": "Todos" },
+  "events": { "lead": "Nueva consulta", "signup": "Nueva cuenta verificada" },
+  "flags": {
+    "title": "Configuración de procesamiento del servidor",
+    "worker": "Procesamiento de correo",
+    "customer": "Confirmaciones al cliente",
+    "enabled": "Habilitado en la configuración del servidor. No demuestra que el procesador esté funcionando ni que un correo se haya entregado.",
+    "paused": "Pausado en la configuración del servidor. Esta página no permite activarlo.",
+    "note": "Estos son los ajustes devueltos con este informe. Autorizar un reintento no puede activar ninguno. Aquí no se activa ningún servicio de SMS ni de WhatsApp automatizado."
+  },
+  "steps": { "owner_email": "Notificación al equipo {{number}}", "email_configuration": "Configuración del correo del equipo", "customer_email": "Confirmación al cliente", "customer_email_configuration": "Configuración del correo del cliente" },
+  "statuses": { "pending": "Pendiente", "processing": "En procesamiento", "retry_wait": "En espera de revisión del reintento", "accepted": "Aceptado por el proveedor", "failed": "Intento fallido", "needs_review": "Requiere revisión", "skipped": "Omitido" },
+  "confirm": {
+    "title": "¿Autorizar un intento elegible?",
+    "body": "El servidor volverá a comprobar la elegibilidad, el tiempo de espera y el límite de intentos. Esta acción autoriza un intento para el procesador habilitado; no hace una solicitud al proveedor ni confirma la entrega. El procesamiento pausado sigue pausado. Un fallo posterior requiere otra revisión manual.",
+    "authorize": "Autorizar un intento",
+    "waiting": "Comprobando autorización…"
+  },
+  "notices": {
+    "authorized_active": "El servidor autorizó un intento pendiente. El procesamiento está habilitado, pero no se ha confirmado la ejecución del procesador ni la entrega en la bandeja de entrada. Se está actualizando el estado.",
+    "authorized_paused": "El servidor autorizó un intento pendiente, pero el procesamiento está pausado. Esta acción no activó el procesamiento ni envió un correo. Se está actualizando el estado.",
+    "not_retryable": "El servidor rechazó el reintento porque este trabajo ya no es elegible. Esta acción no autorizó ningún intento. Revisa el estado actualizado.",
+    "unconfirmed": "No se pudo confirmar el resultado de la autorización. Puede haberse registrado. No se hará ningún reintento automático; revisa el estado actualizado antes de otra acción.",
+    "stale": "Este estado ya no es lo suficientemente reciente para autorizar un reintento. Se está actualizando; revisa el registro actual antes de volver a elegir."
+  }
+}
