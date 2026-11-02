@@ -1,0 +1,388 @@
+# V6 FIXTURE RENEWAL SOURCE ONLY: root reviews/new-branch push gates remain REFUSE.
+# Official index/config pins are bound to reviewed registry-digest-proof.json.
+name: Corrected private service workflow full regression163
+
+on:
+  push:
+    branches:
+      - codex-ci-services163-fix-20261102
+
+permissions:
+  contents: read
+
+concurrency:
+  group: services163-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  services163:
+    if: >-
+      github.event_name == 'push' &&
+      github.repository == 'ilovedrrealty/realty-api' &&
+      github.event.repository.private == false &&
+      github.ref == 'refs/heads/codex-ci-services163-fix-20261102' &&
+      github.event.created == true &&
+      github.event.before == '0000000000000000000000000000000000000000' &&
+      github.event.deleted == false && github.event.forced == false &&
+      github.run_attempt == 1 && github.event.after == github.sha
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      CANDIDATE_COMMIT: ${{ github.sha }}
+      PYTHON_DIGEST: sha256:673719e071ecf27434fd2635bbd8d00f49f4fdd81f243143438a42ced8bedf60
+      PYTHON_CONFIG_DIGEST: sha256:de8d79606beff46114d4abd5c392116c62142cbe582f8ede92cf4a64e1a10ff5
+      POSTGRES_DIGEST: sha256:3b0cda93be7c8dba2ed484d19393d93845dc3dafb88973e248ba8e6d99d784e1
+      POSTGRES_CONFIG_DIGEST: sha256:81edcaa5ff2923f7be9c1f43d3e5076f29c6c9c216c86964b5fd038959404429
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Require exact new-branch event and reviewed image literals
+        env:
+          WORKFLOW_SOURCE_SHA: ${{ github.workflow_sha }}
+          PUSH_CREATED: ${{ github.event.created }}
+          PUSH_DELETED: ${{ github.event.deleted }}
+          PUSH_FORCED: ${{ github.event.forced }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          PUSH_AFTER: ${{ github.event.after }}
+        run: |
+          set -euo pipefail
+          [[ "$GITHUB_REPOSITORY" == ilovedrrealty/realty-api ]]
+          [[ "$RUNNER_ENVIRONMENT" == github-hosted && "$RUNNER_OS" == Linux && "$RUNNER_ARCH" == X64 ]]
+          [[ "$GITHUB_EVENT_NAME" == push && "$GITHUB_REF" == refs/heads/codex-ci-services163-fix-20261102 ]]
+          [[ "$PUSH_CREATED" == true && "$PUSH_DELETED" == false && "$PUSH_FORCED" == false ]]
+          [[ "$PUSH_BEFORE" == 0000000000000000000000000000000000000000 ]]
+          [[ "$GITHUB_RUN_ATTEMPT" == 1 ]]
+          [[ "$CANDIDATE_COMMIT" =~ ^[0-9a-f]{40}$ && "$CANDIDATE_COMMIT" == "$GITHUB_SHA" ]]
+          [[ "$PUSH_AFTER" == "$CANDIDATE_COMMIT" && "$WORKFLOW_SOURCE_SHA" == "$CANDIDATE_COMMIT" ]]
+          [[ "$PYTHON_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+          [[ "$POSTGRES_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+          [[ "$PYTHON_CONFIG_DIGEST" =~ ^sha256:[0-9a-f]{64}$ && "$POSTGRES_CONFIG_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+
+      - name: Read only the exact reviewed commit
+        # Official actions/checkout v7.0.1, verified immutable source commit.
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: ilovedrrealty/realty-api
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+          set-safe-directory: false
+          show-progress: false
+          lfs: false
+          submodules: false
+
+      - name: One bounded internal-network rehearsal and owned cleanup
+        id: rehearsal
+        timeout-minutes: 29
+        run: |
+          set -euo pipefail
+          umask 077
+          [[ "$CANDIDATE_COMMIT" =~ ^[0-9a-f]{40}$ && "$CANDIDATE_COMMIT" == "$GITHUB_SHA" ]]
+          [[ "$PYTHON_DIGEST" =~ ^sha256:[0-9a-f]{64}$ && "$POSTGRES_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+          [[ "$(git -c safe.directory="$GITHUB_WORKSPACE" rev-parse HEAD)" == "$CANDIDATE_COMMIT" ]]
+          [[ -z "$(git -c safe.directory="$GITHUB_WORKSPACE" status --porcelain)" ]]
+          RUN_KEY="r${GITHUB_RUN_ID}a${GITHUB_RUN_ATTEMPT}-$(cat /proc/sys/kernel/random/uuid)"
+          [[ "$RUN_KEY" =~ ^r[0-9]+a1-[0-9a-f-]{36}$ ]]
+          STATE="$RUNNER_TEMP/ildr-services163-$RUN_KEY"
+          [[ ! -e "$STATE" && ! -L "$STATE" ]]
+          mkdir -m 700 "$STATE"
+          ARTIFACTS="$STATE/artifacts"
+          mkdir -m 700 "$ARTIFACTS"
+          LABEL=org.ilovedrrealty.services163.run
+          PY_REF="docker.io/library/python:3.11-slim@$PYTHON_DIGEST"
+          PG_REF="docker.io/library/postgres:17@$POSTGRES_DIGEST"
+          IMAGE_ID=''; NETWORK_ID=''; PG_ID=''; TEST_ID=''; PG_VOLUMES=''
+          BUILD_CAPTURE_UNCERTAIN=0; NETWORK_CAPTURE_UNCERTAIN=0
+          PG_CAPTURE_UNCERTAIN=0; TEST_CAPTURE_UNCERTAIN=0
+
+          owned_container() {
+            local captured_container_id captured_container_label
+            [[ "$1" =~ ^[0-9a-f]{64}$ ]] || return 1
+            captured_container_id="$(timeout --kill-after=5s 15s docker inspect --type container --format '{{.Id}}' "$1" 2>/dev/null)" || return 1
+            [[ "$captured_container_id" == "$1" ]] || return 1
+            captured_container_label="$(timeout --kill-after=5s 15s docker inspect --type container --format '{{index .Config.Labels "org.ilovedrrealty.services163.run"}}' "$1" 2>/dev/null)" || return 1
+            [[ "$captured_container_label" == "$RUN_KEY" ]]
+          }
+          cleanup() {
+            result=$?
+            trap - EXIT INT TERM
+            cleanup_failed=0
+            # A possibly successful creation without complete identity/volume
+            # capture permanently disqualifies this run's cleanup proof.
+            if [[ "$BUILD_CAPTURE_UNCERTAIN$NETWORK_CAPTURE_UNCERTAIN$PG_CAPTURE_UNCERTAIN$TEST_CAPTURE_UNCERTAIN" != 0000 ]]; then cleanup_failed=1; fi
+            for id in "$TEST_ID" "$PG_ID"; do
+              if [[ -n "$id" ]]; then
+                if owned_container "$id"; then
+                  timeout --kill-after=5s 45s docker rm --force --volumes "$id" >/dev/null 2>&1 || cleanup_failed=1
+                  if timeout --kill-after=5s 15s docker inspect --type container "$id" >/dev/null 2>&1; then cleanup_failed=1
+                  else probe_rc=$?; if [[ "$probe_rc" != 1 ]]; then cleanup_failed=1; fi; fi
+                else cleanup_failed=1; fi
+              fi
+            done
+            if [[ -n "$PG_VOLUMES" ]]; then
+              if volume_inventory="$(timeout --kill-after=5s 15s docker volume ls --quiet 2>/dev/null)"; then
+                for volume in $PG_VOLUMES; do
+                  if [[ ! "$volume" =~ ^[0-9a-f]{64}$ ]]; then cleanup_failed=1; continue; fi
+                  while IFS= read -r observed_volume; do
+                    if [[ "$observed_volume" == "$volume" ]]; then cleanup_failed=1; fi
+                  done <<< "$volume_inventory"
+                done
+              else cleanup_failed=1; fi
+            fi
+            if [[ -n "$NETWORK_ID" ]]; then
+              if [[ "$NETWORK_ID" =~ ^[0-9a-f]{64}$ ]] &&
+                 cleanup_network_id="$(timeout --kill-after=5s 15s docker network inspect --format '{{.Id}}' "$NETWORK_ID" 2>/dev/null)" &&
+                 [[ "$cleanup_network_id" == "$NETWORK_ID" ]] &&
+                 cleanup_network_label="$(timeout --kill-after=5s 15s docker network inspect --format '{{index .Labels "org.ilovedrrealty.services163.run"}}' "$NETWORK_ID" 2>/dev/null)" &&
+                 [[ "$cleanup_network_label" == "$RUN_KEY" ]]; then
+                timeout --kill-after=5s 30s docker network rm "$NETWORK_ID" >/dev/null 2>&1 || cleanup_failed=1
+                if timeout --kill-after=5s 15s docker network inspect "$NETWORK_ID" >/dev/null 2>&1; then cleanup_failed=1
+                else probe_rc=$?; if [[ "$probe_rc" != 1 ]]; then cleanup_failed=1; fi; fi
+              else cleanup_failed=1; fi
+            fi
+            if [[ -n "$IMAGE_ID" ]]; then
+              if [[ "$IMAGE_ID" =~ ^sha256:[0-9a-f]{64}$ ]] &&
+                 cleanup_image_id="$(timeout --kill-after=5s 15s docker image inspect --format '{{.Id}}' "$IMAGE_ID" 2>/dev/null)" &&
+                 [[ "$cleanup_image_id" == "$IMAGE_ID" ]] &&
+                 cleanup_image_label="$(timeout --kill-after=5s 15s docker image inspect --format '{{index .Config.Labels "org.ilovedrrealty.services163.run"}}' "$IMAGE_ID" 2>/dev/null)" &&
+                 [[ "$cleanup_image_label" == "$RUN_KEY" ]]; then
+                timeout --kill-after=5s 30s docker image rm "$IMAGE_ID" >/dev/null 2>&1 || cleanup_failed=1
+                if timeout --kill-after=5s 15s docker image inspect "$IMAGE_ID" >/dev/null 2>&1; then cleanup_failed=1
+                else probe_rc=$?; if [[ "$probe_rc" != 1 ]]; then cleanup_failed=1; fi; fi
+              else cleanup_failed=1; fi
+            fi
+            # An inspect exit1 is not proof of absence. Timeout/other exits
+            # already refuse; successful positive scans below are mandatory.
+            timeout --kill-after=5s 15s docker info --format '{{.ServerVersion}}' >/dev/null 2>&1 || cleanup_failed=1
+            # Successful exact-run-label scans must also be empty. Inspect
+            # failures or uncaptured anonymous volumes cannot prove absence.
+            if ! residual="$(timeout --kill-after=5s 15s docker container ls --all --quiet --no-trunc --filter "label=$LABEL=$RUN_KEY" 2>/dev/null)"; then cleanup_failed=1
+            elif [[ -n "$residual" ]]; then cleanup_failed=1; fi
+            if ! residual="$(timeout --kill-after=5s 15s docker network ls --quiet --no-trunc --filter "label=$LABEL=$RUN_KEY" 2>/dev/null)"; then cleanup_failed=1
+            elif [[ -n "$residual" ]]; then cleanup_failed=1; fi
+            if ! residual="$(timeout --kill-after=5s 15s docker image ls --quiet --no-trunc --filter "label=$LABEL=$RUN_KEY" 2>/dev/null)"; then cleanup_failed=1
+            elif [[ -n "$residual" ]]; then cleanup_failed=1; fi
+            timeout --kill-after=5s 15s docker info --format '{{.ServerVersion}}' >/dev/null 2>&1 || cleanup_failed=1
+            if [[ "$cleanup_failed" != 0 ]]; then
+              printf '%s\n' 'SERVICES163_OWNED_CLEANUP_NOT_VERIFIED'
+              exit 1
+            fi
+            printf 'owned_cleanup_verified=true\n' >> "$GITHUB_OUTPUT"
+            printf 'SERVICES163_OWNED_CLEANUP_VERIFIED commit=%s run=%s attempt=1\n' "$CANDIDATE_COMMIT" "$GITHUB_RUN_ID"
+            exit "$result"
+          }
+          trap cleanup EXIT
+          trap 'exit 130' INT TERM
+
+          # Pull/build online before creating the isolated runtime namespace.
+          timeout --kill-after=5s 180s docker pull --platform linux/amd64 "$PY_REF" >/dev/null 2>&1
+          timeout --kill-after=5s 180s docker pull --platform linux/amd64 "$PG_REF" >/dev/null 2>&1
+          PY_IMAGE_ID="$(timeout --kill-after=5s 15s docker image inspect --format '{{.Id}}' "$PY_REF" 2>/dev/null)"
+          PG_IMAGE_ID="$(timeout --kill-after=5s 15s docker image inspect --format '{{.Id}}' "$PG_REF" 2>/dev/null)"
+          [[ "$PY_IMAGE_ID" == "$PYTHON_CONFIG_DIGEST" && "$PG_IMAGE_ID" == "$POSTGRES_CONFIG_DIGEST" ]]
+          BUILD_CAPTURE_UNCERTAIN=1
+          timeout --kill-after=5s 600s docker build --platform linux/amd64 --pull=false --quiet \
+            --label "$LABEL=$RUN_KEY" --build-arg "PYTHON_DIGEST=$PYTHON_DIGEST" \
+            --file ci/services163.Dockerfile --iidfile "$STATE/image.id" . >/dev/null 2>&1
+          IMAGE_ID="$(cat "$STATE/image.id")"
+          [[ "$IMAGE_ID" =~ ^sha256:[0-9a-f]{64}$ ]]
+          captured_image_id="$(timeout --kill-after=5s 15s docker image inspect --format '{{.Id}}' "$IMAGE_ID" 2>/dev/null)" || exit 1
+          [[ "$captured_image_id" == "$IMAGE_ID" ]]
+          captured_image_label="$(timeout --kill-after=5s 15s docker image inspect --format '{{index .Config.Labels "org.ilovedrrealty.services163.run"}}' "$IMAGE_ID" 2>/dev/null)" || exit 1
+          [[ "$captured_image_label" == "$RUN_KEY" ]]
+          BUILD_CAPTURE_UNCERTAIN=0
+          {
+            printf 'Official Python ref: `%s`; observed image: `%s`\n' "$PY_REF" "$PY_IMAGE_ID"
+            printf 'Official PostgreSQL ref: `%s`; observed image: `%s`\n' "$PG_REF" "$PG_IMAGE_ID"
+            printf 'Owned test image: `%s`; source: `%s`\n' "$IMAGE_ID" "$CANDIDATE_COMMIT"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          NETWORK_CAPTURE_UNCERTAIN=1
+          NETWORK_ID="$(timeout --kill-after=5s 30s docker network create --internal --label "$LABEL=$RUN_KEY" "ildr-services163-$RUN_KEY" 2>/dev/null)"
+          [[ "$NETWORK_ID" =~ ^[0-9a-f]{64}$ ]]
+          captured_network_id="$(timeout --kill-after=5s 15s docker network inspect --format '{{.Id}}' "$NETWORK_ID" 2>/dev/null)" || exit 1
+          [[ "$captured_network_id" == "$NETWORK_ID" ]]
+          captured_network_label="$(timeout --kill-after=5s 15s docker network inspect --format '{{index .Labels "org.ilovedrrealty.services163.run"}}' "$NETWORK_ID" 2>/dev/null)" || exit 1
+          [[ "$captured_network_label" == "$RUN_KEY" ]]
+          captured_network_internal="$(timeout --kill-after=5s 15s docker network inspect --format '{{.Internal}}' "$NETWORK_ID" 2>/dev/null)" || exit 1
+          [[ "$captured_network_internal" == true ]]
+          NETWORK_CAPTURE_UNCERTAIN=0
+          PG_CAPTURE_UNCERTAIN=1
+          PG_ID="$(timeout --kill-after=5s 30s docker create --label "$LABEL=$RUN_KEY" --network "$NETWORK_ID" \
+            --memory 512m --memory-swap 512m --pids-limit 64 --cpus 1 \
+            --security-opt no-new-privileges:true \
+            --env POSTGRES_HOST_AUTH_METHOD=trust --env POSTGRES_DB=ildr_platform_test_20261025 \
+            "$PG_REF" postgres -p 55449 -h 127.0.0.1 2>/dev/null)"
+          owned_container "$PG_ID"
+          PORT_BINDINGS="$(timeout --kill-after=5s 15s docker inspect --format '{{json .HostConfig.PortBindings}}' "$PG_ID" 2>/dev/null)"
+          [[ "$PORT_BINDINGS" == '{}' || "$PORT_BINDINGS" == 'null' ]]
+          PG_VOLUMES="$(timeout --kill-after=5s 15s docker inspect --format '{{range .Mounts}}{{if eq .Type "volume"}}{{println .Name}}{{end}}{{end}}' "$PG_ID" 2>/dev/null)"
+          [[ -n "$PG_VOLUMES" ]]
+          for volume in $PG_VOLUMES; do [[ "$volume" =~ ^[0-9a-f]{64}$ ]]; done
+          PG_CAPTURE_UNCERTAIN=0
+          timeout --kill-after=5s 30s docker start "$PG_ID" >/dev/null 2>&1
+          ready=0
+          for check in {1..45}; do
+            if timeout --kill-after=2s 5s docker exec "$PG_ID" pg_isready -h 127.0.0.1 -p 55449 -U postgres -d ildr_platform_test_20261025 >/dev/null 2>&1; then ready=1; break; fi
+            sleep 1
+          done
+          [[ "$ready" == 1 ]]
+          # Synthetic NOLOGIN roles exist ONLY in this captured new disposable PG.
+          # No shared/local/production server, account or credential is changed.
+          owned_container "$PG_ID"
+          timeout --kill-after=5s 15s docker exec "$PG_ID" psql -X --no-password \
+            -h 127.0.0.1 -p 55449 -U postgres -d ildr_platform_test_20261025 -v ON_ERROR_STOP=1 \
+            -c 'CREATE ROLE anon NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION NOBYPASSRLS; CREATE ROLE authenticated NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION NOBYPASSRLS;' >/dev/null 2>&1
+
+          TEST_CAPTURE_UNCERTAIN=1
+          TEST_ID="$(timeout --kill-after=5s 30s docker create --label "$LABEL=$RUN_KEY" --network "container:$PG_ID" \
+            --read-only --cap-drop ALL --security-opt no-new-privileges:true \
+            --user "$(id -u):$(id -g)" --memory 2g --memory-swap 2g --pids-limit 128 --cpus 2 \
+            --mount "type=bind,src=$GITHUB_WORKSPACE,dst=/application,readonly" \
+            --mount "type=bind,src=$ARTIFACTS,dst=/artifacts" \
+            --tmpfs /scratch:rw,noexec,nosuid,nodev,size=128m,mode=1777 \
+            --env HOME=/scratch --env TMPDIR=/scratch --workdir /scratch \
+            --env "GITHUB_RUN_ID=$GITHUB_RUN_ID" --env "GITHUB_RUN_ATTEMPT=$GITHUB_RUN_ATTEMPT" \
+            "$IMAGE_ID" /usr/local/bin/python -I -S -B /application/ci/services163.py \
+            --repo /application --artifacts /artifacts --expected-commit "$CANDIDATE_COMMIT" 2>/dev/null)"
+          owned_container "$TEST_ID"
+          TEST_CAPTURE_UNCERTAIN=0
+          set +e
+          timeout --signal=TERM --kill-after=20s 420s docker start --attach "$TEST_ID" >/dev/null 2>&1
+          test_exit=$?
+          set -e
+          CONTAINER_EXIT="$(timeout --kill-after=5s 15s docker inspect --format '{{.State.ExitCode}}' "$TEST_ID" 2>/dev/null)"
+          CONTAINER_RUNNING="$(timeout --kill-after=5s 15s docker inspect --format '{{.State.Running}}' "$TEST_ID" 2>/dev/null)"
+          CONTAINER_OOM="$(timeout --kill-after=5s 15s docker inspect --format '{{.State.OOMKilled}}' "$TEST_ID" 2>/dev/null)"
+          [[ "$CONTAINER_EXIT" =~ ^[0-9]+$ && "$CONTAINER_RUNNING" =~ ^(true|false)$ ]]
+          [[ "$CONTAINER_OOM" =~ ^(true|false)$ ]]
+          printf 'SERVICES163_NATIVE_OBSERVATION commit=%s run=%s attempt=1 client_exit=%s container_exit=%s running=%s oom_killed=%s\n' "$CANDIDATE_COMMIT" "$GITHUB_RUN_ID" "$test_exit" "$CONTAINER_EXIT" "$CONTAINER_RUNNING" "$CONTAINER_OOM"
+
+          # No artifact/cache/snapshot service. Emit only the two validated
+          # bounded metadata reports, including honest FAIL reports, to logs.
+          timeout --kill-after=2s 15s python3 -I -S -B - "$ARTIFACTS" "$test_exit" "$CONTAINER_EXIT" "$CANDIDATE_COMMIT" "$GITHUB_RUN_ID" <<'PY'
+          import hashlib, json, os, pathlib, re, sys
+          EXPECTED_TEST_COUNT = 163  # Fixed independently counted frozen classes, never caller input.
+          root = pathlib.Path(sys.argv[1])
+          allowed = {'services163-result.json', 'services163-linux-inventory.json'}
+          observed = {p.name for p in root.iterdir()}
+          diagnostic_name = 'services163-entry-diagnostic.json'
+          diagnostic_seen = diagnostic_name in observed
+          if diagnostic_seen:
+              path = root / diagnostic_name
+              if path.is_symlink() or not path.is_file() or not 0 < path.stat().st_size <= 4096:
+                  raise SystemExit('SERVICES163_DIAGNOSTIC_BOUND_REQUIRED_NO_ACCEPTANCE')
+              try:
+                  diagnostic = json.loads(path.read_bytes())
+              except Exception:
+                  raise SystemExit('SERVICES163_DIAGNOSTIC_JSON_REQUIRED_NO_ACCEPTANCE')
+              check_diag = lambda value: value or sys.exit('SERVICES163_DIAGNOSTIC_SCHEMA_REQUIRED_NO_ACCEPTANCE')
+              diagnostic_keys = {'schema_version','status','source_commit','source_manifest_sha256','runner_sha256','ci_run_id','ci_run_attempt','stage','code','exception_class','native_exit','distribution_name','record_path_sha256','record_reason'}
+              stages = {'ENTRY_ARGS','BOOTSTRAP_SITES','MANIFEST_READ','PARENT_PATHS','PARENT_MEMORY','GIT_SOURCE','PILLOW_CHECK','DISTRIBUTION_RECORDS','REQUIREMENTS_CHECK','PG_IDENTITY','SCHEMA_PRECHECK','CHILD_MEMORY','CHILD_EXECUTION','CHILD_RESULT','SOURCE_RECHECK','REPORT_WRITE'}
+              codes = {'UNCLASSIFIED_ENTRY_EXCEPTION','LINUX_PYTHON311_I_S_B_REQUIRED','FIXED_IMAGE_SITE_PACKAGES_REQUIRED','SOURCE_MANIFEST_REQUIRED','EXACT_CURRENT_SOURCE_SERVICES163_SCOPE_REQUIRED','FIXED_NEW_CI_PATHS_REQUIRED','INITIAL_MEMORY_BELOW_600_MIB','EXPLICIT_EXACT_CANDIDATE_COMMIT_REQUIRED','REGULAR_GIT_BLOBS_ONLY','ONLY_REVIEWED_SOURCE_AND_FOUR_CI_FILES','ACTUAL_GIT_BLOB_LF_IDENTITY_REQUIRED','CLEAN_EXACT_CANDIDATE_CHECKOUT_REQUIRED','REGULAR_IN_REPOSITORY_SOURCE_REQUIRED','EXACT_LF_WORKING_SOURCE_REQUIRED','EXACT_PILLOW104_WEBP_REQUIRED','INSTALLED_DISTRIBUTION_FILE_INVENTORY_REQUIRED','REGULAR_IMAGE_DEPENDENCY_FILE_REQUIRED','UNIQUE_INSTALLED_DISTRIBUTIONS_REQUIRED','PRODUCTION_REQUIREMENT_VERSION_MISMATCH','LINUX_AVAILABLE_MEMORY_REQUIRED','CGROUP_V2_MEMORY_ACCOUNTING_REQUIRED','OWNED_NAMESPACE_EXACT_PG17_IDENTITY_REQUIRED','OLD_SYNTHETIC_SCHEMAS_REFUSED','PRE_CHILD_MEMORY_BELOW_600_MIB','BOUNDED_CHILD_AGGREGATE_REQUIRED','CHILD_300_SECOND_DEADLINE','AVAILABLE_MEMORY_BELOW_320_MIB','CHILD_OUTPUT_BOUND'}
+              classes = {'ValueError','OSError','FileNotFoundError','PermissionError','TimeoutExpired','CalledProcessError','ImportError','ModuleNotFoundError','RuntimeError','KeyError','TypeError','UnicodeDecodeError','JSONDecodeError','AttributeError','Exception'}
+              check_diag(isinstance(diagnostic, dict) and set(diagnostic) == diagnostic_keys)
+              check_diag(diagnostic['schema_version'] == 1 and diagnostic['status'] == 'ENTRY_FAILURE_DIAGNOSTIC_ONLY_NO_ACCEPTANCE')
+              check_diag(diagnostic['source_commit'] == sys.argv[4] and diagnostic['ci_run_id'] == sys.argv[5] and diagnostic['ci_run_attempt'] == '1')
+              runner_path = pathlib.Path(os.environ['GITHUB_WORKSPACE'])/'ci/services163.py'
+              check_diag(runner_path.is_file() and not runner_path.is_symlink() and diagnostic['runner_sha256'] == hashlib.sha256(runner_path.read_bytes()).hexdigest())
+              check_diag(diagnostic['source_manifest_sha256'] is None or diagnostic['source_manifest_sha256'] == 'a4db349b759165d1bff20f99d8d53b3cbc20e6239e164bb9de6049338db6a637')
+              check_diag(diagnostic['stage'] in stages and diagnostic['code'] in codes and diagnostic['exception_class'] in classes)
+              check_diag(diagnostic['native_exit'] is None or type(diagnostic['native_exit']) is int and -255 <= diagnostic['native_exit'] <= 255)
+              check_diag(diagnostic['distribution_name'] is None or isinstance(diagnostic['distribution_name'], str) and re.fullmatch(r'[A-Za-z0-9_.-]{1,100}', diagnostic['distribution_name']))
+              check_diag(diagnostic['record_path_sha256'] is None or isinstance(diagnostic['record_path_sha256'], str) and re.fullmatch(r'[0-9a-f]{64}', diagnostic['record_path_sha256']))
+              check_diag((diagnostic['record_reason'] is None and diagnostic['record_path_sha256'] is None) or diagnostic['record_reason'] == 'NOT_REGULAR_OR_SYMLINK_OR_OUTSIDE_PREFIX' and diagnostic['record_path_sha256'] is not None)
+              payload = (json.dumps(diagnostic, sort_keys=True, indent=2, allow_nan=False)+'\n').encode('ascii')
+              check_diag(len(payload) <= 4096)
+              digest = hashlib.sha256(payload).hexdigest()
+              marker = f'file={diagnostic_name} commit={sys.argv[4]} run={sys.argv[5]} attempt=1 sha256={digest} bytes={len(payload)}'
+              print('SERVICES163_FAILURE_DIAGNOSTIC_BEGIN '+marker)
+              sys.stdout.write(payload.decode('ascii'))
+              print('SERVICES163_FAILURE_DIAGNOSTIC_END '+marker)
+              raise SystemExit('SERVICES163_FAILURE_DIAGNOSTIC_CANNOT_SATISFY_ACCEPTANCE')
+          if observed != allowed:
+              raise SystemExit('SERVICES163_AGGREGATE_ALLOWLIST_REQUIRED')
+          reports = {}
+          for name in allowed:
+              path = root / name
+              if path.is_symlink() or not path.is_file() or not 0 < path.stat().st_size <= 1048576:
+                  raise SystemExit('SERVICES163_AGGREGATE_BOUND_REQUIRED')
+              reports[name] = json.loads(path.read_bytes())
+          result, inventory = reports['services163-result.json'], reports['services163-linux-inventory.json']
+          result_keys = {'status','source_commit','source_manifest_sha256','runner_sha256','expected_tests','tests_pass','exact_schemas_absent','cleanup_errors','bootstrap_and_full_migration_chain_proven','real_provider_or_production_actions','failure_code','source_unchanged','native_child_exit','minimum_available_mib','child_output_bytes','assertions'}
+          inventory_keys = {'scope','source_commit','source_manifest_sha256','operational_git_blobs','python_version','python_executable_sha256','git_executable_sha256','platform','machine','packages','pillow_version','pillow_imaging_sha256','webp_available','webp_version','requirements_sha256','windows_native_pins_reused','bootstrap_and_full_migration_chain_proven','postgres_server_version_num'}
+          child_keys = {'status','tests_run','schema_uuid_consumed','expected_schemas','class_counts','denied_guard_events','source_unchanged','failures','errors','skipped','expected_failures','unexpected_successes','failed_test_ids','failure_kind','failure_locations','failure_locations_truncated'}
+          operational = {'ci/services163.py','ci/services163-source.json','ci/services163.Dockerfile','.github/workflows/services163.yml'}
+          failure_test_sources = {
+              '_registry_0.PropertyNetworkRoutes.': ('tests/test_property_network.py', 451),
+              '_registry_0.PrivateImageContracts.': ('tests/test_property_network.py', 451),
+              '_registry_1.CustomerDeliveryTests.': ('tests/test_customer_delivery.py', 443),
+              '_registry_2.LeadDeliveryTests.': ('tests/test_lead_delivery.py', 1129),
+              '_registry_3.SignupNotificationTests.': ('tests/test_signup_notifications.py', 322),
+              '_registry_4.PrivateRegistryRoutes.': ('tests/test_private_property_registry.py', 549),
+              '_registry_5.PrivateRegistryMigration.': ('tests/test_private_property_registry_migration.py', 240),
+              '_registry_6.PrivateServiceWorkflow.': ('tests/test_service_workflow.py', 700),
+              '_registry_7.PrivateServiceMigration.': ('tests/test_service_workflow_migration.py', 258),
+          }
+          exception_names = {'AssertionError','ValueError','TypeError','KeyError','AttributeError','RuntimeError',
+              'TimeoutError','IntegrityError','DBAPIError','OperationalError','StatementError','Exception','OtherException'}
+          need = lambda value: value or sys.exit('SERVICES163_SAFE_AGGREGATE_SCHEMA_REQUIRED')
+          need(isinstance(result, dict) and set(result) <= result_keys and isinstance(inventory, dict) and set(inventory) <= inventory_keys)
+          need(result.get('source_commit') == inventory.get('source_commit') == sys.argv[4] and re.fullmatch(r'[0-9a-f]{40}', sys.argv[4]) and re.fullmatch(r'[0-9]+', sys.argv[5]))
+          need(result.get('expected_tests') == EXPECTED_TEST_COUNT and result.get('bootstrap_and_full_migration_chain_proven') is False and result.get('real_provider_or_production_actions') is False)
+          need(inventory.get('scope') == 'LINUX_RUNTIME_OBSERVATION_NOT_RELEASE_ACCEPTANCE' and inventory.get('windows_native_pins_reused') is False and inventory.get('bootstrap_and_full_migration_chain_proven') is False)
+          need(result.get('source_manifest_sha256') == inventory.get('source_manifest_sha256') and re.fullmatch(r'[0-9a-f]{64}', result.get('source_manifest_sha256', '')))
+          need(isinstance(inventory.get('operational_git_blobs'), dict) and set(inventory['operational_git_blobs']) == operational and all(re.fullmatch(r'[0-9a-f]{40}', value) for value in inventory['operational_git_blobs'].values()))
+          need(isinstance(inventory.get('packages'), list) and len(inventory['packages']) <= 500)
+          for package in inventory['packages']:
+              need(isinstance(package, dict) and set(package) == {'name','version','file_count','files_sha256'} and isinstance(package['name'], str) and isinstance(package['version'], str) and type(package['file_count']) is int and package['file_count'] > 0 and re.fullmatch(r'[0-9a-f]{64}', package['files_sha256']))
+          if 'assertions' in result:
+              child = result['assertions']
+              need(isinstance(child, dict) and set(child) <= child_keys)
+              need(set(child.get('class_counts', {})) <= {'PropertyNetworkRoutes','PrivateImageContracts','CustomerDeliveryTests','LeadDeliveryTests','SignupNotificationTests','PrivateRegistryRoutes','PrivateRegistryMigration','PrivateServiceWorkflow','PrivateServiceMigration'})
+              for key in ('schema_uuid_consumed','expected_schemas'):
+                  need(isinstance(child.get(key), dict) and set(child[key]) <= {'tests/test_property_network.py','tests/test_customer_delivery.py','tests/test_lead_delivery.py','tests/test_private_property_registry.py','tests/test_private_property_registry_migration.py','tests/test_service_workflow.py','tests/test_service_workflow_migration.py'})
+              need(all(re.fullmatch(r'(network_test_|customer_delivery_test_|lead_delivery_test_|registry_test_|registry_migration_test_|service_test_|service_migration_test_)[0-9a-f]{32}', value) for value in child['expected_schemas'].values()))
+              locations = child.get('failure_locations')
+              need(isinstance(locations, list) and len(locations) <= 8 and type(child.get('failure_locations_truncated')) is bool)
+              need(isinstance(child.get('failed_test_ids', []), list))
+              for location in locations:
+                  need(isinstance(location, dict) and set(location) == {'test_id','path','line','exception_type'})
+                  identity = location['test_id']
+                  need(isinstance(identity, str) and re.fullmatch(r'[A-Za-z0-9_. ()]{1,240}', identity) and identity in child.get('failed_test_ids', []))
+                  matches = [source for prefix, source in failure_test_sources.items() if identity.startswith(prefix)
+                      and re.fullmatch(r'test_[A-Za-z0-9_]{1,180}', identity[len(prefix):])]
+                  need(len(matches) == 1 and location['path'] == matches[0][0]
+                      and type(location['line']) is int and 1 <= location['line'] <= matches[0][1]
+                      and isinstance(location['exception_type'], str) and location['exception_type'] in exception_names)
+          # All emitted strings are bounded printable metadata; no raw output,
+          # addresses, URLs, control characters or extra object fields.
+          def safe_metadata(value):
+              if isinstance(value, dict):
+                  return all(isinstance(key, str) and re.fullmatch(r'[A-Za-z0-9_./-]{1,120}', key) and safe_metadata(item) for key, item in value.items())
+              if isinstance(value, list):
+                  return len(value) <= 500 and all(safe_metadata(item) for item in value)
+              if isinstance(value, str):
+                  return len(value) <= 300 and re.fullmatch(r'[A-Za-z0-9_./ ()+:=,\-]*', value) is not None and '://' not in value
+              return value is None or type(value) in (bool, int, float)
+          need(all(safe_metadata(value) for value in reports.values()))
+          if sys.argv[2:4] == ['0', '0']:
+              assertions = result.get('assertions', {})
+              if not (result.get('status') == 'PASS_SERVICES163_ASSERTIONS_AND_EXACT_SCHEMA_CLEANUP_PG_CONTAINER_CLEANUP_PENDING'
+                  and result.get('source_commit') == sys.argv[4] and result.get('tests_pass') is True
+                  and result.get('exact_schemas_absent') is True and result.get('source_unchanged') is True
+                  and result.get('cleanup_errors') == [] and result.get('native_child_exit') == 0
+                  and assertions.get('tests_run') == EXPECTED_TEST_COUNT
+                  and all(assertions.get(key) == 0 for key in ('failures', 'errors', 'skipped', 'expected_failures', 'unexpected_successes'))):
+                  raise SystemExit('SERVICES163_PARENT_ACCEPTANCE_REQUIRED')
+          for name in sorted(allowed):
+              payload = (json.dumps(reports[name], sort_keys=True, indent=2, allow_nan=False)+'\n').encode('ascii')
+              need(0 < len(payload) <= 1048576 and max(map(len, payload.splitlines()), default=0) <= 8192)
+              digest = hashlib.sha256(payload).hexdigest()
+              marker = f'file={name} commit={sys.argv[4]} run={sys.argv[5]} attempt=1 sha256={digest} bytes={len(payload)}'
+              print('SERVICES163_AGGREGATE_BEGIN '+marker)
+              sys.stdout.write(payload.decode('ascii'))
+              print('SERVICES163_AGGREGATE_END '+marker)
+          PY
+          [[ "$test_exit" == 0 && "$CONTAINER_EXIT" == 0 && "$CONTAINER_RUNNING" == false && "$CONTAINER_OOM" == false ]]
