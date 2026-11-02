@@ -1,0 +1,38 @@
+{
+  "backend_base": "4b2322686a4691f7b5a96654cac9a4fd5bcaf9b6",
+  "expected_node": "v24.22.1",
+  "expected_test_names": [
+    "public listing photos retain their original object URL at each existing card width",
+    "query parameters, escaping and fragments are preserved exactly",
+    "private and signed routes are never converted into public image URLs",
+    "external, relative, blob, data and empty image values remain unchanged",
+    "an already stored transformation URL is preserved without implying zero transform traffic",
+    "the existing width and optional quality call signature stays compatible"
+  ],
+  "files": {
+    "apps/landing/package.json": {
+      "bytes": 1202,
+      "sha256": "d32f9a37792098bcad7deae4501e9a407747b8d6dcd95c97302605b0f4404dcb"
+    },
+    "apps/landing/src/api/imgUrl.ts": {
+      "bytes": 182,
+      "sha256": "01764d5f388870816c80fe4cafe5c499ce5255894908b4ad3127ae67f278b29d"
+    },
+    "apps/landing/src/views/SpanishLandingPage.tsx": {
+      "bytes": 33044,
+      "sha256": "db45503f37cf1d06c55c37920c97544b1c3eb4e656c17107c91adba4b9b5a8d5"
+    },
+    "tests/public-image-url.test.cjs": {
+      "bytes": 3109,
+      "sha256": "c464c931e2e5fba5a164c763e2f1ddb3dcb7d5b8efe89efbe3fe59136c6f94be"
+    }
+  },
+  "format": 1,
+  "frontend_app_source_author_sha256": "c2e92a70366ee2bd0103f45b34983cd59dcf683001ea8d7f64f919652ccaab84",
+  "frontend_app_source_independent_review_sha256": "8c999b51936d743922006f6632b888e7d3a9df99d55baa12623e38bc48b2e9f0",
+  "frontend_base": "22f77a252b259b57d58c54eab2caa6524929438b",
+  "no_remote_images_API_install_cache_upload_or_production": true,
+  "node_image": "node:24.22.1-bookworm-slim@sha256:be8204d4bd327363357f532187b752ff62759c31bedf98e9e18fc08c9cbd605c",
+  "node_image_id": "sha256:4d4657ef82b5cf8fd56373dbf8b145cdc6d1d7aabbaca1e6a361efedae04e052",
+  "scope": "SIX_PURE_PUBLIC_IMAGE_URL_TESTS_ONLY_NOT_FULL_BUILD_BROWSER_OR_RELEASE"
+}

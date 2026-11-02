@@ -1,0 +1,130 @@
+name: Public photo URL quota unit contracts (no network or publication)
+on:
+  push:
+    branches: [codex-ci-public-photo-unit-20261102]
+permissions:
+  contents: read
+concurrency:
+  group: public-photo-unit-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  photo:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    env:
+      REPOSITORY_PRIVATE: ${{ github.event.repository.private }}
+      PUSH_CREATED: ${{ github.event.created }}
+      PUSH_DELETED: ${{ github.event.deleted }}
+      PUSH_FORCED: ${{ github.event.forced }}
+      PUSH_BEFORE: ${{ github.event.before }}
+      PUSH_AFTER: ${{ github.event.after }}
+      WORKFLOW_SOURCE_SHA: ${{ github.workflow_sha }}
+      PHOTO_MANIFEST_SHA256: 4d17adf5209165c89f40af28aa5248367b470a97de60a847fc5b50cf6074a10f
+      NODE_IMAGE: node:24.22.1-bookworm-slim@sha256:be8204d4bd327363357f532187b752ff62759c31bedf98e9e18fc08c9cbd605c
+    steps:
+      - name: Require exact initial public standard-runner branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$GITHUB_REPOSITORY" == ilovedrrealty/realty-api ]]
+          [[ "$RUNNER_ENVIRONMENT" == github-hosted && "$RUNNER_OS" == Linux && "$RUNNER_ARCH" == X64 ]]
+          [[ "$GITHUB_EVENT_NAME" == push && "$GITHUB_REF" == refs/heads/codex-ci-public-photo-unit-20261102 ]]
+          [[ "$GITHUB_RUN_ATTEMPT" == 1 && "$REPOSITORY_PRIVATE" == false ]]
+          [[ "$PUSH_CREATED" == true && "$PUSH_DELETED" == false && "$PUSH_FORCED" == false ]]
+          [[ "$PUSH_BEFORE" == 0000000000000000000000000000000000000000 ]]
+          [[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ && "$PUSH_AFTER" == "$GITHUB_SHA" && "$WORKFLOW_SOURCE_SHA" == "$GITHUB_SHA" ]]
+          [[ "$GITHUB_RUN_ID" =~ ^[1-9][0-9]*$ ]]
+      - name: Read exact source with no persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+          persist-credentials: false
+          submodules: false
+          lfs: false
+      - name: Verify exact four public source payloads
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -I -S -B - <<'PY'
+          from pathlib import Path
+          import hashlib,json,os
+          root=Path(os.environ['GITHUB_WORKSPACE'])/'ci/photo-url/source'
+          manifest=root.parent/'source-manifest.json'
+          assert hashlib.sha256(manifest.read_bytes()).hexdigest()==os.environ['PHOTO_MANIFEST_SHA256']
+          m=json.loads(manifest.read_bytes())
+          expected={'apps/landing/src/api/imgUrl.ts','apps/landing/src/views/SpanishLandingPage.tsx','apps/landing/package.json','tests/public-image-url.test.cjs'}
+          assert set(m['files'])==expected and len(m['expected_test_names'])==6
+          assert not any(p.is_symlink() for p in root.rglob('*'))
+          assert {p.relative_to(root).as_posix() for p in root.rglob('*') if p.is_file()}==expected
+          for name,pin in m['files'].items():
+              data=(root/name).read_bytes()
+              assert len(data)==pin['bytes'] and hashlib.sha256(data).hexdigest()==pin['sha256']
+          PY
+      - name: One bounded read-only no-network native TypeScript unit run
+        shell: bash
+        run: |
+          set -euo pipefail
+          SOURCE="$GITHUB_WORKSPACE/ci/photo-url/source"
+          LOGDIR="$RUNNER_TEMP/ildr-photo-unit-$GITHUB_RUN_ID"
+          mkdir -m 700 "$LOGDIR"
+          export LOGDIR
+          CID=''
+          OWNER="$GITHUB_RUN_ID:1"
+          cleanup() {
+            code=$?
+            trap - EXIT
+            if [[ -n "$CID" ]]; then
+              [[ "$CID" =~ ^[0-9a-f]{64}$ ]] || exit 1
+              actual=$(timeout 20s docker inspect -f '{{ index .Config.Labels "ilovedr.photo-unit" }}' "$CID") || exit 1
+              [[ "$actual" == "$OWNER" ]] || exit 1
+              timeout 20s docker rm -f "$CID" >/dev/null || exit 1
+              remaining=$(timeout 20s docker ps -aq --filter "id=$CID") || exit 1
+              [[ -z "$remaining" ]] || exit 1
+              printf 'PHOTO_URL_OWNED_CLEANUP_VERIFIED commit=%s run=%s attempt=1\n' "$GITHUB_SHA" "$GITHUB_RUN_ID"
+            fi
+            exit "$code"
+          }
+          trap cleanup EXIT
+          timeout 180s docker pull --platform linux/amd64 "$NODE_IMAGE"
+          image_id=$(timeout 20s docker image inspect -f '{{.Id}}' "$NODE_IMAGE") || exit 1
+          [[ "$image_id" == sha256:4d4657ef82b5cf8fd56373dbf8b145cdc6d1d7aabbaca1e6a361efedae04e052 ]]
+          image_platform=$(timeout 20s docker image inspect -f '{{.Os}}/{{.Architecture}}' "$NODE_IMAGE") || exit 1
+          [[ "$image_platform" == linux/amd64 ]]
+          CID=$(timeout 30s docker create --platform linux/amd64 --label "ilovedr.photo-unit=$OWNER" --network none --read-only --pids-limit 64 --memory 512m --cpus 1 --tmpfs /tmp:rw,nosuid,nodev,size=16m --mount "type=bind,src=$SOURCE,dst=/source,readonly" -w /source -e NODE_OPTIONS= -e NODE_PATH= -e NODE_DISABLE_COMPILE_CACHE=1 "$NODE_IMAGE" sh -ec 'node --version; exec node --max-old-space-size=96 --test --test-concurrency=1 --test-reporter=tap tests/public-image-url.test.cjs') || exit 1
+          [[ "$CID" =~ ^[0-9a-f]{64}$ ]]
+          container_owner=$(timeout 20s docker inspect -f '{{ index .Config.Labels "ilovedr.photo-unit" }}' "$CID") || exit 1
+          [[ "$container_owner" == "$OWNER" ]]
+          set +e
+          timeout --signal=TERM --kill-after=5s 45s docker start -a "$CID" >"$LOGDIR/stdout" 2>"$LOGDIR/stderr"
+          native=$?
+          set -e
+          printf 'PHOTO_URL_STDOUT_BEGIN\n'; cat "$LOGDIR/stdout"; printf '\nPHOTO_URL_STDOUT_END\n'
+          printf 'PHOTO_URL_STDERR_BEGIN\n'; cat "$LOGDIR/stderr"; printf '\nPHOTO_URL_STDERR_END\n'
+          timeout 20s docker inspect -f '{{json .State}}' "$CID" >"$LOGDIR/state.json"
+          export PHOTO_NATIVE_EXIT="$native"
+          python3 -I -S -B - <<'PY'
+          from pathlib import Path
+          import hashlib,json,os,re
+          logs=Path(os.environ['LOGDIR'])
+          stdout=(logs/'stdout').read_bytes();stderr=(logs/'stderr').read_bytes()
+          assert len(stdout)+len(stderr)<=1048576
+          state=json.loads((logs/'state.json').read_bytes())
+          assert int(os.environ['PHOTO_NATIVE_EXIT'])==state['ExitCode']==0
+          assert state['Running'] is False and state['OOMKilled'] is False
+          root=Path(os.environ['GITHUB_WORKSPACE'])/'ci/photo-url/source'
+          manifest=(root.parent/'source-manifest.json').read_bytes()
+          assert hashlib.sha256(manifest).hexdigest()==os.environ['PHOTO_MANIFEST_SHA256']
+          m=json.loads(manifest)
+          for name,pin in m['files'].items():
+              data=(root/name).read_bytes()
+              assert len(data)==pin['bytes'] and hashlib.sha256(data).hexdigest()==pin['sha256']
+          text=stdout.decode('utf-8')
+          assert text.splitlines()[0]==m['expected_node']=='v24.22.1'
+          for label,value in {'tests':6,'pass':6,'fail':0,'cancelled':0,'skipped':0,'todo':0}.items():
+              assert re.findall('^# '+label+r' (\d+)$',text,re.M)==[str(value)]
+          names=re.findall(r'^ok \d+ - (.+)$',text,re.M)
+          assert len(names)==len(set(names))==6 and set(names)==set(m['expected_test_names'])
+          result={'status':'PASS_SIX_ACTUAL_NATIVE_TS_PUBLIC_PHOTO_UNIT_CONTRACTS_NOT_BUILD_BROWSER_OR_RELEASE','commit':os.environ['GITHUB_SHA'],'run_id':os.environ['GITHUB_RUN_ID'],'attempt':1,'node':'v24.22.1','tests':6,'pass':6,'fail_cancel_skip_todo':0,'names':names,'native_client_container_exit':0,'running':False,'oom_killed':False,'source_unchanged':True,'manifest_sha256':hashlib.sha256(manifest).hexdigest(),'stdout_sha256':hashlib.sha256(stdout).hexdigest(),'stdout_bytes':len(stdout),'stderr_sha256':hashlib.sha256(stderr).hexdigest(),'stderr_bytes':len(stderr),'image_id':m['node_image_id'],'network':'none','readonly':True,'owned_cleanup_pending':True,'full_build_browser_or_production_proven':False}
+          print('PHOTO_URL_UNIT_RESULT '+json.dumps(result,sort_keys=True,separators=(',',':')))
+          PY
