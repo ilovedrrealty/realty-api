@@ -1,0 +1,143 @@
+"""Private service request routes; no notifications or provider execution."""
+from uuid import UUID
+from typing import Literal
+from fastapi import APIRouter, Depends, Request, Response
+from sqlalchemy.orm import Session
+from database import get_db
+from routes.property_network import NetworkRoute, Page
+from schemas.service_workflow import (PreferenceWrite, RequestCreate, RecipientAction, ManagedRecipientAction,
+    QuoteWrite, CounterWrite, ProposalAction, RequestAction, AwardWrite)
+from services import service_workflow as service
+from utils.auth import get_current_user
+from utils.limiter import limiter
+
+router = APIRouter(prefix="/property-network", tags=["private service workflow"], route_class=NetworkRoute)
+
+
+@router.get("/me/service-preferences")
+def preferences(user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return service.preference_view(db, user)
+
+
+@router.put("/me/service-preferences")
+@limiter.limit("30/minute")
+def save_preferences(request: Request, response: Response, body: PreferenceWrite,
+                     user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return service.save_preference(db, user, body)
+
+
+@router.get("/service-providers")
+def providers(category_id: str, property_class: str, page: int = Page,
+              user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return service.discovery(db, user, category_id, property_class, page)
+
+
+@router.post("/service-requests", status_code=201)
+@limiter.limit("15/minute")
+def create_request(request: Request, response: Response, body: RequestCreate,
+                   user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return service.create_request(db, user, body)
+
+
+@router.get("/service-requests")
+def requests(view: Literal["managed", "received"], status: str = "all", page: int = Page,
+             user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return service.requests_page(db, user, view, status, page)
+
+
+@router.get("/service-actions/submissions/{submission_id}")
+def submission(submission_id: UUID, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return service.submission(db, user, submission_id)
+
+
+@router.get("/service-requests/{request_id}")
+def detail(request_id: UUID, view: Literal["managed", "received"] | None = None,
+           user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return service.get_request(db, user, request_id, view)
+
+
+@router.get("/service-requests/{request_id}/comparison")
+def comparison(request_id: UUID, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return service.comparison(db, user, request_id)
+
+
+@router.get("/service-requests/{request_id}/events")
+def events(request_id: UUID, page: int = Page, view: Literal["managed", "received"] | None = None,
+           user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return service.events(db, user, request_id, page, view)
+
+
+@router.get("/service-requests/{request_id}/recipients/{recipient_id}/proposals")
+def proposal_history(request_id: UUID, recipient_id: UUID, page: int = Page, view: Literal["managed", "received"] | None = None,
+                     user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return service.proposal_history(db, user, request_id, recipient_id, page, view)
+
+
+@router.post("/service-requests/{request_id}/recipients/{recipient_id}/accept")
+@limiter.limit("30/minute")
+def accept(request: Request, response: Response, request_id: UUID, recipient_id: UUID, body: RecipientAction,
+           user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return service.recipient_action(db, user, request_id, recipient_id, body, "recipient_accept")
+
+
+@router.post("/service-requests/{request_id}/recipients/{recipient_id}/decline")
+@limiter.limit("30/minute")
+def decline(request: Request, response: Response, request_id: UUID, recipient_id: UUID, body: RecipientAction,
+            user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return service.recipient_action(db, user, request_id, recipient_id, body, "recipient_decline")
+
+
+@router.post("/service-requests/{request_id}/recipients/{recipient_id}/revoke")
+@limiter.limit("30/minute")
+def revoke(request: Request, response: Response, request_id: UUID, recipient_id: UUID, body: ManagedRecipientAction,
+           user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return service.recipient_action(db, user, request_id, recipient_id, body, "recipient_revoke")
+
+
+@router.post("/service-requests/{request_id}/recipients/{recipient_id}/proposals")
+@limiter.limit("30/minute")
+def quote(request: Request, response: Response, request_id: UUID, recipient_id: UUID, body: QuoteWrite,
+          user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return service.write_proposal(db, user, request_id, recipient_id, body)
+
+
+@router.post("/service-requests/{request_id}/recipients/{recipient_id}/counter")
+@limiter.limit("30/minute")
+def counter(request: Request, response: Response, request_id: UUID, recipient_id: UUID, body: CounterWrite,
+            user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return service.write_proposal(db, user, request_id, recipient_id, body, counter=True)
+
+
+@router.post("/service-proposals/{proposal_id}/accept-counter")
+@limiter.limit("30/minute")
+def accept_counter(request: Request, response: Response, proposal_id: UUID, body: ProposalAction,
+                   user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return service.proposal_action(db, user, proposal_id, body, "counter_accept")
+
+
+@router.post("/service-proposals/{proposal_id}/decline-counter")
+@limiter.limit("30/minute")
+def decline_counter(request: Request, response: Response, proposal_id: UUID, body: ProposalAction,
+                    user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return service.proposal_action(db, user, proposal_id, body, "counter_decline")
+
+
+@router.post("/service-proposals/{proposal_id}/withdraw")
+@limiter.limit("30/minute")
+def withdraw(request: Request, response: Response, proposal_id: UUID, body: ProposalAction,
+             user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return service.proposal_action(db, user, proposal_id, body, "proposal_withdraw")
+
+
+@router.post("/service-requests/{request_id}/award")
+@limiter.limit("15/minute")
+def award(request: Request, response: Response, request_id: UUID, body: AwardWrite,
+          user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return service.close_request(db, user, request_id, body, award=True)
+
+
+@router.post("/service-requests/{request_id}/cancel")
+@limiter.limit("30/minute")
+def cancel(request: Request, response: Response, request_id: UUID, body: RequestAction,
+           user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return service.close_request(db, user, request_id, body)

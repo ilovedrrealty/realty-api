@@ -20,3 +20,5 @@ from .listing_location_review import ListingLocationReview, ListingLocationRevie
 from .property_management import PropertyManagementRecord, PropertyManagementRevision
 from .property_network import (NetworkProperty, NetworkProject, NetworkProjectMember, NetworkMilestone, NetworkProjectUpdate,
     NetworkProjectComment, SocialNetworkProfile, NetworkPost, NetworkPostComment, NetworkBlock, NetworkMedia, NetworkAudit)
+from .service_workflow import (NetworkServicePreference, NetworkServiceRequest, NetworkServiceRecipient,
+    NetworkServiceProposal, NetworkServiceAction)

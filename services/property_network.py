@@ -200,8 +200,14 @@ def project_view(db, user, row):
             "progress": progress(db, row.id), "created_at": row.created_at, "updated_at": row.updated_at}
 
 
-def create_project(db, user, body):
-    user = lock_actor(db, user)
+def construct_project(db, user, body, *, actor_locked=False):
+    """Checked construction without commit, shared with atomic service awards.
+
+    Callers using actor_locked must already hold the active actor's NO KEY
+    UPDATE lock in their consistent transaction lock order. Source checks,
+    original fingerprints, project quotas and membership rules stay here.
+    """
+    user = user if actor_locked else lock_actor(db, user)
     digest = creation_digest(body) if body.submission_id is not None else None
     if body.submission_id is not None:
         existing = db.query(Project).filter(Project.created_by_id == user.id, Project.submission_id == body.submission_id).first()
@@ -211,7 +217,7 @@ def create_project(db, user, body):
             project_for(db, user, existing.id)
             if existing.creation_sha256 != digest:
                 raise HTTPException(409, "This submission key was used with different project details")
-            return project_view(db, user, existing)
+            return existing
     if body.property_id is not None:
         private = registry_for(db, user, body.property_id, lock=True)
         if private.status != "active":
@@ -239,6 +245,11 @@ def create_project(db, user, body):
     if user.id != owner.id and user.role != "admin":
         db.add(Member(project_id=row.id, user_id=user.id, role="manager", active=True))
     audit(db, user, "project", row.id, "created")
+    return row
+
+
+def create_project(db, user, body):
+    row = construct_project(db, user, body)
     db.commit(); db.refresh(row)
     return project_view(db, user, row)
 
