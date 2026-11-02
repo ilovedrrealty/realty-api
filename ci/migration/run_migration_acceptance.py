@@ -337,7 +337,7 @@ def fingerprint(connection, tables, text):
     return result
 
 
-def schema_facts(connection, tables, inspect):
+def schema_facts(connection, tables, inspect, diagnostic=None):
     inspector = inspect(connection)
     result = {}
     for name in sorted(tables):
@@ -350,7 +350,40 @@ def schema_facts(connection, tables, inspect):
             "checks": inspector.get_check_constraints(name, schema="public"),
             "indexes": inspector.get_indexes(name, schema="public"),
         }
+    if diagnostic is not None:
+        diagnostic.update(schema_diagnostic(result))
     return sha(json.dumps(result, sort_keys=True, default=str).encode())
+
+
+def schema_diagnostic(facts):
+    # Hash-only evidence. Never mutate the raw projection or accept its
+    # separately sorted diagnostic as a replacement for the parity guard.
+    need(set(facts) == NEW, "FIXED_NEW_SCHEMA_DIAGNOSTIC_SCOPE_REQUIRED")
+    digest = lambda value: sha(json.dumps(value, sort_keys=True, default=str).encode())
+    components, sorted_projection = {}, {}
+    for name in sorted(NEW):
+        table = facts[name]
+        need(set(table) == {"columns", "pk", "fk", "unique", "checks", "indexes"}, "EXACT_SCHEMA_DIAGNOSTIC_COMPONENTS_REQUIRED")
+        columns = table["columns"]
+        names = [column["name"] for column in columns]
+        need(0 < len(names) <= 256 and len(set(names)) == len(names), "UNIQUE_BOUNDED_SCHEMA_COLUMNS_REQUIRED")
+        ordered = {**table, "columns": sorted(columns, key=lambda column: column["name"])}
+        sorted_projection[name] = ordered
+        components[name] = {
+            "column_count": len(names),
+            "user_id_ordinal": names.index("user_id") + 1 if name == "lead_delivery_jobs" else None,
+            "raw_table_sha256": digest(table),
+            "columns_order_sha256": digest(columns),
+            "column_names_order_sha256": digest(names),
+            "columns_by_name_sha256": digest({column["name"]: column for column in columns}),
+            "columns_sorted_table_sha256": digest(ordered),
+            **{kind + "_sha256": digest(table[kind]) for kind in ("pk", "fk", "unique", "checks", "indexes")},
+        }
+    value = {"schema_version": 1, "scope": "FIXED17_SCHEMA_COMPONENT_HASHES_DIAGNOSTIC_ONLY",
+             "table_count": len(NEW), "raw_schema_sha256": digest(facts),
+             "columns_sorted_schema_sha256": digest(sorted_projection), "tables": components}
+    need(len(json.dumps(value, sort_keys=True).encode()) <= 32768, "BOUNDED_SCHEMA_DIAGNOSTIC_REQUIRED")
+    return value
 
 
 def privacy(connection, text):
@@ -713,7 +746,9 @@ def child(args):
                 else:
                     proof["catalog_sha256"] = catalog(connection, Base.metadata, inspect, text, CheckConstraint, UniqueConstraint)
                     need(all(v["rows"] == 0 for v in fingerprint(connection, NEW, text).values()), "FRESH_EXPANSION_BACKFILL_DETECTED")
-                    proof["new_schema_sha256"] = schema_facts(connection, NEW, inspect)
+                    diagnostic = {}
+                    proof["new_schema_sha256"] = schema_facts(connection, NEW, inspect, diagnostic=diagnostic)
+                    proof["new_schema_diagnostic"] = diagnostic
             before = None
             with engine.connect() as connection:
                 before = fingerprint(connection, expected_tables, text)
@@ -747,7 +782,9 @@ def child(args):
             version(HEAD)
             with engine.begin() as connection:
                 proof["catalog_sha256"] = catalog(connection, Base.metadata, inspect, text, CheckConstraint, UniqueConstraint)
-                proof["new_schema_sha256"] = schema_facts(connection, NEW, inspect)
+                diagnostic = {}
+                proof["new_schema_sha256"] = schema_facts(connection, NEW, inspect, diagnostic=diagnostic)
+                proof["new_schema_diagnostic"] = diagnostic
                 need(fingerprint(connection, LEGACY, text) == previous["legacy_rows"]
                      and schema_facts(connection, LEGACY, inspect) == previous["legacy_schema_sha256"], "ADDITIVE_UPGRADE_CHANGED_BASELINE")
                 strict_profiles(connection, text)

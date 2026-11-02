@@ -24,7 +24,7 @@ APP_TREE = '40f882b6c49995b5e924a377738830bb9183a6fb'
 BASE_COMMIT = '0811946ea02a310b03116960663e3ba6871a07d0'
 BASE_TREE = '18b2087a31853a275c5c6ca791a68214b1cd38ef'
 PINS = {
-    'run_migration_acceptance.py': 'fff76d2b00724fddffde2ce5f4b70da99fb803c8084084f36c741f0040da6e52',
+    'run_migration_acceptance.py': 'cb2db1b6ecfc6f2207cacb4b1348e1f3ca403ef4333a91a13ccd399b26bd5ca8',
     'migration-source-manifest.json': '5dde5b58cd032719713d69817e0c8af693fe97255c5ce482ae9cc61a34ae7b1b',
     'accepted_strict107.py': 'd178935e3425a62c900cdae65995ce1260bf3fdc5c2b35d0de7257d87847af2e',
     'accepted107-source.json': 'c8067bfc2c6eb0bec1725f01fbffbc772fdef828ae9b5c79618f4c2ce3b0fa47',
@@ -131,7 +131,7 @@ def main():
          and re.fullmatch(r'[0-9a-f]{40}', args.expected_ops_commit)
          and os.environ.get('GITHUB_SHA') == args.expected_ops_commit
          and os.environ.get('GITHUB_REPOSITORY') == 'ilovedrrealty/realty-api'
-         and os.environ.get('GITHUB_REF') == 'refs/heads/codex-ci-migration-fixture-20261101'
+         and os.environ.get('GITHUB_REF') == 'refs/heads/codex-ci-migration-diagnostic-20261101'
          and os.environ.get('GITHUB_EVENT_NAME') == 'push'
          and all(os.environ.get(k) == 'true' for k in ('CI', 'GITHUB_ACTIONS', 'ILDR_EPHEMERAL_CI')),
          'EXPLICIT_INITIAL_MIGRATION_CI_CONTEXT_REQUIRED')

@@ -9,11 +9,12 @@ import sys
 
 APP = 'b33aafe72c17d037c557546b57fb762704e8cb77'
 MANIFEST = '5dde5b58cd032719713d69817e0c8af693fe97255c5ce482ae9cc61a34ae7b1b'
-RUNNER = 'fff76d2b00724fddffde2ce5f4b70da99fb803c8084084f36c741f0040da6e52'
+RUNNER = 'cb2db1b6ecfc6f2207cacb4b1348e1f3ca403ef4333a91a13ccd399b26bd5ca8'
 HEX = re.compile(r'[0-9a-f]{64}\Z')
 DB = re.compile(r'ildr_migration_ci_[ab]_([0-9a-f]{32})\Z')
 UUID = re.compile(r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\Z')
 LEGACY = set('users pending_users listings upgrade_requests inquiries anonymous_leads listing_edits saved_homes bookings activity_log deal_requests listing_events leads settings bulk_import_jobs website_settings website_settings_revisions professional_profiles professional_profile_revisions research_workspaces'.split())
+NEW = set('lead_delivery_jobs lead_delivery_worker_state listing_location_reviews listing_location_review_revisions property_management_records property_management_revisions network_projects network_project_members network_milestones network_project_updates network_project_comments social_network_profiles network_posts network_post_comments network_blocks network_media network_audit'.split())
 
 
 def need(value):
@@ -122,9 +123,31 @@ def main():
                 need(item['oid'] is None or positive(item['oid']))
                 need(item['owner'] is None or positive(item['owner']))
             continue
-        keys(value, {'status', 'database', 'mode', 'provider_or_application_lifespan_started'}, {'database_oid', 'failure_code', 'sqlstate', 'catalog_sha256', 'new_schema_sha256', 'baseline_ids', 'legacy_rows', 'legacy_schema_sha256', 'negative_operations_rejected', 'preserved_synthetic_private_profiles', 'new_tables_empty_before_synthetic_inserts', 'effective_data_api_roles_tested', 'rls_populated_tables_tested', 'retained_history_sha256'})
+        keys(value, {'status', 'database', 'mode', 'provider_or_application_lifespan_started'}, {'database_oid', 'failure_code', 'sqlstate', 'catalog_sha256', 'new_schema_sha256', 'new_schema_diagnostic', 'baseline_ids', 'legacy_rows', 'legacy_schema_sha256', 'negative_operations_rejected', 'preserved_synthetic_private_profiles', 'new_tables_empty_before_synthetic_inserts', 'effective_data_api_roles_tested', 'rls_populated_tables_tested', 'retained_history_sha256'})
         need(nonce and DB.fullmatch(value['database']) and value['database'].endswith('_' + nonce)
              and value['mode'] in ('fresh', 'baseline', 'upgrade') and value['provider_or_application_lifespan_started'] is False)
+        if value['status'] == 'ACTUAL_PHASE_COMPLETED' and value['mode'] in ('fresh', 'upgrade'):
+            need('new_schema_diagnostic' in value)
+        if 'new_schema_diagnostic' in value:
+            diagnostic = value['new_schema_diagnostic']
+            keys(diagnostic, {'schema_version', 'scope', 'table_count', 'raw_schema_sha256', 'columns_sorted_schema_sha256', 'tables'})
+            need(type(diagnostic['schema_version']) is int and diagnostic['schema_version'] == 1
+                 and diagnostic['scope'] == 'FIXED17_SCHEMA_COMPONENT_HASHES_DIAGNOSTIC_ONLY'
+                 and type(diagnostic['table_count']) is int and diagnostic['table_count'] == 17
+                 and diagnostic['raw_schema_sha256'] == value.get('new_schema_sha256')
+                 and HEX.fullmatch(diagnostic['raw_schema_sha256']) and HEX.fullmatch(diagnostic['columns_sorted_schema_sha256'])
+                 and set(diagnostic['tables']) == NEW
+                 and len(json.dumps(diagnostic, sort_keys=True).encode()) <= 32768)
+            digest_fields = {'raw_table_sha256', 'columns_order_sha256', 'column_names_order_sha256', 'columns_by_name_sha256',
+                             'columns_sorted_table_sha256', 'pk_sha256', 'fk_sha256', 'unique_sha256', 'checks_sha256', 'indexes_sha256'}
+            for table_name, component in diagnostic['tables'].items():
+                keys(component, {'column_count', 'user_id_ordinal'} | digest_fields)
+                need(type(component['column_count']) is int and 0 < component['column_count'] <= 256
+                     and all(HEX.fullmatch(component[key]) for key in digest_fields))
+                if table_name == 'lead_delivery_jobs':
+                    need(type(component['user_id_ordinal']) is int and 0 < component['user_id_ordinal'] <= component['column_count'])
+                else:
+                    need(component['user_id_ordinal'] is None)
         if 'baseline_ids' in value:
             keys(value['baseline_ids'], {'actor', 'other', 'listing', 'lead'})
             need(all(UUID.fullmatch(v) for v in value['baseline_ids'].values()))
