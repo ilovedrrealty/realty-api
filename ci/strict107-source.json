@@ -4,8 +4,8 @@
   "derived_from_reviewed_working_manifest_sha256": "66ca11a10c5d68cbf56cc62abafa5704e406b6fe8f870e95c4c964745a2dbedf",
   "baseline_worktree_head_metadata": "2751d36f3a480334d8f28fd86a53162043b858d1",
   "candidate_commit": "ROOT_REVIEWED_EXACT_INITIAL_BRANCH_PUSH_COMMIT_NOT_YET_CREATED",
-  "proposed_ci_branch": "refs/heads/codex-ci-strict107-fixtures-20261101",
-  "activation_state": "REFUSE_UNTIL_FIXTURE_REVIEWS_EXACT190_SOURCE_REVIEW_AND_ROOT_NEW_EMPTY_REF_LEASE_APPROVAL",
+  "proposed_ci_branch": "refs/heads/codex-ci-strict107-model-order-20261101",
+  "activation_state": "REFUSE_UNTIL_MODEL_AND_EXACT190_SOURCE_REVIEW_ROOT_EMPTY_REF_LEASE_AND_FRESH_OWNER_COST_APPROVAL",
   "v3_source_renewal": {
     "preserved_v2_manifest_sha256": "8450964ebbb307c772c20e551d697ab9f3c41be4f2eceeabe5e00ad7aee9ff59",
     "changed_application_path": "models/lead_delivery.py",
@@ -477,8 +477,8 @@
       "binary_nul_detected": false
     },
     "models/lead_delivery.py": {
-      "sha256": "b35f9ef0e781ce9e8ce67ce177e46349f1fc2853aaf4199b63c5499ffac69cf8",
-      "git_blob_oid": "51f6e002d09db98c3b63da4a00eefb94400c4d70",
+      "sha256": "23b702d69ba60561e333ed3d84ec5c26579517d98c1dba6950f369ef4a17f1d7",
+      "git_blob_oid": "0f367e725f7a748bb51564dea14ca80847725852",
       "bytes": 3268,
       "binary_nul_detected": false
     },
