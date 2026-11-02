@@ -465,8 +465,8 @@ def recipient_action(db, user, request_id, recipient_id, body, operation):
         if operation == "recipient_revoke":
             expected(request.version, body.expected_request_version)
             request.version += 1; request.updated_at = network.now()
-        recipient.status = "revoked" if operation == "recipient_revoke" else "declined"
         close_proposal(db, recipient)
+        recipient.status = "revoked" if operation == "recipient_revoke" else "declined"
     recipient.version += 1
     proposal = current_proposal(db, recipient)
     versions = {"recipient_version": recipient.version}
