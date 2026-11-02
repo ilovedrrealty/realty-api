@@ -1,0 +1,54 @@
+{
+  "assertions": {
+    "class_counts": {
+      "CustomerDeliveryTests": 18,
+      "LeadDeliveryTests": 52,
+      "PrivateImageContracts": 4,
+      "PrivateRegistryMigration": 5,
+      "PrivateRegistryRoutes": 16,
+      "PropertyNetworkRoutes": 18,
+      "SignupNotificationTests": 15
+    },
+    "denied_guard_events": [],
+    "errors": 0,
+    "expected_failures": 0,
+    "expected_schemas": {
+      "tests/test_customer_delivery.py": "customer_delivery_test_1837e19a91d84414a3c1facabbde70fb",
+      "tests/test_lead_delivery.py": "lead_delivery_test_1837e19a91d84414a3c1facabbde70fb",
+      "tests/test_private_property_registry.py": "registry_test_1837e19a91d84414a3c1facabbde70fb",
+      "tests/test_private_property_registry_migration.py": "registry_migration_test_1837e19a91d84414a3c1facabbde70fb",
+      "tests/test_property_network.py": "network_test_1837e19a91d84414a3c1facabbde70fb"
+    },
+    "failed_test_ids": [],
+    "failures": 0,
+    "schema_uuid_consumed": {
+      "tests/test_customer_delivery.py": true,
+      "tests/test_lead_delivery.py": true,
+      "tests/test_private_property_registry.py": true,
+      "tests/test_private_property_registry_migration.py": true,
+      "tests/test_property_network.py": true
+    },
+    "skipped": 0,
+    "source_unchanged": true,
+    "status": "TEST_ASSERTIONS_PASS_SCHEMA_CLEANUP_PENDING",
+    "tests_run": 128,
+    "unexpected_successes": 0
+  },
+  "bootstrap_and_full_migration_chain_proven": false,
+  "child_output_bytes": [
+    0,
+    0
+  ],
+  "cleanup_errors": [],
+  "exact_schemas_absent": true,
+  "expected_tests": 128,
+  "minimum_available_mib": 1894.69140625,
+  "native_child_exit": 0,
+  "real_provider_or_production_actions": false,
+  "runner_sha256": "2b5345d2a134dda0f4d627e62cdc657ac8e03d0ff19b17c117a2a802242c5a4a",
+  "source_commit": "4b2322686a4691f7b5a96654cac9a4fd5bcaf9b6",
+  "source_manifest_sha256": "68dc7d35ee451a78b89414c0fbdd55addea4be32daf144475bf569081bff1ed2",
+  "source_unchanged": true,
+  "status": "PASS_REGISTRY_ASSERTIONS_AND_EXACT_SCHEMA_CLEANUP_PG_CONTAINER_CLEANUP_PENDING",
+  "tests_pass": true
+}

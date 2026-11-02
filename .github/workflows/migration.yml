@@ -1,0 +1,347 @@
+# MIGRATION SOURCE ONLY: separate root review and empty-ref-lease authorization required.
+# Official index/config pins are bound to reviewed registry-digest-proof.json.
+name: Isolated current51 private registry migrations
+
+on:
+  push:
+    branches:
+      - codex-ci-registry-migration-20261102
+
+permissions:
+  contents: read
+
+concurrency:
+  group: migration-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  migration:
+    if: >-
+      github.event_name == 'push' &&
+      github.repository == 'ilovedrrealty/realty-api' &&
+      github.event.repository.private == false &&
+      github.ref == 'refs/heads/codex-ci-registry-migration-20261102' &&
+      github.event.created == true &&
+      github.event.before == '0000000000000000000000000000000000000000' &&
+      github.event.deleted == false && github.event.forced == false &&
+      github.run_attempt == 1 && github.event.after == github.sha
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      CANDIDATE_COMMIT: ${{ github.sha }}
+      APPLICATION_COMMIT: 4b2322686a4691f7b5a96654cac9a4fd5bcaf9b6
+      APPLICATION_TREE: 26911f16dfe8b202a85fbc26020c2732f145865d
+      BASELINE_COMMIT: 0811946ea02a310b03116960663e3ba6871a07d0
+      BASELINE_TREE: 18b2087a31853a275c5c6ca791a68214b1cd38ef
+      PYTHON_DIGEST: sha256:673719e071ecf27434fd2635bbd8d00f49f4fdd81f243143438a42ced8bedf60
+      PYTHON_CONFIG_DIGEST: sha256:de8d79606beff46114d4abd5c392116c62142cbe582f8ede92cf4a64e1a10ff5
+      POSTGRES_DIGEST: sha256:3b0cda93be7c8dba2ed484d19393d93845dc3dafb88973e248ba8e6d99d784e1
+      POSTGRES_CONFIG_DIGEST: sha256:81edcaa5ff2923f7be9c1f43d3e5076f29c6c9c216c86964b5fd038959404429
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Require exact new-branch event and reviewed image literals
+        env:
+          WORKFLOW_SOURCE_SHA: ${{ github.workflow_sha }}
+          PUSH_CREATED: ${{ github.event.created }}
+          PUSH_DELETED: ${{ github.event.deleted }}
+          PUSH_FORCED: ${{ github.event.forced }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          PUSH_AFTER: ${{ github.event.after }}
+          REPOSITORY_PRIVATE: ${{ github.event.repository.private }}
+        run: |
+          set -euo pipefail
+          [[ "$GITHUB_REPOSITORY" == ilovedrrealty/realty-api ]]
+          [[ "$REPOSITORY_PRIVATE" == false ]]
+          [[ "$RUNNER_ENVIRONMENT" == github-hosted && "$RUNNER_OS" == Linux && "$RUNNER_ARCH" == X64 ]]
+          [[ "$GITHUB_EVENT_NAME" == push && "$GITHUB_REF" == refs/heads/codex-ci-registry-migration-20261102 ]]
+          [[ "$PUSH_CREATED" == true && "$PUSH_DELETED" == false && "$PUSH_FORCED" == false ]]
+          [[ "$PUSH_BEFORE" == 0000000000000000000000000000000000000000 ]]
+          [[ "$GITHUB_RUN_ATTEMPT" == 1 ]]
+          [[ "$CANDIDATE_COMMIT" =~ ^[0-9a-f]{40}$ && "$CANDIDATE_COMMIT" == "$GITHUB_SHA" ]]
+          [[ "$PUSH_AFTER" == "$CANDIDATE_COMMIT" && "$WORKFLOW_SOURCE_SHA" == "$CANDIDATE_COMMIT" ]]
+          [[ "$PYTHON_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+          [[ "$POSTGRES_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+          [[ "$PYTHON_CONFIG_DIGEST" =~ ^sha256:[0-9a-f]{64}$ && "$POSTGRES_CONFIG_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+
+      - name: Read exact operational event commit
+        # Official actions/checkout v7.0.1, verified immutable source commit.
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: ilovedrrealty/realty-api
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+          set-safe-directory: false
+          show-progress: false
+          lfs: false
+          submodules: false
+          path: ops
+
+      - name: Read exact accepted registry128 application
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: ilovedrrealty/realty-api
+          ref: 4b2322686a4691f7b5a96654cac9a4fd5bcaf9b6
+          fetch-depth: 1
+          persist-credentials: false
+          set-safe-directory: false
+          show-progress: false
+          lfs: false
+          submodules: false
+          path: candidate
+
+      - name: Read exact full production baseline
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: ilovedrrealty/realty-api
+          ref: 0811946ea02a310b03116960663e3ba6871a07d0
+          fetch-depth: 1
+          persist-credentials: false
+          set-safe-directory: false
+          show-progress: false
+          lfs: false
+          submodules: false
+          path: baseline
+
+      - name: One bounded internal-network rehearsal and owned cleanup
+        id: rehearsal
+        timeout-minutes: 29
+        run: |
+          set -euo pipefail
+          umask 077
+          [[ "$CANDIDATE_COMMIT" =~ ^[0-9a-f]{40}$ && "$CANDIDATE_COMMIT" == "$GITHUB_SHA" ]]
+          [[ "$PYTHON_DIGEST" =~ ^sha256:[0-9a-f]{64}$ && "$POSTGRES_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+          check_checkout() {
+            local actual_head actual_tree actual_status
+            actual_head="$(timeout --kill-after=2s 20s git --no-optional-locks -c "safe.directory=$1" -C "$1" rev-parse HEAD)" || return 1
+            [[ "$actual_head" == "$2" ]] || return 1
+            if [[ -n "${3:-}" ]]; then
+              actual_tree="$(timeout --kill-after=2s 20s git --no-optional-locks -c "safe.directory=$1" -C "$1" rev-parse 'HEAD^{tree}')" || return 1
+              [[ "$actual_tree" == "$3" ]] || return 1
+            fi
+            actual_status="$(timeout --kill-after=2s 20s git --no-optional-locks -c "safe.directory=$1" -C "$1" status --porcelain)" || return 1
+            [[ -z "$actual_status" ]]
+          }
+          check_checkout "$GITHUB_WORKSPACE/ops" "$CANDIDATE_COMMIT"
+          check_checkout "$GITHUB_WORKSPACE/candidate" "$APPLICATION_COMMIT" "$APPLICATION_TREE"
+          check_checkout "$GITHUB_WORKSPACE/baseline" "$BASELINE_COMMIT" "$BASELINE_TREE"
+          TOOLS="$GITHUB_WORKSPACE/ops/ci/migration"
+          # Pin every regular file before Docker, including the entry and log
+          # validator that are outside the unchanged migration runner itself.
+          timeout --kill-after=2s 15s python3 -I -S -B - "$TOOLS" <<'PY'
+          import hashlib, pathlib, sys
+          root = pathlib.Path(sys.argv[1])
+          pins = {
+              'migration_entry.py': '689934b2248eb37061df41b0e03f5d8e13a364fd84ab3d86d6b73585af9c8c19',
+              'emit_migration_logs.py': '369403088c18148bcb823d968033b3d44170b1a5dcbb3a36ba477d4340cd3356',
+              'run_migration_acceptance.py': '495d52e030d941033ea51f1f3724f87d34fa188d62c4fef12b9ceb789c035d1a',
+              'migration-source-manifest.json': 'f0183579d4dd3e3c3e28b7403d04ed1fd5b25e586bffa645b415b4a2310769ff',
+              'accepted_registry128.py': '2b5345d2a134dda0f4d627e62cdc657ac8e03d0ff19b17c117a2a802242c5a4a',
+              'accepted128-source.json': '68dc7d35ee451a78b89414c0fbdd55addea4be32daf144475bf569081bff1ed2',
+              'accepted128-inventory.json': '5731a942e5a458afda131d9a0ce0769f1cbd69bbd07a53d2ca63a34331d830b4',
+              'accepted128-result.json': '986cdf4c31c434a708e62fc35751bb0a24a00dddff7f063882e8aa1727d0a5ae',
+              'accepted128-proof.json': '08bfe0c5e54f0404aeb708a1341ca3aa980a9b8c912bc223e3b8bba6c23d9971',
+              'accepted128-independent.json': '490db68a9564984c18a1907e8d90f8648ded7803dd163fd851a37e149b5123c7',
+              'registry.Dockerfile': '8ffaef790e6012746b1b77b1a6da96bac0bc79fa92d5cb47d8d6405036e6abc3',
+          }
+          if not root.is_dir() or root.is_symlink() or {p.name for p in root.iterdir()} != set(pins):
+              raise SystemExit('MIGRATION_EXACT_TOOL_SET_REQUIRED')
+          for name, pin in pins.items():
+              path = root/name
+              if path.is_symlink() or not path.is_file() or not 0 < path.stat().st_size < 262144 or hashlib.sha256(path.read_bytes()).hexdigest() != pin:
+                  raise SystemExit('MIGRATION_EXACT_TOOL_BYTES_REQUIRED')
+          PY
+          RUN_KEY="r${GITHUB_RUN_ID}a${GITHUB_RUN_ATTEMPT}-$(cat /proc/sys/kernel/random/uuid)"
+          [[ "$RUN_KEY" =~ ^r[0-9]+a1-[0-9a-f-]{36}$ ]]
+          STATE="$RUNNER_TEMP/ildr-migration-$RUN_KEY"
+          [[ ! -e "$STATE" && ! -L "$STATE" ]]
+          mkdir -m 700 "$STATE"
+          ARTIFACTS="$STATE/results"
+          mkdir -m 700 "$ARTIFACTS"
+          LABEL=org.ilovedrrealty.migration.run
+          PY_REF="docker.io/library/python:3.11-slim@$PYTHON_DIGEST"
+          PG_REF="docker.io/library/postgres:17@$POSTGRES_DIGEST"
+          IMAGE_ID=''; NETWORK_ID=''; PG_ID=''; TEST_ID=''; PG_VOLUMES=''
+          BUILD_CAPTURE_UNCERTAIN=0; NETWORK_CAPTURE_UNCERTAIN=0
+          PG_CAPTURE_UNCERTAIN=0; TEST_CAPTURE_UNCERTAIN=0
+
+          owned_container() {
+            local captured_container_id captured_container_label
+            [[ "$1" =~ ^[0-9a-f]{64}$ ]] || return 1
+            captured_container_id="$(timeout --kill-after=5s 15s docker inspect --type container --format '{{.Id}}' "$1" 2>/dev/null)" || return 1
+            [[ "$captured_container_id" == "$1" ]] || return 1
+            captured_container_label="$(timeout --kill-after=5s 15s docker inspect --type container --format '{{index .Config.Labels "org.ilovedrrealty.migration.run"}}' "$1" 2>/dev/null)" || return 1
+            [[ "$captured_container_label" == "$RUN_KEY" ]]
+          }
+          cleanup() {
+            result=$?
+            trap - EXIT INT TERM
+            cleanup_failed=0
+            # A possibly successful creation without complete identity/volume
+            # capture permanently disqualifies this run's cleanup proof.
+            if [[ "$BUILD_CAPTURE_UNCERTAIN$NETWORK_CAPTURE_UNCERTAIN$PG_CAPTURE_UNCERTAIN$TEST_CAPTURE_UNCERTAIN" != 0000 ]]; then cleanup_failed=1; fi
+            for id in "$TEST_ID" "$PG_ID"; do
+              if [[ -n "$id" ]]; then
+                if owned_container "$id"; then
+                  timeout --kill-after=5s 45s docker rm --force --volumes "$id" >/dev/null 2>&1 || cleanup_failed=1
+                  if timeout --kill-after=5s 15s docker inspect --type container "$id" >/dev/null 2>&1; then cleanup_failed=1
+                  else probe_rc=$?; if [[ "$probe_rc" != 1 ]]; then cleanup_failed=1; fi; fi
+                else cleanup_failed=1; fi
+              fi
+            done
+            if [[ -n "$PG_VOLUMES" ]]; then
+              if volume_inventory="$(timeout --kill-after=5s 15s docker volume ls --quiet 2>/dev/null)"; then
+                for volume in $PG_VOLUMES; do
+                  if [[ ! "$volume" =~ ^[0-9a-f]{64}$ ]]; then cleanup_failed=1; continue; fi
+                  while IFS= read -r observed_volume; do
+                    if [[ "$observed_volume" == "$volume" ]]; then cleanup_failed=1; fi
+                  done <<< "$volume_inventory"
+                done
+              else cleanup_failed=1; fi
+            fi
+            if [[ -n "$NETWORK_ID" ]]; then
+              if [[ "$NETWORK_ID" =~ ^[0-9a-f]{64}$ ]] &&
+                 cleanup_network_id="$(timeout --kill-after=5s 15s docker network inspect --format '{{.Id}}' "$NETWORK_ID" 2>/dev/null)" &&
+                 [[ "$cleanup_network_id" == "$NETWORK_ID" ]] &&
+                 cleanup_network_label="$(timeout --kill-after=5s 15s docker network inspect --format '{{index .Labels "org.ilovedrrealty.migration.run"}}' "$NETWORK_ID" 2>/dev/null)" &&
+                 [[ "$cleanup_network_label" == "$RUN_KEY" ]]; then
+                timeout --kill-after=5s 30s docker network rm "$NETWORK_ID" >/dev/null 2>&1 || cleanup_failed=1
+                if timeout --kill-after=5s 15s docker network inspect "$NETWORK_ID" >/dev/null 2>&1; then cleanup_failed=1
+                else probe_rc=$?; if [[ "$probe_rc" != 1 ]]; then cleanup_failed=1; fi; fi
+              else cleanup_failed=1; fi
+            fi
+            if [[ -n "$IMAGE_ID" ]]; then
+              if [[ "$IMAGE_ID" =~ ^sha256:[0-9a-f]{64}$ ]] &&
+                 cleanup_image_id="$(timeout --kill-after=5s 15s docker image inspect --format '{{.Id}}' "$IMAGE_ID" 2>/dev/null)" &&
+                 [[ "$cleanup_image_id" == "$IMAGE_ID" ]] &&
+                 cleanup_image_label="$(timeout --kill-after=5s 15s docker image inspect --format '{{index .Config.Labels "org.ilovedrrealty.migration.run"}}' "$IMAGE_ID" 2>/dev/null)" &&
+                 [[ "$cleanup_image_label" == "$RUN_KEY" ]]; then
+                timeout --kill-after=5s 30s docker image rm "$IMAGE_ID" >/dev/null 2>&1 || cleanup_failed=1
+                if timeout --kill-after=5s 15s docker image inspect "$IMAGE_ID" >/dev/null 2>&1; then cleanup_failed=1
+                else probe_rc=$?; if [[ "$probe_rc" != 1 ]]; then cleanup_failed=1; fi; fi
+              else cleanup_failed=1; fi
+            fi
+            # An inspect exit1 is not proof of absence. Timeout/other exits
+            # already refuse; successful positive scans below are mandatory.
+            timeout --kill-after=5s 15s docker info --format '{{.ServerVersion}}' >/dev/null 2>&1 || cleanup_failed=1
+            # Successful exact-run-label scans must also be empty. Inspect
+            # failures or uncaptured anonymous volumes cannot prove absence.
+            if ! residual="$(timeout --kill-after=5s 15s docker container ls --all --quiet --no-trunc --filter "label=$LABEL=$RUN_KEY" 2>/dev/null)"; then cleanup_failed=1
+            elif [[ -n "$residual" ]]; then cleanup_failed=1; fi
+            if ! residual="$(timeout --kill-after=5s 15s docker network ls --quiet --no-trunc --filter "label=$LABEL=$RUN_KEY" 2>/dev/null)"; then cleanup_failed=1
+            elif [[ -n "$residual" ]]; then cleanup_failed=1; fi
+            if ! residual="$(timeout --kill-after=5s 15s docker image ls --quiet --no-trunc --filter "label=$LABEL=$RUN_KEY" 2>/dev/null)"; then cleanup_failed=1
+            elif [[ -n "$residual" ]]; then cleanup_failed=1; fi
+            timeout --kill-after=5s 15s docker info --format '{{.ServerVersion}}' >/dev/null 2>&1 || cleanup_failed=1
+            if [[ "$cleanup_failed" != 0 ]]; then
+              printf '%s\n' 'MIGRATION_OWNED_CLEANUP_NOT_VERIFIED'
+              exit 1
+            fi
+            printf 'owned_cleanup_verified=true\n' >> "$GITHUB_OUTPUT"
+            printf 'MIGRATION_OWNED_CLEANUP_VERIFIED commit=%s run=%s attempt=1\n' "$CANDIDATE_COMMIT" "$GITHUB_RUN_ID"
+            exit "$result"
+          }
+          trap cleanup EXIT
+          trap 'exit 130' INT TERM
+
+          # Pull/build online before creating the isolated runtime namespace.
+          timeout --kill-after=5s 180s docker pull --platform linux/amd64 "$PY_REF" >/dev/null 2>&1
+          timeout --kill-after=5s 180s docker pull --platform linux/amd64 "$PG_REF" >/dev/null 2>&1
+          PY_IMAGE_ID="$(timeout --kill-after=5s 15s docker image inspect --format '{{.Id}}' "$PY_REF" 2>/dev/null)"
+          PG_IMAGE_ID="$(timeout --kill-after=5s 15s docker image inspect --format '{{.Id}}' "$PG_REF" 2>/dev/null)"
+          [[ "$PY_IMAGE_ID" == "$PYTHON_CONFIG_DIGEST" && "$PG_IMAGE_ID" == "$POSTGRES_CONFIG_DIGEST" ]]
+          BUILD_CAPTURE_UNCERTAIN=1
+          timeout --kill-after=5s 600s docker build --platform linux/amd64 --pull=false --quiet \
+            --label "$LABEL=$RUN_KEY" --build-arg "PYTHON_DIGEST=$PYTHON_DIGEST" \
+            --file "$TOOLS/registry.Dockerfile" --iidfile "$STATE/image.id" "$GITHUB_WORKSPACE/candidate" >/dev/null 2>&1
+          IMAGE_ID="$(cat "$STATE/image.id")"
+          [[ "$IMAGE_ID" =~ ^sha256:[0-9a-f]{64}$ ]]
+          captured_image_id="$(timeout --kill-after=5s 15s docker image inspect --format '{{.Id}}' "$IMAGE_ID" 2>/dev/null)" || exit 1
+          [[ "$captured_image_id" == "$IMAGE_ID" ]]
+          captured_image_label="$(timeout --kill-after=5s 15s docker image inspect --format '{{index .Config.Labels "org.ilovedrrealty.migration.run"}}' "$IMAGE_ID" 2>/dev/null)" || exit 1
+          [[ "$captured_image_label" == "$RUN_KEY" ]]
+          BUILD_CAPTURE_UNCERTAIN=0
+          {
+            printf 'Official Python ref: `%s`; observed image: `%s`\n' "$PY_REF" "$PY_IMAGE_ID"
+            printf 'Official PostgreSQL ref: `%s`; observed image: `%s`\n' "$PG_REF" "$PG_IMAGE_ID"
+            printf 'Owned test image: `%s`; source: `%s`\n' "$IMAGE_ID" "$CANDIDATE_COMMIT"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          NETWORK_CAPTURE_UNCERTAIN=1
+          NETWORK_ID="$(timeout --kill-after=5s 30s docker network create --internal --label "$LABEL=$RUN_KEY" "ildr-migration-$RUN_KEY" 2>/dev/null)"
+          [[ "$NETWORK_ID" =~ ^[0-9a-f]{64}$ ]]
+          captured_network_id="$(timeout --kill-after=5s 15s docker network inspect --format '{{.Id}}' "$NETWORK_ID" 2>/dev/null)" || exit 1
+          [[ "$captured_network_id" == "$NETWORK_ID" ]]
+          captured_network_label="$(timeout --kill-after=5s 15s docker network inspect --format '{{index .Labels "org.ilovedrrealty.migration.run"}}' "$NETWORK_ID" 2>/dev/null)" || exit 1
+          [[ "$captured_network_label" == "$RUN_KEY" ]]
+          captured_network_internal="$(timeout --kill-after=5s 15s docker network inspect --format '{{.Internal}}' "$NETWORK_ID" 2>/dev/null)" || exit 1
+          [[ "$captured_network_internal" == true ]]
+          NETWORK_CAPTURE_UNCERTAIN=0
+          PG_CAPTURE_UNCERTAIN=1
+          PG_ID="$(timeout --kill-after=5s 30s docker create --label "$LABEL=$RUN_KEY" --network "$NETWORK_ID" \
+            --memory 512m --memory-swap 512m --pids-limit 64 --cpus 1 \
+            --security-opt no-new-privileges:true \
+            --env POSTGRES_HOST_AUTH_METHOD=trust --env POSTGRES_DB=ildr_platform_test_20261025 \
+            "$PG_REF" postgres -p 55449 -h 127.0.0.1 2>/dev/null)"
+          owned_container "$PG_ID"
+          PORT_BINDINGS="$(timeout --kill-after=5s 15s docker inspect --format '{{json .HostConfig.PortBindings}}' "$PG_ID" 2>/dev/null)"
+          [[ "$PORT_BINDINGS" == '{}' || "$PORT_BINDINGS" == 'null' ]]
+          PG_VOLUMES="$(timeout --kill-after=5s 15s docker inspect --format '{{range .Mounts}}{{if eq .Type "volume"}}{{println .Name}}{{end}}{{end}}' "$PG_ID" 2>/dev/null)"
+          [[ -n "$PG_VOLUMES" ]]
+          for volume in $PG_VOLUMES; do [[ "$volume" =~ ^[0-9a-f]{64}$ ]]; done
+          PG_CAPTURE_UNCERTAIN=0
+          timeout --kill-after=5s 30s docker start "$PG_ID" >/dev/null 2>&1
+          ready=0
+          for check in {1..45}; do
+            if timeout --kill-after=2s 5s docker exec "$PG_ID" pg_isready -h 127.0.0.1 -p 55449 -U postgres -d ildr_platform_test_20261025 >/dev/null 2>&1; then ready=1; break; fi
+            sleep 1
+          done
+          [[ "$ready" == 1 ]]
+          # This mutates only the newly created exact owned synthetic anchor.
+          [[ "$GITHUB_RUN_ID" =~ ^[1-9][0-9]{0,19}$ && "$GITHUB_RUN_ATTEMPT" == 1 ]]
+          ANCHOR_MARKER="ildr-ephemeral-ci:$GITHUB_RUN_ID:1"
+          owned_container "$PG_ID"
+          timeout --kill-after=5s 15s docker exec "$PG_ID" psql -X --set=ON_ERROR_STOP=1 \
+            --host=127.0.0.1 --port=55449 --username=postgres --dbname=ildr_platform_test_20261025 \
+            --command "COMMENT ON DATABASE ildr_platform_test_20261025 IS '$ANCHOR_MARKER'" >/dev/null 2>&1
+          captured_anchor_marker="$(timeout --kill-after=5s 15s docker exec "$PG_ID" psql -X --set=ON_ERROR_STOP=1 --tuples-only --no-align \
+            --host=127.0.0.1 --port=55449 --username=postgres --dbname=ildr_platform_test_20261025 \
+            --command "SELECT shobj_description(oid,'pg_database') FROM pg_database WHERE datname='ildr_platform_test_20261025'" 2>/dev/null)" || exit 1
+          [[ "$captured_anchor_marker" == "$ANCHOR_MARKER" ]]
+
+          TEST_CAPTURE_UNCERTAIN=1
+          TEST_ID="$(timeout --kill-after=5s 30s docker create --label "$LABEL=$RUN_KEY" --network "container:$PG_ID" \
+            --read-only --cap-drop ALL --security-opt no-new-privileges:true \
+            --user "$(id -u):$(id -g)" --memory 2g --memory-swap 2g --pids-limit 128 --cpus 2 \
+            --mount "type=bind,src=$GITHUB_WORKSPACE/candidate,dst=/application,readonly" \
+            --mount "type=bind,src=$GITHUB_WORKSPACE/baseline,dst=/baseline,readonly" \
+            --mount "type=bind,src=$TOOLS,dst=/tools,readonly" \
+            --mount "type=bind,src=$ARTIFACTS,dst=/results" \
+            --tmpfs /scratch:rw,noexec,nosuid,nodev,size=128m,mode=1777 \
+            --env HOME=/scratch --env TMPDIR=/scratch --workdir /scratch \
+            --env "GITHUB_RUN_ID=$GITHUB_RUN_ID" --env "GITHUB_RUN_ATTEMPT=$GITHUB_RUN_ATTEMPT" \
+            --env CI=true --env GITHUB_ACTIONS=true --env ILDR_EPHEMERAL_CI=true \
+            --env "GITHUB_SHA=$CANDIDATE_COMMIT" --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
+            --env "GITHUB_REF=$GITHUB_REF" --env "GITHUB_EVENT_NAME=$GITHUB_EVENT_NAME" \
+            "$IMAGE_ID" /usr/local/bin/python -I -S -B /tools/migration_entry.py \
+            --expected-ops-commit "$CANDIDATE_COMMIT" 2>/dev/null)"
+          owned_container "$TEST_ID"
+          TEST_CAPTURE_UNCERTAIN=0
+          set +e
+          timeout --signal=TERM --kill-after=20s 600s docker start --attach "$TEST_ID" >/dev/null 2>&1
+          test_exit=$?
+          set -e
+          CONTAINER_EXIT="$(timeout --kill-after=5s 15s docker inspect --format '{{.State.ExitCode}}' "$TEST_ID" 2>/dev/null)"
+          CONTAINER_RUNNING="$(timeout --kill-after=5s 15s docker inspect --format '{{.State.Running}}' "$TEST_ID" 2>/dev/null)"
+          CONTAINER_OOM="$(timeout --kill-after=5s 15s docker inspect --format '{{.State.OOMKilled}}' "$TEST_ID" 2>/dev/null)"
+          [[ "$CONTAINER_EXIT" =~ ^[0-9]+$ && "$CONTAINER_RUNNING" =~ ^(true|false)$ ]]
+          [[ "$CONTAINER_OOM" =~ ^(true|false)$ ]]
+          printf 'MIGRATION_NATIVE_OBSERVATION commit=%s run=%s attempt=1 client_exit=%s container_exit=%s running=%s oom_killed=%s\n' "$CANDIDATE_COMMIT" "$GITHUB_RUN_ID" "$test_exit" "$CONTAINER_EXIT" "$CONTAINER_RUNNING" "$CONTAINER_OOM"
+
+          # Exact pinned validator emits only two bounded safe log documents.
+          timeout --kill-after=2s 15s python3 -I -S -B "$TOOLS/emit_migration_logs.py" \
+            --results "$ARTIFACTS" --expected-ops-commit "$CANDIDATE_COMMIT" \
+            --run-id "$GITHUB_RUN_ID" --client-exit "$test_exit" --container-exit "$CONTAINER_EXIT"
+          [[ "$test_exit" == 0 && "$CONTAINER_EXIT" == 0 && "$CONTAINER_RUNNING" == false && "$CONTAINER_OOM" == false ]]

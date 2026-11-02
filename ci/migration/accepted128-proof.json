@@ -1,0 +1,58 @@
+{
+  "actual197_independent_source_review_sha256": "c0d9822e695397b0ec96b03ea4f36e1c90116bf0584bfb9580f04c98692d3a1e",
+  "actual_blocks": {
+    "registry-linux-inventory.json": {
+      "begin_line": 487,
+      "bytes": 12390,
+      "end_line": 886,
+      "sha256": "5731a942e5a458afda131d9a0ce0769f1cbd69bbd07a53d2ca63a34331d830b4"
+    },
+    "registry-result.json": {
+      "begin_line": 887,
+      "bytes": 2089,
+      "end_line": 942,
+      "sha256": "986cdf4c31c434a708e62fc35751bb0a24a00dddff7f063882e8aa1727d0a5ae"
+    }
+  },
+  "actual_classes": {
+    "CustomerDeliveryTests": 18,
+    "LeadDeliveryTests": 52,
+    "PrivateImageContracts": 4,
+    "PrivateRegistryMigration": 5,
+    "PrivateRegistryRoutes": 16,
+    "PropertyNetworkRoutes": 18,
+    "SignupNotificationTests": 15
+  },
+  "actual_container_not_running_and_notOOM": true,
+  "actual_runtime": {
+    "package_count": 62,
+    "postgres_server_version_num": 170011,
+    "python": "3.11.18"
+  },
+  "all_five_exact_controlled_schemas_absent": true,
+  "all_six_actual_job_steps_success": true,
+  "app_independent_source_review_sha256": "2eedb64b0bcdf54b89579a0dd6547dcf0127870892723700a435bbebde230171",
+  "attempt": 1,
+  "ci_independent_source_review_sha256": "9176f8b6890b1ec39c2b138482298d0da175de6e9e4c071c76ab9a453cbffbf4",
+  "commit": "4b2322686a4691f7b5a96654cac9a4fd5bcaf9b6",
+  "denied_network_or_process_events": 0,
+  "failures_errors_skips_expected_failures_unexpected_successes": 0,
+  "frontend_browser_media_bytes_provider_inbox_live_production_release_proven": false,
+  "job_id": 125165734500,
+  "native_child_client_container_exit": 0,
+  "observation_file": "run-observation-20261102T081630Z.json",
+  "observation_sha256": "9a4500750a7c33f3d870f3f5d90bfd65b6da1dbbe65ce0ad4607f4f060c75af3",
+  "observed_at_utc": "2026-11-02T08:19:16.619312+00:00",
+  "owned_docker_cleanup_after_blocks_line": 943,
+  "release_readiness": false,
+  "run_id": 41411621277,
+  "saved_log_sha256": "a2efa6ddff3573f5dc2aff292bf1a73638d19f003c76b2b242de325d86a881c1",
+  "saved_log_utf8_bytes": 82166,
+  "source_manifest_sha256": "68dc7d35ee451a78b89414c0fbdd55addea4be32daf144475bf569081bff1ed2",
+  "source_unchanged": true,
+  "status": "PASS_ACTUAL_CURRENT_REGISTRY128_WITH_FIVE_SCHEMA_AND_OWNED_DOCKER_CLEANUP_NOT_FULL_CHAIN_OR_RELEASE",
+  "targeted_migration_scope": "Five genuine targeted registry migration tests include raw two-table fresh/legacy-upgrade parity, idempotence, actual two NOLOGIN-role seeded grant revocation, constraints/immutable identity/retention/downgrade checks. This is NOT full current51 Alembic chain acceptance.",
+  "tests_run": 128,
+  "tree": "26911f16dfe8b202a85fbc26020c2732f145865d",
+  "url": "https://github.com/ilovedrrealty/realty-api/actions/runs/41411621277"
+}

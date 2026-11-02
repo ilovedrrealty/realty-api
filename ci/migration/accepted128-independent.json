@@ -1,0 +1,92 @@
+{
+  "NOLOGIN_evidence_scope": "Source-bound execution evidence: all five fixed PrivateRegistryMigration tests ran without failure/error/skip. The exact6e85 test requires both explicit NOLOGIN/nonprivileged role tuples, seeds owned-table grants, reruns f3 and requires seven privileges absent for both. Exact5052 workflow confines role creation to captured owned PG_ID. No raw role-row dump is claimed.",
+  "actual197_independent_source_identity_review_sha256": "c0d9822e695397b0ec96b03ea4f36e1c90116bf0584bfb9580f04c98692d3a1e",
+  "actual_blocks": {
+    "registry-linux-inventory.json": {
+      "begin_line": 487,
+      "bytes": 12390,
+      "end_line": 886,
+      "sha256": "5731a942e5a458afda131d9a0ce0769f1cbd69bbd07a53d2ca63a34331d830b4"
+    },
+    "registry-result.json": {
+      "begin_line": 887,
+      "bytes": 2089,
+      "end_line": 942,
+      "sha256": "986cdf4c31c434a708e62fc35751bb0a24a00dddff7f063882e8aa1727d0a5ae"
+    }
+  },
+  "actual_class_counts": {
+    "CustomerDeliveryTests": 18,
+    "LeadDeliveryTests": 52,
+    "PrivateImageContracts": 4,
+    "PrivateRegistryMigration": 5,
+    "PrivateRegistryRoutes": 16,
+    "PropertyNetworkRoutes": 18,
+    "SignupNotificationTests": 15
+  },
+  "actual_runtime": {
+    "packages": 62,
+    "pillow": "10.4.0",
+    "postgres_server_version_num": 170011,
+    "python": "3.11.18",
+    "webp": true
+  },
+  "attempt": 1,
+  "commit": "4b2322686a4691f7b5a96654cac9a4fd5bcaf9b6",
+  "container_oom_killed": false,
+  "container_running": false,
+  "decision": "INDEPENDENT_ACTUAL_CURRENT_REGISTRY128_RUNTIME_EVIDENCE_CONFIRMED_NOT_FULL_MIGRATION_OR_RELEASE",
+  "denied_guard_events": 0,
+  "failures_errors_skips_expected_failures_unexpected_successes": 0,
+  "findings": [],
+  "five_controlled_schemas": {
+    "tests/test_customer_delivery.py": "customer_delivery_test_1837e19a91d84414a3c1facabbde70fb",
+    "tests/test_lead_delivery.py": "lead_delivery_test_1837e19a91d84414a3c1facabbde70fb",
+    "tests/test_private_property_registry.py": "registry_test_1837e19a91d84414a3c1facabbde70fb",
+    "tests/test_private_property_registry_migration.py": "registry_migration_test_1837e19a91d84414a3c1facabbde70fb",
+    "tests/test_property_network.py": "network_test_1837e19a91d84414a3c1facabbde70fb"
+  },
+  "five_schema_uuid_hooks_and_parent_absence_verified": true,
+  "initial_offline_parser_refusal": {
+    "actual_cause": "One initial UTF8 BOM, not timestamp-only empty lines. Raw log SHA/bytes retained; utf-8-sig removes only that initial transport BOM before strict timestamp/marker parsing. The earlier blank-line explanation was an unverified guess, corrected here.",
+    "candidate_or_CI_failure": false,
+    "preserved_file": "independent-audit-initial-extraction-refusal.json"
+  },
+  "job_id": 125165734500,
+  "limitations": [
+    "Saved observation SHA and terminal metadata were checked without a fresh API fetch.",
+    "Only actual emitted canonical timestamp-stripped aggregate bytes were reconstructed; raw suppressed unittest stdout/tracebacks were not reconstructed.",
+    "Actual128 regression and five targeted registry migration tests are not full current51 Alembic-chain acceptance.",
+    "No frontend/browser/mobile, real media bytes/provider inbox, production privacy query, recovery checkpoint or release acceptance.",
+    "No app import, tests, DB, Docker, API, GCM, remote push, Git mutation, production action or candidate source change by this audit."
+  ],
+  "local_commit_receipt_sha256": "e211652c10ed1b1cf4c0d0565b3bd69fa962878eb2552f647733137abfab5b3b",
+  "minimum_available_mib": 1894.69140625,
+  "native_child_client_container_exit": 0,
+  "native_observation_line": 486,
+  "observation_sha256": "9a4500750a7c33f3d870f3f5d90bfd65b6da1dbbe65ce0ad4607f4f060c75af3",
+  "observed_at_utc": "2026-11-02T08:28:04.903275+00:00",
+  "operational_git_oids": {
+    ".github/workflows/registry.yml": "8d2a20b918331304142ca5ea7b2f3a407b9db3ef",
+    "ci/registry-source.json": "39324677822c47eebbd4f4155a6429f15794c7b9",
+    "ci/registry.Dockerfile": "1e9e0bc16df0995712fe44a5ab0451ed2a232140",
+    "ci/registry.py": "36ec78c8c93dc95c2176aaa78fa5d7968827d31a"
+  },
+  "owned_docker_cleanup_after_both_blocks_line": 943,
+  "release_readiness": false,
+  "reviewer": "/root/backend_delivery_acceptance_20261030",
+  "root_acceptance_sha256": "08bfe0c5e54f0404aeb708a1341ca3aa980a9b8c912bc223e3b8bba6c23d9971",
+  "run_id": 41411621277,
+  "saved_log_sha256": "a2efa6ddff3573f5dc2aff292bf1a73638d19f003c76b2b242de325d86a881c1",
+  "saved_log_utf8_bytes": 82166,
+  "scope": "Independent data-only audit of root extraction and already-recorded actual CI. Reviewer authored app/tests and does not self-approve their source. No CI rerun or candidate execution.",
+  "six_actual_job_steps_success": true,
+  "source_binding_chain": {
+    "CI_independent_review": "9176f8b6890b1ec39c2b138482298d0da175de6e9e4c071c76ab9a453cbffbf4",
+    "app_independent_review": "2eedb64b0bcdf54b89579a0dd6547dcf0127870892723700a435bbebde230171",
+    "manifest": "68dc7d35ee451a78b89414c0fbdd55addea4be32daf144475bf569081bff1ed2"
+  },
+  "source_unchanged": true,
+  "tests_run": 128,
+  "tree": "26911f16dfe8b202a85fbc26020c2732f145865d"
+}
