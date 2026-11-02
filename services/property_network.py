@@ -1,12 +1,13 @@
 """Assignment-scoped work history and opted-in member walls; no notifications."""
 import hashlib
+import json
 from datetime import datetime, timezone
 from uuid import uuid4
 from fastapi import HTTPException
 from sqlalchemy import and_, or_
 from models.user import User
 from models.listing import Listing
-from models.property_network import (NetworkProject as Project, NetworkProjectMember as Member,
+from models.property_network import (NetworkProperty as Property, NetworkProject as Project, NetworkProjectMember as Member,
     NetworkMilestone as Milestone, NetworkProjectUpdate as Update, NetworkProjectComment as ProjectComment,
     SocialNetworkProfile as Profile, NetworkPost as Post, NetworkPostComment as PostComment,
     NetworkBlock as Block, NetworkMedia as Media, NetworkAudit as Audit)
@@ -14,6 +15,8 @@ from services.property_management import property_for, listings_for, today_dr
 from utils import private_network_media as storage
 
 PAGE_SIZE = 30
+MAX_REGISTRY_PROPERTIES = 500
+MAX_PROPERTY_PROJECTS = 500
 
 
 def now():
@@ -55,6 +58,97 @@ def actor(db, user_id, *, project=False):
     return {"user_code": row.user_code, "display_name": label}
 
 
+def creation_digest(body):
+    """Hash the normalized ORIGINAL input, never later editable row values."""
+    raw = json.dumps(body.model_dump(mode="json"), sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+def lock_actor(db, user):
+    # Serializes this actor's create quota and idempotency keys. No external I/O.
+    # PostgreSQL FOR NO KEY UPDATE still serializes actor creates, while staying
+    # compatible with the FK KEY SHARE locks acquired by property/audit inserts.
+    current = db.query(User).filter(User.id == user.id).populate_existing().with_for_update(key_share=True).first()
+    if current is None or current.status != "active" or current.email_verified is not True:
+        raise HTTPException(403, "An active verified account is required")
+    return current
+
+
+def registry_query(db, user):
+    query = db.query(Property)
+    return query if user.role == "admin" else query.filter(Property.custodian_id == user.id)
+
+
+def registry_for(db, user, identity, *, lock=False):
+    query = registry_query(db, user).filter(Property.id == identity)
+    row = query.populate_existing().with_for_update().first() if lock else query.first()
+    if row is None:
+        raise HTTPException(404, "Private property not found")
+    return row
+
+
+def registry_view(db, user, row):
+    manage = user.role == "admin" or row.custodian_id == user.id
+    if not manage:
+        raise HTTPException(404, "Private property not found")
+    custodian = db.get(User, row.custodian_id)
+    can_start = (row.status == "active" and custodian is not None
+                 and custodian.status == "active" and custodian.email_verified is True)
+    return {"id": str(row.id), "title": row.title, "location": row.location, "address": row.address,
+            "property_class": row.property_class, "relationship": row.relationship, "notes": row.notes,
+            "status": row.status, "version": row.version, "created_at": row.created_at, "updated_at": row.updated_at,
+            "can_manage": True, "can_create_project": can_start}
+
+
+def registry_page(db, user, number, status="all"):
+    query = registry_query(db, user)
+    if status != "all":
+        query = query.filter(Property.status == status)
+    result = page(query.order_by(Property.updated_at.desc(), Property.id), number,
+                  lambda row: registry_view(db, user, row))
+    result["can_create"] = True  # Route identity is active+verified, independently of account role.
+    return result
+
+
+def registry_submission(db, user, submission_id):
+    # Even Admin resolves only their own actor key, never another account's key.
+    row = db.query(Property).filter(Property.custodian_id == user.id, Property.submission_id == submission_id).first()
+    if row is None:
+        raise HTTPException(404, "Private property submission not found")
+    return registry_view(db, user, row)
+
+
+def create_registry(db, user, body):
+    user = lock_actor(db, user)
+    digest = creation_digest(body)
+    existing = db.query(Property).filter(Property.custodian_id == user.id, Property.submission_id == body.submission_id).first()
+    if existing is not None:
+        if existing.creation_sha256 != digest:
+            raise HTTPException(409, "This submission key was used with different property details")
+        return registry_view(db, user, existing)
+    if db.query(Property).filter(Property.custodian_id == user.id).count() >= MAX_REGISTRY_PROPERTIES:
+        raise HTTPException(409, "This account has reached its private property limit")
+    row = Property(custodian_id=user.id, submission_id=body.submission_id,
+                   title=body.title, location=body.location, address=body.address,
+                   property_class=body.property_class, relationship=body.relationship, notes=body.notes,
+                   status="active", version=1, creation_sha256=digest, authority_acknowledged=True)
+    db.add(row); db.flush()
+    audit(db, user, "registry_property", row.id, "created")
+    db.commit(); db.refresh(row)
+    return registry_view(db, user, row)
+
+
+def edit_registry(db, user, identity, body):
+    row = registry_for(db, user, identity, lock=True)
+    version(row, body.expected_version)
+    for name in ("title", "location", "address", "property_class", "relationship", "notes", "status"):
+        setattr(row, name, getattr(body, name))
+    row.version += 1; row.updated_at = now()
+    audit(db, user, "registry_property", row.id, "updated", {"version": row.version, "status": row.status})
+    db.commit(); db.refresh(row)
+    return registry_view(db, user, row)
+
+
 def accessible_projects(db, user):
     query = db.query(Project)
     if user.role == "admin":
@@ -91,8 +185,14 @@ def progress(db, project_id):
 
 def project_view(db, user, row):
     _, role = project_for(db, user, row.id)
-    listing = db.get(Listing, row.listing_id)
-    return {"id": str(row.id), "listing_id": str(row.listing_id), "listing_title": listing.title,
+    listing = db.get(Listing, row.listing_id) if row.listing_id is not None else None
+    private = db.get(Property, row.property_id) if row.property_id is not None else None
+    if listing is None and private is None:
+        raise HTTPException(404, "Project property not found")
+    label = listing.title if listing is not None else private.title
+    return {"id": str(row.id), "listing_id": str(row.listing_id) if row.listing_id is not None else None,
+            "listing_title": label, "property_id": str(row.property_id) if row.property_id is not None else None,
+            "property_title": private.title if private is not None else None,
             "title": row.title, "summary": row.summary, "property_class": row.property_class,
             "service_category_ids": row.service_category_ids, "status": row.status, "version": row.version,
             "my_role": role, "can_manage": role in {"admin", "owner", "manager"},
@@ -101,24 +201,68 @@ def project_view(db, user, row):
 
 
 def create_project(db, user, body):
-    listing = property_for(db, user, body.listing_id, lock=True)
-    owner_id = listing.owner_id or listing.submitted_by
-    owner = db.get(User, owner_id) if owner_id else None
-    if listing.owner_id is None and owner is not None and owner.role != "owner":
-        owner = None  # A submitting/importing agent is not invented as the owner.
+    user = lock_actor(db, user)
+    digest = creation_digest(body) if body.submission_id is not None else None
+    if body.submission_id is not None:
+        existing = db.query(Project).filter(Project.created_by_id == user.id, Project.submission_id == body.submission_id).first()
+        if existing is not None:
+            # Reauthorize before returning an old ID; archive/class/quota rules
+            # govern NEW projects, not resolution of the original creation.
+            project_for(db, user, existing.id)
+            if existing.creation_sha256 != digest:
+                raise HTTPException(409, "This submission key was used with different project details")
+            return project_view(db, user, existing)
+    if body.property_id is not None:
+        private = registry_for(db, user, body.property_id, lock=True)
+        if private.status != "active":
+            raise HTTPException(409, "Archived private properties cannot start new projects")
+        if body.property_class != private.property_class:
+            raise HTTPException(422, "Choose the private property's current property class")
+        owner = db.get(User, private.custodian_id)
+        count_query = db.query(Project).filter(Project.property_id == private.id)
+    else:
+        listing = property_for(db, user, body.listing_id, lock=True)
+        owner_id = listing.owner_id or listing.submitted_by
+        owner = db.get(User, owner_id) if owner_id else None
+        if listing.owner_id is None and owner is not None and owner.role != "owner":
+            owner = None  # A submitting/importing agent is not invented as the owner.
+        count_query = db.query(Project).filter(Project.listing_id == listing.id)
     if owner is None or owner.status != "active" or owner.email_verified is not True:
         raise HTTPException(409, "Assign an active verified property owner before creating a project")
-    if db.query(Project).filter(Project.listing_id == listing.id).count() >= 500:
+    if count_query.count() >= MAX_PROPERTY_PROJECTS:
         raise HTTPException(409, "This property has reached its project limit")
-    row = Project(listing_id=listing.id, owner_id=owner.id, title=body.title, summary=body.summary,
+    row = Project(listing_id=body.listing_id, property_id=body.property_id, owner_id=owner.id, title=body.title, summary=body.summary,
                   property_class=body.property_class, service_category_ids=body.service_category_ids,
-                  status="open", version=1)
+                  status="open", version=1, created_by_id=user.id if body.submission_id is not None else None,
+                  submission_id=body.submission_id, creation_sha256=digest)
     db.add(row); db.flush()
     if user.id != owner.id and user.role != "admin":
         db.add(Member(project_id=row.id, user_id=user.id, role="manager", active=True))
     audit(db, user, "project", row.id, "created")
     db.commit(); db.refresh(row)
     return project_view(db, user, row)
+
+
+def project_submission(db, user, submission_id):
+    row = db.query(Project).filter(Project.created_by_id == user.id, Project.submission_id == submission_id).first()
+    if row is None:
+        raise HTTPException(404, "Project submission not found")
+    project_for(db, user, row.id)
+    return project_view(db, user, row)
+
+
+def registry_history(db, user, identity, number):
+    visible = accessible_projects(db, user).filter(Project.property_id == identity)
+    own = registry_query(db, user).filter(Property.id == identity).with_entities(Property.id).first()
+    if own is None and visible.first() is None:
+        raise HTTPException(404, "Private property service history not found")
+    query = db.query(Update, Project).join(Project, Project.id == Update.project_id).filter(
+        Update.project_id.in_(visible.with_entities(Project.id)))
+    return page(query.order_by(Update.created_at.desc(), Update.id), number, lambda pair: {
+        "id": str(pair[0].id), "project_id": str(pair[1].id), "project_title": pair[1].title,
+        "service_category_ids": pair[1].service_category_ids, "project_status": pair[1].status,
+        "kind": pair[0].kind, "body": pair[0].body, "occurred_on": pair[0].occurred_on,
+        "media_ids": pair[0].media_ids, "created_at": pair[0].created_at})
 
 
 def edit_project(db, user, identity, body):

@@ -2,7 +2,7 @@
 from datetime import date
 from typing import Literal
 from uuid import UUID
-from pydantic import BaseModel, ConfigDict, Field, StrictBool, field_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, field_validator, model_validator
 from utils.professional_options import CATEGORY_IDS, PROPERTY_CLASS_IDS
 
 
@@ -21,12 +21,55 @@ class Version(Input):
     expected_version: int = Field(ge=1)
 
 
+class RegistryFields(Input):
+    title: str = Field(min_length=1, max_length=180)
+    location: str = Field(min_length=1, max_length=180)
+    address: str = Field(default="", max_length=500)
+    property_class: str
+    relationship: Literal["owner", "manager", "seller"]
+    notes: str = Field(default="", max_length=4000)
+
+    @field_validator("property_class")
+    @classmethod
+    def known_class(cls, value):
+        if value not in PROPERTY_CLASS_IDS:
+            raise ValueError("Choose a known property class")
+        return value
+
+
+class RegistryCreate(RegistryFields):
+    submission_id: UUID
+    authority_acknowledged: StrictBool
+
+    @field_validator("authority_acknowledged")
+    @classmethod
+    def authority_required(cls, value):
+        if value is not True:
+            raise ValueError("Confirm authority to manage this private record")
+        return value
+
+
+class RegistryEdit(RegistryFields):
+    expected_version: int = Field(ge=1, strict=True)
+    status: Literal["active", "archived"]
+
+
 class ProjectCreate(Input):
-    listing_id: UUID
+    listing_id: UUID | None = None
+    property_id: UUID | None = None
+    submission_id: UUID | None = None
     title: str = Field(min_length=1, max_length=180)
     summary: str = Field(default="", max_length=4000)
     property_class: str
     service_category_ids: list[str] = Field(default_factory=list, max_length=12)
+
+    @model_validator(mode="after")
+    def one_property(self):
+        if (self.listing_id is None) == (self.property_id is None):
+            raise ValueError("Choose exactly one property source")
+        if self.property_id is not None and self.submission_id is None:
+            raise ValueError("Private-property projects require a submission key")
+        return self
 
     @field_validator("property_class")
     @classmethod

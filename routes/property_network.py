@@ -1,6 +1,7 @@
 """Private collaboration routes; GETs never send messages or modify records."""
 import logging
 from uuid import UUID
+from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, Query, UploadFile, File, Form
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -14,7 +15,7 @@ from database import get_db
 from models.listing import Listing
 from models.property_network import NetworkProject as Project, NetworkMilestone as Milestone, NetworkProjectUpdate as Update, NetworkProjectComment as ProjectComment
 from schemas.property_network import (ProjectCreate, ProjectEdit, MemberWrite, MilestoneCreate, MilestoneEdit,
-    ProgressWrite, CommentWrite, ProfileWrite, PostWrite, ModeratePost, BlockWrite, Version)
+    ProgressWrite, CommentWrite, ProfileWrite, PostWrite, ModeratePost, BlockWrite, Version, RegistryCreate, RegistryEdit)
 from services import property_network as service
 from utils.auth import get_current_user
 from utils.limiter import limiter
@@ -78,6 +79,41 @@ router = APIRouter(prefix="/property-network", tags=["property network"], route_
 Page = Query(default=1, ge=1, le=1000)
 
 
+@router.get("/registry")
+def registry(page: int = Page, status: Literal["all", "active", "archived"] = "all",
+             user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return service.registry_page(db, user, page, status)
+
+
+@router.post("/registry", status_code=201)
+@limiter.limit("15/minute")
+def create_registry(request: Request, response: Response, body: RegistryCreate,
+                    user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return service.create_registry(db, user, body)
+
+
+@router.get("/registry/submissions/{submission_id}")
+def registry_submission(submission_id: UUID, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return service.registry_submission(db, user, submission_id)
+
+
+@router.get("/registry/{property_id}")
+def registry_property(property_id: UUID, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return service.registry_view(db, user, service.registry_for(db, user, property_id))
+
+
+@router.put("/registry/{property_id}")
+@limiter.limit("30/minute")
+def edit_registry(request: Request, response: Response, property_id: UUID, body: RegistryEdit,
+                  user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return service.edit_registry(db, user, property_id, body)
+
+
+@router.get("/registry/{property_id}/history")
+def registry_history(property_id: UUID, page: int = Page, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return service.registry_history(db, user, property_id, page)
+
+
 @router.get("/properties")
 def properties(page: int = Page, user=Depends(get_current_user), db: Session = Depends(get_db)):
     query = service.listings_for(db, user).order_by(Listing.title, Listing.id)
@@ -85,10 +121,15 @@ def properties(page: int = Page, user=Depends(get_current_user), db: Session = D
 
 
 @router.get("/projects")
-def projects(listing_id: UUID | None = None, page: int = Page, user=Depends(get_current_user), db: Session = Depends(get_db)):
+def projects(listing_id: UUID | None = None, property_id: UUID | None = None, page: int = Page,
+             user=Depends(get_current_user), db: Session = Depends(get_db)):
+    if listing_id is not None and property_id is not None:
+        raise HTTPException(422, "Choose one project property filter")
     query = service.accessible_projects(db, user)
     if listing_id:
         query = query.filter(Project.listing_id == listing_id)
+    if property_id:
+        query = query.filter(Project.property_id == property_id)
     return service.page(query.order_by(Project.updated_at.desc(), Project.id), page, lambda row: service.project_view(db, user, row))
 
 
@@ -96,6 +137,11 @@ def projects(listing_id: UUID | None = None, page: int = Page, user=Depends(get_
 @limiter.limit("15/minute")
 def create_project(request: Request, response: Response, body: ProjectCreate, user=Depends(get_current_user), db: Session = Depends(get_db)):
     return service.create_project(db, user, body)
+
+
+@router.get("/projects/submissions/{submission_id}")
+def project_submission(submission_id: UUID, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return service.project_submission(db, user, submission_id)
 
 
 @router.get("/projects/{project_id}")

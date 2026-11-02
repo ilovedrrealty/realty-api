@@ -5,10 +5,40 @@ from sqlalchemy.dialects.postgresql import UUID, JSONB
 from database import Base
 
 
+class NetworkProperty(Base):
+    """Private responsibility record, not a verified land-title/Listing claim."""
+    __tablename__ = "network_properties"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    custodian_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
+    submission_id = Column(UUID(as_uuid=True), nullable=False)
+    title = Column(Text, nullable=False)
+    location = Column(Text, nullable=False)
+    address = Column(Text, nullable=False, default="")
+    property_class = Column(Text, nullable=False)
+    relationship = Column(Text, nullable=False)
+    notes = Column(Text, nullable=False, default="")
+    status = Column(Text, nullable=False, default="active")
+    version = Column(Integer, nullable=False, default=1)
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())
+    updated_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())
+    creation_sha256 = Column(Text, nullable=False)
+    authority_acknowledged = Column(Boolean, nullable=False)
+    __table_args__ = (
+        UniqueConstraint("custodian_id", "submission_id", name="uq_network_property_submission"),
+        CheckConstraint("version >= 1", name="ck_network_property_version"),
+        CheckConstraint("status IN ('active','archived')", name="ck_network_property_status"),
+        CheckConstraint("relationship IN ('owner','manager','seller')", name="ck_network_property_relationship"),
+        CheckConstraint("char_length(title) BETWEEN 1 AND 180 AND char_length(location) BETWEEN 1 AND 180 AND char_length(address) <= 500 AND char_length(notes) <= 4000", name="ck_network_property_bounds"),
+        CheckConstraint("creation_sha256 ~ '^[0-9a-f]{64}$'", name="ck_network_property_creation_hash"),
+        CheckConstraint("authority_acknowledged IS TRUE", name="ck_network_property_authority"),
+        CheckConstraint("property_class IN ('house_villa','apartment_condominium','multiunit_building','vacation_rental','hotel_hospitality','office','retail_restaurant','warehouse_industrial','farm_rural','vacant_land')", name="ck_network_property_class"),
+        Index("ix_network_property_custodian", "custodian_id", "updated_at", "id"))
+
+
 class NetworkProject(Base):
     __tablename__ = "network_projects"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    listing_id = Column(UUID(as_uuid=True), ForeignKey("listings.id", ondelete="RESTRICT"), nullable=False)
+    listing_id = Column(UUID(as_uuid=True), ForeignKey("listings.id", ondelete="RESTRICT"), nullable=True)
     owner_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
     title = Column(Text, nullable=False)
     summary = Column(Text, nullable=False, default="")
@@ -18,9 +48,20 @@ class NetworkProject(Base):
     version = Column(Integer, nullable=False, default=1)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())
     updated_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())
+    # Keep this append order identical to f3a5b9c1d723 ALTER ADD for raw parity.
+    property_id = Column(UUID(as_uuid=True), ForeignKey("network_properties.id", ondelete="RESTRICT"))
+    created_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"))
+    submission_id = Column(UUID(as_uuid=True))
+    creation_sha256 = Column(Text)
     __table_args__ = (CheckConstraint("version >= 1", name="ck_network_project_version"),
                      CheckConstraint("status IN ('open','in_progress','completed','archived')", name="ck_network_project_status"),
-                     Index("ix_network_project_listing", "listing_id", "created_at"))
+                     Index("ix_network_project_listing", "listing_id", "created_at"),
+                     CheckConstraint("(listing_id IS NULL) <> (property_id IS NULL)", name="ck_network_project_one_property"),
+                     CheckConstraint("(created_by_id IS NULL AND submission_id IS NULL AND creation_sha256 IS NULL) OR (created_by_id IS NOT NULL AND submission_id IS NOT NULL AND creation_sha256 IS NOT NULL AND creation_sha256 ~ '^[0-9a-f]{64}$')", name="ck_network_project_submission"),
+                     CheckConstraint("property_id IS NULL OR submission_id IS NOT NULL", name="ck_network_registry_project_submission"),
+                     UniqueConstraint("created_by_id", "submission_id", name="uq_network_project_submission"),
+                     Index("ix_network_project_registry", "property_id", "created_at"),
+                     Index("ix_network_project_owner", "owner_id", "updated_at"))
 
 
 class NetworkProjectMember(Base):
