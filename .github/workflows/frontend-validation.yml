@@ -1,7 +1,7 @@
 name: Exact frontend strict build validation (synthetic landing, no publication)
 on:
   push:
-    branches: [codex-ci-registry-frontend-20261102]
+    branches: [codex-ci-services-frontend-20261102]
 permissions:
   contents: read
 concurrency:
@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
-      OVERLAY_MANIFEST_SHA256: ca6957ff3ac6587b3f0462ecb9f81d56c4c68b948c148b1943572244d6f3bd79
+      OVERLAY_MANIFEST_SHA256: 21c909cec06043f49ac147e0ad44aa46754aeaea4009d2dd917c61fd4888b93f
     steps:
       - name: Require exact initial backend branch event
         shell: bash
@@ -28,7 +28,7 @@ jobs:
           set -euo pipefail
           [[ "$GITHUB_REPOSITORY" == ilovedrrealty/realty-api ]]
           [[ "$RUNNER_ENVIRONMENT" == github-hosted && "$RUNNER_OS" == Linux && "$RUNNER_ARCH" == X64 ]]
-          [[ "$GITHUB_EVENT_NAME" == push && "$GITHUB_REF" == refs/heads/codex-ci-registry-frontend-20261102 ]]
+          [[ "$GITHUB_EVENT_NAME" == push && "$GITHUB_REF" == refs/heads/codex-ci-services-frontend-20261102 ]]
           [[ "$GITHUB_RUN_ATTEMPT" == 1 && "$REPOSITORY_PRIVATE" == false ]]
           [[ "$PUSH_CREATED" == true && "$PUSH_DELETED" == false && "$PUSH_FORCED" == false ]]
           [[ "$PUSH_BEFORE" == 0000000000000000000000000000000000000000 ]]
@@ -62,8 +62,8 @@ jobs:
           from pathlib import Path
           root = Path(os.environ['GITHUB_WORKSPACE']) / 'backend-ci'
           pins = {
-              'ci/frontend/frontend_ci_host.py': 'a4fb4cc7cf3b756258fd9377b9cff3ce989503d25833a5f438ad7734e05618f0',
-              'ci/frontend/run_frontend_ci.cjs': '73acbb2b2681ab55d84686233ad6bd3f84db3bb77df286b6b2c32434b32a4fb7',
+              'ci/frontend/frontend_ci_host.py': 'be63e7c01eceec49a6f64ce47c2993f85900517b181af3f5b835c43964381ced',
+              'ci/frontend/run_frontend_ci.cjs': '34601a2c8eec8d56749b0664af0299835c755ae74a77c6a9b5d84e942c689db7',
               'ci/frontend/landing_fixture.cjs': 'a166dc60598e76b7fdcc3fe2aa5253bc56952b48fd99e4cab5eb4a24523a548e',
               'ci/frontend/landing_fixture.test.cjs': '0a1abbdbd65a82e67ded20a0603a21fc9321a1b1aa5fd83dbccf1c049ffc4110',
               'ci/frontend/frontend-overlay.json': os.environ['OVERLAY_MANIFEST_SHA256'],

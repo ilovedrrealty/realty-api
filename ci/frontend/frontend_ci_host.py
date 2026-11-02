@@ -1,4 +1,4 @@
-"""Renew the reviewed frontend relay with48 source overlays; no frontend push."""
+"""Renew the reviewed frontend relay with59 exact source overlays; no frontend push."""
 import hashlib
 from datetime import datetime
 import json
@@ -13,23 +13,43 @@ import sys
 import tempfile
 import time
 
-BACKEND_BASE = "5f0dd057383ecd908cbcaf17dc9bb50ed218ff42"
-BACKEND_TREE = "3e92cd351e90642e7b803863e6bb2cf38c930f25"
+BACKEND_BASE = "926e2f47b56ed66e33057bfc66d4d6f7bfa10793"
+BACKEND_TREE = "77f0b27bd0d3812559e3b59eed9409bef12438c5"
 FE_BASE = "73d771940e73d42ed044cea77a5258a93a445b05"
 FE_TREE = "f718c91136d2726f8f8966c367f3c20584081a0a"
 IMAGE = "node:24.22.1-bookworm-slim@sha256:be8204d4bd327363357f532187b752ff62759c31bedf98e9e18fc08c9cbd605c"
 LABEL = "org.ilovedrrealty.frontend.run"
-BRANCH = "codex-ci-registry-frontend-20261102"
-PRIOR_MANIFEST_SHA256 = "f2ed00dd290fa7d14da249dd2cf0c40979dcea409a0c0dcd7fd05851b07c92f7"
-REGISTRY_SOURCE_HEAD = "838a2b6baac11643318b8a29a3eb545e01cd1c67"
-REGISTRY_SOURCE_BASE_TREE = "3a12ea6d3f16d7e51c1605572e6028519f9ca2e1"
-REGISTRY_SOURCE_AUTHOR = "63b3a9d99ebe12c21bc0ab7ad47ba172609556da35b1065cc2ec4335c43c039a"
-REGISTRY_SOURCE_REVIEW = "e09b867fe683db3603f53c8908cb10715948fa271cbdb4c9a2cb871204ef95b6"
+BRANCH = "codex-ci-services-frontend-20261102"
+PRIOR_MANIFEST_SHA256 = "ca6957ff3ac6587b3f0462ecb9f81d56c4c68b948c148b1943572244d6f3bd79"
+SOURCE_HEAD = "d967a3714b40b6e98ad2654c3ce865ad5d152a20"
+SOURCE_TREE = "ef36dc3083673e3daad8f73401ea9d00a87c32b3"
+SOURCE_PARENT = "d711a13706b1410a1e8a8c415713642443a27c75"
+SOURCE_PARENT_TREE = "90e8d74bab96d915de828a9b9c160df2ef2ce21d"
+SOURCE_EVIDENCE = {
+    "ROOT-INTEGRATED-SOURCE.json": "42c4a2060a16c2b1709a3eeccbc4448fca5a45803ef1da5eb474c1449687d5ef",
+    "independent-integrated-photo-source-review.json": "2762a84bc96a0ef640eb428dd44e448ea9b7deb3e80fcc3fabf0f8c2db218a6a",
+    "FRONTEND-SERVICES-AUTHOR-SOURCE-V3.json": "333b8bf50bb43225d96c48bacc4a009f25c92e8ef2c69f62690e4598026038ec",
+    "independent-frontend-services-v3-source-review.json": "b3e04ed24ecb79f1d6b73e9269b128c077d259362e3e859c98361177c37e7f56",
+    "independent-native434-git-body-audit.json": "055b1fe22eeda2125cdc98b02c33d9e7592944ba42329571c84bbdd2cfe040db",
+    "independent-actual434-commit-review.json": "3f57217d72058451561645f28f0cfca8ae3098df088f32662cb19c9834ad379d",
+    "local-app434-commit.json": "c791b010fa6fde544b956de919a8621004a3b41b7a1ab710608474fbf5f18a52",
+    "BACKEND-FRONTEND-CONTRACT-COMPARISON-V3.json": "56fa8241f89b642804fa5589df517813b6e0d269b64e0ecaa5ede57ef15dcd30",
+}
+SOURCE_ADDITIONS = {
+    "apps/dashboard/src/api/serviceWorkflow.ts",
+    "apps/dashboard/src/components/network/ServicePreferences.tsx",
+    "apps/dashboard/src/components/network/ServiceProposalFields.tsx",
+    "apps/dashboard/src/components/network/ServiceRequestCreate.tsx",
+    "apps/dashboard/src/components/network/ServiceRequestDetail.tsx",
+    "apps/dashboard/src/components/network/ServiceWorkflow.tsx",
+    "apps/dashboard/src/components/network/ServiceWorkflowShared.tsx",
+    "tests/public-image-url.test.cjs", "tests/service-workflow.test.cjs",
+}
 SOURCE_DELTA = {
-    "apps/dashboard/src/api/propertyNetwork.ts", "apps/dashboard/src/components/network/PropertyRegistry.tsx",
-    "apps/dashboard/src/components/network/ProjectWorkspace.tsx", "apps/dashboard/src/pages/shared/PropertyNetwork.tsx",
+    *SOURCE_ADDITIONS, "apps/dashboard/src/pages/shared/PropertyNetwork.tsx",
     "apps/dashboard/src/locale/en/property_network.json", "apps/dashboard/src/locale/es/property_network.json",
-    "tests/property-network.test.cjs", "tests/property-network-ui.test.cjs",
+    "apps/landing/src/api/imgUrl.ts", "apps/landing/src/views/SpanishLandingPage.tsx",
+    "tests/property-network-ui.test.cjs",
 }
 RENEWED_OPS = {".github/workflows/frontend-validation.yml", "ci/frontend/frontend_ci_host.py",
                "ci/frontend/run_frontend_ci.cjs", "ci/frontend/frontend-overlay.json"}
@@ -121,14 +141,15 @@ def reconstruct(backend, frontend, m, scratch):
     need(tree(frontend, "HEAD") == m["base_git_blobs"] and len(m["base_git_blobs"]) == 397, "BASE397_MAP_REQUIRED")
     need(m["format"] == 2 and m["frontend_base_commit"] == FE_BASE and m["frontend_base_tree"] == FE_TREE
          and re.fullmatch("[a-f0-9]{40}", m["frontend_candidate_tree"])
-         and len(m["application_files"]) == 425 and len(m["overlays"]) == 48, "FROZEN_FRONTEND_CLOSURE_REQUIRED")
+         and m["frontend_candidate_tree"] == SOURCE_TREE
+         and len(m["application_files"]) == 434 and len(m["overlays"]) == 59, "FROZEN_FRONTEND_CLOSURE_REQUIRED")
     need(set(m["application_files"]) == set(m["base_git_blobs"]) | set(m["overlays"])
-         and len(set(m["base_git_blobs"]) & set(m["overlays"])) == 20
+         and len(set(m["base_git_blobs"]) & set(m["overlays"])) == 22
          and len(m["public_base_ancestor_commits"]) == 8
-         and len(m["expected_public_base_changes"]) == 48
+         and len(m["expected_public_base_changes"]) == 59
          and set(m["expected_public_base_changes"]) == {
              ("M\t" if name in m["base_git_blobs"] else "A\t") + name for name in m["overlays"]
-         }, "EXACT48_PUBLIC_BASE_CLOSURE_REQUIRED")
+         }, "EXACT59_PUBLIC_BASE_CLOSURE_REQUIRED")
     index = scratch / "frontend-index"
     env = {**os.environ, "GIT_INDEX_FILE": str(index), "GIT_OPTIONAL_LOCKS": "0", "GIT_NO_LAZY_FETCH": "1", "GIT_TERMINAL_PROMPT": "0"}
     git(frontend, "read-tree", FE_BASE, env=env)
@@ -154,8 +175,8 @@ def reconstruct(backend, frontend, m, scratch):
     candidate = git(frontend, "write-tree", env=env).strip().decode()
     need(candidate == m["frontend_candidate_tree"], "ACTUAL_RECONSTRUCTED_TREE_MISMATCH")
     actual_changes = git(frontend, "diff", "--name-status", FE_BASE, candidate).decode().splitlines()
-    need(len(actual_changes) == 48 and set(actual_changes) == set(m["expected_public_base_changes"]),
-         "ACTUAL_PUBLIC_BASE48_DIFF_REQUIRED")
+    need(len(actual_changes) == 59 and set(actual_changes) == set(m["expected_public_base_changes"]),
+         "ACTUAL_PUBLIC_BASE59_DIFF_REQUIRED")
     verify_bodies(frontend, candidate, m["application_files"])
     need(git(frontend, "rev-parse", "HEAD").strip().decode() == FE_BASE, "FRONTEND_HEAD_MUST_REMAIN_BASE")
     return candidate
@@ -165,47 +186,45 @@ def validate_renewal(backend, m):
     prior_raw = git(backend, "show", BACKEND_BASE + ":ci/frontend/frontend-overlay.json")
     need(sha(prior_raw) == PRIOR_MANIFEST_SHA256, "GENUINE_ACCEPTED_RELAY_MANIFEST_REQUIRED")
     prior = json.loads(prior_raw)
-    need(m["source_worktree_head"] == m["accepted_frontend_commit"] == REGISTRY_SOURCE_HEAD
-         and m["source_worktree_base_tree"] == m["accepted_frontend_tree"] == REGISTRY_SOURCE_BASE_TREE
-         and m["source_worktree_branch"] == "codex-private-property-registry-ui-20261102"
+    need(m["source_worktree_head"] == SOURCE_HEAD and m["source_worktree_base_tree"] == SOURCE_TREE
+         and m["source_worktree_parent"] == m["accepted_frontend_commit"] == SOURCE_PARENT
+         and m["source_worktree_parent_tree"] == m["accepted_frontend_tree"] == SOURCE_PARENT_TREE
+         and prior["frontend_candidate_tree"] == SOURCE_PARENT_TREE
+         and m["source_worktree_branch"] == "codex-private-service-workflow-ui-20261102"
          and m["relay_parent_commit"] == BACKEND_BASE and m["relay_parent_tree"] == BACKEND_TREE
-         and m["relay_parent_paths"] == 255 and m["relay_candidate_paths"] == 256
+         and m["relay_parent_paths"] == 256 and m["relay_candidate_paths"] == 267
          and set(m["source_delta_files"]) == SOURCE_DELTA
-         and len(m["source_worktree_porcelain"]) == 8
-         and set(m["source_worktree_porcelain"]) == {
-             ("?? " if name.endswith("/PropertyRegistry.tsx") else " M ") + name for name in SOURCE_DELTA
-         }, "ACTUAL_LOCAL_SOURCE8_CONTEXT_REQUIRED")
+         and m["source_worktree_porcelain"] == [], "ACTUAL_FROZEN_SOURCE434_CONTEXT_REQUIRED")
     evidence = m["current_source_evidence_sha256"]
-    need(evidence["FRONTEND-REGISTRY-AUTHOR-V2.json"] == REGISTRY_SOURCE_AUTHOR
-         and evidence["independent-frontend-registry-v2-source-review.json"] == REGISTRY_SOURCE_REVIEW
+    need(evidence == SOURCE_EVIDENCE
          and m["base_git_blobs"] == prior["base_git_blobs"]
-         and m["public_base_ancestor_commits"] == prior["unpublished_ancestor_commits"],
+         and m["public_base_ancestor_commits"] == prior["public_base_ancestor_commits"],
          "CURRENT_INDEPENDENT_SOURCE_AND_PUBLIC_BASE_REQUIRED")
     added = set(m["application_files"]) - set(prior["application_files"])
-    need(added == {"apps/dashboard/src/components/network/PropertyRegistry.tsx"}
+    need(added == SOURCE_ADDITIONS
          and set(prior["application_files"]) <= set(m["application_files"])
          and {name for name in m["application_files"] if m["application_files"][name] != prior["application_files"].get(name)} == SOURCE_DELTA,
-         "ONLY_CURRENT8_FRONTEND_BODY_CHANGES_ALLOWED")
+         "ONLY_CURRENT15_FRONTEND_BODY_CHANGES_ALLOWED")
     for name, item in m["source_delta_files"].items():
         need({key: item[key] for key in ("mode", "git_blob_oid", "sha256", "bytes", "binary_nul_detected")}
-             == m["application_files"][name], "CURRENT8_CANONICAL_BODY_MAP_REQUIRED")
-    need(set(m["overlays"]) == set(prior["overlays"]) | added
+             == m["application_files"][name], "CURRENT15_NATIVE_BODY_MAP_REQUIRED")
+    need(set(m["overlays"]) == set(prior["overlays"]) | SOURCE_DELTA
          and all(all(m["overlays"][name][key] == prior["overlays"][name][key]
                      for key in ("payload_path", "mode", "git_blob_oid", "sha256", "bytes"))
-                 for name in set(prior["overlays"]) - SOURCE_DELTA), "UNCHANGED40_ACCEPTED_PAYLOADS_REQUIRED")
+                 for name in set(prior["overlays"]) - SOURCE_DELTA), "UNCHANGED44_ACCEPTED_PAYLOADS_REQUIRED")
     changes = {"M\t" + name for name in RENEWED_OPS} | {
         ("M\t" if name in prior["overlays"] else "A\t") + m["overlays"][name]["payload_path"]
         for name in SOURCE_DELTA
     }
-    need(len(changes) == 12 and m["expected_backend_changes"] == sorted(changes)
+    need(len(changes) == 19 and m["expected_backend_changes"] == sorted(changes)
          and set(git(backend, "diff", "--name-status", BACKEND_BASE, "HEAD").decode().splitlines()) == changes,
-         "ONLY11_MODIFIED_ONE_NEW_RELAY_PATH_ALLOWED")
+         "ONLY8_MODIFIED11_NEW_RELAY_PATHS_ALLOWED")
     before, after = tree(backend, BACKEND_BASE), tree(backend, "HEAD")
     changed_names = {line[2:] for line in changes}
-    need(len(before) == 255 and len(after) == 256
-         and set(after) == set(before) | {m["overlays"][name]["payload_path"] for name in added}
+    need(len(before) == 256 and len(after) == 267
+         and set(after) == set(before) | {m["overlays"][name]["payload_path"] for name in SOURCE_DELTA - set(prior["overlays"])}
          and all(after[name] == item for name, item in before.items() if name not in changed_names),
-         "UNCHANGED244_BASE_GIT_OBJECTS_REQUIRED")
+         "UNCHANGED248_BASE_GIT_OBJECTS_REQUIRED")
 
 def main():
     need(sys.platform == "linux" and os.environ.get("GITHUB_ACTIONS") == "true", "GITHUB_LINUX_ONLY")
@@ -229,7 +248,7 @@ def main():
     manifest_bytes = regular(backend, "ci/frontend/frontend-overlay.json").read_bytes()
     need(sha(manifest_bytes) == os.environ.get("OVERLAY_MANIFEST_SHA256"), "EXACT_MANIFEST_PIN_REQUIRED")
     m = json.loads(manifest_bytes)
-    need(len(OPS | {e["payload_path"] for e in m["overlays"].values()}) == 54, "EXACT54_OPERATION_AND_PAYLOAD_CLOSURE_REQUIRED")
+    need(len(OPS | {e["payload_path"] for e in m["overlays"].values()}) == 65, "EXACT65_OPERATION_AND_PAYLOAD_CLOSURE_REQUIRED")
     validate_renewal(backend, m)
     key = run + "-1-" + commit[:12]; volume = "ildr-frontend-" + key
     report = {"schema_version": 1, "status": "FAIL", "backend_ci_commit": commit, "run_id": run, "attempt": 1,
