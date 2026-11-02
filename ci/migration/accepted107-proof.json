@@ -1,0 +1,44 @@
+{
+  "status": "PASS_ACTUAL_107_AND_EXACT_SCHEMA_SOURCE_NATIVE_DOCKER_CLEANUP_NOT_RELEASE_ACCEPTANCE",
+  "observed_at_utc": "2026-11-02T04:12:13.704575+00:00",
+  "helper_sha256": "9742bd510fac97f66f64eec85046cf255c38afdad8dca0962795d603cd8e069e",
+  "commit": "2dd15ce18cce52cec45d8b865de807b95e0e336e",
+  "tree": "50b496fd38787e5fde3de15b5fed8a6316f77b55",
+  "run_id": "41386091747",
+  "job_id": 125087144694,
+  "attempt": 1,
+  "report_pins": {
+    "strict107-linux-inventory.json": [
+      "43cf63b23313f67c666e8ef57a1c487a5d5e74b53f3a8d35e53ffa132dfac92f",
+      12394
+    ],
+    "strict107-result.json": [
+      "850fe6e72c425b6013dbc6b0fac000171fc3bcddbe81ed62bcf45410c370443d",
+      1671
+    ]
+  },
+  "saved_log_sha256": "024b5b2c44ae71623d7616e9fe7fcf9bd58b6bc40351767a6a1f4ae60786ac84",
+  "successful_job_observation_files": [
+    "run-observation-20261102T040243Z.json"
+  ],
+  "tests_run": 107,
+  "failures": 0,
+  "errors": 0,
+  "skips": 0,
+  "denied_guard_events": [],
+  "all_three_exact_schemas_absent": true,
+  "source_unchanged": true,
+  "outer_owned_docker_cleanup_verified": true,
+  "native_client_container_and_child_exit": 0,
+  "oom_killed": false,
+  "minimum_available_mib": 1903.46875,
+  "python": "3.11.18",
+  "pillow": "10.4.0",
+  "webp": "1.4.0",
+  "postgres_server_version_num": 170011,
+  "all15_stable_linux_runtime_fields_equal_historical": true,
+  "real_provider_or_production_actions": false,
+  "full_migration_or_browser_or_published_checkpoint_or_release_acceptance": false,
+  "earlier_failed_runs_preserved_not_relabelled": true,
+  "old_b33_PASS_not_rebound": true
+}

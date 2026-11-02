@@ -1,0 +1,48 @@
+{
+  "assertions": {
+    "class_counts": {
+      "CustomerDeliveryTests": 18,
+      "LeadDeliveryTests": 52,
+      "PrivateImageContracts": 4,
+      "PropertyNetworkRoutes": 18,
+      "SignupNotificationTests": 15
+    },
+    "denied_guard_events": [],
+    "errors": 0,
+    "expected_failures": 0,
+    "expected_schemas": {
+      "tests/test_customer_delivery.py": "customer_delivery_test_10aa7da4c90a42bebcd3ca728787b641",
+      "tests/test_lead_delivery.py": "lead_delivery_test_10aa7da4c90a42bebcd3ca728787b641",
+      "tests/test_property_network.py": "network_test_10aa7da4c90a42bebcd3ca728787b641"
+    },
+    "failed_test_ids": [],
+    "failures": 0,
+    "schema_uuid_consumed": {
+      "tests/test_customer_delivery.py": true,
+      "tests/test_lead_delivery.py": true,
+      "tests/test_property_network.py": true
+    },
+    "skipped": 0,
+    "source_unchanged": true,
+    "status": "TEST_ASSERTIONS_PASS_SCHEMA_CLEANUP_PENDING",
+    "tests_run": 107,
+    "unexpected_successes": 0
+  },
+  "bootstrap_and_full_migration_chain_proven": false,
+  "child_output_bytes": [
+    0,
+    0
+  ],
+  "cleanup_errors": [],
+  "exact_schemas_absent": true,
+  "expected_tests": 107,
+  "minimum_available_mib": 1903.46875,
+  "native_child_exit": 0,
+  "real_provider_or_production_actions": false,
+  "runner_sha256": "d178935e3425a62c900cdae65995ce1260bf3fdc5c2b35d0de7257d87847af2e",
+  "source_commit": "2dd15ce18cce52cec45d8b865de807b95e0e336e",
+  "source_manifest_sha256": "090002a6e499274a7e03f373665be910f384e2e90dc644ec0e29b0078d1ab370",
+  "source_unchanged": true,
+  "status": "PASS_107_ASSERTIONS_AND_EXACT_SCHEMA_CLEANUP_PG_CONTAINER_CLEANUP_PENDING",
+  "tests_pass": true
+}
