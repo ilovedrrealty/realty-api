@@ -441,7 +441,7 @@ def seed_baseline(connection, metadata):
     for number in range(46):
         profile = uuid4()
         connection.execute(metadata.tables["professional_profiles"].insert(), {"id": profile, "user_id": None,
-            "version": 1, "review_status": "draft", "listing_status": "hidden", "published_data": None,
+            "version": 1, "review_status": "draft", "listing_status": "hidden",
             "published_at": None, "draft_data": {"business_name": "Synthetic private " + str(number), "public_contact_consent": False}})
         connection.execute(metadata.tables["professional_profile_revisions"].insert(), {"id": uuid4(),
             "profile_id": profile, "version": 1, "action": "synthetic_fixture", "snapshot": {"public_contact_consent": False}})

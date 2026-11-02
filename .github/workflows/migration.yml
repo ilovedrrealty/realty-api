@@ -1,11 +1,11 @@
 # MIGRATION SOURCE ONLY: separate root review and empty-ref-lease authorization required.
 # Official index/config pins are bound to reviewed registry-digest-proof.json.
-name: Isolated fresh and upgrade migration rehearsal
+name: Isolated fresh and upgrade migration fixture rehearsal
 
 on:
   push:
     branches:
-      - codex-ci-migration-20261101
+      - codex-ci-migration-fixture-20261101
 
 permissions:
   contents: read
@@ -20,7 +20,7 @@ jobs:
       github.event_name == 'push' &&
       github.repository == 'ilovedrrealty/realty-api' &&
       github.event.repository.private == false &&
-      github.ref == 'refs/heads/codex-ci-migration-20261101' &&
+      github.ref == 'refs/heads/codex-ci-migration-fixture-20261101' &&
       github.event.created == true &&
       github.event.before == '0000000000000000000000000000000000000000' &&
       github.event.deleted == false && github.event.forced == false &&
@@ -53,7 +53,7 @@ jobs:
           set -euo pipefail
           [[ "$GITHUB_REPOSITORY" == ilovedrrealty/realty-api ]]
           [[ "$REPOSITORY_PRIVATE" == false ]]
-          [[ "$GITHUB_EVENT_NAME" == push && "$GITHUB_REF" == refs/heads/codex-ci-migration-20261101 ]]
+          [[ "$GITHUB_EVENT_NAME" == push && "$GITHUB_REF" == refs/heads/codex-ci-migration-fixture-20261101 ]]
           [[ "$PUSH_CREATED" == true && "$PUSH_DELETED" == false && "$PUSH_FORCED" == false ]]
           [[ "$PUSH_BEFORE" == 0000000000000000000000000000000000000000 ]]
           [[ "$GITHUB_RUN_ATTEMPT" == 1 ]]
@@ -143,9 +143,9 @@ jobs:
           import hashlib, pathlib, sys
           root = pathlib.Path(sys.argv[1])
           pins = {
-              'migration_entry.py': '31cf00c138a586d2d733f825c566cd6205bfbc71033b7738e5b7072693ba14d0',
-              'emit_migration_logs.py': '7cd190aa1027322d936b69d2a6f9bfe17c771b754c42b8e5b7bf44710c410026',
-              'run_migration_acceptance.py': '2babf30bf8446ef77cc9585b13393f552550657fb7d9330a47cfbf880091a186',
+              'migration_entry.py': '2e2a0ee9ae10f72cf2834058b9b095f6362dacc889eef3cd57459d63443e23ad',
+              'emit_migration_logs.py': '8133327c1c8968356c2738180bc3fcd22a837c1f532ad110ab3d4410507f7d41',
+              'run_migration_acceptance.py': 'fff76d2b00724fddffde2ce5f4b70da99fb803c8084084f36c741f0040da6e52',
               'migration-source-manifest.json': '5dde5b58cd032719713d69817e0c8af693fe97255c5ce482ae9cc61a34ae7b1b',
               'accepted_strict107.py': 'd178935e3425a62c900cdae65995ce1260bf3fdc5c2b35d0de7257d87847af2e',
               'accepted107-source.json': 'c8067bfc2c6eb0bec1725f01fbffbc772fdef828ae9b5c79618f4c2ce3b0fa47',
