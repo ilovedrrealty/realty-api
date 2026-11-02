@@ -231,3 +231,99 @@ test('all paged conversation feeds use fixed paging and reject wrong parent/prof
   h.reply(page([{ ...post(), profile_user_code: 456 }]))
   await assert.rejects(h.api.getProfilePosts(123), /Invalid property network data/)
 })
+
+const registryRecord = (changes = {}) => ({ id: B, title: 'Private synthetic property', location: 'Synthetic town', address: 'Private synthetic address', property_class: 'house_villa', relationship: 'manager', notes: 'Private synthetic notes', status: 'active', version: 1, created_at: NOW, updated_at: NOW, can_manage: true, can_create_project: true, ...changes })
+const registryInput = () => ({ submission_id: D, title: 'Private synthetic property', location: 'Synthetic town', address: '', property_class: 'house_villa', relationship: 'manager', notes: '', authority_acknowledged: true })
+const registryProject = () => ({ ...project(), listing_id: null, property_id: B, property_title: 'Private synthetic property', listing_title: 'Private synthetic property', address: 'must not project', location: 'must not project', notes: 'must not project', relationship: 'manager', custodian_id: D })
+
+test('private registry pages use only current-actor filters and strip custodian and account extras', async () => {
+  const h = harness({ ...page([registryRecord({ custodian_id: D, email: 'private@example.com' })]), can_create: true })
+  const signal = { synthetic: true }
+  const result = await h.api.getPrivateProperties({ page: 1, status: 'active', custodian_id: D }, signal)
+  assert.equal(result.can_create, true)
+  assert.deepEqual(plain(h.calls[0].args[0]), { params: { page: 1, status: 'active' }, signal, withCredentials: true })
+  assert.equal(h.calls[0].url, '/property-network/registry')
+  assert.equal(result.items[0].address, 'Private synthetic address', 'Full own-record fields are distinct from a project summary')
+  for (const key of ['custodian_id', 'email', 'submission_id']) assert.equal(Object.hasOwn(result.items[0], key), false)
+  for (const response of [{ ...page([]), can_create: 'true' }, { ...page([registryRecord(), registryRecord()]), can_create: true }, { ...page([registryRecord({ status: 'archived', can_create_project: false })]), can_create: true }]) {
+    h.reply(response)
+    await assert.rejects(h.api.getPrivateProperties({ status: 'active' }), /Invalid property network data/)
+  }
+})
+
+test('private registration requires explicit authority and the real bounded property fields before a write', async () => {
+  const h = harness(registryRecord())
+  for (const changes of [{ authority_acknowledged: false }, { authority_acknowledged: 'true' }, { title: ' ' }, { location: '' }, { address: 'x'.repeat(501) }, { notes: 'x'.repeat(4001) }, { property_class: 'published_listing' }, { relationship: 'admin' }, { submission_id: '../foreign' }]) {
+    await assert.rejects(h.api.createPrivateProperty({ ...registryInput(), ...changes }), /Invalid property network data/)
+  }
+  assert.equal(h.calls.length, 0)
+  await h.api.createPrivateProperty({ ...registryInput(), custodian_id: A, owner_id: A, is_public: true })
+  assert.deepEqual(Object.keys(h.calls[0].args[0]).sort(), ['address', 'authority_acknowledged', 'location', 'notes', 'property_class', 'relationship', 'submission_id', 'title'])
+  assert.equal(h.calls[0].args[0].authority_acknowledged, true)
+  assert.equal(h.calls[0].args[0].submission_id, D)
+})
+
+test('uncertain property creates retain an explicit same request and both resolvers are authenticated reads', async () => {
+  const h = harness(registryRecord()), input = registryInput(), failure = new Error('synthetic timeout')
+  h.fail(failure)
+  await assert.rejects(h.api.createPrivateProperty(input), error => error === failure)
+  assert.equal(h.calls.length, 1)
+  h.reply(registryRecord({ title: 'Later edited property', version: 2 }))
+  await h.api.getPrivatePropertySubmission(D)
+  assert.equal(h.calls[1].method, 'get')
+  assert.equal(h.calls[1].url, `/property-network/registry/submissions/${D}`)
+  await h.api.createPrivateProperty(input)
+  assert.deepEqual(plain(h.calls[2].args[0]), plain(h.calls[0].args[0]), 'Only a later explicit call repeats the immutable original payload')
+  h.reply(registryProject())
+  await h.api.getProjectSubmission(D)
+  assert.equal(h.calls[3].url, `/property-network/projects/submissions/${D}`)
+  assert.equal(h.calls[3].method, 'get')
+  assert.equal(h.calls[3].args[0].withCredentials, true)
+})
+
+test('property edits and archive preserve version failures and reject contradictory project capabilities', async () => {
+  const h = harness(registryRecord({ status: 'archived', version: 2, can_create_project: false }))
+  const { submission_id, authority_acknowledged, ...values } = registryInput()
+  await h.api.updatePrivateProperty(B, { ...values, expected_version: 1, status: 'archived', custodian_id: A })
+  assert.equal(h.calls[0].method, 'put')
+  assert.equal(h.calls[0].args[0].expected_version, 1)
+  assert.equal(h.calls[0].args[0].status, 'archived')
+  assert.ok(!Object.hasOwn(h.calls[0].args[0], 'custodian_id'))
+  const conflict = { isAxiosError: true, response: { status: 409 } }
+  h.fail(conflict)
+  await assert.rejects(h.api.updatePrivateProperty(B, { ...values, expected_version: 1, status: 'active' }), error => error === conflict)
+  assert.equal(h.calls.length, 2, 'No automatic conflict retry')
+  h.reply(registryRecord({ status: 'archived', can_create_project: true }))
+  await assert.rejects(h.api.getPrivateProperty(B), /Invalid property network data/)
+})
+
+test('project source is exactly one listing or private property with mandatory private submission reference', async () => {
+  const h = harness(registryProject()), base = { title: 'AC service', summary: '', property_class: 'house_villa', service_category_ids: ['air_conditioning'] }
+  for (const input of [{ ...base }, { ...base, listing_id: A, property_id: B, submission_id: D }, { ...base, property_id: B }]) await assert.rejects(h.api.createProject(input), /Invalid property network data/)
+  assert.equal(h.calls.length, 0)
+  const result = await h.api.createProject({ ...base, property_id: B, submission_id: D, custodian_id: A })
+  assert.equal(result.listing_id, null)
+  assert.equal(result.property_id, B)
+  assert.equal(result.property_title, 'Private synthetic property')
+  for (const key of ['address', 'location', 'notes', 'relationship', 'custodian_id']) assert.equal(Object.hasOwn(result, key), false)
+  assert.equal(Object.hasOwn(h.calls[0].args[0], 'listing_id'), false)
+  assert.equal(h.calls[0].args[0].property_id, B)
+  assert.equal(h.calls[0].args[0].submission_id, D)
+  h.reply({ ...registryProject(), listing_id: A })
+  await assert.rejects(h.api.getProject(A), /Invalid property network data/)
+  assert.throws(() => h.api.getProjects({ listing_id: A, property_id: B }), /Invalid property network data/)
+})
+
+test('private property project filters and service history never fetch registry detail or project private fields', async () => {
+  const item = { id: C, project_id: A, project_title: 'AC service', service_category_ids: ['air_conditioning'], project_status: 'open', kind: 'progress', body: 'Authorized service entry', occurred_on: '2026-01-01', media_ids: [], created_at: NOW, address: 'do not expose', notes: 'do not expose' }
+  const h = harness(page([item]))
+  const history = await h.api.getPrivatePropertyServiceHistory(B)
+  assert.equal(h.calls[0].url, `/property-network/registry/${B}/history`)
+  assert.equal(history.items[0].body, 'Authorized service entry')
+  assert.equal(Object.hasOwn(history.items[0], 'address'), false)
+  assert.equal(Object.hasOwn(history.items[0], 'notes'), false)
+  h.reply(page([registryProject()]))
+  await h.api.getProjects({ property_id: B })
+  assert.deepEqual(plain(h.calls[1].args[0].params), { page: 1, property_id: B })
+  assert.ok(h.calls.every(call => call.url !== `/property-network/registry/${B}`))
+})

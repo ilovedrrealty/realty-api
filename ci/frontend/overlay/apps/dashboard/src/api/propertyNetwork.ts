@@ -8,6 +8,9 @@ const PROJECT_STATUSES = ['open', 'in_progress', 'completed', 'archived'] as con
 const MILESTONE_STATUSES = ['open', 'in_progress', 'completed', 'cancelled'] as const
 const UPDATE_KINDS = ['progress', 'correction', 'milestone'] as const
 const MEMBER_ROLES = ['owner', 'manager', 'professional', 'viewer'] as const
+export const PRIVATE_PROPERTY_CLASSES = ['house_villa', 'apartment_condominium', 'multiunit_building', 'vacation_rental', 'hotel_hospitality', 'office', 'retail_restaurant', 'warehouse_industrial', 'farm_rural', 'vacant_land'] as const
+const PROPERTY_RELATIONSHIPS = ['owner', 'manager', 'seller'] as const
+const PROPERTY_STATUSES = ['active', 'archived'] as const
 export type ProjectStatus = typeof PROJECT_STATUSES[number]
 export type MilestoneStatus = typeof MILESTONE_STATUSES[number]
 export type ProjectRole = typeof MEMBER_ROLES[number] | 'admin'
@@ -17,7 +20,7 @@ export type NetworkPage<T> = { items: T[]; total: number; page: number; page_siz
 export type NetworkAuthor = { user_code: number | null; display_name: string }
 export type NetworkProperty = { id: string; title: string; location: string; type: string }
 export type NetworkProject = {
-  id: string; listing_id: string; listing_title: string; title: string; summary: string
+  id: string; listing_id: string | null; listing_title: string; property_id: string | null; property_title: string | null; title: string; summary: string
   property_class: string; service_category_ids: string[]; status: ProjectStatus; version: number
   my_role: ProjectRole; can_manage: boolean; can_assign: boolean; can_update: boolean
   progress: { total: number; completed: number; percent: number | null }; created_at: string; updated_at: string
@@ -42,7 +45,13 @@ export type ServiceHistoryItem = {
   kind: typeof UPDATE_KINDS[number]; body: string; occurred_on: string; media_ids: string[]; created_at: string
 }
 export type NetworkMedia = { id: string; url: string; content_type: 'image/webp'; bytes: number; sha256: string; width: number; height: number }
-export type CreateProjectInput = { listing_id: string; title: string; summary: string; property_class: string; service_category_ids: string[] }
+export type CreateProjectInput = { listing_id?: string | null; property_id?: string | null; submission_id?: string; title: string; summary: string; property_class: string; service_category_ids: string[] }
+export type PrivatePropertyStatus = typeof PROPERTY_STATUSES[number]
+export type PrivatePropertyFields = { title: string; location: string; address: string; property_class: typeof PRIVATE_PROPERTY_CLASSES[number]; relationship: typeof PROPERTY_RELATIONSHIPS[number]; notes: string }
+export type PrivateProperty = PrivatePropertyFields & { id: string; status: PrivatePropertyStatus; version: number; created_at: string; updated_at: string; can_manage: boolean; can_create_project: boolean }
+export type PrivatePropertyPage = NetworkPage<PrivateProperty> & { can_create: boolean }
+export type CreatePrivatePropertyInput = PrivatePropertyFields & { submission_id: string; authority_acknowledged: boolean }
+export type UpdatePrivatePropertyInput = PrivatePropertyFields & { expected_version: number; status: PrivatePropertyStatus }
 export type UpdateProjectInput = { expected_version: number; title: string; summary: string; status: ProjectStatus }
 export type AddProjectMemberInput = { expected_version: number; user_code: number; role: AssignedProjectRole }
 export type CreateMilestoneInput = { title: string; due_date: string | null }
@@ -108,15 +117,30 @@ function property(value: unknown): NetworkProperty {
 }
 function project(value: unknown): NetworkProject {
   const row = object(value), rawProgress = object(row.progress)
+  const listingId = nullableUUID(row.listing_id), propertyId = row.property_id === undefined ? null : nullableUUID(row.property_id)
+  const propertyTitle = row.property_title === undefined || row.property_title === null ? null : text(row.property_title, 180, 1)
+  if ((listingId === null) === (propertyId === null) || (propertyId === null) !== (propertyTitle === null)) invalid()
   const total = integer(rawProgress.total), completed = integer(rawProgress.completed, 0, total)
   const percent = rawProgress.percent
   if (total === 0 ? percent !== null : typeof percent !== 'number' || !Number.isFinite(percent) || percent < 0 || percent > 100) invalid()
   return {
-    id: uuid(row.id), listing_id: uuid(row.listing_id), listing_title: text(row.listing_title, 4096), title: text(row.title, 180, 1), summary: text(row.summary, 4000),
+    id: uuid(row.id), listing_id: listingId, listing_title: text(row.listing_title, 4096), property_id: propertyId, property_title: propertyTitle, title: text(row.title, 180, 1), summary: text(row.summary, 4000),
     property_class: slug(row.property_class), service_category_ids: uniqueStrings(row.service_category_ids, 12, slug), status: choice(row.status, PROJECT_STATUSES), version: integer(row.version, 1),
     my_role: choice(row.my_role, [...MEMBER_ROLES, 'admin']), can_manage: bool(row.can_manage), can_assign: bool(row.can_assign), can_update: bool(row.can_update),
     progress: { total, completed, percent: percent as number | null }, created_at: timestamp(row.created_at), updated_at: timestamp(row.updated_at),
   }
+}
+function privatePropertyFields(value: unknown): PrivatePropertyFields {
+  const row = object(value)
+  return { title: text(text(row.title, 180).trim(), 180, 1), location: text(text(row.location, 180).trim(), 180, 1),
+    address: text(row.address, 500), property_class: choice(row.property_class, PRIVATE_PROPERTY_CLASSES),
+    relationship: choice(row.relationship, PROPERTY_RELATIONSHIPS), notes: text(row.notes, 4000) }
+}
+function privateProperty(value: unknown): PrivateProperty {
+  const row = object(value), status = choice(row.status, PROPERTY_STATUSES), canManage = bool(row.can_manage), canCreate = bool(row.can_create_project)
+  if (canCreate && (!canManage || status !== 'active')) invalid()
+  return { ...privatePropertyFields(row), id: uuid(row.id), status, version: integer(row.version, 1),
+    created_at: timestamp(row.created_at), updated_at: timestamp(row.updated_at), can_manage: canManage, can_create_project: canCreate }
 }
 function member(value: unknown): ProjectMember {
   const row = object(value); return { ...author(row), role: choice(row.role, MEMBER_ROLES), active: bool(row.active) }
@@ -170,13 +194,44 @@ async function membersResult(raw: unknown): Promise<ProjectMember[]> {
 }
 
 export function getNetworkProperties(params: PageParams = {}, signal?: AbortSignal): Promise<NetworkPage<NetworkProperty>> { return readPage(`${PREFIX}/properties`, params, property, row => row.id, signal) }
-export function getProjects(params: PageParams & { listing_id?: string } = {}, signal?: AbortSignal): Promise<NetworkPage<NetworkProject>> { return readPage(`${PREFIX}/projects`, params, project, row => row.id, signal, params.listing_id ? { listing_id: uuid(params.listing_id) } : {}) }
-export async function getProject(id: string, signal?: AbortSignal): Promise<NetworkProject> { uuid(id); return sameId(project((await client.get(`${PREFIX}/projects/${id}`, { signal, withCredentials: true })).data), id) }
-export async function createProject(input: CreateProjectInput): Promise<NetworkProject> {
-  const body = { listing_id: uuid(input.listing_id), title: text(input.title, 180, 1), summary: text(input.summary, 4000), property_class: slug(input.property_class), service_category_ids: uniqueStrings(input.service_category_ids, 12, slug) }
-  const result = project((await client.post(`${PREFIX}/projects`, body, { withCredentials: true })).data)
-  return result.listing_id.toLowerCase() === body.listing_id.toLowerCase() ? result : invalid()
+export function getProjects(params: PageParams & { listing_id?: string; property_id?: string } = {}, signal?: AbortSignal): Promise<NetworkPage<NetworkProject>> {
+  if (params.listing_id !== undefined && params.property_id !== undefined) invalid()
+  return readPage(`${PREFIX}/projects`, params, raw => {
+    const row = project(raw)
+    if (params.property_id !== undefined && row.property_id?.toLowerCase() !== params.property_id.toLowerCase() || params.listing_id !== undefined && row.listing_id?.toLowerCase() !== params.listing_id.toLowerCase()) invalid()
+    return row
+  }, row => row.id, signal, params.property_id !== undefined ? { property_id: uuid(params.property_id) } : params.listing_id !== undefined ? { listing_id: uuid(params.listing_id) } : {})
 }
+export async function getProject(id: string, signal?: AbortSignal): Promise<NetworkProject> { uuid(id); return sameId(project((await client.get(`${PREFIX}/projects/${id}`, { signal, withCredentials: true })).data), id) }
+export async function getProjectSubmission(submissionId: string, signal?: AbortSignal): Promise<NetworkProject> { uuid(submissionId); return project((await client.get(`${PREFIX}/projects/submissions/${submissionId}`, { signal, withCredentials: true })).data) }
+export async function createProject(input: CreateProjectInput, signal?: AbortSignal): Promise<NetworkProject> {
+  const listingId = input.listing_id == null ? null : uuid(input.listing_id), propertyId = input.property_id == null ? null : uuid(input.property_id)
+  if ((listingId === null) === (propertyId === null) || (propertyId !== null && input.submission_id === undefined)) invalid()
+  const body = { ...(listingId === null ? { property_id: propertyId! } : { listing_id: listingId }),
+    ...(input.submission_id === undefined ? {} : { submission_id: uuid(input.submission_id) }),
+    title: text(input.title, 180, 1), summary: text(input.summary, 4000), property_class: slug(input.property_class), service_category_ids: uniqueStrings(input.service_category_ids, 12, slug) }
+  const result = project((await client.post(`${PREFIX}/projects`, body, { signal, withCredentials: true })).data)
+  return result.listing_id?.toLowerCase() === listingId?.toLowerCase() && result.property_id?.toLowerCase() === propertyId?.toLowerCase() && result.property_class === body.property_class ? result : invalid()
+}
+export async function getPrivateProperties(params: PageParams & { status?: PrivatePropertyStatus | 'all' } = {}, signal?: AbortSignal): Promise<PrivatePropertyPage> {
+  const expectedPage = pageNumber(params), status = params.status === undefined ? 'all' : choice(params.status, ['all', ...PROPERTY_STATUSES])
+  const row = object((await client.get(`${PREFIX}/registry`, { params: { page: expectedPage, status }, signal, withCredentials: true })).data)
+  const items = array(row.items, NETWORK_PAGE_SIZE, privateProperty), total = integer(row.total)
+  if (integer(row.page, 1, 1000) !== expectedPage || integer(row.page_size, NETWORK_PAGE_SIZE, NETWORK_PAGE_SIZE) !== NETWORK_PAGE_SIZE || total < items.length || new Set(items.map(item => item.id.toLowerCase())).size !== items.length || status !== 'all' && items.some(item => item.status !== status)) invalid()
+  return { items, total, page: expectedPage, page_size: NETWORK_PAGE_SIZE, can_create: bool(row.can_create) }
+}
+export async function getPrivateProperty(id: string, signal?: AbortSignal): Promise<PrivateProperty> { uuid(id); return sameId(privateProperty((await client.get(`${PREFIX}/registry/${id}`, { signal, withCredentials: true })).data), id) }
+export async function getPrivatePropertySubmission(submissionId: string, signal?: AbortSignal): Promise<PrivateProperty> { uuid(submissionId); return privateProperty((await client.get(`${PREFIX}/registry/submissions/${submissionId}`, { signal, withCredentials: true })).data) }
+export async function createPrivateProperty(input: CreatePrivatePropertyInput, signal?: AbortSignal): Promise<PrivateProperty> {
+  if (input.authority_acknowledged !== true) invalid()
+  const body = { ...privatePropertyFields(input), submission_id: uuid(input.submission_id), authority_acknowledged: true }
+  return privateProperty((await client.post(`${PREFIX}/registry`, body, { signal, withCredentials: true })).data)
+}
+export async function updatePrivateProperty(id: string, input: UpdatePrivatePropertyInput, signal?: AbortSignal): Promise<PrivateProperty> {
+  uuid(id); const body = { ...privatePropertyFields(input), expected_version: integer(input.expected_version, 1), status: choice(input.status, PROPERTY_STATUSES) }
+  return sameId(privateProperty((await client.put(`${PREFIX}/registry/${id}`, body, { signal, withCredentials: true })).data), id)
+}
+export function getPrivatePropertyServiceHistory(id: string, params: PageParams = {}, signal?: AbortSignal): Promise<NetworkPage<ServiceHistoryItem>> { uuid(id); return readPage(`${PREFIX}/registry/${id}/history`, params, history, row => row.id, signal) }
 export async function updateProject(id: string, input: UpdateProjectInput): Promise<NetworkProject> {
   uuid(id); const body = { expected_version: integer(input.expected_version, 1), title: text(input.title, 180, 1), summary: text(input.summary, 4000), status: choice(input.status, PROJECT_STATUSES) }
   return sameId(project((await client.put(`${PREFIX}/projects/${id}`, body, { withCredentials: true })).data), id)

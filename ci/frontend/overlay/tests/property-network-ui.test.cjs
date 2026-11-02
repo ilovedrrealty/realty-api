@@ -79,10 +79,16 @@ function ui(relative, exported, props, responses = {}, language = 'en') {
     })
   }
   const runtime = jsxRuntime
-  const api = new Proxy({}, { get: (_, name) => (...args) => {
-    calls.push({ name, args })
-    assert.equal(typeof responses[name], 'function', `Unexpected API call: ${String(name)}`)
-    return responses[name](...args)
+  const api = new Proxy({}, { get: (_, name) => {
+    // Preserve real exported data (including the property-class catalog); only
+    // API operations use explicit responses. The real client stays unreachable.
+    const actual = load(sourceRoot + 'api/propertyNetwork.ts')
+    if (Object.hasOwn(actual, name) && typeof actual[name] !== 'function') return actual[name]
+    return (...args) => {
+      calls.push({ name, args })
+      assert.equal(typeof responses[name], 'function', `Unexpected API call: ${String(name)}`)
+      return responses[name](...args)
+    }
   } })
   const fakeWindow = {
     addEventListener(name, callback) { if (!listeners.has(name)) listeners.set(name, new Set()); listeners.get(name).add(callback) },
@@ -100,16 +106,22 @@ function ui(relative, exported, props, responses = {}, language = 'en') {
     const module = { exports: {} }; moduleCache.set(absolute, module)
     const source = fs.readFileSync(absolute, 'utf8')
     const compiled = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true } }).outputText
-    vm.runInNewContext(compiled, { module, exports: module.exports, AbortController, Date: class extends Date { static now() { return clock } }, Intl, Blob, Event,
+    vm.runInNewContext(compiled, { module, exports: module.exports, AbortController, URLSearchParams, Date: class extends Date { static now() { return clock } }, Intl, Blob, Event,
       document: fakeDocument, navigator: fakeNavigator,
       crypto: { randomUUID: () => fixtureId(++nextUUID) }, window: fakeWindow,
       URL: { createObjectURL: () => `blob:synthetic-${++nextBlob}`, revokeObjectURL: value => revoked.push(value) },
       require(name) {
+        if (absolute === path.resolve(root, sourceRoot + 'api/propertyNetwork.ts') && name === './axios') {
+          const refuse = () => assert.fail('UI adapter must use explicit API responses, never the authenticated client')
+          return { __esModule: true, default: { get: refuse, post: refuse, put: refuse } }
+        }
         if (name === 'react') return hooks
         if (name === 'react/jsx-runtime') return runtime
         if (name === 'react-i18next') return { useTranslation: () => ({ t: lookup, i18n: { language } }) }
         if (name === 'axios') return { isAxiosError: error => error?.isAxiosError === true }
+        if (name === 'react-router-dom') return { useSearchParams: () => { const [value, setValue] = hooks.useState(''); return [new URLSearchParams(value), next => setValue(next.toString())] } }
         if (name.endsWith('/api/propertyNetwork')) return api
+        if (name.endsWith('/api/professionals')) return { getProfessionalOptions: api.getProfessionalOptions }
         if (name.endsWith('/api/propertyManagement')) return { todayInDR: () => '2026-01-02' }
         assert.ok(name.startsWith('.'), `Unapproved module dependency: ${name}`)
         const base = path.resolve(path.dirname(absolute), name)
@@ -436,5 +448,277 @@ test('separate keyed timeline entries keep independent comment drafts when reord
     assert.equal(draft('Second keyed entry').props.value, 'Different draft only for second entry')
     assert.equal(draft('New third keyed entry'), undefined)
     assert.ok(h.calls.every(call => call.name.startsWith('get')), 'Polling and reorder must not submit a draft')
+  } finally { h.dispose() }
+})
+
+const registryCatalog = { categories: [{ id: 'air_conditioning', label: { en: 'Air conditioning', es: 'Aire acondicionado' } }], areas: [], languages: [], property_classes: [{ id: 'house_villa', label: { en: 'House or villa', es: 'Casa o villa' } }] }
+const privateRecord = changes => ({ id: LISTING, title: 'Private synthetic property', location: 'Synthetic town', address: 'Private address kept out of project views', property_class: 'house_villa', relationship: 'manager', notes: 'Private notes kept out of project views', status: 'active', version: 1, can_manage: true, can_create_project: true, created_at: '2026-01-01T12:00:00Z', updated_at: '2026-01-01T12:00:00Z', ...changes })
+const registryPage = (items, canCreate = true) => ({ ...page(items), can_create: canCreate })
+function registryField(h, key, type) {
+  const label = h.find('label', node => h.text(node).startsWith(h.t(key)))
+  const field = h.nodes(label).find(node => node.type === type)
+  assert.ok(field, `Missing accessible ${key} field`)
+  return field
+}
+async function fillPrivateProperty(h) {
+  for (const [key, type, value] of [['registry.title', 'input', 'My private property draft'], ['registry.location', 'input', 'My private town'], ['registry.address', 'textarea', 'My private address'], ['registry.notes', 'textarea', 'My private notes'], ['property_class', 'select', 'house_villa'], ['registry.relationship', 'select', 'seller']]) await h.fire(registryField(h, key, type), 'onChange', { target: { value } })
+  await h.fire(registryField(h, 'registry.authority', 'input'), 'onChange', { target: { checked: true } })
+}
+
+test('actual bilingual private registration keeps uncertain fields and UUID and resolves only by an explicit read', async () => {
+  for (const language of ['en', 'es']) {
+    const opened = []
+    const h = ui('components/network/PropertyRegistry.tsx', 'PrivatePropertyCreate', { options: registryCatalog, onCreated: id => opened.push(id) }, {
+      createPrivateProperty: async () => { throw new Error('Synthetic uncertain connection') },
+      getPrivatePropertySubmission: async () => privateRecord(),
+    }, language)
+    try {
+      await h.settle()
+      assert.ok(h.visibleText.includes(h.t('registry.unverified')))
+      assert.equal(h.calls.length, 0, 'Rendering an empty form cannot register anything')
+      await fillPrivateProperty(h)
+      await h.fire(h.find('form'), 'onSubmit', { preventDefault() {} })
+      const write = h.calls.find(call => call.name === 'createPrivateProperty').args[0]
+      assert.equal(write.title, 'My private property draft'); assert.equal(write.authority_acknowledged, true)
+      assert.equal(write.relationship, 'seller'); assert.ok(write.submission_id)
+      for (const key of ['custodian_id', 'owner_id', 'is_public', 'role']) assert.equal(Object.hasOwn(write, key), false)
+      assert.equal(registryField(h, 'registry.title', 'input').props.value, write.title)
+      assert.ok(h.visibleText.includes(h.t('registry.uncertain')))
+      await h.advance(30000)
+      assert.equal(h.calls.filter(call => call.name === 'createPrivateProperty').length, 1, 'No timer retries a mutation')
+      await h.fire(h.find('button', node => h.text(node) === h.t('registry.check_result')), 'onClick')
+      assert.equal(h.calls.find(call => call.name === 'getPrivatePropertySubmission').args[0], write.submission_id)
+      assert.deepEqual(opened, [LISTING])
+      assert.equal(h.calls.filter(call => call.name === 'createPrivateProperty').length, 1)
+    } finally { h.dispose() }
+  }
+})
+
+test('actual explicit private property retry reuses the original payload after a not-found result check', async () => {
+  let attempts = 0
+  const h = ui('components/network/PropertyRegistry.tsx', 'PrivatePropertyCreate', { options: registryCatalog, onCreated() {} }, {
+    createPrivateProperty: async () => { if (++attempts === 1) throw new Error('Synthetic uncertain response'); return privateRecord() },
+    getPrivatePropertySubmission: async () => { throw { isAxiosError: true, response: { status: 404 } } },
+  })
+  try {
+    await h.settle(); await fillPrivateProperty(h)
+    await h.fire(h.find('form'), 'onSubmit', { preventDefault() {} })
+    const original = h.calls.find(call => call.name === 'createPrivateProperty').args[0]
+    await h.fire(h.find('button', node => h.text(node) === h.t('registry.check_result')), 'onClick')
+    assert.ok(h.visibleText.includes(h.t('registry.not_found_submission')))
+    assert.equal(registryField(h, 'registry.notes', 'textarea').props.value, original.notes)
+    assert.equal(attempts, 1, 'The result check must be read-only')
+    await h.fire(h.find('form'), 'onSubmit', { preventDefault() {} })
+    const writes = h.calls.filter(call => call.name === 'createPrivateProperty')
+    assert.equal(writes.length, 2)
+    assert.deepEqual(writes[1].args[0], original)
+  } finally { h.dispose() }
+})
+
+test('actual registry conflict clears previous results but retains a locked draft until an explicit actual refresh', async () => {
+  let current = privateRecord(), attempts = 0
+  const history = { id: ENTRY, project_id: ID, project_title: 'Old authorized service', body: 'Old authorized history body', occurred_on: '2026-01-01', media_ids: [] }
+  const h = ui('components/network/PropertyRegistry.tsx', 'PrivatePropertyDetail', { id: LISTING, options: registryCatalog, onBack() {}, onCreateProject() {} }, {
+    getPrivateProperty: async () => current,
+    getPrivatePropertyServiceHistory: async () => page([history]),
+    updatePrivateProperty: async (id, input) => { if (++attempts === 1) throw { isAxiosError: true, response: { status: 409 } }; current = privateRecord({ ...input, id, version: 3 }); return current },
+  })
+  try {
+    await h.settle()
+    await h.fire(registryField(h, 'registry.title', 'input'), 'onChange', { target: { value: 'My unsaved conflict draft' } })
+    await h.fire(h.find('form'), 'onSubmit', { preventDefault() {} })
+    assert.ok(h.visibleText.includes(h.t('registry.refresh_required')))
+    assert.ok(!h.visibleText.includes(history.body), 'Old history results must disappear after the conflict')
+    assert.equal(registryField(h, 'registry.title', 'input').props.value, 'My unsaved conflict draft')
+    current = privateRecord({ title: 'Changed remotely', version: 2 })
+    await h.advance(30000)
+    assert.equal(registryField(h, 'registry.title', 'input').props.value, 'My unsaved conflict draft')
+    assert.equal(h.find('fieldset').props.disabled, true)
+    assert.equal(attempts, 1, 'Polling cannot silently repeat or rebase the failed write')
+    await h.fire(h.find('button', node => h.text(node) === h.t('registry.refresh_keep_draft')), 'onClick')
+    assert.equal(registryField(h, 'registry.title', 'input').props.value, 'My unsaved conflict draft')
+    await h.fire(h.find('form'), 'onSubmit', { preventDefault() {} })
+    const writes = h.calls.filter(call => call.name === 'updatePrivateProperty')
+    assert.equal(writes[0].args[1].expected_version, 1)
+    assert.equal(writes[1].args[1].expected_version, 2)
+    assert.equal(writes[1].args[1].title, 'My unsaved conflict draft')
+  } finally { h.dispose() }
+})
+
+test('actual archive retains authorized history and removes new-project controls without claiming deletion', async () => {
+  let current = privateRecord()
+  const history = { id: ENTRY, project_id: ID, project_title: 'Retained service', body: 'History survives archive', occurred_on: '2026-01-01', media_ids: [] }
+  const h = ui('components/network/PropertyRegistry.tsx', 'PrivatePropertyDetail', { id: LISTING, options: registryCatalog, onBack() {}, onCreateProject() {} }, {
+    getPrivateProperty: async () => current,
+    getPrivatePropertyServiceHistory: async () => page([history]),
+    updatePrivateProperty: async (id, input) => { current = privateRecord({ ...input, id, version: 2, can_create_project: false }); return current },
+  })
+  try {
+    await h.settle()
+    assert.ok(h.visibleText.includes(h.t('registry.create_project')))
+    await h.fire(h.find('button', node => h.text(node) === h.t('registry.archive')), 'onClick')
+    const write = h.calls.find(call => call.name === 'updatePrivateProperty')
+    assert.equal(write.args[1].status, 'archived'); assert.equal(write.args[1].expected_version, 1)
+    assert.equal(h.confirmations, 1)
+    assert.ok(h.visibleText.includes(history.body))
+    assert.ok(h.visibleText.includes(h.t('registry.archived_note')))
+    assert.ok(!h.visibleText.includes(h.t('registry.create_project')))
+    assert.equal(Object.hasOwn(write.args[1], 'custodian_id'), false)
+  } finally { h.dispose() }
+})
+
+test('actual registry permission loss removes private details, draft fields and history', async () => {
+  let denied = false
+  const h = ui('components/network/PropertyRegistry.tsx', 'PrivatePropertyDetail', { id: LISTING, options: registryCatalog, onBack() {}, onCreateProject() {} }, {
+    getPrivateProperty: async () => { if (denied) throw { isAxiosError: true, response: { status: 403 } }; return privateRecord() },
+    getPrivatePropertyServiceHistory: async () => page([]),
+  })
+  try {
+    await h.settle()
+    await h.fire(registryField(h, 'registry.notes', 'textarea'), 'onChange', { target: { value: 'A sensitive unsaved draft' } })
+    denied = true; await h.advance(30000)
+    assert.ok(h.visibleText.includes(h.t('error_access')))
+    assert.ok(!h.html.includes('Private address kept out'))
+    assert.ok(!h.html.includes('A sensitive unsaved draft'))
+    assert.ok(!h.nodes().some(node => node.type === 'form'))
+    assert.ok(h.calls.every(call => call.name.startsWith('get')))
+  } finally { h.dispose() }
+})
+
+test('actual buyer navigation opens only its capability-authorized private property form', async () => {
+  for (const canCreate of [true, false]) {
+    const h = ui('pages/shared/PropertyNetwork.tsx', 'PropertyNetwork', { user: { id: ID, user_code: 71, role: 'buyer', display_name: 'Synthetic buyer', email: 'synthetic@example.invalid' } }, {
+      getProfessionalOptions: async () => registryCatalog,
+      getProjects: async () => page([]),
+      getPrivateProperties: async () => registryPage([], canCreate),
+    })
+    try {
+      await h.settle()
+      await h.fire(h.find('button', node => h.text(node) === h.t('main.properties')), 'onClick')
+      assert.ok(h.visibleText.includes(h.t('registry.heading')))
+      assert.equal(h.nodes().some(node => node.type === 'button' && h.text(node) === h.t('registry.add')), canCreate)
+      if (canCreate) {
+        await h.fire(h.find('button', node => h.text(node) === h.t('registry.add')), 'onClick')
+        assert.ok(h.nodes().some(node => node.type === 'form'))
+        assert.ok(h.visibleText.includes(h.t('registry.authority')))
+      }
+      assert.ok(h.calls.every(call => call.name.startsWith('get')))
+      assert.ok(!h.calls.some(call => call.name === 'getNetworkProperties'))
+      assert.ok(!h.html.includes('AdminDash') && !h.html.includes('workspace=admin'))
+    } finally { h.dispose() }
+  }
+})
+
+test('actual buyer project form selects private property without managed-listing reads and resolves uncertainty explicitly', async () => {
+  const opened = []
+  const h = ui('components/network/ProjectWorkspace.tsx', 'ProjectCreate', { options: registryCatalog, canUseListings: false, onCreated: id => opened.push(id) }, {
+    getPrivateProperties: async () => registryPage([privateRecord()]),
+    createProject: async () => { throw new Error('Synthetic uncertain response') },
+    getProjectSubmission: async () => project({ listing_id: null, property_id: LISTING, property_title: 'Private synthetic property' }),
+  })
+  try {
+    await h.settle()
+    await h.fire(registryField(h, 'registry.choose_private', 'select'), 'onChange', { target: { value: LISTING } })
+    await h.fire(registryField(h, 'title', 'input'), 'onChange', { target: { value: 'Private service project' } })
+    await h.fire(h.find('input', node => node.props.type === 'checkbox'), 'onChange', { target: { checked: true } })
+    assert.equal(registryField(h, 'property_class', 'select').props.value, 'house_villa')
+    assert.equal(registryField(h, 'property_class', 'select').props.disabled, true)
+    await h.fire(h.find('form'), 'onSubmit', { preventDefault() {} })
+    const write = h.calls.find(call => call.name === 'createProject').args[0]
+    assert.equal(write.property_id, LISTING); assert.ok(write.submission_id)
+    assert.equal(Object.hasOwn(write, 'listing_id'), false)
+    await h.advance(30000)
+    assert.equal(h.calls.filter(call => call.name === 'createProject').length, 1)
+    await h.fire(h.find('button', node => h.text(node) === h.t('registry.check_result')), 'onClick')
+    assert.equal(h.calls.find(call => call.name === 'getProjectSubmission').args[0], write.submission_id)
+    assert.deepEqual(opened, [ID])
+    assert.ok(!h.calls.some(call => call.name === 'getNetworkProperties' || call.name === 'getPrivateProperty'))
+  } finally { h.dispose() }
+})
+
+test('actual project source switching drops the listing reference and submits only the selected private source', async () => {
+  let created
+  const h = ui('components/network/ProjectWorkspace.tsx', 'ProjectCreate', { options: registryCatalog, canUseListings: true, onCreated() {} }, {
+    getNetworkProperties: async () => page([{ id: PHOTO1, title: 'Managed synthetic listing', location: 'Synthetic area', type: 'villa' }]),
+    getPrivateProperties: async () => registryPage([privateRecord()]),
+    createProject: async input => { created = input; return project({ listing_id: null, property_id: LISTING, property_title: 'Private synthetic property' }) },
+  })
+  try {
+    await h.settle()
+    await h.fire(registryField(h, 'property', 'select'), 'onChange', { target: { value: PHOTO1 } })
+    await h.fire(registryField(h, 'registry.project_source', 'select'), 'onChange', { target: { value: 'private' } })
+    await h.fire(registryField(h, 'registry.choose_private', 'select'), 'onChange', { target: { value: LISTING } })
+    await h.fire(registryField(h, 'title', 'input'), 'onChange', { target: { value: 'Exactly one property' } })
+    await h.fire(h.find('input', node => node.props.type === 'checkbox'), 'onChange', { target: { checked: true } })
+    await h.fire(h.find('form'), 'onSubmit', { preventDefault() {} })
+    assert.equal(created.property_id, LISTING)
+    assert.equal(Object.hasOwn(created, 'listing_id'), false)
+    assert.equal(created.property_class, 'house_villa')
+  } finally { h.dispose() }
+})
+
+test('actual private-project participants read scoped history without fetching full registry records', async () => {
+  const history = { id: ENTRY, project_id: ID, project_title: 'Assigned synthetic project', body: 'Only accessible service history', occurred_on: '2026-01-01', media_ids: [] }
+  const h = ui('components/network/ProjectWorkspace.tsx', 'ProjectDetail', { id: ID, onBack() {} }, {
+    getProject: async () => project({ listing_id: null, property_id: LISTING, property_title: 'Authorized private property title', listing_title: 'Authorized private property title', address: 'Forbidden full registry address', notes: 'Forbidden full registry notes' }),
+    getProjectUpdates: async () => page([]),
+    getPrivatePropertyServiceHistory: async () => page([history]),
+  })
+  try {
+    await h.settle()
+    assert.ok(h.visibleText.includes('Authorized private property title'))
+    await h.fire(h.find('button', node => h.text(node) === h.t('tabs.history')), 'onClick')
+    assert.ok(h.visibleText.includes(history.body))
+    assert.equal(h.calls.find(call => call.name === 'getPrivatePropertyServiceHistory').args[0], LISTING)
+    assert.ok(!h.calls.some(call => call.name === 'getPrivateProperty' || call.name === 'getPrivateProperties' || call.name === 'getPropertyServiceHistory'))
+    assert.ok(!h.html.includes('Forbidden full registry'))
+  } finally { h.dispose() }
+})
+
+test('actual property list refresh preserves an open draft, pauses hidden reads and clears it on permission loss', async () => {
+  let denied = false
+  const h = ui('components/network/PropertyRegistry.tsx', 'PrivatePropertyList', { options: registryCatalog, onOpen() {} }, {
+    getPrivateProperties: async () => { if (denied) throw { isAxiosError: true, response: { status: 403 } }; return registryPage([]) },
+  })
+  try {
+    await h.settle()
+    await h.fire(h.find('button', node => h.text(node) === h.t('registry.add')), 'onClick')
+    await h.fire(registryField(h, 'registry.title', 'input'), 'onChange', { target: { value: 'Open list draft retained' } })
+    await h.fire(h.find('button', node => h.text(node) === h.t('refresh')), 'onClick')
+    assert.equal(registryField(h, 'registry.title', 'input').props.value, 'Open list draft retained')
+    await h.presence(false, true)
+    const before = h.calls.length
+    await h.advance(60000)
+    assert.equal(h.calls.length, before, 'A hidden property list cannot poll')
+    denied = true
+    await h.presence(true, true)
+    assert.ok(h.visibleText.includes(h.t('error_access')))
+    assert.ok(!h.html.includes('Open list draft retained'))
+    assert.ok(!h.nodes().some(node => node.type === 'form'))
+    assert.ok(h.calls.every(call => call.name === 'getPrivateProperties'))
+  } finally { h.dispose() }
+})
+
+test('actual late project-create result cannot navigate after registry permission was revoked', async () => {
+  let denied = false, resolveCreate
+  const opened = []
+  const h = ui('components/network/ProjectWorkspace.tsx', 'ProjectCreate', { options: registryCatalog, canUseListings: false, onCreated: id => opened.push(id) }, {
+    getPrivateProperties: async () => { if (denied) throw { isAxiosError: true, response: { status: 403 } }; return registryPage([privateRecord()]) },
+    createProject: async () => new Promise(resolve => { resolveCreate = resolve }),
+  })
+  try {
+    await h.settle()
+    await h.fire(registryField(h, 'registry.choose_private', 'select'), 'onChange', { target: { value: LISTING } })
+    await h.fire(registryField(h, 'title', 'input'), 'onChange', { target: { value: 'Pending authorized draft' } })
+    await h.fire(h.find('input', node => node.props.type === 'checkbox'), 'onChange', { target: { checked: true } })
+    await h.fire(h.find('form'), 'onSubmit', { preventDefault() {} })
+    denied = true; await h.advance(30000)
+    assert.ok(h.visibleText.includes(h.t('error_access')))
+    assert.ok(!h.nodes().some(node => node.type === 'form'))
+    resolveCreate(project({ listing_id: null, property_id: LISTING, property_title: 'Private synthetic property' }))
+    await h.settle()
+    assert.deepEqual(opened, [])
+    assert.equal(h.calls.filter(call => call.name === 'createProject').length, 1)
+    assert.equal(h.calls.find(call => call.name === 'createProject').args[1].aborted, true)
   } finally { h.dispose() }
 })
