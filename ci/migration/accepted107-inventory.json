@@ -1,0 +1,398 @@
+{
+  "bootstrap_and_full_migration_chain_proven": false,
+  "git_executable_sha256": "356db14e102d68a1a37d8a1ac577dfd678d45d46e92f468bef8b7154e7bfdc60",
+  "machine": "x86_64",
+  "operational_git_blobs": {
+    ".github/workflows/strict107.yml": "74897d510a1fe8d3eb06a5e234d96bf6f609c8c1",
+    "ci/strict107-source.json": "1dc41b68f076c0bd7217b95c6e3bf9ae11eb012e",
+    "ci/strict107.Dockerfile": "6640e7c51ae9630e95b7a7207b53e44580ac604a",
+    "ci/strict107.py": "0a1e129b3b513fd757ed14c1134c7d07743c1370"
+  },
+  "packages": [
+    {
+      "file_count": 104,
+      "files_sha256": "5eeed7b4b582aaf8ded8d4d8ad266b77563711fabeb0efe6c87f86e7740bd89b",
+      "name": "alembic",
+      "version": "1.18.4"
+    },
+    {
+      "file_count": 8,
+      "files_sha256": "3ad2ee66517bdb546451b500fd4d2ceea021183fd0c3bedfe2d0a355bfb2bf6e",
+      "name": "annotated-types",
+      "version": "0.8.0"
+    },
+    {
+      "file_count": 54,
+      "files_sha256": "cc9d813e20309882a088548ba162bc07e7955ec0dc15e2edacaf9f96f35b956c",
+      "name": "anyio",
+      "version": "4.16.0"
+    },
+    {
+      "file_count": 12,
+      "files_sha256": "560ecb0c2f4e6d9be5b06cfa4a3e8dddc61c25afc2ab6ec2210fe3db5e395510",
+      "name": "bcrypt",
+      "version": "4.0.1"
+    },
+    {
+      "file_count": 13,
+      "files_sha256": "72a3819e221ef39782fdb39f31b7a5f3a3b485a3ab9613ff23bff0270801d0e8",
+      "name": "certifi",
+      "version": "2026.10.23"
+    },
+    {
+      "file_count": 23,
+      "files_sha256": "3966c3becb1f78a18cd7cd17ef5194e49e29a626882c5bf54dca65497271022f",
+      "name": "charset-normalizer",
+      "version": "3.5.2"
+    },
+    {
+      "file_count": 23,
+      "files_sha256": "63b29a4adcec24e9cb0de4152e178e788c9bb8e67f30187548b27ac00ee90878",
+      "name": "click",
+      "version": "8.5.0"
+    },
+    {
+      "file_count": 10,
+      "files_sha256": "74c267aeea931f07656fe9f40c1f989615622545b68651c28755f600476e021e",
+      "name": "Deprecated",
+      "version": "1.3.1"
+    },
+    {
+      "file_count": 7,
+      "files_sha256": "8237bc358f214425c9e43101657a7352158fa679704d9b66575dda4c6a218103",
+      "name": "deprecation",
+      "version": "2.1.0"
+    },
+    {
+      "file_count": 167,
+      "files_sha256": "49ece0e45beb55eb1d12077ad928f6400efc7d6e50fefd236fb6336dbfc19d61",
+      "name": "dnspython",
+      "version": "2.9.1"
+    },
+    {
+      "file_count": 18,
+      "files_sha256": "2f4d10c8915306a7f45899c686f5e551519a410e3861e21d95eba1a8f9de8dd6",
+      "name": "email-validator",
+      "version": "2.3.0"
+    },
+    {
+      "file_count": 53,
+      "files_sha256": "c6bb74c811d19df0b9d4283167f6bb256b97ace8c744418c2247592ed63b19ab",
+      "name": "fastapi",
+      "version": "0.115.0"
+    },
+    {
+      "file_count": 26,
+      "files_sha256": "37f4ba8814988e54ade861ef217418c2aeede44f0aa8ab3b364d842a38b1e472",
+      "name": "filetype",
+      "version": "1.2.0"
+    },
+    {
+      "file_count": 28,
+      "files_sha256": "bcb76f17ddf9b71adf1fd3627e849018ae9592451583616c3221cc888abc5a83",
+      "name": "gotrue",
+      "version": "2.12.4"
+    },
+    {
+      "file_count": 100,
+      "files_sha256": "0553299bbb5df5e99e5ad11e6eec20c0262c41f32232a997223888857a036e7d",
+      "name": "greenlet",
+      "version": "3.5.6"
+    },
+    {
+      "file_count": 18,
+      "files_sha256": "4529b1ba2cf1acce3866922ebc795e6819feba5612ab5e825925f8e45bcfbf24",
+      "name": "h11",
+      "version": "0.16.0"
+    },
+    {
+      "file_count": 19,
+      "files_sha256": "4bca50f5051c0f82716e2d9e70d1f82d13d9e32143359920f11ae400e4def013",
+      "name": "h2",
+      "version": "4.4.1"
+    },
+    {
+      "file_count": 15,
+      "files_sha256": "5bd31f5753f37011f56c665c2d64543f57d5ff96e2a1b27d2b45e727659558f8",
+      "name": "hpack",
+      "version": "4.2.0"
+    },
+    {
+      "file_count": 37,
+      "files_sha256": "4526cc9f37f1084c62266e78cc0ad06c9fadca4f4c7fbebd1b9db7bb3cee6e1e",
+      "name": "httpcore",
+      "version": "1.0.9"
+    },
+    {
+      "file_count": 23,
+      "files_sha256": "9d481ef780f51d9c476463d4486dede2c25d870f92985a96c071be087364bad5",
+      "name": "httptools",
+      "version": "0.9.0"
+    },
+    {
+      "file_count": 33,
+      "files_sha256": "b315b0da760fab69b170d4fb9f5fac78869b42cf4ec73a161b7c10a154a52510",
+      "name": "httpx",
+      "version": "0.27.0"
+    },
+    {
+      "file_count": 11,
+      "files_sha256": "80edb3cd7c60dcb68435e6bba9c3961c82f453428db17826edd0fc550338f16a",
+      "name": "hyperframe",
+      "version": "6.1.0"
+    },
+    {
+      "file_count": 18,
+      "files_sha256": "766175b8e57c0552a248ffeee6b672038f04e2b6d06534965bcb7573f485e606",
+      "name": "idna",
+      "version": "3.20"
+    },
+    {
+      "file_count": 44,
+      "files_sha256": "6304199968db82f69a54fa8712ea2577fd3d520de9c9d69569bc25134cc844cf",
+      "name": "limits",
+      "version": "5.8.0"
+    },
+    {
+      "file_count": 41,
+      "files_sha256": "40d2f2ba903ccbf8b76864c6497bfc711685fdd0b8c50e89fa575bff496383c3",
+      "name": "Mako",
+      "version": "1.4.3"
+    },
+    {
+      "file_count": 12,
+      "files_sha256": "20cf15a7004a4fe19e49d1d237099027f411fb3665d1fc09114d8ff5349f31cd",
+      "name": "MarkupSafe",
+      "version": "3.0.4"
+    },
+    {
+      "file_count": 30,
+      "files_sha256": "5c2a4a6009eaec829cf71683e4d4ace0ca1d1b7c9ea7a27993497be4a5cb3695",
+      "name": "packaging",
+      "version": "26.3"
+    },
+    {
+      "file_count": 109,
+      "files_sha256": "0cbf0e3c1b1a3d09d59856889e88b748cf17c00abdc87afa438d7f86b3f588b4",
+      "name": "passlib",
+      "version": "1.7.4"
+    },
+    {
+      "file_count": 622,
+      "files_sha256": "62a6e1a1c1b4dfd4ddb2bf045102cc2760ed26cd0806184e8087e40e5bee4cd1",
+      "name": "phonenumbers",
+      "version": "9.0.17"
+    },
+    {
+      "file_count": 134,
+      "files_sha256": "eed53e3bafff0fe29170b37f609dbd6213aa53dced9a35d08ccf05ae63df40f1",
+      "name": "pillow",
+      "version": "10.4.0"
+    },
+    {
+      "file_count": 528,
+      "files_sha256": "1222abc5c3bee8288a4792573d2c2514ab25467b0c0ebc574b3dc7ee74afb35b",
+      "name": "pip",
+      "version": "24.0"
+    },
+    {
+      "file_count": 22,
+      "files_sha256": "eda3422b6c7c9ecbbffc0a9c7333490581bbbf08fc0bc54182171485ab0d2822",
+      "name": "postgrest",
+      "version": "0.16.11"
+    },
+    {
+      "file_count": 33,
+      "files_sha256": "ec0bfb97f1ca81fe624632eb026b60c8a2e812331ba2ed4f9f814b26225e1646",
+      "name": "psycopg2-binary",
+      "version": "2.9.9"
+    },
+    {
+      "file_count": 108,
+      "files_sha256": "8b1e6a14d32a6b4b5b9f9435c1508be1f31071db5b48557ed20871b8cc15d463",
+      "name": "pydantic",
+      "version": "2.8.0"
+    },
+    {
+      "file_count": 12,
+      "files_sha256": "2ec647ecf49e24297f43244c99bbf91fb5a9c455cb3f139de42eef70ac32bc04",
+      "name": "pydantic-settings",
+      "version": "2.4.0"
+    },
+    {
+      "file_count": 10,
+      "files_sha256": "96e3a412a5ac6f01a82841f01e5d184b23a76b4c049a5d4004026d0310b8f71f",
+      "name": "pydantic_core",
+      "version": "2.20.0"
+    },
+    {
+      "file_count": 21,
+      "files_sha256": "582ad0fcc6996ed4d6aa08cc70152acf5e3a5f2f18833e2a69ee8c05394534a5",
+      "name": "PyJWT",
+      "version": "2.10.1"
+    },
+    {
+      "file_count": 26,
+      "files_sha256": "78f7c53eab05cad9c2aa20573d05ae530e79c3baec3417d171b03c18cce9d5ff",
+      "name": "python-dateutil",
+      "version": "2.9.0.post0"
+    },
+    {
+      "file_count": 17,
+      "files_sha256": "4260c3ed1c27fba85ad6159d62b41695ee6524d2cf83c053e307ea83eb032311",
+      "name": "python-dotenv",
+      "version": "1.2.4"
+    },
+    {
+      "file_count": 10,
+      "files_sha256": "b31832e543a71f14af85745347b8c2fa3fe05e563bc4fdf8412e58a9ca90d178",
+      "name": "python-multipart",
+      "version": "0.0.9"
+    },
+    {
+      "file_count": 25,
+      "files_sha256": "a7433be511bc02c49304f27a64ceeea3fa518cc2640a508a7fd0e2efa4dad678",
+      "name": "PyYAML",
+      "version": "6.0.3"
+    },
+    {
+      "file_count": 22,
+      "files_sha256": "bd4c8dc957d624cf86aa988a287eb9863a64d11cb799728df9d9ace6f2679823",
+      "name": "realtime",
+      "version": "2.5.3"
+    },
+    {
+      "file_count": 24,
+      "files_sha256": "f02691f2a13aabfedba1ed2b373667de6976e03d9a3c2cc2f57c4af3d10481d0",
+      "name": "requests",
+      "version": "2.31.0"
+    },
+    {
+      "file_count": 18,
+      "files_sha256": "07fab77ad21a14d2b5ef1fd0ee24e49b284e44ae178f00e42e5d3331698bfdc0",
+      "name": "resend",
+      "version": "0.8.0"
+    },
+    {
+      "file_count": 516,
+      "files_sha256": "b2857fbfcef6ab9ee899f52cc47052e9eb5cc5ed701be4ac146c524c91983338",
+      "name": "setuptools",
+      "version": "79.0.1"
+    },
+    {
+      "file_count": 7,
+      "files_sha256": "e4c81f4e4981e47b14a88f6664f7503bec04e4899d341e2f298af9de951e2db8",
+      "name": "six",
+      "version": "1.17.0"
+    },
+    {
+      "file_count": 13,
+      "files_sha256": "415dd1be286513f6bf5f4c31d200225230466b7ee1ec0a5759786ca122ccdaed",
+      "name": "slowapi",
+      "version": "0.1.9"
+    },
+    {
+      "file_count": 14,
+      "files_sha256": "b37c51c60e89e391524592a5edc6c3114886824661f66790587b921567b8e16e",
+      "name": "sniffio",
+      "version": "1.3.1"
+    },
+    {
+      "file_count": 275,
+      "files_sha256": "7f63d6c581bd6304d4df8facffe147903705641807f7c11b1d42cd229e7ffe49",
+      "name": "SQLAlchemy",
+      "version": "2.0.31"
+    },
+    {
+      "file_count": 41,
+      "files_sha256": "5e9df7c4d1d73d284d1622b7efe33ba0c7fbd370d3b59c93cc800c37de2e30b9",
+      "name": "starlette",
+      "version": "0.38.6"
+    },
+    {
+      "file_count": 17,
+      "files_sha256": "efd132964c00f0566c445c961910b8a04057c31eaa48d60f067b02ac1199e8cd",
+      "name": "storage3",
+      "version": "0.7.7"
+    },
+    {
+      "file_count": 14,
+      "files_sha256": "909f1b13a2dd73fa8f0dcd0d3977d0be04188ccb8f9fbf74186b7626290a8503",
+      "name": "StrEnum",
+      "version": "0.4.15"
+    },
+    {
+      "file_count": 20,
+      "files_sha256": "58cef15a4596b1fd53ee3a3e4d6492625fd5ad794bbbd42ad695e578a670f7b9",
+      "name": "supabase",
+      "version": "2.7.0"
+    },
+    {
+      "file_count": 12,
+      "files_sha256": "4cd558cd9a66a89dbc9fe1542411d6929239ffe9fc31008364ff8e94016c9cb8",
+      "name": "supafunc",
+      "version": "0.5.1"
+    },
+    {
+      "file_count": 6,
+      "files_sha256": "e6f75ed81eadbb305e3c19249b57e50eb7c49d7d2b5e05d6ffde94c53f776854",
+      "name": "typing_extensions",
+      "version": "4.16.0"
+    },
+    {
+      "file_count": 43,
+      "files_sha256": "85e9d3b013db839eb38e404cbc4ff9d67d88a42faaa871862283c543f3993f42",
+      "name": "urllib3",
+      "version": "2.8.0"
+    },
+    {
+      "file_count": 48,
+      "files_sha256": "3a8950835588a0a51d0dab540b37a11192cd92eb2a14a083eaded35faac59073",
+      "name": "uvicorn",
+      "version": "0.30.0"
+    },
+    {
+      "file_count": 64,
+      "files_sha256": "570f9e27a4110de670ceae2053330b328a6270cd86588f6f4874026675b8f2b1",
+      "name": "uvloop",
+      "version": "0.23.0"
+    },
+    {
+      "file_count": 18,
+      "files_sha256": "2c76833965f9e11b0cfa89b5c197c216e9c373731814463c16b04bfb56968fd5",
+      "name": "watchfiles",
+      "version": "1.3.0"
+    },
+    {
+      "file_count": 59,
+      "files_sha256": "e7402d9536a3ff1e5b2824c901486374716cdc6a9b225f16782fa5fad2da29c3",
+      "name": "websockets",
+      "version": "15.0.1"
+    },
+    {
+      "file_count": 22,
+      "files_sha256": "3962b61afe573312e29687a59b9fdfe28bd51e59f0782c4d2d58ac9063e0efd3",
+      "name": "wheel",
+      "version": "0.46.3"
+    },
+    {
+      "file_count": 23,
+      "files_sha256": "4d9ea94e727dc9d8553a1686d6b273088592912c14e55b2223405d13ee744525",
+      "name": "wrapt",
+      "version": "2.5.2"
+    }
+  ],
+  "pillow_imaging_sha256": "28a22e8cdfe2f7cd15a98551cbe737198b69d22266e19e98dd796d0e6515278f",
+  "pillow_version": "10.4.0",
+  "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.41",
+  "postgres_server_version_num": 170011,
+  "python_executable_sha256": "92d7e40ec50be176cb1b790c7568b7e08cd862137b5aa69f1413ba1967886b79",
+  "python_version": "3.11.18",
+  "requirements_sha256": "d96f6782adb8ffaf24c4729e88c6086f533ff2caed1c55efd8c096c09f429308",
+  "scope": "LINUX_RUNTIME_OBSERVATION_NOT_RELEASE_ACCEPTANCE",
+  "source_commit": "b33aafe72c17d037c557546b57fb762704e8cb77",
+  "source_manifest_sha256": "c8067bfc2c6eb0bec1725f01fbffbc772fdef828ae9b5c79618f4c2ce3b0fa47",
+  "webp_available": true,
+  "webp_version": "1.4.0",
+  "windows_native_pins_reused": false
+}
