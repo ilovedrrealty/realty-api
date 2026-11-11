@@ -115,7 +115,7 @@ async function main() {
   need(process.platform === 'linux' && process.arch === 'x64' && process.version === 'v24.22.1', 'EXACT_LINUX_NODE_REQUIRED')
   need(process.cwd() === WORK && /^[a-f0-9]{40}$/.test(report.ci_commit || '')
     && /^[0-9]+$/.test(report.run_id || '') && /^[a-f0-9]{40}$/.test(report.source_tree || ''), 'FIXED_CI_IDENTITY_REQUIRED')
-  need(Object.keys(manifest.application_files).length === 425 && Object.keys(manifest.overlays).length === 48, 'EXACT_SOURCE_SCOPE_REQUIRED')
+  need(Object.keys(manifest.application_files).length === 434 && Object.keys(manifest.overlays).length === 59, 'EXACT_SOURCE_SCOPE_REQUIRED')
   fs.mkdirSync('/tmp/frontend-home', { recursive: true })
   fs.writeFileSync('/tmp/frontend-home/.npmrc', '', { flag: 'wx' })
   fs.writeFileSync('/tmp/frontend-global-npmrc', '', { flag: 'wx' })
@@ -149,12 +149,12 @@ async function main() {
   } else {
     sourceCheck(WORK)
     report.fixture_contract_test_names = tap(await phase('fixture_contract_4', ['--test', '--test-concurrency=1', '--test-reporter=tap', '/ci/landing_fixture.test.cjs'], 192), 4)
-    const currentTests = ['tests/network-freshness.test.cjs', 'tests/property-network.test.cjs', 'tests/property-network-ui.test.cjs']
+    const currentTests = ['tests/network-freshness.test.cjs', 'tests/property-network.test.cjs', 'tests/property-network-ui.test.cjs', 'tests/service-workflow.test.cjs', 'tests/public-image-url.test.cjs']
     const expected = currentTests.flatMap(relative =>
       [...fs.readFileSync(`/work/${relative}`, 'utf8').matchAll(/^test\('([^']+)'/gm)].map(match => match[1]))
-    need(expected.length === 53 && new Set(expected).size === 53, 'EXACT_53_SOURCE_DEFINITIONS_REQUIRED')
-    const actual = tap(await phase('current_53_contract_pure_and_mocked_tsx', ['--test', '--test-concurrency=1', '--test-reporter=tap', ...currentTests], 192), 53)
-    need(expected.every(name => actual.includes(name)), 'ALL_CURRENT_53_NAMES_REQUIRED')
+    need(expected.length === 90 && new Set(expected).size === 90, 'EXACT_90_SOURCE_DEFINITIONS_REQUIRED')
+    const actual = tap(await phase('current_90_contract_pure_mocked_tsx_and_native_photo', ['--test', '--test-concurrency=1', '--test-reporter=tap', ...currentTests], 192), 90)
+    need(expected.every(name => actual.includes(name)), 'ALL_CURRENT_90_NAMES_REQUIRED')
     report.current_test_names = actual
     await phase('dashboard_full_strict_typecheck', [NPM, 'run', 'typecheck', '--workspace=dashboard'], 2048)
     await phase('dashboard_declared_full_build', [NPM, 'run', 'build', '--workspace=dashboard'], 1536)

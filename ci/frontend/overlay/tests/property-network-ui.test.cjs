@@ -90,6 +90,17 @@ function ui(relative, exported, props, responses = {}, language = 'en') {
       return responses[name](...args)
     }
   } })
+  const serviceApi = new Proxy({}, { get: (_, name) => {
+    const actual = load(sourceRoot + 'api/serviceWorkflow.ts')
+    // Data, pure input preparation/error and decimal helpers stay real. Every
+    // authenticated operation still requires a declared synthetic response.
+    if (Object.hasOwn(actual, name) && (typeof actual[name] !== 'function' || ['serviceAmount', 'serviceAmountMinor', 'prepareServiceAction', 'ServiceInputError'].includes(name))) return actual[name]
+    return (...args) => {
+      calls.push({ name, args })
+      assert.equal(typeof responses[name], 'function', 'Unexpected service API call: ' + String(name))
+      return responses[name](...args)
+    }
+  } })
   const fakeWindow = {
     addEventListener(name, callback) { if (!listeners.has(name)) listeners.set(name, new Set()); listeners.get(name).add(callback) },
     removeEventListener(name, callback) { listeners.get(name)?.delete(callback) },
@@ -111,7 +122,7 @@ function ui(relative, exported, props, responses = {}, language = 'en') {
       crypto: { randomUUID: () => fixtureId(++nextUUID) }, window: fakeWindow,
       URL: { createObjectURL: () => `blob:synthetic-${++nextBlob}`, revokeObjectURL: value => revoked.push(value) },
       require(name) {
-        if (absolute === path.resolve(root, sourceRoot + 'api/propertyNetwork.ts') && name === './axios') {
+        if (['api/propertyNetwork.ts', 'api/serviceWorkflow.ts'].some(file => absolute === path.resolve(root, sourceRoot + file)) && name === './axios') {
           const refuse = () => assert.fail('UI adapter must use explicit API responses, never the authenticated client')
           return { __esModule: true, default: { get: refuse, post: refuse, put: refuse } }
         }
@@ -121,6 +132,7 @@ function ui(relative, exported, props, responses = {}, language = 'en') {
         if (name === 'axios') return { isAxiosError: error => error?.isAxiosError === true }
         if (name === 'react-router-dom') return { useSearchParams: () => { const [value, setValue] = hooks.useState(''); return [new URLSearchParams(value), next => setValue(next.toString())] } }
         if (name.endsWith('/api/propertyNetwork')) return api
+        if (name.endsWith('/api/serviceWorkflow')) return serviceApi
         if (name.endsWith('/api/professionals')) return { getProfessionalOptions: api.getProfessionalOptions }
         if (name.endsWith('/api/propertyManagement')) return { todayInDR: () => '2026-01-02' }
         assert.ok(name.startsWith('.'), `Unapproved module dependency: ${name}`)
@@ -164,6 +176,7 @@ function ui(relative, exported, props, responses = {}, language = 'en') {
     ? text(value.props.children)
     : value == null || value === false ? '' : String(value)
   return { calls, revoked, t: lookup, render, settle, nodes, find, text, get html() { return html },
+    serviceContractError() { return new (load(sourceRoot + 'api/serviceWorkflow.ts').ServiceContractError)() },
     get visibleText() { return text(latestRoot) },
     get confirmations() { return confirmations }, allowLeave(value) { allowLeave = value },
     async advance(amount) {
@@ -721,4 +734,261 @@ test('actual late project-create result cannot navigate after registry permissio
     assert.equal(h.calls.filter(call => call.name === 'createProject').length, 1)
     assert.equal(h.calls.find(call => call.name === 'createProject').args[1].aborted, true)
   } finally { h.dispose() }
+})
+
+const servicePreferences = changes => ({service_opt_in:false,member_alias:'',category_ids:[],property_class_ids:[],version:0,updated_at:null,can_manage:true,...changes})
+const serviceProposal = changes => ({id:ENTRY,recipient_id:PHOTO1,revision_no:1,parent_proposal_id:null,kind:'provider_quote',status:'submitted',version:1,amount:'1234.50',currency:'USD',pricing_basis:'fixed',scope_text:'Synthetic quoted work',exclusions:'Synthetic exclusion',estimated_days:2,valid_until:'2026-01-30',is_expired:false,created_at:'2026-01-02T12:00:00Z',...changes})
+const serviceRecipient = changes => ({id:PHOTO1,user_code:72,member_alias:'Synthetic provider alias',status:'accepted',version:2,current_proposal:serviceProposal(),capabilities:{can_revoke:true,can_counter:true,can_award:true,can_withdraw:false},...changes})
+const serviceReceived = changes => ({id:ID,view:'received',category_id:'air_conditioning',property_class:'house_villa',title:'Shared request title',brief:'Shared request brief',area_label:'Shared coarse area',requester_alias:'Shared requester alias',desired_start_on:'2026-01-10',created_at:'2026-01-02T12:00:00Z',recipient:{id:PHOTO1,status:'accepted',version:2},current_proposal:serviceProposal(),project_id:null,can_open_project:false,capabilities:{can_accept:false,can_decline:true,can_quote:true,can_withdraw:true,can_accept_counter:false,can_decline_counter:false},...changes})
+const serviceManaged = changes => ({id:ID,view:'managed',version:1,status:'open',source:{property_id:LISTING,listing_id:null,title:'Private source title',property_class:'house_villa'},category_id:'air_conditioning',title:'Shared request title',brief:'Shared request brief',area_label:'Shared coarse area',requester_alias:'Shared requester alias',desired_start_on:null,created_at:'2026-01-02T12:00:00Z',updated_at:'2026-01-02T12:00:00Z',recipients:[serviceRecipient()],project_id:null,can_open_project:false,capabilities:{can_cancel:true,can_compare:true,can_award:true},...changes})
+function serviceReads(read) {
+  return {getServiceRequest:async()=>read(),getServiceEvents:async()=>page([]),getServiceProposals:async()=>page([]),
+    getServiceComparison:async()=>({request_id:ID,request_version:read().version,groups:[{currency:'USD',items:read().recipients}],unquoted:[]})}
+}
+
+test('actual service self-consent is default-off and saves only explicit own preferences in EN and ES',async()=>{
+  for(const language of ['en','es']){
+    let current=servicePreferences()
+    const h=ui('components/network/ServicePreferences.tsx','ServicePreferences',{options:registryCatalog,actorId:ID},{
+      getServicePreferences:async()=>current,
+      runServiceAction:async action=>{assert.equal(action.operation,'preference_save');assert.equal(action.expected_actor_id,ID);const input=action.input;current=servicePreferences({service_opt_in:input.service_opt_in,member_alias:input.member_alias,category_ids:input.category_ids,property_class_ids:input.property_class_ids,version:1});return current},
+    },language)
+    try{
+      await h.settle();assert.equal(h.calls.filter(c=>c.name==='runServiceAction').length,0)
+      assert.equal(h.find('input',n=>n.props.type==='checkbox').props.checked,false)
+      await h.fire(registryField(h,'service.alias','input'),'onChange',{target:{value:'My deliberate service alias'}})
+      for(const labelKey of ['service.opt_in','service.categories','service.classes']){
+        const input=labelKey==='service.opt_in'?h.find('input',n=>n.props.type==='checkbox'):h.nodes(h.find('fieldset',n=>h.text(n).startsWith(h.t(labelKey)))).find(n=>n.type==='input')
+        await h.fire(input,'onChange',{target:{checked:true}})
+      }
+      await h.fire(h.find('form'),'onSubmit',{preventDefault(){}})
+      const action=h.calls.find(c=>c.name==='runServiceAction').args[0]
+      assert.equal(action.input.service_opt_in,true);assert.equal(action.input.member_alias,'My deliberate service alias')
+      assert.deepEqual(Array.from(action.input.category_ids),['air_conditioning'])
+      for(const key of ['user_id','actor_id','role','professional_profile_id','public_contact_consent','email','phone'])assert.equal(Object.hasOwn(action.input,key),false)
+      assert.ok(h.visibleText.includes(h.t('service.unverified')))
+    }finally{h.dispose()}
+  }
+})
+test('actual preference polling keeps a dirty alias and requires explicit current-version review',async()=>{
+  let current=servicePreferences(),saved
+  const h=ui('components/network/ServicePreferences.tsx','ServicePreferences',{options:registryCatalog,actorId:ID},{
+    getServicePreferences:async()=>current,
+    runServiceAction:async action=>{saved=action;return servicePreferences({member_alias:action.input.member_alias,version:3})},
+  })
+  try{
+    await h.settle();await h.fire(registryField(h,'service.alias','input'),'onChange',{target:{value:'My unsaved service alias'}})
+    current=servicePreferences({member_alias:'Changed by another session',version:2});await h.advance(30000)
+    assert.equal(registryField(h,'service.alias','input').props.value,'My unsaved service alias')
+    assert.ok(h.visibleText.includes(h.t('service.changed_review')))
+    assert.equal(h.calls.filter(c=>c.name==='runServiceAction').length,0)
+    await h.fire(h.find('button',n=>h.text(n)===h.t('service.review_current')),'onClick')
+    await h.fire(h.find('form'),'onSubmit',{preventDefault(){}})
+    assert.equal(saved.input.expected_version,2);assert.equal(saved.input.member_alias,'My unsaved service alias')
+  }finally{h.dispose()}
+})
+test('actual buyer request composer previews exact recipients and never shares its private source dossier',async()=>{
+  const opened=[]
+  const h=ui('components/network/ServiceRequestCreate.tsx','ServiceRequestCreate',{options:registryCatalog,role:'buyer',actorCode:71,onCreated:id=>opened.push(id)},{
+    getPrivateProperties:async()=>registryPage([privateRecord()]),
+    getServiceProviders:async()=>page([{user_code:71,member_alias:'My synthetic service alias',category_ids:['air_conditioning']},{user_code:72,member_alias:'Selected synthetic provider',category_ids:['air_conditioning']}]),
+    runServiceAction:async action=>{assert.equal(action.operation,'request_create');return serviceManaged()},
+  })
+  try{
+    await h.settle();await h.fire(registryField(h,'service.choose_source','select'),'onChange',{target:{value:LISTING}})
+    await h.fire(registryField(h,'service.category','select'),'onChange',{target:{value:'air_conditioning'}})
+    const ownInput=h.nodes(h.find('label',n=>h.text(n).includes('My synthetic service alias'))).find(n=>n.type==='input')
+    assert.equal(ownInput.props.disabled,true)
+    const providerInput=h.nodes(h.find('label',n=>h.text(n).includes('Selected synthetic provider'))).find(n=>n.type==='input')
+    await h.fire(providerInput,'onChange',{target:{checked:true}})
+    for(const [key,type,value]of [['service.request_title','input','Exact shared title'],['service.requester_alias','input','Explicit shared alias'],['service.brief','textarea','Exact deliberate brief'],['service.coarse_area','input','Only coarse area'],['service.desired_start','input','2026-01-10']])await h.fire(registryField(h,key,type),'onChange',{target:{value}})
+    assert.equal(h.calls.filter(c=>c.name==='runServiceAction').length,0)
+    await h.fire(h.find('button',n=>h.text(n)===h.t('service.preview')),'onClick')
+    for(const value of ['Exact shared title','Explicit shared alias','Exact deliberate brief','Only coarse area','Selected synthetic provider'])assert.ok(h.visibleText.includes(value))
+    assert.ok(!h.visibleText.includes(privateRecord().address));assert.ok(!h.visibleText.includes(privateRecord().notes))
+    await h.fire(registryField(h,'service.share_ack','input'),'onChange',{target:{checked:true}})
+    await h.fire(h.find('form'),'onSubmit',{preventDefault(){}})
+    const input=h.calls.find(c=>c.name==='runServiceAction').args[0].input
+    assert.equal(input.property_id,LISTING);assert.equal(input.listing_id,null);assert.equal(input.requester_alias,'Explicit shared alias');assert.equal(input.desired_start_on,'2026-01-10')
+    assert.deepEqual(Array.from(input.recipient_user_codes),[72]);assert.ok(input.submission_id)
+    for(const key of ['address','location','notes','relationship','custodian_id'])assert.equal(Object.hasOwn(input,key),false)
+    assert.ok(!h.calls.some(c=>c.name==='getNetworkProperties'||c.name==='getPrivateProperty'))
+    assert.deepEqual(opened,[ID])
+  }finally{h.dispose()}
+})
+test('actual provider thread follows received capabilities and never fetches a registry or competitor record',async()=>{
+  let current=serviceReceived({recipient:{id:PHOTO1,status:'pending',version:1},current_proposal:null,capabilities:{can_accept:true,can_decline:true,can_quote:false,can_withdraw:false,can_accept_counter:false,can_decline_counter:false},address:'FORBIDDEN DOSSIER',competitor:'FORBIDDEN COMPETITOR'})
+  const h=ui('components/network/ServiceRequestDetail.tsx','ServiceRequestDetail',{id:ID,view:'received',options:registryCatalog,onBack(){},onProject(){}},{
+    ...serviceReads(()=>current),runServiceAction:async action=>{assert.equal(action.operation,'recipient_accept');assert.equal(Object.hasOwn(action.input,'expected_request_version'),false);current=serviceReceived();return current},
+  })
+  try{
+    await h.settle();assert.ok(!h.visibleText.includes('FORBIDDEN'));assert.ok(h.visibleText.includes('Shared requester alias'))
+    assert.ok(h.nodes().some(n=>n.type==='button'&&h.text(n)===h.t('service.accept')))
+    assert.ok(!h.nodes().some(n=>n.type==='button'&&h.text(n)===h.t('service.quote')))
+    await h.fire(h.find('button',n=>h.text(n)===h.t('service.accept')),'onClick')
+    assert.ok(h.nodes().some(n=>n.type==='button'&&h.text(n)===h.t('service.quote')))
+    assert.ok(h.calls.every(c=>!['getPrivateProperty','getPrivateProperties','getNetworkProperties','getServiceComparison','getProject'].includes(c.name)))
+  }finally{h.dispose()}
+})
+test('actual quote draft retains amount and original versions when newer terms arrive',async()=>{
+  let current=serviceReceived()
+  const h=ui('components/network/ServiceRequestDetail.tsx','ServiceRequestDetail',{id:ID,view:'received',options:registryCatalog,onBack(){},onProject(){}},serviceReads(()=>current))
+  try{
+    await h.settle();await h.fire(h.find('button',n=>h.text(n)===h.t('service.quote')),'onClick')
+    await h.fire(registryField(h,'service.amount','input'),'onChange',{target:{value:'9999999999.99'}})
+    current=serviceReceived({recipient:{id:PHOTO1,status:'accepted',version:3},current_proposal:serviceProposal({version:2})});await h.advance(30000)
+    assert.equal(registryField(h,'service.amount','input').props.value,'9999999999.99')
+    assert.ok(h.visibleText.includes(h.t('service.changed_review')))
+    assert.equal(h.find('button',n=>h.text(n)===h.t('service.submit_quote')).props.disabled,true)
+    assert.equal(h.calls.filter(c=>c.name==='runServiceAction').length,0)
+    await h.fire(h.find('button',n=>h.text(n)===h.t('service.review_current')),'onClick')
+    assert.equal(registryField(h,'service.amount','input').props.value,'9999999999.99')
+    assert.equal(h.find('button',n=>h.text(n)===h.t('service.submit_quote')).props.disabled,false)
+  }finally{h.dispose()}
+})
+test('actual owner-counter withdrawal is shown only by the caller-specific server capability',async()=>{
+  for(const canWithdraw of [false,true]){
+    const item=serviceRecipient({current_proposal:serviceProposal({kind:'owner_counter',is_expired:true}),capabilities:{can_revoke:true,can_counter:true,can_award:false,can_withdraw:canWithdraw}})
+    const current=serviceManaged({recipients:[item]})
+    const h=ui('components/network/ServiceRequestDetail.tsx','ServiceRequestDetail',{id:ID,view:'managed',options:registryCatalog,onBack(){},onProject(){}},serviceReads(()=>current))
+    try{
+      await h.settle()
+      assert.equal(h.nodes().some(n=>n.type==='button'&&h.text(n)===h.t('service.withdraw_counter')),canWithdraw)
+      assert.ok(h.calls.every(c=>c.name.startsWith('get')))
+    }finally{h.dispose()}
+  }
+})
+test('actual award previews deliberately shared project scope and creates nothing before explicit acknowledgement',async()=>{
+  let current=serviceManaged();const opened=[]
+  const h=ui('components/network/ServiceRequestDetail.tsx','ServiceRequestDetail',{id:ID,view:'managed',options:registryCatalog,onBack(){},onProject:id=>opened.push(id)},{
+    ...serviceReads(()=>current),runServiceAction:async action=>{assert.equal(action.operation,'request_award');current=serviceManaged({status:'awarded',project_id:LISTING,can_open_project:true,capabilities:{can_cancel:false,can_compare:false,can_award:false}});return {request:current,project:{id:LISTING}}},
+  })
+  try{
+    await h.settle();await h.fire(h.find('button',n=>h.text(n)===h.t('service.review_award')),'onClick')
+    assert.equal(h.calls.filter(c=>c.name==='runServiceAction').length,0)
+    assert.equal(h.find('button',n=>h.text(n)===h.t('service.award')).props.disabled,true)
+    await h.fire(registryField(h,'service.project_title','input'),'onChange',{target:{value:'Approved project title'}})
+    await h.fire(registryField(h,'service.project_scope','textarea'),'onChange',{target:{value:'Approved participant scope'}})
+    await h.fire(registryField(h,'service.project_ack','input'),'onChange',{target:{checked:true}})
+    await h.fire(h.find('form'),'onSubmit',{preventDefault(){}})
+    const input=h.calls.find(c=>c.name==='runServiceAction').args[0].input
+    assert.equal(input.project_title,'Approved project title');assert.equal(input.project_summary,'Approved participant scope');assert.equal(input.proposal_id,ENTRY);assert.equal(input.expected_proposal_version,1)
+    for(const key of ['amount','currency','address','area_label','losing_providers','service_request_id'])assert.equal(Object.hasOwn(input,key),false)
+    await h.fire(h.find('button',n=>h.text(n)===h.t('service.open_project')),'onClick')
+    assert.deepEqual(opened,[LISTING]);assert.equal(h.calls.filter(c=>c.name==='runServiceAction').length,1)
+  }finally{h.dispose()}
+})
+test('actual unknown service outcome requires a separate authorized read before explicit identical retry',async()=>{
+  const attempts=[];let reads=0
+  const h=ui('components/network/ServiceRequestDetail.tsx','ServiceRequestDetail',{id:ID,view:'received',options:registryCatalog,onBack(){},onProject(){}},{
+    ...serviceReads(()=>serviceReceived()),getServiceRequest:async()=>{reads++;return serviceReceived()},
+    runServiceAction:async action=>{attempts.push(action);if(attempts.length===1)throw new Error('Synthetic uncertain outcome');return serviceReceived()},
+    getServiceSubmission:async()=>{throw {isAxiosError:true,response:{status:404}}},
+  })
+  try{
+    await h.settle();await h.fire(h.find('button',n=>h.text(n)===h.t('service.decline')),'onClick')
+    assert.equal(attempts.length,1);await h.advance(30000);assert.equal(attempts.length,1)
+    assert.ok(!h.nodes().some(n=>n.type==='button'&&h.text(n)===h.t('service.retry_same')))
+    const before=reads;await h.fire(h.find('button',n=>h.text(n)===h.t('service.check_result')),'onClick');assert.ok(reads>before)
+    assert.equal(attempts.length,1);assert.ok(h.visibleText.includes(h.t('service.ambiguous_result')))
+    await h.fire(h.find('button',n=>h.text(n)===h.t('service.retry_same')),'onClick')
+    assert.equal(attempts.length,2);assert.deepEqual(attempts[1],attempts[0])
+  }finally{h.dispose()}
+})
+test('actual access loss aborts a pending service action and ignores its late successful result',async()=>{
+  let denied=false,resolveWrite
+  const h=ui('components/network/ServiceRequestDetail.tsx','ServiceRequestDetail',{id:ID,view:'received',options:registryCatalog,onBack(){},onProject(){}},{
+    ...serviceReads(()=>serviceReceived()),getServiceRequest:async()=>{if(denied)throw {isAxiosError:true,response:{status:403}};return serviceReceived()},
+    runServiceAction:async()=>new Promise(resolve=>{resolveWrite=resolve}),
+  })
+  try{
+    await h.settle();await h.fire(h.find('button',n=>h.text(n)===h.t('service.decline')),'onClick')
+    assert.ok(h.visibleText.includes(h.t('service.saving_action')));assert.ok(!h.visibleText.includes(h.t('service.uncertain')))
+    denied=true;await h.advance(30000);assert.ok(h.visibleText.includes(h.t('error_access')));assert.ok(!h.visibleText.includes('Shared request brief'))
+    assert.equal(h.calls.find(c=>c.name==='runServiceAction').args[1].aborted,true)
+    resolveWrite(serviceReceived({project_id:LISTING,can_open_project:true}));await h.settle()
+    assert.ok(!h.visibleText.includes('Shared request brief'));assert.ok(!h.nodes().some(n=>n.type==='button'&&h.text(n)===h.t('service.open_project')))
+  }finally{h.dispose()}
+})
+test('actual prior terms display real immutable revisions through only the selected own thread reader',async()=>{
+  const prior=serviceProposal({id:PHOTO2,revision_no:1,status:'superseded',amount:'125.25',scope_text:'Earlier immutable scope'}),latest=serviceProposal({revision_no:2,parent_proposal_id:PHOTO2,amount:'150.75',scope_text:'Latest immutable scope'})
+  const current=serviceReceived({current_proposal:latest})
+  const h=ui('components/network/ServiceRequestDetail.tsx','ServiceRequestDetail',{id:ID,view:'received',options:registryCatalog,onBack(){},onProject(){}},{
+    ...serviceReads(()=>current),getServiceProposals:async(requestId,recipientId)=>{assert.equal(requestId,ID);assert.equal(recipientId,PHOTO1);return page([latest,prior])},
+  })
+  try{
+    await h.settle();assert.ok(h.visibleText.includes('Earlier immutable scope'));assert.ok(h.visibleText.includes('USD 125.25'));assert.ok(h.visibleText.includes(h.t('service.proposal_states.superseded')))
+    assert.ok(h.calls.every(c=>!['getPrivateProperty','getServiceComparison','getNetworkProperties','getProject'].includes(c.name)))
+  }finally{h.dispose()}
+})
+
+test('actual service409 hides old results while preserving the frozen attempt and quote draft for explicit review',async()=>{
+  let current=serviceReceived();const attempts=[]
+  const h=ui('components/network/ServiceRequestDetail.tsx','ServiceRequestDetail',{id:ID,view:'received',options:registryCatalog,onBack(){},onProject(){}},{
+    ...serviceReads(()=>current),runServiceAction:async action=>{attempts.push(action);if(attempts.length===1)throw {isAxiosError:true,response:{status:409}};return current},
+    getServiceSubmission:async()=>{throw {isAxiosError:true,response:{status:404}}},
+  })
+  try{
+    await h.settle();await h.fire(h.find('button',n=>h.text(n)===h.t('service.quote')),'onClick')
+    await h.fire(registryField(h,'service.amount','input'),'onChange',{target:{value:'222.25'}})
+    await h.fire(h.find('form'),'onSubmit',{preventDefault(){}})
+    assert.equal(registryField(h,'service.amount','input').props.value,'222.25')
+    assert.ok(!h.visibleText.includes('USD 1234.50'));assert.ok(!h.visibleText.includes('Shared request brief'))
+    current=serviceReceived({recipient:{id:PHOTO1,status:'accepted',version:3},current_proposal:serviceProposal({version:2})})
+    await h.fire(h.find('button',n=>h.text(n)===h.t('service.check_result')),'onClick')
+    assert.equal(attempts.length,1)
+    await h.fire(h.find('button',n=>h.text(n)===h.t('service.review_conflict')),'onClick')
+    assert.equal(registryField(h,'service.amount','input').props.value,'222.25')
+    await h.fire(h.find('form'),'onSubmit',{preventDefault(){}})
+    assert.equal(attempts.length,2);assert.equal(attempts[0].input.expected_recipient_version,2);assert.equal(attempts[1].input.expected_recipient_version,3)
+    assert.equal(attempts[1].input.terms.amount,'222.25');assert.notEqual(attempts[1].input.submission_id,attempts[0].input.submission_id)
+  }finally{h.dispose()}
+})
+
+test('actual pasted invalid service input stays editable without transport and can be corrected explicitly',async()=>{
+  let current=servicePreferences()
+  const h=ui('components/network/ServicePreferences.tsx','ServicePreferences',{options:registryCatalog,actorId:ID},{
+    getServicePreferences:async()=>current,
+    runServiceAction:async action=>{current=servicePreferences({member_alias:action.input.member_alias,version:1});return current},
+  })
+  try{
+    await h.settle()
+    const pasted='Pasted\u0001service alias'
+    await h.fire(registryField(h,'service.alias','input'),'onChange',{target:{value:pasted}})
+    await h.fire(h.find('form'),'onSubmit',{preventDefault(){}})
+    assert.equal(h.calls.filter(c=>c.name==='runServiceAction').length,0,'Pure input rejection must precede the API boundary')
+    assert.equal(registryField(h,'service.alias','input').props.value,pasted,'Retain the rejected draft so it can be corrected')
+    assert.equal(h.find('fieldset',n=>h.nodes(n).some(child=>child.type==='input')).props.disabled,false)
+    assert.ok(h.visibleText.includes(h.t('error_fields')))
+    assert.ok(!h.nodes().some(n=>n.type==='button'&&h.text(n)===h.t('service.check_result')))
+    await h.fire(registryField(h,'service.alias','input'),'onChange',{target:{value:'Corrected deliberate alias'}})
+    await h.fire(h.find('form'),'onSubmit',{preventDefault(){}})
+    const writes=h.calls.filter(c=>c.name==='runServiceAction')
+    assert.equal(writes.length,1);assert.equal(writes[0].args[0].input.member_alias,'Corrected deliberate alias')
+    assert.ok(writes[0].args[0].input.submission_id)
+  }finally{h.dispose()}
+})
+test('actual post-transport service response-contract failure stays frozen with its exact original body and key',async()=>{
+  const writes=[]
+  const h=ui('components/network/ServicePreferences.tsx','ServicePreferences',{options:registryCatalog,actorId:ID},{
+    getServicePreferences:async()=>servicePreferences(),
+    runServiceAction:async action=>{writes.push(action);await Promise.resolve();throw h.serviceContractError()},
+    getServiceSubmission:async()=>{throw {isAxiosError:true,response:{status:404}}},
+  })
+  try{
+    await h.settle()
+    await h.fire(registryField(h,'service.alias','input'),'onChange',{target:{value:'Sent alias must stay frozen'}})
+    await h.fire(h.find('form'),'onSubmit',{preventDefault(){}})
+    assert.equal(writes.length,1);assert.ok(h.visibleText.includes(h.t('service.uncertain')))
+    assert.equal(h.find('fieldset',n=>h.nodes(n).some(child=>child.type==='input')).props.disabled,true)
+    await h.advance(30000);assert.equal(writes.length,1,'No automatic retry on malformed response or polling')
+    await h.fire(h.find('form'),'onSubmit',{preventDefault(){}});assert.equal(writes.length,1,'A sent attempt cannot be edited or replaced')
+    await h.fire(h.find('button',n=>h.text(n)===h.t('service.check_result')),'onClick')
+    assert.equal(writes.length,1);assert.ok(h.visibleText.includes(h.t('service.ambiguous_result')))
+    await h.fire(h.find('button',n=>h.text(n)===h.t('service.retry_same')),'onClick')
+    assert.equal(writes.length,2);assert.deepEqual(writes[1],writes[0])
+    assert.equal(registryField(h,'service.alias','input').props.value,'Sent alias must stay frozen')
+    assert.equal(h.find('fieldset',n=>h.nodes(n).some(child=>child.type==='input')).props.disabled,true)
+    assert.ok(h.nodes().some(n=>n.type==='button'&&h.text(n)===h.t('service.check_result')))
+  }finally{h.dispose()}
 })
