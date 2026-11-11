@@ -1,0 +1,50 @@
+{
+  "actual_tests": {
+    "class_counts": {
+      "CustomerDeliveryTests": 18,
+      "LeadDeliveryTests": 52,
+      "PrivateImageContracts": 4,
+      "PrivateRegistryMigration": 5,
+      "PrivateRegistryRoutes": 16,
+      "PrivateServiceMigration": 5,
+      "PrivateServiceWorkflow": 30,
+      "PropertyNetworkRoutes": 18,
+      "SignupNotificationTests": 15
+    },
+    "tests_run": 163
+  },
+  "actual_unique_complete_blocks": {
+    "services163-linux-inventory.json": {
+      "end_line": 911,
+      "sha256": "7402b6c99b87141b6142702277b1afaed962455ad3aa6ba02225e2a58f013c7a"
+    },
+    "services163-result.json": {
+      "end_line": 975,
+      "sha256": "d185d5005bec8d332d10ac4c37e050c2227e4fd62a7c7a19916bfea26dc26ec9"
+    }
+  },
+  "attempt": 1,
+  "bootstrap_and_full52_migration_chain_proven": false,
+  "commit": "e9750472783e909dddb7ade065ec8739188c8c71",
+  "decision": "INDEPENDENT_ACTUAL_CHANGED_SOURCE_SERVICES163_RUNTIME_AND_EXACT_SCHEMA_OWNED_DOCKER_CLEANUP_ACCEPTED_NOT_FULL52_OR_RELEASE",
+  "job_id": 125319170045,
+  "native_observation": {
+    "client_exit": 0,
+    "container_exit": 0,
+    "oom_killed": false,
+    "running": false
+  },
+  "original_receipt_sha256": "5e31e13dda2adf6454df4c7c3455a1185d597dbe3d99ab9aba9ee1e37f56c4ad",
+  "owned_cleanup": {
+    "after_both_complete_blocks": true,
+    "line": 976
+  },
+  "parent": "3da654cefb806ba90a8e66078721611f2d2d57d7",
+  "parent_tree": "ec5f60b27a4aabfb8b1dd6de5b55da40879f0c8c",
+  "run_id": 41457890694,
+  "schemas": {
+    "all7_exact_schemas_absent": true,
+    "all7_nonce_consumed": true
+  },
+  "tree": "22f32bd033bd20f16b2da993b10aebe2d9d32051"
+}
