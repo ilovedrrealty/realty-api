@@ -124,6 +124,7 @@ def migrate_and_seed():
     from sqlalchemy import text
 
     from database import SessionLocal
+    from models.lead import Lead
     from models.listing import Listing
     from models.user import User
     from schemas.property_network import MemberWrite, ProgressWrite, ProjectCreate
@@ -157,6 +158,11 @@ def migrate_and_seed():
                           price=1000, currency="USD", location="Cabarete", status="active", images=[],
                           submitted_by=owner.id, owner_id=owner.id, assigned_realtor_id=users["realtor"].id)
         db.add(listing)
+        db.flush()
+        share_lead_id = uuid4()
+        db.add(Lead(id=share_lead_id, type="buyer_interest", name="Browser Share Contact",
+                    email="browser-share+ci@example.com", phone="+12025550119",
+                    message="Synthetic private lead note sentinel", property_id=listing.id, status="new"))
         db.commit()
 
         advance("seed_project")
@@ -177,6 +183,7 @@ def migrate_and_seed():
             submission_id=uuid4(), body=UPDATE_TEXT, occurred_on=today_dr(), media_ids=[UUID(attached["id"])]))
         return {
             "accounts": accounts,
+            "shareLeadId": str(share_lead_id),
             "project": {"id": project["id"], "title": PROJECT_TITLE, "mediaId": attached["id"],
                         "mediaSha256": attached["sha256"], "unattachedMediaId": unattached["id"],
                         "memberUserCode": member_code, "updateText": UPDATE_TEXT},

@@ -1,5 +1,6 @@
 import { lstat, readFile } from 'node:fs/promises'
 import { chromium } from 'playwright-core'
+import { verifyShareContact } from './verify-share-contact.mjs'
 
 const dashboard = 'http://127.0.0.1:4175'
 const api = 'http://127.0.0.1:8000'
@@ -42,7 +43,7 @@ async function readFixtures() {
   const stat = await lstat(path)
   check(stat.isFile() && stat.size > 0 && stat.size <= 12_000, 'FIXTURE_FILE_INVALID')
   const fixture = JSON.parse(await readFile(path, 'utf8'))
-  check(exactKeys(fixture, ['accounts', 'project']), 'FIXTURE_SHAPE_INVALID')
+  check(exactKeys(fixture, ['accounts', 'project', 'shareLeadId']), 'FIXTURE_SHAPE_INVALID')
   check(exactKeys(fixture.accounts, Object.keys(actors)), 'FIXTURE_ROLES_INVALID')
   for (const name of Object.keys(actors)) {
     const account = fixture.accounts[name]
@@ -54,7 +55,7 @@ async function readFixtures() {
   check(exactKeys(project, ['id', 'title', 'mediaId', 'mediaSha256', 'unattachedMediaId', 'memberUserCode', 'updateText']),
     'PROJECT_FIXTURE_SHAPE_INVALID')
   const uuid = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/
-  const ids = [project.id, project.mediaId, project.unattachedMediaId]
+  const ids = [project.id, project.mediaId, project.unattachedMediaId, fixture.shareLeadId]
   check(ids.every(id => typeof id === 'string' && uuid.test(id)) && new Set(ids).size === ids.length
     && typeof project.mediaSha256 === 'string' && /^[0-9a-f]{64}$/.test(project.mediaSha256)
     && Number.isInteger(project.memberUserCode) && project.memberUserCode > 0
@@ -296,7 +297,7 @@ async function main() {
   let privateEvidence
   const contexts = []
   try {
-    const { accounts, project } = await readFixtures()
+    const { accounts, project, shareLeadId } = await readFixtures()
     browser = await chromium.launch({
       headless: true,
       executablePath: process.env.ILDR_CHROMIUM_PATH || undefined,
@@ -392,6 +393,29 @@ async function main() {
       check(denied.status() === 403 && denied.headers()['cache-control'] === noStore, 'REALTOR_ADMIN_API_EXPOSED')
       await denied.dispose()
       await realtor.close()
+    })
+
+    await step('admin_contact_share_drafts_desktop_and_mobile', async () => {
+      const lead = { id: shareLeadId, name: 'Browser Share Contact', email: 'browser-share+ci@example.com',
+        phone: '+12025550119', message: 'Synthetic private lead note sentinel' }
+      const desktopAdmin = await context(desktop, 'admin')
+      const desktopPage = await desktopAdmin.newPage()
+      await desktopPage.bringToFront()
+      await openSignedIn(desktopPage, '/communications?workspace=admin', accounts.admin, 'admin')
+      const englishShare = await verifyShareContact(desktopPage, lead)
+      await desktopAdmin.close()
+
+      const mobileAdmin = await context(mobile, 'admin')
+      const mobilePage = await mobileAdmin.newPage()
+      await mobilePage.bringToFront()
+      await openSignedIn(mobilePage, '/communications?workspace=admin', accounts.admin, 'admin')
+      await openDrawer(mobilePage)
+      await mobilePage.locator('aside').getByRole('button', { name: /^Language\b/ }).click()
+      await closeDrawer(mobilePage)
+      await mobilePage.getByRole('region', { name: es.jobs, exact: true }).waitFor()
+      const spanishShare = await verifyShareContact(mobilePage, lead, { language: 'es', mobile: true })
+      await mobileAdmin.close()
+      results.contact_share = { english_desktop: englishShare, spanish_mobile: spanishShare }
     })
 
     let ownerPage, memberPage, memberBlob
@@ -506,6 +530,8 @@ async function main() {
     if (privateEvidence) results.private_project_observation = privateEvidence
     results.error_code = error instanceof CheckFailed ? error.message
       : error?.name === 'TimeoutError' ? 'BROWSER_REHEARSAL_TIMEOUT' : 'BROWSER_REHEARSAL_STEP_FAILED'
+    if (current === 'admin_contact_share_drafts_desktop_and_mobile'
+      && /^SHARE_CONTACT_[A-Z_]+$/.test(error?.message ?? '')) results.error_code = error.message
     const sourceFrame = /run-browser-rehearsal\.mjs:(\d{1,5}):\d{1,4}/.exec(String(error?.stack))
     if (sourceFrame) results.source_line = Number(sourceFrame[1])
     process.exitCode = 1
