@@ -24,6 +24,8 @@ const noStore = 'no-store'
 const timeout = 10_000
 const mobile = { width: 390, height: 844 }
 const desktop = { width: 1366, height: 900 }
+const scope = process.env.ILDR_BROWSER_SCOPE
+const focusedChecks = new Set(['admin_contact_share_drafts_desktop_and_mobile', 'browser_never_navigated_outside_loopback'])
 const results = { scope: 'isolated_synthetic_browser', status: 'FAIL', checks: [], blocked_external_requests: 0 }
 
 class CheckFailed extends Error {}
@@ -297,6 +299,8 @@ async function main() {
   let privateEvidence
   const contexts = []
   try {
+    check(scope === undefined || scope === 'contact_share', 'UNKNOWN_BROWSER_SCOPE')
+    if (scope) results.suite = scope
     const { accounts, project, shareLeadId } = await readFixtures()
     browser = await chromium.launch({
       headless: true,
@@ -313,6 +317,7 @@ async function main() {
       return value
     }
     async function step(name, action) {
+      if (scope && !focusedChecks.has(name)) return
       current = name
       privateEvidence = undefined
       await action()
@@ -350,6 +355,7 @@ async function main() {
         await workspace.selectOption(other)
         await page.waitForURL(url => url.origin === dashboard && url.searchParams.get('workspace') === other.toLowerCase())
         await managementLink(page, en).waitFor({ state: 'detached' })
+        await page.waitForFunction(expected => document.querySelector('#dashboard-workspace')?.value === expected, other)
         check(await workspace.inputValue() === other, 'ADMIN_WORKSPACE_SELECTION_FAILED')
       }
       await admin.close()

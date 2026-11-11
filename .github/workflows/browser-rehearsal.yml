@@ -1,8 +1,8 @@
-name: Isolated communications and browser rehearsal
+name: Isolated manual contact sharing browser rehearsal
 
 on:
   push:
-    branches: [codex-ci-communications-rehearsal-20261111]
+    branches: [codex-ci-contact-share-focus-20261111]
 
 permissions:
   contents: read

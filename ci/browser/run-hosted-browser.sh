@@ -8,7 +8,7 @@ bounded() { timeout --kill-after=8s "$@"; }
 
 [[ $# == 5 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api ]] || die CI_REQUIRED
 [[ ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 && ${GITHUB_RUN_ATTEMPT:-} == 1 ]] || die STANDARD_LINUX_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-communications-rehearsal-20261111 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
+[[ ${GITHUB_REF:-} == refs/heads/codex-ci-contact-share-focus-20261111 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 
 ops="$1"; relay="$2"; frontend="$3"; backend="$4"; migration="$5"
 [[ "$ops" == "$GITHUB_WORKSPACE/browser-ops" && "$relay" == "$GITHUB_WORKSPACE/frontend-relay" && "$frontend" == "$GITHUB_WORKSPACE/frontend-base" && "$backend" == "$GITHUB_WORKSPACE/browser-backend" && "$migration" == "$GITHUB_WORKSPACE/migration-relay" ]] || die CHECKOUT_PATHS_REQUIRED
@@ -16,7 +16,7 @@ for checkout in "$ops" "$relay" "$frontend" "$backend" "$migration"; do
   checkout_status=$(git -C "$checkout" status --porcelain=v1 --untracked-files=all) || die CLEAN_CHECKOUT_REQUIRED
   [[ $(realpath "$checkout") == "$checkout" && -z "$checkout_status" ]] || die CLEAN_CHECKOUT_REQUIRED
 done
-[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == 9b11034d7e66fcbb4c650dc1aae9456972df2228 ]] || die EXACT_OPERATIONS_PARENT_REQUIRED
+[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == 4ff8a199dfca3b80b9567b7e127c39d2c9d18c98 ]] || die EXACT_OPERATIONS_PARENT_REQUIRED
 [[ $(git -C "$relay" rev-parse HEAD) == 441efdc288c3a38b8607c816c684abec080d83ad ]] || die EXACT_FRONTEND_RELAY_REQUIRED
 [[ $(git -C "$frontend" rev-parse HEAD) == 73d771940e73d42ed044cea77a5258a93a445b05 ]] || die EXACT_FRONTEND_BASE_REQUIRED
 [[ $(git -C "$backend" rev-parse HEAD) == 3da654cefb806ba90a8e66078721611f2d2d57d7 && $(git -C "$backend" rev-parse 'HEAD^{tree}') == ec5f60b27a4aabfb8b1dd6de5b55da40879f0c8c ]] || die EXACT_API_SOURCE_REQUIRED
@@ -25,7 +25,7 @@ done
 tools="$ops/ci/browser"
 frontend_tools="$relay/ci/frontend"
 dockerfile="$migration/ci/migration/services163.Dockerfile"
-for file in serve_browser_fixture.py private_storage_fixture.py serve_dashboard_fixture.mjs run-browser-rehearsal.mjs verify-share-contact.mjs test_communications_acceptance.py; do
+for file in serve_browser_fixture.py private_storage_fixture.py serve_dashboard_fixture.mjs run-browser-rehearsal.mjs verify-share-contact.mjs; do
   [[ -f "$tools/$file" && ! -L "$tools/$file" ]] || die EXACT_FIXTURE_SOURCE_REQUIRED
 done
 printf '%s  %s\n' \
@@ -103,13 +103,9 @@ cleanup() {
 }
 trap cleanup EXIT
 
-mkdir "$state/frontend-work" "$state/fixtures" "$state/browser-run" "$state/python-context" "$state/communications-tools"
+mkdir "$state/frontend-work" "$state/fixtures" "$state/browser-run" "$state/python-context"
 cp "$backend/requirements.txt" "$state/python-context/requirements.txt"
 cp "$tools/run-browser-rehearsal.mjs" "$tools/verify-share-contact.mjs" "$state/browser-run/"
-git -C "$ops" show '9b11034d7e66fcbb4c650dc1aae9456972df2228:ci/browser/serve_browser_fixture.py' \
-  >"$state/communications-tools/serve_browser_fixture.py" || die ACCEPTED_COMMUNICATIONS_HELPER_MISSING
-printf '%s  %s\n' 7c8954c3648d63e247587d22c55661d0a6b63e432483d7d8c71ef3768472325b \
-  "$state/communications-tools/serve_browser_fixture.py" | sha256sum --check --status || die ACCEPTED_COMMUNICATIONS_HELPER_MISMATCH
 
 # Public, pinned dependency preparation. No app or browser process is running yet.
 for image in "$node_image" "$python_image" "$postgres_image" "$browser_image"; do
@@ -208,48 +204,6 @@ bounded 10s docker exec "$pg" psql -X -h 127.0.0.1 -p 55449 -U postgres -d "$db"
 runtime=(--label "$label=$run_key" --network "container:$pg" --user "$uids" --read-only --init
          --cap-drop ALL --security-opt no-new-privileges:true --pids-limit 256 --cpus 2
          --env GITHUB_ACTIONS=true --env GITHUB_REPOSITORY=ilovedrrealty/realty-api)
-
-communications_db='ildr_platform_test_20261025'
-owned "$pg" && bounded 15s docker exec "$pg" createdb -h 127.0.0.1 -p 55449 -U postgres -T template0 "$communications_db" \
-  || die COMMUNICATIONS_DATABASE_CREATE_FAILED
-bounded 10s docker exec "$pg" psql -X -h 127.0.0.1 -p 55449 -U postgres -d "$communications_db" -v ON_ERROR_STOP=1 \
-  -c "COMMENT ON DATABASE $communications_db IS 'ildr-communications-ci:$nonce'" >/dev/null || die COMMUNICATIONS_DATABASE_MARKER_FAILED
-communications=$(bounded 25s docker create "${runtime[@]}" --memory 2g --memory-swap 2g \
-  --tmpfs /tmp:rw,exec,size=128m --env "ILDR_BROWSER_CI_NONCE=$nonce" \
-  --env "SEARCH_FILTER_TEST_DATABASE_URL=postgresql+psycopg2://postgres@127.0.0.1:55449/$communications_db" \
-  --mount "type=bind,src=$backend,dst=/application,readonly" \
-  --mount "type=bind,src=$state/communications-tools,dst=/tools,readonly" \
-  --mount "type=bind,src=$tools,dst=/communications,readonly" \
-  "$app_image" /usr/local/bin/python -I -B /communications/test_communications_acceptance.py) || die COMMUNICATIONS_TEST_CREATE_FAILED
-owned "$communications" || die OWNED_COMMUNICATIONS_TEST_REQUIRED
-communications_exit=0
-bounded 120s docker start --attach "$communications" >"$state/communications.log" 2>&1 || communications_exit=$?
-communications_state=$(bounded 15s docker inspect --format '{{.State.ExitCode}} {{.State.Running}} {{.State.OOMKilled}}' "$communications")
-[[ "$communications_state" =~ ^[0-9]+\ (true|false)\ (true|false)$ ]] || die COMMUNICATIONS_NATIVE_STATE_REQUIRED
-printf 'COMMUNICATIONS_REHEARSAL_NATIVE client=%s state=%s\n' "$communications_exit" "$communications_state"
-communications_receipt_exit=0
-python3 -I -B - "$state/communications.log" <<'PY' || communications_receipt_exit=$?
-from pathlib import Path
-import json, re, sys
-
-log = Path(sys.argv[1]); assert log.stat().st_size <= 131072
-reports = [json.loads(line) for line in log.read_bytes().splitlines() if line.startswith(b'{"')]
-assert len(reports) == 1
-report = reports[0]
-if report.get('status') == 'FAIL':
-    assert set(report) <= {'status','stage','exception_type','reason'}
-    assert all(isinstance(value,str) and re.fullmatch(r'[A-Za-z0-9_]{1,90}',value) for value in report.values())
-else:
-    assert report == {'status':'PASS', 'application_commit':'3da654cefb806ba90a8e66078721611f2d2d57d7',
-        'application_tree':'ec5f60b27a4aabfb8b1dd6de5b55da40879f0c8c','alembic_head':'a4b6c0d2e834',
-        'event_kinds':['signup','buyer_interest','seller_interest','rental_interest','property_inquiry'],
-        'primary_owner_acceptances':20,'primary_customer_acceptances':5,'owner_only_guard_case_acceptances':12,
-        'accepted_mock_provider_requests':37,'crm_rows_skipped':28,'customer_locales':['en','es'],
-        'external_transport_attempts':0,'real_inbox_delivery_verified':False}
-print('COMMUNICATIONS_REHEARSAL_RESULT ' + json.dumps(report,sort_keys=True,separators=(',',':')))
-assert report['status'] == 'PASS'
-PY
-
 api=$(bounded 25s docker create "${runtime[@]}" --memory 2g --memory-swap 2g \
   --tmpfs /tmp:rw,exec,size=128m --env "ILDR_BROWSER_CI_NONCE=$nonce" \
   --mount "type=bind,src=$backend,dst=/application,readonly" \
@@ -294,6 +248,7 @@ done
 browser=$(bounded 25s docker create "${runtime[@]}" --memory 2g --memory-swap 2g --shm-size 384m \
   --tmpfs /tmp:rw,exec,size=192m --env HOME=/tmp \
   --env PLAYWRIGHT_BROWSERS_PATH=/ms-playwright --env ILDR_BROWSER_FIXTURES=/browser-fixtures/fixtures.json \
+  --env ILDR_BROWSER_SCOPE=contact_share \
   --mount "type=bind,src=$state/browser-run,dst=/rehearsal,readonly" \
   --mount "type=bind,src=$state/fixtures,dst=/browser-fixtures,readonly" \
   "$browser_image" node /rehearsal/run-browser-rehearsal.mjs) || die BROWSER_CREATE_FAILED
@@ -318,7 +273,8 @@ def safe(value):
     return value is None or type(value) in (bool,int)
 data=json.loads(matches[0]); assert safe(data) and data['scope']=='isolated_synthetic_browser'
 print(prefix.decode()+json.dumps(data,sort_keys=True,separators=(',',':')))
-assert data['status']=='PASS' and data['checks']
+assert data['status']=='PASS' and data['suite']=='contact_share'
+assert data['checks']==['admin_contact_share_drafts_desktop_and_mobile','browser_never_navigated_outside_loopback']
 PY
 [[ "$client_exit" == 0 && "$container_state" == '0 false false' ]] || die NATIVE_BROWSER_FAILED
 
@@ -327,8 +283,6 @@ api_state=$(bounded 15s docker inspect --format '{{.State.ExitCode}} {{.State.Ru
 [[ "$api_state" == '0 false false' ]] || die API_GRACEFUL_SHUTDOWN_REQUIRED
 [[ ! -e "$state/fixtures/fixtures.json" ]] || die SYNTHETIC_LOGIN_FILE_CLEANUP_REQUIRED
 printf 'BROWSER_API_FIXTURE_SHUTDOWN state=%s login_file=absent\n' "$api_state"
-[[ "$communications_receipt_exit" == 0 && "$communications_exit" == 0 && "$communications_state" == '0 false false' ]] \
-  || die COMMUNICATIONS_TEST_FAILED
 backend_status=$(git -C "$backend" status --porcelain=v1 --untracked-files=all) || die API_SOURCE_CHANGED
 [[ -z "$backend_status" ]] || die API_SOURCE_CHANGED
 printf 'BROWSER_REHEARSAL_ACCEPTANCE commit=%s frontend=%s api=%s run=%s attempt=1\n' \
