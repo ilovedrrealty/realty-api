@@ -2,7 +2,7 @@ name: Isolated completed service reviews browser rehearsal
 
 on:
   push:
-    branches: [codex-ci-service-review-browser-20261112]
+    branches: [codex-ci-service-review-browser-fixture-20261112]
 
 permissions:
   contents: read

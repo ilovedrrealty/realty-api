@@ -54,11 +54,13 @@ async function readFixture() {
     if (status === 'completed') { keys.push('completionUpdateId'); ids.push(row.completionUpdateId) }
     const title = status === 'completed' ? 'Browser rehearsal awarded pool service' : 'Browser rehearsal unfinished pool service'
     require(hasKeys(row, keys) && ids.every(id => typeof id === 'string' && uuid.test(id))
-      && typeof row.winnerUserCode === 'string' && row.winnerUserCode.length > 0 && row.title === title,
+      && Number.isSafeInteger(row.winnerUserCode) && row.winnerUserCode > 0 && row.title === title,
     'EXACT_SYNTHETIC_AWARD_REQUIRED')
   }
   require(group.completed.requestId !== group.unfinished.requestId && group.completed.projectId !== group.unfinished.projectId,
     'COMPLETION_AND_UNFINISHED_FIXTURES_COLLIDE')
+  require(group.completed.listingId === group.unfinished.listingId
+    && group.completed.winnerUserCode === group.unfinished.winnerUserCode, 'COMMON_FIXTURE_PARTIES_REQUIRED')
   return value
 }
 
