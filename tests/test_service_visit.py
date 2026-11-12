@@ -144,7 +144,7 @@ class PrivateAwardedServiceWork(unittest.TestCase):
             "expected_version": project["version"], "user_code": self.codes["pro2"], "role": "professional",
         }))
         proposal = self.proposal(0)
-        self.assert_refused(self.send("POST", path, "admin", proposal), 409)
+        self.assert_refused(self.send("POST", path, "admin", proposal), 403)
         for role in ("outsider", "pro2"):
             with self.subTest(role=role):
                 self.assert_refused(self.send("GET", path, role), 404)
