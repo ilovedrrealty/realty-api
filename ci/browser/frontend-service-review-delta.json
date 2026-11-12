@@ -1,0 +1,72 @@
+{
+  "files": {
+    "apps/dashboard/src/api/serviceReview.ts": {
+      "binary_nul_detected": false,
+      "bytes": 5297,
+      "change": "A",
+      "git_blob_oid": "207bc6457debd8368ab6d1286adbecf499318c8f",
+      "mode": "100644",
+      "sha256": "892b5b0ed8e385f4a86e67582bd2fc130f46c3c856c8b0db0eebd10c4f1aa1e0"
+    },
+    "apps/dashboard/src/components/network/NetworkShared.tsx": {
+      "binary_nul_detected": false,
+      "bytes": 13880,
+      "change": "M",
+      "git_blob_oid": "b4a4db9299ed95421e097b5f66ff41793c7dca81",
+      "mode": "100644",
+      "sha256": "3952f2fa540ff0aa76b8b336f25adc8f82f724e5d1c8611c755992c1e4e5c93b"
+    },
+    "apps/dashboard/src/components/network/ServiceRequestDetail.tsx": {
+      "binary_nul_detected": false,
+      "bytes": 22181,
+      "change": "M",
+      "git_blob_oid": "44d04f9edb6f26b91b8cc9bb4fa732e346802d65",
+      "mode": "100644",
+      "sha256": "f69daea287de75b749539da22a77e2415489439561e6706113afb4f3ffd92706"
+    },
+    "apps/dashboard/src/components/network/ServiceReviewPanel.tsx": {
+      "binary_nul_detected": false,
+      "bytes": 5637,
+      "change": "A",
+      "git_blob_oid": "fbe5a4c622638883c9d72cfb2df5b6000682189f",
+      "mode": "100644",
+      "sha256": "8e837d9fc155321fa07c0cb4ef7185e9f9d8eb945627b5984300e194e1e6c550"
+    },
+    "apps/dashboard/src/components/network/ServiceWorkPanel.tsx": {
+      "binary_nul_detected": false,
+      "bytes": 11493,
+      "change": "M",
+      "git_blob_oid": "a0359ab83b05c5039bf7880bc31614123ec0d9de",
+      "mode": "100644",
+      "sha256": "15da2ca01d7c14044377777d370f915cc933f13cff977368fc4a4acb8f87e425"
+    },
+    "apps/dashboard/src/locale/en/property_network.json": {
+      "binary_nul_detected": false,
+      "bytes": 25417,
+      "change": "M",
+      "git_blob_oid": "08c9dc1d79eeebddf676fdc7cc33d1471e01c4ea",
+      "mode": "100644",
+      "sha256": "d3180d799814c2592008987fba017d0fa5112dc8fb750b6480d0a3d83e5e2327"
+    },
+    "apps/dashboard/src/locale/es/property_network.json": {
+      "binary_nul_detected": false,
+      "bytes": 28208,
+      "change": "M",
+      "git_blob_oid": "a634a4b24cc8fdced7aa01e993cd9a86b6977f1c",
+      "mode": "100644",
+      "sha256": "2786d582aa73788c81974393231dbc505e6b1a71e103049f85861146defa19a8"
+    },
+    "tests/service-review.test.cjs": {
+      "binary_nul_detected": false,
+      "bytes": 5714,
+      "change": "A",
+      "git_blob_oid": "5bf1b4fcc9c2375d0310668564a65c0633b86a4a",
+      "mode": "100644",
+      "sha256": "698336e7401e7689d4af4e4850f740ec89cb067e1f54bffc152504ffc92e7821"
+    }
+  },
+  "frontend_commit": "5550248b79a6672718f096707d54699e5712b5f6",
+  "frontend_tree": "bd09c31331b26523ee0e12d84ec2756913dbd38e",
+  "parent_commit": "88c9e601dfc5950d4e4369007464d963a5d1ccee",
+  "parent_tree": "262e78d5ff659b42b24ea90a7b5b1603b93e8326"
+}
