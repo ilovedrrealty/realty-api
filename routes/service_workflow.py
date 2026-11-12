@@ -9,7 +9,7 @@ from schemas.service_conversation import ServiceConversationWrite
 from schemas.service_visit import ServiceWorkWrite
 from schemas.service_workflow import (PreferenceWrite, RequestCreate, RecipientAction, ManagedRecipientAction,
     QuoteWrite, CounterWrite, ProposalAction, RequestAction, AwardWrite)
-from services import service_conversation, service_visit, service_workflow as service
+from services import service_conversation, service_negotiation, service_visit, service_workflow as service
 from utils.auth import get_current_user
 from utils.limiter import limiter
 
@@ -179,3 +179,28 @@ def send_conversation_message(request: Request, response: Response, request_id: 
 def conversation_submission(request_id: UUID, submission_id: UUID, user=Depends(get_current_user),
                             db: Session = Depends(get_db)):
     return service_conversation.own_submission(db, user, request_id, submission_id)
+
+
+@router.get("/service-requests/{request_id}/recipients/{recipient_id}/conversation/access")
+def negotiation_conversation_access(request_id: UUID, recipient_id: UUID, user=Depends(get_current_user),
+                                    db: Session = Depends(get_db)):
+    return service_negotiation.access(db, user, request_id, recipient_id)
+
+
+@router.get("/service-requests/{request_id}/recipients/{recipient_id}/conversation")
+def negotiation_conversation(request_id: UUID, recipient_id: UUID, page: int = Page,
+                             user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return service_negotiation.list_messages(db, user, request_id, recipient_id, page)
+
+
+@router.post("/service-requests/{request_id}/recipients/{recipient_id}/conversation", status_code=201)
+@limiter.limit("30/minute")
+def send_negotiation_message(request: Request, response: Response, request_id: UUID, recipient_id: UUID,
+                             body: ServiceConversationWrite, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return service_negotiation.post_message(db, user, request_id, recipient_id, body)
+
+
+@router.get("/service-requests/{request_id}/recipients/{recipient_id}/conversation/submissions/{submission_id}")
+def negotiation_conversation_submission(request_id: UUID, recipient_id: UUID, submission_id: UUID,
+                                        user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return service_negotiation.own_submission(db, user, request_id, recipient_id, submission_id)

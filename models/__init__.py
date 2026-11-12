@@ -24,3 +24,4 @@ from .service_workflow import (NetworkServicePreference, NetworkServiceRequest, 
     NetworkServiceProposal, NetworkServiceAction)
 from .service_visit import NetworkServiceWork, NetworkServiceWorkAction
 from .service_conversation import NetworkServiceConversationMessage
+from .service_negotiation import NetworkServiceNegotiationMessage
