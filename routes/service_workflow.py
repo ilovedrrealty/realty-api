@@ -13,7 +13,7 @@ from schemas.service_visit import ServiceWorkWrite
 from schemas.service_workflow import (PreferenceWrite, RequestCreate, RecipientAction, ManagedRecipientAction,
     QuoteWrite, CounterWrite, ProposalAction, RequestAction, AwardWrite, ServiceFavoriteWrite)
 from services import (due_work_reminders, maintenance_reminders, service_conversation, service_favorites, service_negotiation, service_rebooking,
-    service_review, service_visit, service_workflow as service)
+    service_operations, service_review, service_visit, service_workflow as service)
 from utils.auth import get_current_user
 from utils.limiter import limiter
 
@@ -311,3 +311,10 @@ def due_work_reminder_action(request: Request, response: Response, project_id: U
 def due_work_reminder_submission(project_id: UUID, submission_id: UUID,
                                  user=Depends(get_current_user), db: Session = Depends(get_db)):
     return due_work_reminders.own_submission(db, user, project_id, submission_id)
+
+
+@router.get("/service-operations")
+def service_operations_queue(view: Literal["managed", "received"], page: int = Page,
+                             source_kind: SourceKind | None = None, source_id: UUID | None = None,
+                             user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return service_operations.queue(db, user, view, page, source_kind, source_id)
