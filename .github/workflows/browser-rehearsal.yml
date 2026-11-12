@@ -1,8 +1,8 @@
-name: Isolated signed-in browser rehearsal
+name: Isolated private project photo upload rehearsal
 
 on:
   push:
-    branches: [codex-ci-browser-rehearsal-cleanup-20261111]
+    branches: [codex-ci-private-photo-upload-20261111]
 
 permissions:
   contents: read

@@ -8,7 +8,7 @@ bounded() { timeout --kill-after=8s "$@"; }
 
 [[ $# == 5 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api ]] || die CI_REQUIRED
 [[ ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 && ${GITHUB_RUN_ATTEMPT:-} == 1 ]] || die STANDARD_LINUX_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-browser-rehearsal-cleanup-20261111 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
+[[ ${GITHUB_REF:-} == refs/heads/codex-ci-private-photo-upload-20261111 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 
 ops="$1"; relay="$2"; frontend="$3"; backend="$4"; migration="$5"
 [[ "$ops" == "$GITHUB_WORKSPACE/browser-ops" && "$relay" == "$GITHUB_WORKSPACE/frontend-relay" && "$frontend" == "$GITHUB_WORKSPACE/frontend-base" && "$backend" == "$GITHUB_WORKSPACE/browser-backend" && "$migration" == "$GITHUB_WORKSPACE/migration-relay" ]] || die CHECKOUT_PATHS_REQUIRED
@@ -16,7 +16,7 @@ for checkout in "$ops" "$relay" "$frontend" "$backend" "$migration"; do
   checkout_status=$(git -C "$checkout" status --porcelain=v1 --untracked-files=all) || die CLEAN_CHECKOUT_REQUIRED
   [[ $(realpath "$checkout") == "$checkout" && -z "$checkout_status" ]] || die CLEAN_CHECKOUT_REQUIRED
 done
-[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == 441efdc288c3a38b8607c816c684abec080d83ad ]] || die EXACT_OPERATIONS_PARENT_REQUIRED
+[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == 9b11034d7e66fcbb4c650dc1aae9456972df2228 ]] || die EXACT_OPERATIONS_PARENT_REQUIRED
 [[ $(git -C "$relay" rev-parse HEAD) == 441efdc288c3a38b8607c816c684abec080d83ad ]] || die EXACT_FRONTEND_RELAY_REQUIRED
 [[ $(git -C "$frontend" rev-parse HEAD) == 73d771940e73d42ed044cea77a5258a93a445b05 ]] || die EXACT_FRONTEND_BASE_REQUIRED
 [[ $(git -C "$backend" rev-parse HEAD) == 3da654cefb806ba90a8e66078721611f2d2d57d7 && $(git -C "$backend" rev-parse 'HEAD^{tree}') == ec5f60b27a4aabfb8b1dd6de5b55da40879f0c8c ]] || die EXACT_API_SOURCE_REQUIRED
@@ -25,7 +25,7 @@ done
 tools="$ops/ci/browser"
 frontend_tools="$relay/ci/frontend"
 dockerfile="$migration/ci/migration/services163.Dockerfile"
-for file in serve_browser_fixture.py private_storage_fixture.py serve_dashboard_fixture.mjs run-browser-rehearsal.mjs; do
+for file in serve_browser_fixture.py private_storage_fixture.py serve_dashboard_fixture.mjs run-browser-rehearsal.mjs verify-private-photo-upload.mjs; do
   [[ -f "$tools/$file" && ! -L "$tools/$file" ]] || die EXACT_FIXTURE_SOURCE_REQUIRED
 done
 printf '%s  %s\n' \
@@ -105,7 +105,7 @@ trap cleanup EXIT
 
 mkdir "$state/frontend-work" "$state/fixtures" "$state/browser-run" "$state/python-context"
 cp "$backend/requirements.txt" "$state/python-context/requirements.txt"
-cp "$tools/run-browser-rehearsal.mjs" "$state/browser-run/"
+cp "$tools/run-browser-rehearsal.mjs" "$tools/verify-private-photo-upload.mjs" "$state/browser-run/"
 
 # Public, pinned dependency preparation. No app or browser process is running yet.
 for image in "$node_image" "$python_image" "$postgres_image" "$browser_image"; do
@@ -248,6 +248,7 @@ done
 browser=$(bounded 25s docker create "${runtime[@]}" --memory 2g --memory-swap 2g --shm-size 384m \
   --tmpfs /tmp:rw,exec,size=192m --env HOME=/tmp \
   --env PLAYWRIGHT_BROWSERS_PATH=/ms-playwright --env ILDR_BROWSER_FIXTURES=/browser-fixtures/fixtures.json \
+  --env ILDR_BROWSER_SCOPE=private_photo_upload \
   --mount "type=bind,src=$state/browser-run,dst=/rehearsal,readonly" \
   --mount "type=bind,src=$state/fixtures,dst=/browser-fixtures,readonly" \
   "$browser_image" node /rehearsal/run-browser-rehearsal.mjs) || die BROWSER_CREATE_FAILED
@@ -272,12 +273,42 @@ def safe(value):
     return value is None or type(value) in (bool,int)
 data=json.loads(matches[0]); assert safe(data) and data['scope']=='isolated_synthetic_browser'
 print(prefix.decode()+json.dumps(data,sort_keys=True,separators=(',',':')))
-assert data['status']=='PASS' and data['checks']
+assert data['status']=='PASS' and data['suite']=='private_photo_upload'
+assert data['checks']==['owner_and_member_private_photo','owner_uploads_and_attaches_private_photo',
+    'outsider_cannot_see_project_or_media','owner_revocation_removes_member_photo','browser_never_navigated_outside_loopback']
 PY
 [[ "$client_exit" == 0 && "$container_state" == '0 false false' ]] || die NATIVE_BROWSER_FAILED
 
 bounded 20s docker stop --time 10 "$api" >/dev/null || die API_STOP_FAILED
 api_state=$(bounded 15s docker inspect --format '{{.State.ExitCode}} {{.State.Running}} {{.State.OOMKilled}}' "$api") || die API_SHUTDOWN_STATE_REQUIRED
+bounded 5s docker logs --tail 120 "$api" >"$state/api-stop.log" 2>&1 || die API_READBACK_LOG_REQUIRED
+python3 -I -B - "$state/browser.log" "$state/api-stop.log" <<'PY'
+import json, re, sys
+from pathlib import Path
+
+def reports(file, prefix):
+    assert file.stat().st_size <= 131072
+    return [json.loads(line[len(prefix):]) for line in file.read_bytes().splitlines() if line.startswith(prefix)]
+
+browser, api = map(Path, sys.argv[1:])
+failures = reports(api, b'BROWSER_API_FIXTURE_FAILURE ')
+if failures:
+    assert len(failures) == 1
+    failure = failures[0]
+    assert failure.keys() == {'stage','error_type','fixture_line'}
+    assert failure['stage'] == 'storage_attachment_readback' and re.fullmatch(r'[A-Za-z][A-Za-z0-9_]{0,62}',failure['error_type'])
+    assert type(failure['fixture_line']) is int and 0 < failure['fixture_line'] <= 1000
+    print('BROWSER_API_FIXTURE_FAILURE '+json.dumps(failure,sort_keys=True,separators=(',',':')))
+    raise SystemExit(1)
+browser_result, = reports(browser, b'BROWSER_REHEARSAL_RESULT ')
+storage, = reports(api, b'BROWSER_PRIVATE_UPLOAD_STORAGE ')
+assert type(storage['downloads']) is int and 3 <= storage['downloads'] <= 10000
+upload = browser_result['upload']
+assert re.fullmatch(r'[0-9a-f]{64}',upload['webp_digest'])
+assert storage == {'uploads':3,'objects':3,'downloads':storage['downloads'],'webp_digest':upload['webp_digest'],
+    'attached_to_owner_update':True,'viewer_revocation_persisted':True}
+print('BROWSER_PRIVATE_UPLOAD_STORAGE '+json.dumps(storage,sort_keys=True,separators=(',',':')))
+PY
 [[ "$api_state" == '0 false false' ]] || die API_GRACEFUL_SHUTDOWN_REQUIRED
 [[ ! -e "$state/fixtures/fixtures.json" ]] || die SYNTHETIC_LOGIN_FILE_CLEANUP_REQUIRED
 printf 'BROWSER_API_FIXTURE_SHUTDOWN state=%s login_file=absent\n' "$api_state"

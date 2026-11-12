@@ -1,5 +1,6 @@
 import { lstat, readFile } from 'node:fs/promises'
 import { chromium } from 'playwright-core'
+import { PrivatePhotoUploadFailure, verifyPrivatePhotoUpload } from './verify-private-photo-upload.mjs'
 
 const dashboard = 'http://127.0.0.1:4175'
 const api = 'http://127.0.0.1:8000'
@@ -23,6 +24,12 @@ const noStore = 'no-store'
 const timeout = 10_000
 const mobile = { width: 390, height: 844 }
 const desktop = { width: 1366, height: 900 }
+const scope = process.env.ILDR_BROWSER_SCOPE
+const uploadChecks = new Set([
+  'owner_and_member_private_photo', 'owner_uploads_and_attaches_private_photo',
+  'outsider_cannot_see_project_or_media', 'owner_revocation_removes_member_photo',
+  'browser_never_navigated_outside_loopback',
+])
 const results = { scope: 'isolated_synthetic_browser', status: 'FAIL', checks: [], blocked_external_requests: 0 }
 
 class CheckFailed extends Error {}
@@ -239,8 +246,8 @@ async function recordOnlineSignal(page, evidence, afterNavigation = false) {
   check(signal.native !== -1 && signal.effective === 1 && signal.visible === 1, 'PRIVATE_PROJECT_BROWSER_NOT_VISIBLE_ONLINE')
 }
 
-async function probeMedia(page, id, expectedStatus) {
-  const result = await page.evaluate(async url => {
+async function probeMedia(page, id, expectedStatus, expectedDigest = null) {
+  const result = await page.evaluate(async ({ url, expectedDigest }) => {
     const response = await fetch(url, { credentials: 'include', redirect: 'error', cache: 'no-store' })
     const type = response.headers.get('content-type') ?? ''
     const bytes = new Uint8Array(await response.arrayBuffer())
@@ -249,14 +256,17 @@ async function probeMedia(page, id, expectedStatus) {
       type,
       cache: response.headers.get('cache-control'),
       pragma: response.headers.get('pragma'),
+      digest: expectedDigest && response.ok ? Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)),
+        byte => byte.toString(16).padStart(2, '0')).join('') : null,
       isWebp: bytes[0] === 82 && bytes[1] === 73 && bytes[2] === 70 && bytes[3] === 70
         && bytes[8] === 87 && bytes[9] === 69 && bytes[10] === 66 && bytes[11] === 80,
     }
-  }, `${api}${mediaApi(id)}`)
+  }, { url: `${api}${mediaApi(id)}`, expectedDigest })
   check(result.status === expectedStatus && result.cache === noStore && result.pragma === 'no-cache',
     'PRIVATE_PHOTO_STATUS_OR_CACHE')
   check(expectedStatus === 200 ? result.type === 'image/webp' && result.isWebp
     : result.type.startsWith('application/json') && !result.isWebp, 'PRIVATE_PHOTO_BYTES_OR_DENIAL')
+  if (expectedDigest) check(result.digest === expectedDigest, 'PRIVATE_PHOTO_READBACK_SHA_MISMATCH')
 }
 
 async function assertRenderedPhoto(page, project) {
@@ -296,6 +306,8 @@ async function main() {
   let privateEvidence
   const contexts = []
   try {
+    check(scope === undefined || scope === 'private_photo_upload', 'UNKNOWN_BROWSER_SCOPE')
+    if (scope) results.suite = scope
     const { accounts, project } = await readFixtures()
     browser = await chromium.launch({
       headless: true,
@@ -312,6 +324,7 @@ async function main() {
       return value
     }
     async function step(name, action) {
+      if (scope && !uploadChecks.has(name)) return
       current = name
       privateEvidence = undefined
       await action()
@@ -394,7 +407,7 @@ async function main() {
       await realtor.close()
     })
 
-    let ownerPage, memberPage, memberBlob
+    let ownerPage, memberPage, memberBlob, upload
     await step('owner_and_member_private_photo', async () => {
       for (const name of ['owner', 'member']) {
         const session = await context(mobile, name)
@@ -428,10 +441,18 @@ async function main() {
       }
     })
 
+    if (scope) {
+      await step('owner_uploads_and_attaches_private_photo', async () => {
+        upload = await verifyPrivatePhotoUpload({ ownerPage, viewerPage: memberPage, project })
+        results.upload = upload.evidence
+      })
+    }
+
     await step('outsider_cannot_see_project_or_media', async () => {
       const outsider = await context(mobile, 'outsider')
       const page = await outsider.newPage()
-      const watcher = watchPrivateProject(page, project, 'outsider', 'denied_read')
+      const activePhoto = upload ? { ...project, mediaId: upload.mediaId } : project
+      const watcher = watchPrivateProject(page, activePhoto, 'outsider', 'denied_read')
       privateEvidence = watcher.evidence
       try {
         await foreground(page, privateEvidence)
@@ -445,7 +466,7 @@ async function main() {
         check(await page.getByRole('heading', { name: project.title, exact: true }).count() === 0
           && await page.getByText(project.updateText, { exact: true }).count() === 0
           && await page.getByRole('img', { name: en.photo, exact: true }).count() === 0, 'OUTSIDER_PRIVATE_UI_EXPOSED')
-        await probeMedia(page, project.mediaId, 404)
+        await probeMedia(page, activePhoto.mediaId, 404)
         await probeMedia(page, project.unattachedMediaId, 404)
         await outsider.close()
       } finally {
@@ -454,8 +475,9 @@ async function main() {
     })
 
     await step('owner_revocation_removes_member_photo', async () => {
-      const owner = watchPrivateProject(ownerPage, project, 'owner', 'revoke_member')
-      const member = watchPrivateProject(memberPage, project, 'member', 'revoked_read')
+      const activePhoto = upload ? { ...project, mediaId: upload.mediaId } : project
+      const owner = watchPrivateProject(ownerPage, activePhoto, 'owner', 'revoke_member')
+      const member = watchPrivateProject(memberPage, activePhoto, 'member', 'revoked_read')
       privateEvidence = owner.evidence
       try {
         await foreground(ownerPage, owner.evidence)
@@ -465,6 +487,12 @@ async function main() {
         const memberRow = ownerPage.locator('main li').filter({ hasText: `#${project.memberUserCode} ·` })
         const revoke = memberRow.getByRole('button', { name: 'Revoke project access', exact: true })
         await revoke.waitFor()
+        if (upload) {
+          const current = await memberPage.evaluate(source => [...document.images].some(image =>
+            image.src === source && image.complete && image.naturalWidth > 0), upload.viewerBlob)
+          check(current, 'VIEWER_UPLOAD_BLOB_NOT_CURRENT_BEFORE_REVOKE')
+          results.upload.viewer_blob_current_before_revocation = true
+        }
         const revokePath = `${projectApi(project.id)}/members/${project.memberUserCode}/revoke`
         const [revoked] = await Promise.all([
           ownerPage.waitForResponse(response => endpoint(response, revokePath, 'POST')),
@@ -484,13 +512,15 @@ async function main() {
         ])
         check(checked.headers()['cache-control'] === noStore, 'REVOKED_PROJECT_CACHEABLE')
         await memberPage.getByText(en.denied, { exact: true }).waitFor()
-        await memberPage.getByRole('img', { name: en.photo, exact: true }).waitFor({ state: 'detached' })
-        await assertBlobGone(memberPage, memberBlob)
-        await probeMedia(memberPage, project.mediaId, 404)
+        await memberPage.waitForFunction(label => [...document.images].every(image => image.alt !== label), en.photo)
+        await assertBlobGone(memberPage, upload?.viewerBlob ?? memberBlob)
+        await probeMedia(memberPage, activePhoto.mediaId, 404)
+        if (upload) results.upload.viewer_blob_revoked = true
         privateEvidence = owner.evidence
         await foreground(ownerPage, owner.evidence)
         await recordOnlineSignal(ownerPage, owner.evidence)
-        await probeMedia(ownerPage, project.mediaId, 200)
+        await probeMedia(ownerPage, activePhoto.mediaId, 200, upload?.evidence.webp_digest)
+        if (upload) results.upload.owner_retained_after_revocation = true
       } finally {
         owner.stop()
         member.stop()
@@ -506,6 +536,9 @@ async function main() {
     if (privateEvidence) results.private_project_observation = privateEvidence
     results.error_code = error instanceof CheckFailed ? error.message
       : error?.name === 'TimeoutError' ? 'BROWSER_REHEARSAL_TIMEOUT' : 'BROWSER_REHEARSAL_STEP_FAILED'
+    if (error instanceof PrivatePhotoUploadFailure && /^PHOTO_UPLOAD_[A-Z0-9_]{1,66}$/.test(error.message)) {
+      results.error_code = error.message
+    }
     const sourceFrame = /run-browser-rehearsal\.mjs:(\d{1,5}):\d{1,4}/.exec(String(error?.stack))
     if (sourceFrame) results.source_line = Number(sourceFrame[1])
     process.exitCode = 1

@@ -32,6 +32,7 @@ ROLES = {
 }
 PROJECT_TITLE = "Browser rehearsal project"
 UPDATE_TEXT = "Browser rehearsal progress photo"
+UPLOADED_UPDATE_TEXT = "Browser rehearsal uploaded orange progress photo"
 FIXTURE_FILE = Path("/browser-fixtures/fixtures.json")
 stage = "checkout"
 
@@ -190,6 +191,7 @@ def confined_api(api, project):
         ("POST", "/auth/login"),
         ("POST", "/auth/logout"),
         ("POST", "/property-network/media"),
+        ("POST", f"/property-network/projects/{project['id']}/updates"),
         ("POST", f"/property-network/projects/{project['id']}/members/{project['memberUserCode']}/revoke"),
     }
 
@@ -202,6 +204,43 @@ def confined_api(api, project):
         return await api(scope, receive, send)
 
     return serve
+
+
+def verify_uploaded_attachment(project, storage):
+    from database import SessionLocal
+    from models.property_network import NetworkMedia, NetworkProject, NetworkProjectMember, NetworkProjectUpdate
+    from models.user import User
+
+    final_storage = storage.snapshot()
+    require(final_storage["uploads"] == final_storage["object_count"] == 3 and final_storage["downloads"] >= 3,
+            "Expected exactly one new private WebP and multiple authenticated reads")
+    project_id = UUID(project["id"])
+    seeded = {UUID(project["mediaId"]), UUID(project["unattachedMediaId"])}
+    with SessionLocal() as db:
+        media = db.query(NetworkMedia).all()
+        require(len(media) == 3 and {row.id for row in media} >= seeded,
+                "Expected both seed photos and exactly one new record")
+        require(all(row.project_id == project_id for row in media)
+                and sum(row.byte_count for row in media) == final_storage["stored_bytes"],
+                "Unexpected photo project or private storage byte count")
+        uploaded = next(row for row in media if row.id not in seeded)
+        update = db.get(NetworkProjectUpdate, uploaded.update_id) if uploaded.update_id else None
+        owned_project = db.get(NetworkProject, project_id)
+        require(update is not None and owned_project is not None and uploaded.post_id is None
+                and uploaded.uploader_id == update.author_id == owned_project.owner_id
+                and update.project_id == project_id and update.kind == "progress"
+                and update.body == UPLOADED_UPDATE_TEXT and update.media_ids == [str(uploaded.id)]
+                and (uploaded.width, uploaded.height) == (8, 6)
+                and uploaded.object_key == f"network/{uploaded.uploader_id}/{uploaded.id}.webp"
+                and re.fullmatch(r"[0-9a-f]{64}", uploaded.sha256), "Expected the saved owner progress attachment")
+        viewer = db.query(User).filter(User.user_code == project["memberUserCode"]).one()
+        member = db.query(NetworkProjectMember).filter_by(project_id=project_id, user_id=viewer.id).one()
+        require(member.role == "viewer" and member.active is False, "Expected persisted viewer revocation")
+        print("BROWSER_PRIVATE_UPLOAD_STORAGE " + json.dumps({
+            "uploads": final_storage["uploads"], "objects": final_storage["object_count"],
+            "downloads": final_storage["downloads"], "webp_digest": uploaded.sha256,
+            "attached_to_owner_update": True, "viewer_revocation_persisted": True,
+        }, sort_keys=True), flush=True)
 
 
 def run():
@@ -246,6 +285,8 @@ def run():
                 previous_handlers[number] = signal.signal(number, finish_shutdown)
             server.run()
             require(server.started, "The synthetic browser API failed to start")
+            advance("storage_attachment_readback")
+            verify_uploaded_attachment(fixtures["project"], storage)
         finally:
             try:
                 if FIXTURE_FILE.exists():
