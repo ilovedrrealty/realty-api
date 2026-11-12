@@ -1,0 +1,72 @@
+{
+  "files": {
+    "apps/dashboard/src/api/serviceFavorites.ts": {
+      "binary_nul_detected": false,
+      "bytes": 4004,
+      "change": "A",
+      "git_blob_oid": "b9e98580919741f7c2ca7f30c758af6f745b54fe",
+      "mode": "100644",
+      "sha256": "82cafe49e4733c862010b8cb35ab04ca7b4dfbe719bcd920774aceb3ec023b7e"
+    },
+    "apps/dashboard/src/components/network/ServiceFavorites.tsx": {
+      "binary_nul_detected": false,
+      "bytes": 4376,
+      "change": "A",
+      "git_blob_oid": "6c217f895514a22f9bfa32c87b025ac4ea15c6a3",
+      "mode": "100644",
+      "sha256": "15a256902e9f1f098d7fd4b035009070792fcf7cc424b44822ca74d67a676624"
+    },
+    "apps/dashboard/src/components/network/ServiceRequestCreate.tsx": {
+      "binary_nul_detected": false,
+      "bytes": 17729,
+      "change": "M",
+      "git_blob_oid": "a4736dadf6c317c0e45adb87c024c978099af8a3",
+      "mode": "100644",
+      "sha256": "74e505938d276eff467146980c4b2eae7a4263dfb322bd70fc9395a525c904f3"
+    },
+    "apps/dashboard/src/components/network/ServiceWorkflow.tsx": {
+      "binary_nul_detected": false,
+      "bytes": 5329,
+      "change": "M",
+      "git_blob_oid": "61737a495a498ccfce2ee313f6f46d709e464f47",
+      "mode": "100644",
+      "sha256": "ed875125aab2165e2fad0745816136b88ca7374b2af758dae1aeb09216207565"
+    },
+    "apps/dashboard/src/locale/en/property_network.json": {
+      "binary_nul_detected": false,
+      "bytes": 26108,
+      "change": "M",
+      "git_blob_oid": "770d9caff324d1a27473c08cc7e7d7ab81971d86",
+      "mode": "100644",
+      "sha256": "627d4ef552a223eae6d3e724c8b18bc8be1ed8d4859ff10b38d24f2188af6744"
+    },
+    "apps/dashboard/src/locale/es/property_network.json": {
+      "binary_nul_detected": false,
+      "bytes": 28965,
+      "change": "M",
+      "git_blob_oid": "98b6aa76249fe4614a8af2f8f2964e3c576e6b30",
+      "mode": "100644",
+      "sha256": "c95d1667f03357828566600a5e6316a84f1033657bcf787c7daf738def78d4c7"
+    },
+    "tests/service-favorites.test.cjs": {
+      "binary_nul_detected": false,
+      "bytes": 8644,
+      "change": "A",
+      "git_blob_oid": "2dacc143864e4479f2f416e2d0c4b7bf350acca0",
+      "mode": "100644",
+      "sha256": "0fe4e6f4eb248d6127a390b8959c454225bcca65e1b8e2beb300e65d432a9e6b"
+    },
+    "tests/service-rebook.test.cjs": {
+      "binary_nul_detected": false,
+      "bytes": 9270,
+      "change": "M",
+      "git_blob_oid": "3c57bcf8f01e2e0ae0ebec25dd666d520e925a07",
+      "mode": "100644",
+      "sha256": "a481071c4d568ada11b82a7c35e5ad5b421960157676a00a187f4cdfa45c0762"
+    }
+  },
+  "frontend_commit": "c593006658fa1f2ac1943fac7f93c266eaf79ec1",
+  "frontend_tree": "d35be3c8b9e2cd8255001c9d7027dcd16de3335f",
+  "parent_commit": "6cc09601fece171319601788b3f0195018edd8d7",
+  "parent_tree": "57c6090e94d93e75bec51e402af21ed7877ad343"
+}
