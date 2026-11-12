@@ -1,0 +1,56 @@
+{
+  "files": {
+    "apps/dashboard/src/api/serviceConversation.ts": {
+      "binary_nul_detected": false,
+      "bytes": 5345,
+      "change": "A",
+      "git_blob_oid": "1761e433abbf074aea3e8f03abbda1527874e2a9",
+      "mode": "100644",
+      "sha256": "eab48154577a922f8f5bd3ad3a016795825ac967112891210eadd5c18af1eeac"
+    },
+    "apps/dashboard/src/components/network/ServiceConversationPanel.tsx": {
+      "binary_nul_detected": false,
+      "bytes": 4743,
+      "change": "A",
+      "git_blob_oid": "f6257b6158613dbdb4d441c87502fee9173d2b06",
+      "mode": "100644",
+      "sha256": "7ff531d4020e91119788974c2ce134cdf1a1f7d67572b9001acb8c9961785ad6"
+    },
+    "apps/dashboard/src/components/network/ServiceRequestDetail.tsx": {
+      "binary_nul_detected": false,
+      "bytes": 19068,
+      "change": "M",
+      "git_blob_oid": "1ca5a6fe374b54246e5022d8da698b270312c6c8",
+      "mode": "100644",
+      "sha256": "d443bc27b161e62832b8f545d71a688fdae43e26144fca6d9414dc3becfd7705"
+    },
+    "apps/dashboard/src/locale/en/property_network.json": {
+      "binary_nul_detected": false,
+      "bytes": 24447,
+      "change": "M",
+      "git_blob_oid": "e1ee38f9e366fbfd7e12d2bc5fa8072e8e0d4462",
+      "mode": "100644",
+      "sha256": "e0e6de330c601fc79e4ac89b0c9482e3b59ef59f1e1b6d988b3aced3c808f134"
+    },
+    "apps/dashboard/src/locale/es/property_network.json": {
+      "binary_nul_detected": false,
+      "bytes": 27121,
+      "change": "M",
+      "git_blob_oid": "f23f614f0e1c57408d0342e109b984e5de930d2e",
+      "mode": "100644",
+      "sha256": "041095980623bf770d4996b07244221e7e8b27e46524a1ac8a746728d0fc0bca"
+    },
+    "tests/service-conversation.test.cjs": {
+      "binary_nul_detected": false,
+      "bytes": 4926,
+      "change": "A",
+      "git_blob_oid": "295a92acfd2214551e6899754bc79430f44c8d6e",
+      "mode": "100644",
+      "sha256": "3e813e849a13d3c9303037139f78169e9ecdce67b6a291b488a0985acae6021f"
+    }
+  },
+  "frontend_commit": "fe32e0749ee6af50a39e971058e2cba55f296152",
+  "frontend_tree": "877a62d0e0ce90ea5138ad3cca50dfbafb0d6107",
+  "parent_commit": "869a74bde961e30a4dc56c0bdc71d82cde62e2e2",
+  "parent_tree": "cabd6e37ef02617216b5f3d8b85c3b63c6a3d8ad"
+}
