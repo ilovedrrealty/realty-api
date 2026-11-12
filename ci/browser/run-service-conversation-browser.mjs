@@ -195,6 +195,22 @@ async function fits(panel) {
   }), 'MOBILE_CONVERSATION_OVERFLOW')
 }
 
+async function verifyOpenConversationClosed(state) {
+  const { page, panel, text } = state
+  await foreground(page)
+  const closed = page.waitForFunction(({ title, denied }) => {
+    const section = [...document.querySelectorAll('main section')].find(item => item.querySelector('h2')?.textContent === title)
+    return !section || [...section.querySelectorAll('[role="alert"]')].some(item => item.textContent === denied)
+  }, { title: text.title, denied: text.denied })
+  const refresh = panel.getByRole('button', { name: text.refresh, exact: true })
+  if (await refresh.isVisible()) await Promise.race([closed, refresh.click()])
+  await closed
+  await page.getByText(ownerBody, { exact: true }).waitFor({ state: 'detached' })
+  await page.getByText(providerBody, { exact: true }).waitFor({ state: 'detached' })
+  require(await panel.getByRole('button', { name: text.send, exact: true }).count() === 0,
+    'REVOKED_UI_STILL_ALLOWS_SEND')
+}
+
 async function step(name, run) {
   stage = name
   await run()
@@ -287,16 +303,8 @@ async function main() {
       await read(owner.context, route, 404)
       await read(owner.context, `${route}/submissions/${ownerPost.submission}`, 404)
       await read(winner.context, `${route}/submissions/${providerPost.submission}`, 404)
-      await foreground(winner.page)
-      await winner.panel.getByRole('heading', { name: winner.text.title, exact: true }).waitFor({ state: 'detached' })
-      await foreground(owner.page)
-      await owner.panel.getByRole('alert').filter({ hasText: owner.text.denied }).waitFor()
-      for (const state of [winner, owner]) {
-        await state.page.getByText(ownerBody, { exact: true }).waitFor({ state: 'detached' })
-        await state.page.getByText(providerBody, { exact: true }).waitFor({ state: 'detached' })
-        require(await state.panel.getByRole('button', { name: state.text.send, exact: true }).count() === 0,
-          'REVOKED_UI_STILL_ALLOWS_SEND')
-      }
+      await verifyOpenConversationClosed(winner)
+      await verifyOpenConversationClosed(owner)
     })
     await step('loopback_only_and_no_automatic_writes', async () => {
       require(!externalNavigation && result.message_posts === 2 && result.membership_revokes === 1
