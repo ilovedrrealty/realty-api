@@ -14,8 +14,11 @@ from slowapi.errors import RateLimitExceeded
 from database import get_db
 from models.listing import Listing
 from models.property_network import NetworkProject as Project, NetworkMilestone as Milestone, NetworkProjectUpdate as Update, NetworkProjectComment as ProjectComment
+from schemas.history_share import HistoryShareAction, HistoryShareCreate
+from schemas.maintenance_reminders import SourceKind
 from schemas.property_network import (ProjectCreate, ProjectEdit, MemberWrite, MilestoneCreate, MilestoneEdit,
     ProgressWrite, CommentWrite, ProfileWrite, PostWrite, ModeratePost, BlockWrite, Version, RegistryCreate, RegistryEdit)
+from services import history_share
 from services import property_network as service
 from utils.auth import get_current_user
 from utils.limiter import limiter
@@ -112,6 +115,42 @@ def edit_registry(request: Request, response: Response, property_id: UUID, body:
 @router.get("/registry/{property_id}/history")
 def registry_history(property_id: UUID, page: int = Page, user=Depends(get_current_user), db: Session = Depends(get_db)):
     return service.registry_history(db, user, property_id, page)
+
+
+@router.get("/history-shares/options/{source_kind}/{source_id}")
+def history_share_options(source_kind: SourceKind, source_id: UUID, anchor_project_id: UUID, page: int = Page,
+                          user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return history_share.options(db, user, source_kind, source_id, anchor_project_id, page)
+
+
+@router.get("/history-shares/submissions/{submission_id}")
+def history_share_submission(submission_id: UUID, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return history_share.own_submission(db, user, submission_id)
+
+
+@router.get("/history-shares")
+def history_shares(view: Literal["sent", "received"], page: int = Page,
+                   user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return history_share.listed(db, user, view, page)
+
+
+@router.post("/history-shares", status_code=201)
+@limiter.limit("15/minute")
+def create_history_share(request: Request, response: Response, body: HistoryShareCreate,
+                         user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return history_share.create(db, user, body)
+
+
+@router.get("/history-shares/{share_id}")
+def get_history_share(share_id: UUID, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return history_share.detail(db, user, share_id)
+
+
+@router.post("/history-shares/{share_id}/actions")
+@limiter.limit("30/minute")
+def change_history_share(request: Request, response: Response, share_id: UUID, body: HistoryShareAction,
+                         user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return history_share.change(db, user, share_id, body)
 
 
 @router.get("/properties")
