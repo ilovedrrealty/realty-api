@@ -1,6 +1,8 @@
 """Conversations limited to the current custodian and one accepted provider."""
 from uuid import uuid4
 
+from sqlalchemy import or_
+
 from models.service_conversation import NetworkServiceConversationMessage as AwardMessage
 from models.service_negotiation import NetworkServiceNegotiationMessage as Message
 from models.service_workflow import NetworkServiceRecipient as Recipient, NetworkServiceRequest as ServiceRequest
@@ -9,22 +11,25 @@ from services import property_network as network, service_workflow as workflow
 from services.service_conversation import message_view
 
 
-def _participant(db, user, request_id, recipient_id, *, for_write=False):
+def _participant(db, user, request_id, recipient_id):
     workflow.checked_user(user)
     if user.role == "admin":
         workflow.unavailable()
-    if for_write:
-        user, request, source, recipients = workflow.locked_request(db, user, request_id)
-        recipient = recipients.get(recipient_id)
-    else:
-        request = db.query(ServiceRequest).filter_by(id=request_id).populate_existing().first()
-        recipient = db.query(Recipient).filter_by(id=recipient_id, request_id=request_id).populate_existing().first()
-        source = None
-    if (request is None or recipient is None or request.status != "open" or request.project_id is not None
+    candidate = db.query(ServiceRequest.id).join(Recipient, Recipient.request_id == ServiceRequest.id).filter(
+        ServiceRequest.id == request_id, Recipient.id == recipient_id,
+        ServiceRequest.status == "open", ServiceRequest.project_id.is_(None), Recipient.status == "accepted",
+        or_(ServiceRequest.custodian_id == user.id, Recipient.provider_id == user.id),
+    ).first()
+    if candidate is None:
+        workflow.unavailable()
+
+    # Hold the ordered workflow locks through authorization and message projection.
+    user, request, source, recipients = workflow.locked_request(db, user, request_id)
+    recipient = recipients.get(recipient_id)
+    if (recipient is None or request.status != "open" or request.project_id is not None
             or recipient.status != "accepted" or user.id not in {request.custodian_id, recipient.provider_id}
             or user.role == "admin"):
         workflow.unavailable()
-    source = source or workflow.source_row(db, request.property_id, request.listing_id)
     record, custodian = source
     provider = db.query(User).filter_by(id=recipient.provider_id).populate_existing().first()
     if (not workflow.source_current(db, request, source) or not workflow.eligible(db, recipient, request)
@@ -59,7 +64,7 @@ def own_submission(db, user, request_id, recipient_id, submission_id):
 
 
 def post_message(db, user, request_id, recipient_id, body):
-    actor, role = _participant(db, user, request_id, recipient_id, for_write=True)
+    actor, role = _participant(db, user, request_id, recipient_id)
     previous = _own_message(db, actor.id, body.submission_id)
     if previous is not None:
         if (previous.request_id, previous.recipient_id, previous.body) != (request_id, recipient_id, body.body):

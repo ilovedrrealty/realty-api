@@ -18,6 +18,8 @@ from models.listing import Listing
 from models.service_conversation import NetworkServiceConversationMessage as AwardMessage
 from models.service_negotiation import NetworkServiceNegotiationMessage as Message
 from models.user import User
+from schemas.service_workflow import AwardWrite, PreferenceWrite
+from services import service_workflow as workflow
 
 
 @unittest.skipUnless(os.environ.get("SEARCH_FILTER_TEST_DATABASE_URL"), "Requires reviewed disposable loopback Postgres")
@@ -116,6 +118,33 @@ class PrivateServiceNegotiationConversation(unittest.TestCase):
             db.commit()
         self.closed(path, "pro1", body)  # Explicit listing owner ID alone is insufficient after role loss.
         self.closed(path, "owner", body)
+
+        with Session(self.engine) as db:
+            db.get(User, self.ids["owner"]).role = "owner"
+            db.commit()
+        opted_out = self.opt("pro1", service_opt_in=False)
+        self.quote(request, "pro2")
+        award = AwardWrite(**self.award_body(request, "pro2"))
+        restore = PreferenceWrite(
+            submission_id=uuid4(), expected_version=opted_out["version"], service_opt_in=True,
+            member_alias="Deliberate alias pro1", category_ids=["pool_service"], property_class_ids=["house_villa"],
+        )
+        original_lock = workflow.locked_request
+        closed_before_lock = []
+
+        def lock_after_award(db, actor, request_id):
+            if actor.id == self.ids["pro1"] and request_id == UUID(request["id"]) and not closed_before_lock:
+                with Session(self.engine) as transition:
+                    owner = transition.get(User, self.ids["owner"])
+                    workflow.close_request(transition, owner, request_id, award, award=True)
+                    provider = transition.get(User, self.ids["pro1"])
+                    workflow.save_preference(transition, provider, restore)
+                closed_before_lock.append(True)
+            return original_lock(db, actor, request_id)
+
+        self.patched(workflow, "locked_request", side_effect=lock_after_award)
+        self.assert_refused(self.send("GET", path, "pro1"), 404)
+        self.assertEqual(closed_before_lock, [True])
 
     def test_terminal_and_source_changes_close_without_transcript_transfer(self):
         marker = self.body("Private negotiation only, never project progress")
