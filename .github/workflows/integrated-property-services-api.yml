@@ -1,0 +1,61 @@
+name: Isolated integrated private service operations and reviewed room tours
+
+on:
+  push:
+    branches: [codex-ci-integrated-property-services-api-20261112]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: integrated-property-services-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  review:
+    if: >-
+      github.repository == 'ilovedrrealty/realty-api' &&
+      github.event.repository.private == false &&
+      github.event.created == true && github.event.deleted == false &&
+      github.event.forced == false &&
+      github.event.before == '0000000000000000000000000000000000000000' &&
+      github.run_attempt == 1 && github.event.after == github.sha &&
+      github.workflow_sha == github.sha
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Read exact test operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          path: integrated-ops
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Resolve the checked-in application parent
+        id: application
+        shell: bash
+        run: |
+          set -euo pipefail
+          product=$(git -C "$GITHUB_WORKSPACE/integrated-ops" rev-parse HEAD^)
+          [[ "$product" =~ ^[a-f0-9]{40}$ ]]
+          printf 'commit=%s\n' "$product" >> "$GITHUB_OUTPUT"
+      - name: Read exact room tour application
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ steps.application.outputs.commit }}
+          path: integrated-app
+          persist-credentials: false
+      - name: Read reviewed dependency recipe
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: c193a925ba57ea2d67ea48c44e5262817885c8a2
+          path: integrated-recipe
+          persist-credentials: false
+      - name: Run integrated property services and prior service tests in loopback Postgres
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$RUNNER_ENVIRONMENT" == github-hosted && "$RUNNER_OS" == Linux && "$RUNNER_ARCH" == X64 ]]
+          bash --noprofile --norc -n "$GITHUB_WORKSPACE/integrated-ops/ci/integrated-property-services/run-hosted-integrated-property-services.sh"
+          exec bash --noprofile --norc "$GITHUB_WORKSPACE/integrated-ops/ci/integrated-property-services/run-hosted-integrated-property-services.sh" \
+            "$GITHUB_WORKSPACE/integrated-ops" "$GITHUB_WORKSPACE/integrated-app" "$GITHUB_WORKSPACE/integrated-recipe"
