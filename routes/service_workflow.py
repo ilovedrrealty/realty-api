@@ -10,7 +10,7 @@ from schemas.service_review import ServiceReviewWrite
 from schemas.service_visit import ServiceWorkWrite
 from schemas.service_workflow import (PreferenceWrite, RequestCreate, RecipientAction, ManagedRecipientAction,
     QuoteWrite, CounterWrite, ProposalAction, RequestAction, AwardWrite)
-from services import service_conversation, service_negotiation, service_review, service_visit, service_workflow as service
+from services import service_conversation, service_negotiation, service_rebooking, service_review, service_visit, service_workflow as service
 from utils.auth import get_current_user
 from utils.limiter import limiter
 
@@ -223,3 +223,8 @@ def submit_service_review(request: Request, response: Response, request_id: UUID
 def service_review_submission(request_id: UUID, submission_id: UUID, user=Depends(get_current_user),
                               db: Session = Depends(get_db)):
     return service_review.own_submission(db, user, request_id, submission_id)
+
+
+@router.get("/service-requests/{request_id}/rebook-context")
+def service_rebook_context(request_id: UUID, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return service_rebooking.context(db, user, request_id)
