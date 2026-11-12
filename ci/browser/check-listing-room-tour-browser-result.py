@@ -51,11 +51,13 @@ def main():
         'status': 'PASS', 'scope': 'isolated_synthetic_listing_room_tour', 'checks': CHECKS,
         'stage_writes': 1, 'approval_writes': 1, 'anonymous_phases_verified': 3,
         'synthetic_images_verified': 3, 'public_languages_verified': 2, 'unexpected_browser_mutations': 0,
+        'unexpected_external_navigations': 0,
     }
-    assert set(browser) == set(expected) | {'blocked_external_requests', 'blocked_listing_view_posts'}
+    assert set(browser) == set(expected) | {'blocked_external_requests', 'blocked_listing_view_posts', 'blocked_map_frames'}
     assert all(type(browser[key]) is type(value) and browser[key] == value for key, value in expected.items())
     assert type(browser['blocked_external_requests']) is int and 0 <= browser['blocked_external_requests'] <= 100
     assert type(browser['blocked_listing_view_posts']) is int and 1 <= browser['blocked_listing_view_posts'] <= 50
+    assert type(browser['blocked_map_frames']) is int and 0 <= browser['blocked_map_frames'] <= browser['blocked_external_requests']
     if mode == 'browser':
         return
 

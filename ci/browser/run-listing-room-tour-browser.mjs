@@ -42,7 +42,8 @@ const contexts = []
 const fulfilled = new Set()
 let stage = 'fixture'
 let editId = null
-let externalNavigation = false
+let blockedMapFrames = 0
+let unexpectedExternalNavigation = 0
 
 class RehearsalFailure extends Error {}
 function require(condition, code) {
@@ -143,7 +144,15 @@ async function session(browser, fixture, role, lang, synthetic) {
     }
     if (![dashboard, landing, api].includes(url.origin)) {
       result.blocked_external_requests += 1
-      if (request.isNavigationRequest()) externalNavigation = true
+      if (request.isNavigationRequest()) {
+        let iframe = request.headers()['sec-fetch-dest'] === 'iframe'
+        try { iframe ||= !!request.frame().parentFrame() } catch { /* Unbound requests still fail the navigation guard. */ }
+        const fixtureMap = role === 'guest' && iframe && method === 'GET' && url.origin === 'https://maps.google.com'
+          && url.pathname === '/maps' && url.searchParams.get('output') === 'embed'
+          && url.searchParams.get('q') === 'Synthetic listing area, Dominican Republic'
+        if (fixtureMap) blockedMapFrames += 1
+        else unexpectedExternalNavigation += 1
+      }
       return route.abort('blockedbyclient')
     }
     if (method === 'POST' && url.origin === api && url.pathname === `${listingPath(f)}/view` && role === 'guest') {
@@ -439,10 +448,13 @@ async function main() {
     })
 
     await step('only_exact_loopback_writes_and_synthetic_media', async () => {
+      result.blocked_map_frames = blockedMapFrames
+      result.unexpected_external_navigations = unexpectedExternalNavigation
       require(result.stage_writes === 1 && result.approval_writes === 1 && result.anonymous_phases_verified === 3
         && result.synthetic_images_verified === 3 && result.public_languages_verified === 2 && result.blocked_listing_view_posts >= 1
         && result.blocked_listing_view_posts <= 20 && result.unexpected_browser_mutations === 0
-        && result.blocked_external_requests <= 150 && !externalNavigation, 'EXACT_SYNTHETIC_PUBLICATION_SCOPE_REQUIRED')
+        && result.blocked_external_requests <= 100 && blockedMapFrames <= result.blocked_external_requests
+        && unexpectedExternalNavigation === 0, 'EXACT_SYNTHETIC_PUBLICATION_SCOPE_REQUIRED')
     })
     result.status = 'PASS'
   } finally {
