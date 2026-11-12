@@ -5,12 +5,14 @@ from fastapi import APIRouter, Depends, Request, Response
 from sqlalchemy.orm import Session
 from database import get_db
 from routes.property_network import NetworkRoute, Page
+from schemas.maintenance_reminders import MaintenanceActionWrite, MaintenancePreferencesWrite, MaintenanceScheduleCreate, SourceKind
 from schemas.service_conversation import ServiceConversationWrite
 from schemas.service_review import ServiceReviewWrite
 from schemas.service_visit import ServiceWorkWrite
 from schemas.service_workflow import (PreferenceWrite, RequestCreate, RecipientAction, ManagedRecipientAction,
     QuoteWrite, CounterWrite, ProposalAction, RequestAction, AwardWrite, ServiceFavoriteWrite)
-from services import service_conversation, service_favorites, service_negotiation, service_rebooking, service_review, service_visit, service_workflow as service
+from services import (maintenance_reminders, service_conversation, service_favorites, service_negotiation, service_rebooking,
+    service_review, service_visit, service_workflow as service)
 from utils.auth import get_current_user
 from utils.limiter import limiter
 
@@ -248,3 +250,37 @@ def remove_service_favorite(request: Request, response: Response, favorite_id: U
                             user=Depends(get_current_user), db: Session = Depends(get_db)):
     service_favorites.remove(db, user, favorite_id)
     return Response(status_code=204)
+
+
+@router.get("/maintenance-reminders/{source_kind}/{source_id}")
+def list_maintenance_reminders(source_kind: SourceKind, source_id: UUID, page: int = Page,
+                               user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return maintenance_reminders.list_reminders(db, user, source_kind, source_id, page)
+
+
+@router.put("/maintenance-reminders/{source_kind}/{source_id}/preferences")
+@limiter.limit("30/minute")
+def maintenance_reminder_preferences(request: Request, response: Response, source_kind: SourceKind, source_id: UUID,
+                                     body: MaintenancePreferencesWrite, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return maintenance_reminders.save_preferences(db, user, source_kind, source_id, body)
+
+
+@router.post("/maintenance-reminders/{source_kind}/{source_id}", status_code=201)
+@limiter.limit("30/minute")
+def create_maintenance_reminder(request: Request, response: Response, source_kind: SourceKind, source_id: UUID,
+                                body: MaintenanceScheduleCreate, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return maintenance_reminders.create(db, user, source_kind, source_id, body)
+
+
+@router.post("/maintenance-reminders/{source_kind}/{source_id}/{schedule_id}/actions")
+@limiter.limit("30/minute")
+def maintenance_reminder_action(request: Request, response: Response, source_kind: SourceKind, source_id: UUID,
+                                schedule_id: UUID, body: MaintenanceActionWrite, user=Depends(get_current_user),
+                                db: Session = Depends(get_db)):
+    return maintenance_reminders.apply_action(db, user, source_kind, source_id, schedule_id, body)
+
+
+@router.get("/maintenance-reminders/{source_kind}/{source_id}/submissions/{submission_id}")
+def maintenance_reminder_submission(source_kind: SourceKind, source_id: UUID, submission_id: UUID,
+                                     user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return maintenance_reminders.own_submission(db, user, source_kind, source_id, submission_id)
