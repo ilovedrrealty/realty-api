@@ -1,0 +1,61 @@
+name: Isolated private service conversation and visit regression tests
+
+on:
+  push:
+    branches: [codex-ci-service-conversation-20261112]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: service-conversation-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  conversation:
+    if: >-
+      github.repository == 'ilovedrrealty/realty-api' &&
+      github.event.repository.private == false &&
+      github.event.created == true && github.event.deleted == false &&
+      github.event.forced == false &&
+      github.event.before == '0000000000000000000000000000000000000000' &&
+      github.run_attempt == 1 && github.event.after == github.sha &&
+      github.workflow_sha == github.sha
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Read exact test operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          path: conversation-ops
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Resolve the checked-in application parent
+        id: application
+        shell: bash
+        run: |
+          set -euo pipefail
+          product=$(git -C "$GITHUB_WORKSPACE/conversation-ops" rev-parse HEAD^)
+          [[ "$product" =~ ^[a-f0-9]{40}$ ]]
+          printf 'commit=%s\n' "$product" >> "$GITHUB_OUTPUT"
+      - name: Read exact service conversation application
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ steps.application.outputs.commit }}
+          path: conversation-app
+          persist-credentials: false
+      - name: Read reviewed dependency recipe
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: c193a925ba57ea2d67ea48c44e5262817885c8a2
+          path: conversation-recipe
+          persist-credentials: false
+      - name: Run private conversation and visit tests in loopback Postgres
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$RUNNER_ENVIRONMENT" == github-hosted && "$RUNNER_OS" == Linux && "$RUNNER_ARCH" == X64 ]]
+          bash --noprofile --norc -n "$GITHUB_WORKSPACE/conversation-ops/ci/service-conversation/run-hosted-service-conversation.sh"
+          exec bash --noprofile --norc "$GITHUB_WORKSPACE/conversation-ops/ci/service-conversation/run-hosted-service-conversation.sh" \
+            "$GITHUB_WORKSPACE/conversation-ops" "$GITHUB_WORKSPACE/conversation-app" "$GITHUB_WORKSPACE/conversation-recipe"
