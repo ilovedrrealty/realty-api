@@ -1,0 +1,69 @@
+name: Isolated pre-award service negotiation browser rehearsal
+
+on:
+  push:
+    branches: [codex-ci-service-negotiation-browser-20261112]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: browser-rehearsal-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  browser:
+    if: >-
+      github.repository == 'ilovedrrealty/realty-api' &&
+      github.event.repository.private == false &&
+      github.event.created == true && github.event.deleted == false &&
+      github.event.forced == false &&
+      github.event.before == '0000000000000000000000000000000000000000' &&
+      github.run_attempt == 1 && github.event.after == github.sha &&
+      github.workflow_sha == github.sha
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Read exact rehearsal operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          path: browser-ops
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Read accepted frontend relay
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 441efdc288c3a38b8607c816c684abec080d83ad
+          path: frontend-relay
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Read exact public frontend base
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: ilovedrrealty/iLoveDRRealty
+          ref: 73d771940e73d42ed044cea77a5258a93a445b05
+          path: frontend-base
+          persist-credentials: false
+      - name: Read exact backend application
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 75b4bbb6d84518e91e38a22c1beee141c7ce24c2
+          path: browser-backend
+          persist-credentials: false
+      - name: Read accepted migration dependency recipe
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: c193a925ba57ea2d67ea48c44e5262817885c8a2
+          path: migration-relay
+          persist-credentials: false
+      - name: Run bounded synthetic browser rehearsal
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$RUNNER_ENVIRONMENT" == github-hosted && "$RUNNER_OS" == Linux && "$RUNNER_ARCH" == X64 ]]
+          bash --noprofile --norc -n "$GITHUB_WORKSPACE/browser-ops/ci/browser/run-hosted-service-negotiation-browser.sh"
+          exec bash --noprofile --norc "$GITHUB_WORKSPACE/browser-ops/ci/browser/run-hosted-service-negotiation-browser.sh" \
+            "$GITHUB_WORKSPACE/browser-ops" "$GITHUB_WORKSPACE/frontend-relay" \
+            "$GITHUB_WORKSPACE/frontend-base" "$GITHUB_WORKSPACE/browser-backend" \
+            "$GITHUB_WORKSPACE/migration-relay"

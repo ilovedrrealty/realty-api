@@ -1,0 +1,64 @@
+{
+  "files": {
+    "apps/dashboard/src/api/serviceConversation.ts": {
+      "binary_nul_detected": false,
+      "bytes": 6833,
+      "change": "M",
+      "git_blob_oid": "9397dd5dd7c3a18e440622f897f6b345a840d5f9",
+      "mode": "100644",
+      "sha256": "356237135fa9d57bce1e3d63eff040d0daa0b4b71825094524be7a99a3623643"
+    },
+    "apps/dashboard/src/components/network/ServiceConversationPanel.tsx": {
+      "binary_nul_detected": false,
+      "bytes": 5189,
+      "change": "M",
+      "git_blob_oid": "c1df5b8e29d331950a52be29b339f329b9643f44",
+      "mode": "100644",
+      "sha256": "40904aedae0b464e4831330aafc4980d54bd08ccdb5f8ce602dc08c73e909abe"
+    },
+    "apps/dashboard/src/components/network/ServiceRequestDetail.tsx": {
+      "binary_nul_detected": false,
+      "bytes": 22040,
+      "change": "M",
+      "git_blob_oid": "cdaa23f72e6b067afaa41f14e38b1dba4e0e8b6b",
+      "mode": "100644",
+      "sha256": "9488084e9e9f2028a6824589f10dc13f487213708eb12c649fb1b9cd2989ff6e"
+    },
+    "apps/dashboard/src/components/network/ServiceWorkflow.tsx": {
+      "binary_nul_detected": false,
+      "bytes": 4544,
+      "change": "M",
+      "git_blob_oid": "1a6a8d7a29f1e61a7d9eb39fb484125b82c5fe4b",
+      "mode": "100644",
+      "sha256": "96e77b29088665709770fb5a9de106870d55b7ca7fab44fc9aabaa6c534b2d52"
+    },
+    "apps/dashboard/src/locale/en/property_network.json": {
+      "binary_nul_detected": false,
+      "bytes": 24856,
+      "change": "M",
+      "git_blob_oid": "999606063dcfee62d311662454bebbd4a368ba68",
+      "mode": "100644",
+      "sha256": "594266e256de11c22b5d0fa6751784f50d17fd7cfcd650d58933dbedd5085cce"
+    },
+    "apps/dashboard/src/locale/es/property_network.json": {
+      "binary_nul_detected": false,
+      "bytes": 27574,
+      "change": "M",
+      "git_blob_oid": "d599745f62e2240196fdb4e33e1ca84f96ceb67d",
+      "mode": "100644",
+      "sha256": "529c60b019c7b7906d325ba3afc38b3bfbbad0ea816fcd64d4634d33dd9bae6d"
+    },
+    "tests/service-conversation.test.cjs": {
+      "binary_nul_detected": false,
+      "bytes": 7836,
+      "change": "M",
+      "git_blob_oid": "a6cec4e7f73349665b1b9bb8bb935bc8a4cbbd95",
+      "mode": "100644",
+      "sha256": "a90771115be8f8f17b54753af291005d37d249c1d14ab2a014cde689ea35d639"
+    }
+  },
+  "frontend_commit": "88c9e601dfc5950d4e4369007464d963a5d1ccee",
+  "frontend_tree": "262e78d5ff659b42b24ea90a7b5b1603b93e8326",
+  "parent_commit": "fe32e0749ee6af50a39e971058e2cba55f296152",
+  "parent_tree": "877a62d0e0ce90ea5138ad3cca50dfbafb0d6107"
+}
