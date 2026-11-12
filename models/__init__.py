@@ -22,3 +22,4 @@ from .property_network import (NetworkProperty, NetworkProject, NetworkProjectMe
     NetworkProjectComment, SocialNetworkProfile, NetworkPost, NetworkPostComment, NetworkBlock, NetworkMedia, NetworkAudit)
 from .service_workflow import (NetworkServicePreference, NetworkServiceRequest, NetworkServiceRecipient,
     NetworkServiceProposal, NetworkServiceAction)
+from .service_visit import NetworkServiceWork, NetworkServiceWorkAction

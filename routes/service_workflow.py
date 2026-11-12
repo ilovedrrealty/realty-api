@@ -5,9 +5,10 @@ from fastapi import APIRouter, Depends, Request, Response
 from sqlalchemy.orm import Session
 from database import get_db
 from routes.property_network import NetworkRoute, Page
+from schemas.service_visit import ServiceWorkWrite
 from schemas.service_workflow import (PreferenceWrite, RequestCreate, RecipientAction, ManagedRecipientAction,
     QuoteWrite, CounterWrite, ProposalAction, RequestAction, AwardWrite)
-from services import service_workflow as service
+from services import service_visit, service_workflow as service
 from utils.auth import get_current_user
 from utils.limiter import limiter
 
@@ -141,3 +142,21 @@ def award(request: Request, response: Response, request_id: UUID, body: AwardWri
 def cancel(request: Request, response: Response, request_id: UUID, body: RequestAction,
            user=Depends(get_current_user), db: Session = Depends(get_db)):
     return service.close_request(db, user, request_id, body)
+
+
+@router.get("/service-requests/{request_id}/work")
+def work_detail(request_id: UUID, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return service_visit.get_work(db, user, request_id)
+
+
+@router.post("/service-requests/{request_id}/work")
+@limiter.limit("30/minute")
+def save_work(request: Request, response: Response, request_id: UUID, body: ServiceWorkWrite,
+              user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return service_visit.mutate_work(db, user, request_id, body)
+
+
+@router.get("/service-requests/{request_id}/work/submissions/{submission_id}")
+def work_submission(request_id: UUID, submission_id: UUID, user=Depends(get_current_user),
+                    db: Session = Depends(get_db)):
+    return service_visit.get_submission(db, user, request_id, submission_id)
