@@ -621,10 +621,10 @@ def media_view(row):
 
 
 def upload_media(db, user, project_id, raw):
+    # Serialize the per-uploader bound and preserve the service user-before-project lock order.
+    db.query(User).filter(User.id == user.id).with_for_update().one()
     if project_id:
         project_for(db, user, project_id, lock=True, permission="update")
-    # Serializes the per-uploader bound without trusting the uploaded filename.
-    db.query(User).filter(User.id == user.id).with_for_update().one()
     if db.query(Media).filter(Media.uploader_id == user.id).count() >= 5000:
         raise HTTPException(409, "Your network photo limit has been reached")
     data, width, height = storage.prepare_image(raw)

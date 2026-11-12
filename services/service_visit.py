@@ -62,14 +62,36 @@ def _access(db, user, request, source, recipients, *, lock_project=False):
     return actor, project, winner.provider_id, can_change
 
 
-def _read_access(db, user, request_id):
+def _read_request(db, user, request_id):
     workflow.checked_user(user)
     request = db.query(ServiceRequest).filter_by(id=request_id).populate_existing().first()
     if request is None:
         workflow.unavailable()
     recipients = db.query(Recipient).filter_by(request_id=request_id).populate_existing().all()
+    return request, recipients
+
+
+def _read_access(db, user, request_id):
+    request, recipients = _read_request(db, user, request_id)
     actor, project, _, can_change = _access(db, user, request, None, recipients)
     return request, actor, project, can_change
+
+
+def require_live_participant(db, user, request_id, *, for_write=False):
+    """Recheck both sides on every request and take the existing locks for writes."""
+    if user.role == "admin":
+        workflow.unavailable()
+    if for_write:
+        user, request, source, recipient_map = workflow.locked_request(db, user, request_id)
+        recipients = recipient_map.values()
+    else:
+        request, recipients = _read_request(db, user, request_id)
+        source = None
+    role, project, provider_id, can_change = _access(db, user, request, source, recipients, lock_project=for_write)
+    if (not can_change or project.status == "archived" or db.get(User, request.custodian_id).role == "admin"
+            or db.get(User, provider_id).role == "admin"):
+        workflow.unavailable()
+    return user, role
 
 
 def _find_work(db, request_id):

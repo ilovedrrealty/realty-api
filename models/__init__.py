@@ -23,3 +23,4 @@ from .property_network import (NetworkProperty, NetworkProject, NetworkProjectMe
 from .service_workflow import (NetworkServicePreference, NetworkServiceRequest, NetworkServiceRecipient,
     NetworkServiceProposal, NetworkServiceAction)
 from .service_visit import NetworkServiceWork, NetworkServiceWorkAction
+from .service_conversation import NetworkServiceConversationMessage
