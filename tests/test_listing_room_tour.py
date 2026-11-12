@@ -81,7 +81,9 @@ class ListingRoomPhotoTourTests(unittest.TestCase):
         return response.json()
 
     def pending(self):
-        rows = self.request("GET", "/admin/listing-edits", "admin").json()
+        response = self.request("GET", "/admin/listing-edits", "admin")
+        self.assertEqual(response.headers.get("cache-control"), "no-store")
+        rows = response.json()
         matches = [row for row in rows if row["listing_id"] == self.listing_id]
         self.assertEqual(len(matches), 1)
         return matches[0]

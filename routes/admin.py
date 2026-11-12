@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from decimal import Decimal
-from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Query, Response, UploadFile
 from pydantic import BaseModel, field_validator
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, aliased
@@ -415,7 +415,8 @@ def _listing_snapshot(listing: Listing, *, include_room_tour=False) -> dict:
 
 
 @router.get("/listing-edits", response_model=List[ListingEditResponse])
-def list_listing_edits(user=Depends(require_admin), db: Session = Depends(get_db)):
+def list_listing_edits(response: Response, user=Depends(require_admin), db: Session = Depends(get_db)):
+    response.headers["Cache-Control"] = "no-store"
     Submitter = aliased(User)
     rows = (
         db.query(ListingEdit, Listing, Submitter)
