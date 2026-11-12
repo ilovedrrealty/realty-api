@@ -34,6 +34,10 @@ def public_listing_image(url):
     return (OBJECT_PATH.fullmatch(path) is not None and path.split("/", 1)[0].lower() not in NON_LISTING_PREFIXES)
 
 
+def eligible_gallery_images(images):
+    return [url for url in images or () if public_listing_image(url)]
+
+
 def validated_tour(value, images):
     tour = RoomPhotoTour.model_validate(value)
     gallery = set(images or ())

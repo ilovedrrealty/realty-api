@@ -30,7 +30,7 @@ from schemas.listing import (
     AdminAssignListingBody, BulkImportJobResponse,
 )
 from schemas.deal_request import DealRequestResponse, DealRequestRejectBody
-from schemas.listing_edit import ListingEditResponse, ListingEditRejectBody
+from schemas.listing_edit import ListingEditApproveBody, ListingEditResponse, ListingEditRejectBody
 from schemas.listing_event import ListingEventResponse
 from utils.permission import require_admin
 from utils.agents import eligible_agent_query, find_eligible_agent
@@ -411,6 +411,7 @@ def _listing_snapshot(listing: Listing, *, include_room_tour=False) -> dict:
     if include_room_tour:
         tour = room_tour.public_room_tour(listing)
         snap[room_tour.FIELD] = tour.model_dump(mode="json") if tour is not None else None
+        snap["images"] = room_tour.eligible_gallery_images(listing.images)
     return snap
 
 
@@ -426,23 +427,24 @@ def list_listing_edits(response: Response, user=Depends(require_admin), db: Sess
         .order_by(ListingEdit.submitted_at.asc())
         .all()
     )
-    return [
-        ListingEditResponse(
+    result = []
+    for edit, listing, submitter in rows:
+        current_data = _listing_snapshot(listing, include_room_tour=room_tour.is_tour_edit(edit))
+        result.append(ListingEditResponse(
             id=edit.id,
             listing_id=edit.listing_id,
             listing_title=listing.title,
             listing_location=listing.location,
-            listing_thumbnail=(listing.images or [None])[0],
+            listing_thumbnail=(current_data["images"] or [None])[0],
             submitted_by_name=submitter.display_name,
             submitted_by_email=submitter.email,
             submitted_at=edit.submitted_at,
             status=edit.status,
-            current_data=_listing_snapshot(listing, include_room_tour=room_tour.is_tour_edit(edit)),
+            current_data=current_data,
             proposed_data=edit.proposed_data,
             rejection_reason=edit.rejection_reason,
-        )
-        for edit, listing, submitter in rows
-    ]
+        ))
+    return result
 
 
 def _locked_listing_edit(db, edit_id, *, recheck_tour_author=False):
@@ -465,12 +467,15 @@ def _locked_listing_edit(db, edit_id, *, recheck_tour_author=False):
 
 
 @router.post("/listing-edits/{edit_id}/approve", status_code=204)
-def approve_listing_edit(edit_id: UUID, user=Depends(require_admin), db: Session = Depends(get_db)):
+def approve_listing_edit(edit_id: UUID, body: Optional[ListingEditApproveBody] = None,
+                         user=Depends(require_admin), db: Session = Depends(get_db)):
     listing, edit, author = _locked_listing_edit(db, edit_id, recheck_tour_author=True)
     proposed = dict(edit.proposed_data or {})
     is_tour = room_tour.is_tour_edit(edit)
     before = _listing_snapshot(listing, include_room_tour=is_tour)
     if is_tour:
+        if body is None or body.room_photo_tour_reviewed is not True:
+            raise HTTPException(409, "Review the room photo tour before approval.")
         if (listing.status != "active" or not room_tour.can_edit_room_tour(listing, author, allow_admin=True)
                 or author.id != edit.submitted_by
                 or edit.room_photo_tour_base_gallery_sha256 != room_tour.gallery_digest(listing.images)):

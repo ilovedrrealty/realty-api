@@ -90,7 +90,8 @@ class ListingRoomPhotoTourTests(unittest.TestCase):
 
     def review(self, edit_id, action="approve", status=204):
         return self.request("POST", f"/admin/listing-edits/{edit_id}/{action}", "admin",
-                            {"reason": "Synthetic review reason"} if action == "reject" else None, status)
+                            {"reason": "Synthetic review reason"} if action == "reject"
+                            else {"room_photo_tour_reviewed": True}, status)
 
     def test_approved_detail_only_and_explicit_clear(self):
         original = {"listing_id": self.listing_id, "images": IMAGES, "room_photo_tour": None, "pending_review": "none"}
@@ -103,6 +104,8 @@ class ListingRoomPhotoTourTests(unittest.TestCase):
         edit = self.pending()
         self.assertEqual(edit["proposed_data"], {"room_photo_tour": self.tour()})
         self.assertIsNone(edit["current_data"]["room_photo_tour"])
+        self.request("POST", f"/admin/listing-edits/{edit['id']}/approve", "admin", status=409)
+        self.assertIsNone(self.detail()["room_photo_tour"])
         self.review(edit["id"])
         self.assertEqual(self.detail()["room_photo_tour"], self.tour())
         self.assertEqual(self.detail()["images"], IMAGES)
@@ -124,12 +127,14 @@ class ListingRoomPhotoTourTests(unittest.TestCase):
         self.assertEqual(self.editor()["pending_review"], "other")
         self.stage(self.tour(), status=409)
         self.assertEqual(self.pending()["id"], ordinary["id"])
-        self.review(ordinary["id"])
+        self.request("POST", f"/admin/listing-edits/{ordinary['id']}/approve", "admin", status=204)
         self.assertEqual(self.detail()["description"], "Synthetic ordinary draft")
         self.request("PUT", self.listing_path, "owner", {"room_photo_tour": None}, status=422)
 
         self.stage(self.tour(), "realtor")
         realtor_edit = self.pending()["id"]
+        self.assertEqual(self.editor()["pending_review"], "other")
+        self.assertEqual(self.editor("realtor")["pending_review"], "room_photo_tour")
         self.stage(None, "owner", status=409)
         self.request("PUT", self.listing_path, "owner", {"title": "Synthetic changed title"}, status=409)
         self.assertEqual(self.pending()["id"], realtor_edit)
@@ -149,11 +154,12 @@ class ListingRoomPhotoTourTests(unittest.TestCase):
             IMAGES[1].replace("https://", "https://fixture@"),
         ]
         # Put malformed URLs into the legacy gallery too, to exercise validation independently of membership.
+        legacy = [unsafe[3], *IMAGES, *[url for url in unsafe[1:] if url != unsafe[3]]]
         with Session(self.engine) as db:
-            db.get(Listing, UUID(self.listing_id)).images = [*IMAGES, *unsafe[1:]]
+            db.get(Listing, UUID(self.listing_id)).images = legacy
             db.commit()
         self.assertEqual(self.editor()["images"], IMAGES)
-        self.assertEqual(self.detail()["images"], [*IMAGES, *unsafe[1:]])
+        self.assertEqual(self.detail()["images"], legacy)
         for candidate in unsafe:
             with self.subTest(candidate=candidate):
                 self.stage(self.tour([{"url": candidate}]), status=422)
@@ -161,6 +167,9 @@ class ListingRoomPhotoTourTests(unittest.TestCase):
         self.stage(self.tour([{"url": IMAGES[0]}, {"url": IMAGES[0]}]), status=422)
         self.assertEqual(self.editor()["pending_review"], "none")
         self.stage(self.tour())
+        edit = self.pending()
+        self.assertEqual(edit["current_data"]["images"], IMAGES)
+        self.assertEqual(edit["listing_thumbnail"], IMAGES[0])
 
     def test_gallery_changes_permanently_invalidate_old_approval_and_pending(self):
         self.stage(self.tour())

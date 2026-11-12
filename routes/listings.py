@@ -526,10 +526,12 @@ def get_room_photo_tour_editor(listing_id: UUID, response: Response, user=Depend
     edits = room_tour.pending_edits(db, listing.id).all()
     pending = "none"
     if edits:
-        pending = "room_photo_tour" if all(room_tour.is_tour_edit(edit) for edit in edits) else "other"
+        pending = "room_photo_tour" if all(
+            room_tour.is_tour_edit(edit) and edit.submitted_by == user.id for edit in edits
+        ) else "other"
     return ListingRoomTourEditorResponse(
         listing_id=listing.id,
-        images=[url for url in listing.images or () if room_tour.public_listing_image(url)],
+        images=room_tour.eligible_gallery_images(listing.images),
         room_photo_tour=room_tour.public_room_tour(listing),
         pending_review=pending,
     )

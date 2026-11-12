@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, StrictBool
 from typing import Optional, Any
 from datetime import datetime
 import uuid
@@ -23,3 +23,7 @@ class ListingEditResponse(BaseModel):
 
 class ListingEditRejectBody(BaseModel):
     reason: str
+
+
+class ListingEditApproveBody(BaseModel):
+    room_photo_tour_reviewed: StrictBool
