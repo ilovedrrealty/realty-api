@@ -458,9 +458,17 @@ async function main() {
 
       await openProject(owner, f)
       await button(owner.page, owner.t.team).click()
-      await team.getByLabel(owner.t.memberCode, { exact: true }).fill(String(f.winnerUserCode))
-      await team.getByLabel(owner.t.memberRole, { exact: true }).selectOption('professional')
-      const granted = await mutation(owner, membersPath(f), 'POST', button(team, owner.t.grant),
+      const grantForm = team.locator('form')
+      await grantForm.getByLabel(owner.t.memberCode, { exact: true }).fill(String(f.winnerUserCode))
+      const roleSelect = grantForm.locator('select')
+      // The wrapped label also contains option text. Check its direct label separately.
+      require(await roleSelect.count() === 1 && await roleSelect.evaluate((select, expectedLabel) =>
+        [...select.labels].some(label => [...label.childNodes].filter(node => node.nodeType === Node.TEXT_NODE)
+          .map(node => node.textContent).join('').trim() === expectedLabel)
+        && [...select.options].filter(option => option.value === 'professional').length === 1, owner.t.memberRole),
+      'PROJECT_ROLE_FIELD_OR_LABEL_CHANGED')
+      await roleSelect.selectOption('professional')
+      const granted = await mutation(owner, membersPath(f), 'POST', button(grantForm, owner.t.grant),
         { expected_version: f.projectVersion + 1, user_code: f.winnerUserCode, role: 'professional' }, false)
       require(Array.isArray(granted.value) && granted.value.some(member => member.user_code === f.winnerUserCode
         && member.role === 'professional' && member.active === true), 'ACTIVE_PROFESSIONAL_REGRANT_REQUIRED')

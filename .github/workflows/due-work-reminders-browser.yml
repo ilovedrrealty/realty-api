@@ -2,7 +2,7 @@ name: Isolated private project due-work reminders browser rehearsal
 
 on:
   push:
-    branches: [codex-ci-due-work-reminders-browser-20261112]
+    branches: [codex-ci-due-work-reminders-browser-regrant-20261112]
 
 permissions:
   contents: read
