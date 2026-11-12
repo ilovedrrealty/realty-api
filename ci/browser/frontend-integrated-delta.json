@@ -1,0 +1,120 @@
+{
+  "files": {
+    "apps/dashboard/src/api/serviceOperations.ts": {
+      "binary_nul_detected": false,
+      "bytes": 6396,
+      "change": "A",
+      "git_blob_oid": "85aa55cfcb28f7815cc4bbe444c1af78c209c099",
+      "mode": "100644",
+      "sha256": "64ff462f1fc09c5851097606228238719e4eb2d4526c54babcef24f4e42f6eef"
+    },
+    "apps/dashboard/src/components/network/NetworkShared.tsx": {
+      "binary_nul_detected": false,
+      "bytes": 13968,
+      "change": "M",
+      "git_blob_oid": "2ad48ba980bc1c401b69db58b8d1925b98d6e2de",
+      "mode": "100644",
+      "sha256": "9b6d38094fe3de5e8ce03e8ecd256b137ce7194efdb1d3d9b967ad0c9c4590d1"
+    },
+    "apps/dashboard/src/components/network/ServiceOperations.tsx": {
+      "binary_nul_detected": false,
+      "bytes": 4674,
+      "change": "A",
+      "git_blob_oid": "6906850897a5218f63c8a8f5bc4172c6560e19a8",
+      "mode": "100644",
+      "sha256": "baabdb671c59f54df445e59c7dad160399c458a679c5cfa0372acbe8f634ce32"
+    },
+    "apps/dashboard/src/components/network/ServiceRequestDetail.tsx": {
+      "binary_nul_detected": false,
+      "bytes": 22905,
+      "change": "M",
+      "git_blob_oid": "7f7ed5d9fd22a39b0ff5012a923fbdb0f9c39931",
+      "mode": "100644",
+      "sha256": "29cfe0611f84cd62b7e26f51dff810eb7eccf0a5d865320048144e56720addc0"
+    },
+    "apps/dashboard/src/components/network/ServiceWorkflow.tsx": {
+      "binary_nul_detected": false,
+      "bytes": 6229,
+      "change": "M",
+      "git_blob_oid": "1906033d7f854062572dd594630591303bd6bece",
+      "mode": "100644",
+      "sha256": "798a4c9e97de770c502209bea00269565e58ac84613ea4ad16cac8b5d1f70c6e"
+    },
+    "apps/dashboard/src/locale/en/property_network.json": {
+      "binary_nul_detected": false,
+      "bytes": 30629,
+      "change": "M",
+      "git_blob_oid": "e8e7aca64ccf1bf96f60a460fdad31d2fd480492",
+      "mode": "100644",
+      "sha256": "ca23b982c2ef81c4614c7530e88cd3da266da6dab1a33a3a9a8e7d9d6e289b40"
+    },
+    "apps/dashboard/src/locale/es/property_network.json": {
+      "binary_nul_detected": false,
+      "bytes": 34068,
+      "change": "M",
+      "git_blob_oid": "12dc15e3ccfac6889e98a3dec76f22cd942ff867",
+      "mode": "100644",
+      "sha256": "dbbbb85e6898019024e92391af2157751a5a44fbaa70dfce3b666649d241e399"
+    },
+    "apps/landing/src/data/propertyDetailData.ts": {
+      "binary_nul_detected": false,
+      "bytes": 3625,
+      "change": "M",
+      "git_blob_oid": "d0a8d4f172205eecfc088faffb369b8e2922e135",
+      "mode": "100644",
+      "sha256": "25de054d9eb2fcdbc4c91027bb068ef1675dc593ec7f0cab23013a27ed904680"
+    },
+    "apps/landing/src/locales/en/property_detail.json": {
+      "binary_nul_detected": false,
+      "bytes": 6133,
+      "change": "M",
+      "git_blob_oid": "f4e8baea3e7a45bd07617e6d7d275ad0247d1888",
+      "mode": "100644",
+      "sha256": "2bb8e8e733c4c00d2bf25eef49ee22fb2462e741906e1a3a9de682139fa777b3"
+    },
+    "apps/landing/src/locales/es/property_detail.json": {
+      "binary_nul_detected": false,
+      "bytes": 6643,
+      "change": "M",
+      "git_blob_oid": "1c521f71405ac3c49f365668b3c836e2f83b68ea",
+      "mode": "100644",
+      "sha256": "acffcdb12a2cfa9e2a710e801602bec8203f4f17aa5b918331a336b3e004d202"
+    },
+    "apps/landing/src/views/PropertyDetail.tsx": {
+      "binary_nul_detected": false,
+      "bytes": 78872,
+      "change": "M",
+      "git_blob_oid": "5a020bd520d10872f3eeff2524259c51114a4a3a",
+      "mode": "100644",
+      "sha256": "d28e6fc3cf977bc875fbb63cbe810ada156f6feef7547580731b94458e2f1914"
+    },
+    "tests/listing-short-gallery.test.cjs": {
+      "binary_nul_detected": false,
+      "bytes": 2079,
+      "change": "A",
+      "git_blob_oid": "fdbf3a1d6076e3c72bada701f6a4b66cf99d6e4e",
+      "mode": "100644",
+      "sha256": "9301d3e11a391cf008452cd6d350fdc29373743453521d68a14068539416bf69"
+    },
+    "tests/service-favorites.test.cjs": {
+      "binary_nul_detected": false,
+      "bytes": 8701,
+      "change": "M",
+      "git_blob_oid": "aa465eafd978ec447be4e8347cf90eac5508e050",
+      "mode": "100644",
+      "sha256": "897ea9ed11f6e74ecfdc8bf76a0e7c81aa173119843af651703696bdee478b7a"
+    },
+    "tests/service-operations.test.cjs": {
+      "binary_nul_detected": false,
+      "bytes": 10069,
+      "change": "A",
+      "git_blob_oid": "3f781ebf296536a17d3ae73e865fb2218a392d1f",
+      "mode": "100644",
+      "sha256": "45a2bc188b9b068a28bd2a39c1f40b4149f80d27787fdbe86a28267db35a177e"
+    }
+  },
+  "frontend_commit": "ee1596b4e9b9902f7bbcbd91fb6b072b2577601d",
+  "frontend_tree": "3ee0bedeaabb0a2f01e087d45be0d82c245282b6",
+  "parent_commit": "ae824e1439557238c17abaf29dfc8b859086e987",
+  "parent_tree": "88475e96ca4f523c5731fb210b0e8ad20e886f98"
+}
