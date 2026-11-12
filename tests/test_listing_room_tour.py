@@ -150,6 +150,8 @@ class ListingRoomPhotoTourTests(unittest.TestCase):
         with Session(self.engine) as db:
             db.get(Listing, UUID(self.listing_id)).images = [*IMAGES, *unsafe[1:]]
             db.commit()
+        self.assertEqual(self.editor()["images"], IMAGES)
+        self.assertEqual(self.detail()["images"], [*IMAGES, *unsafe[1:]])
         for candidate in unsafe:
             with self.subTest(candidate=candidate):
                 self.stage(self.tour([{"url": candidate}]), status=422)

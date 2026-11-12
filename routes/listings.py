@@ -528,7 +528,9 @@ def get_room_photo_tour_editor(listing_id: UUID, response: Response, user=Depend
     if edits:
         pending = "room_photo_tour" if all(room_tour.is_tour_edit(edit) for edit in edits) else "other"
     return ListingRoomTourEditorResponse(
-        listing_id=listing.id, images=listing.images or [], room_photo_tour=room_tour.public_room_tour(listing),
+        listing_id=listing.id,
+        images=[url for url in listing.images or () if room_tour.public_listing_image(url)],
+        room_photo_tour=room_tour.public_room_tour(listing),
         pending_review=pending,
     )
 

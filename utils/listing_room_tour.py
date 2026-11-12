@@ -24,7 +24,7 @@ def gallery_digest(images):
 def public_listing_image(url):
     origin = settings.supabase_url.rstrip("/")
     bucket = settings.storage_bucket
-    if SUPABASE_ORIGIN.fullmatch(origin) is None or bucket != "listing-images":
+    if not isinstance(url, str) or SUPABASE_ORIGIN.fullmatch(origin) is None or bucket != "listing-images":
         return False
     prefix = f"{origin}/storage/v1/object/public/{bucket}/"
     if not url.startswith(prefix):
