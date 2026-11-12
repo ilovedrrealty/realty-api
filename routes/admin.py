@@ -467,13 +467,14 @@ def _locked_listing_edit(db, edit_id, *, recheck_tour_author=False):
 
 
 @router.post("/listing-edits/{edit_id}/approve", status_code=204)
-def approve_listing_edit(edit_id: UUID, body: Optional[ListingEditApproveBody] = None,
+def approve_listing_edit(edit_id: UUID, response: Response, body: Optional[ListingEditApproveBody] = None,
                          user=Depends(require_admin), db: Session = Depends(get_db)):
     listing, edit, author = _locked_listing_edit(db, edit_id, recheck_tour_author=True)
     proposed = dict(edit.proposed_data or {})
     is_tour = room_tour.is_tour_edit(edit)
     before = _listing_snapshot(listing, include_room_tour=is_tour)
     if is_tour:
+        response.headers["Cache-Control"] = "no-store"
         if body is None or body.room_photo_tour_reviewed is not True:
             raise HTTPException(409, "Review the room photo tour before approval.")
         if (listing.status != "active" or not room_tour.can_edit_room_tour(listing, author, allow_admin=True)

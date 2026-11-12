@@ -89,9 +89,12 @@ class ListingRoomPhotoTourTests(unittest.TestCase):
         return matches[0]
 
     def review(self, edit_id, action="approve", status=204):
-        return self.request("POST", f"/admin/listing-edits/{edit_id}/{action}", "admin",
-                            {"reason": "Synthetic review reason"} if action == "reject"
-                            else {"room_photo_tour_reviewed": True}, status)
+        response = self.request("POST", f"/admin/listing-edits/{edit_id}/{action}", "admin",
+                                {"reason": "Synthetic review reason"} if action == "reject"
+                                else {"room_photo_tour_reviewed": True}, status)
+        if action == "approve" and status == 204:
+            self.assertEqual(response.headers.get("cache-control"), "no-store")
+        return response
 
     def test_approved_detail_only_and_explicit_clear(self):
         original = {"listing_id": self.listing_id, "images": IMAGES, "room_photo_tour": None, "pending_review": "none"}
