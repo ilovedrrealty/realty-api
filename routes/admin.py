@@ -37,6 +37,7 @@ from utils.agents import eligible_agent_query, find_eligible_agent
 from utils.security import hash_password
 from utils.share_image import generate_share_image, maybe_regenerate_share_image
 from utils.bulk_import import parse_csv, run_bulk_import
+from utils import listing_room_tour as room_tour
 from utils.email import (
     parse_notification_recipients,
     send_listing_approved_email,
@@ -219,10 +220,11 @@ def list_all_listings(
 
 @router.put("/listings/{listing_id}/assign", status_code=204)
 def assign_listing_realtor(listing_id: UUID, body: AdminAssignListingBody, user=Depends(require_admin), db: Session = Depends(get_db)):
-    listing = db.query(Listing).filter(Listing.id == listing_id).first()
+    listing = db.query(Listing).filter(Listing.id == listing_id).populate_existing().with_for_update().first()
     if not listing:
         raise HTTPException(status_code=404, detail="Listing not found")
 
+    previous_realtor = listing.assigned_realtor_id
     if body.realtor_id:
         realtor = find_eligible_agent(db, body.realtor_id)
         if not realtor:
@@ -235,6 +237,8 @@ def assign_listing_realtor(listing_id: UUID, body: AdminAssignListingBody, user=
         _log(db, "listing_unassigned", f"Listing unassigned: {listing.title}", actor_id=user.id)
         _listing_event(db, listing.id, "realtor_unassigned", actor_id=user.id)
 
+    if previous_realtor and previous_realtor not in (listing.assigned_realtor_id, listing.submitted_by):
+        room_tour.invalidate_staged_tours(db, listing.id, author_id=previous_realtor)
     db.commit()
 
 
@@ -306,10 +310,11 @@ def approve_listing(listing_id: UUID, user=Depends(require_admin), db: Session =
 
 @router.post("/listings/{listing_id}/archive", status_code=204)
 def archive_listing(listing_id: UUID, user=Depends(require_admin), db: Session = Depends(get_db)):
-    listing = db.query(Listing).filter(Listing.id == listing_id).first()
+    listing = db.query(Listing).filter(Listing.id == listing_id).populate_existing().with_for_update().first()
     if not listing:
         raise HTTPException(status_code=404, detail="Listing not found")
     listing.status = "archived"
+    room_tour.invalidate_room_tour(db, listing)
     listing.approved_by = user.id
     listing.approved_at = datetime.now(timezone.utc)
     _log(db, "listing_archived", f"Listing archived: {listing.title}", actor_id=user.id)
@@ -319,10 +324,11 @@ def archive_listing(listing_id: UUID, user=Depends(require_admin), db: Session =
 
 @router.post("/listings/{listing_id}/reject", status_code=204)
 def reject_listing(listing_id: UUID, body: ListingRejectBody, user=Depends(require_admin), db: Session = Depends(get_db)):
-    listing = db.query(Listing).filter(Listing.id == listing_id).first()
+    listing = db.query(Listing).filter(Listing.id == listing_id).populate_existing().with_for_update().first()
     if not listing:
         raise HTTPException(status_code=404, detail="Listing not found")
     listing.status = "rejected"
+    room_tour.invalidate_room_tour(db, listing)
     listing.rejection_reason = body.reason
     listing.approved_by = user.id
     listing.approved_at = datetime.now(timezone.utc)
@@ -395,13 +401,16 @@ EDIT_FIELDS = [
 ]
 
 
-def _listing_snapshot(listing: Listing) -> dict:
+def _listing_snapshot(listing: Listing, *, include_room_tour=False) -> dict:
     snap = {}
     for field in EDIT_FIELDS:
         val = getattr(listing, field, None)
         if isinstance(val, Decimal):
             val = float(val)
         snap[field] = val
+    if include_room_tour:
+        tour = room_tour.public_room_tour(listing)
+        snap[room_tour.FIELD] = tour.model_dump(mode="json") if tour is not None else None
     return snap
 
 
@@ -427,7 +436,7 @@ def list_listing_edits(user=Depends(require_admin), db: Session = Depends(get_db
             submitted_by_email=submitter.email,
             submitted_at=edit.submitted_at,
             status=edit.status,
-            current_data=_listing_snapshot(listing),
+            current_data=_listing_snapshot(listing, include_room_tour=room_tour.is_tour_edit(edit)),
             proposed_data=edit.proposed_data,
             rejection_reason=edit.rejection_reason,
         )
@@ -435,20 +444,42 @@ def list_listing_edits(user=Depends(require_admin), db: Session = Depends(get_db
     ]
 
 
-@router.post("/listing-edits/{edit_id}/approve", status_code=204)
-def approve_listing_edit(edit_id: UUID, user=Depends(require_admin), db: Session = Depends(get_db)):
-    edit = db.query(ListingEdit).filter(ListingEdit.id == edit_id).first()
+def _locked_listing_edit(db, edit_id, *, recheck_tour_author=False):
+    hint = db.query(ListingEdit.listing_id, ListingEdit.submitted_by, ListingEdit.proposed_data).filter(ListingEdit.id == edit_id).first()
+    if hint is None:
+        raise HTTPException(status_code=404, detail="Edit not found")
+    author = None
+    if recheck_tour_author and set(hint.proposed_data or ()) == {room_tour.FIELD}:
+        # Tour staging also locks the author before the listing and edit rows.
+        author = room_tour.lock_tour_author(db, hint.submitted_by)
+    listing = db.query(Listing).filter(Listing.id == hint.listing_id).populate_existing().with_for_update().first()
+    if not listing:
+        raise HTTPException(status_code=404, detail="Listing not found")
+    edit = db.query(ListingEdit).filter(ListingEdit.id == edit_id, ListingEdit.listing_id == listing.id).populate_existing().with_for_update().first()
     if not edit:
         raise HTTPException(status_code=404, detail="Edit not found")
     if edit.status != "pending":
         raise HTTPException(status_code=409, detail="Edit already reviewed")
+    return listing, edit, author
 
-    listing = db.query(Listing).filter(Listing.id == edit.listing_id).with_for_update().first()
-    if not listing:
-        raise HTTPException(status_code=404, detail="Listing not found")
 
+@router.post("/listing-edits/{edit_id}/approve", status_code=204)
+def approve_listing_edit(edit_id: UUID, user=Depends(require_admin), db: Session = Depends(get_db)):
+    listing, edit, author = _locked_listing_edit(db, edit_id, recheck_tour_author=True)
     proposed = dict(edit.proposed_data or {})
-    before = _listing_snapshot(listing)
+    is_tour = room_tour.is_tour_edit(edit)
+    before = _listing_snapshot(listing, include_room_tour=is_tour)
+    if is_tour:
+        if (listing.status != "active" or not room_tour.can_edit_room_tour(listing, author, allow_admin=True)
+                or author.id != edit.submitted_by
+                or edit.room_photo_tour_base_gallery_sha256 != room_tour.gallery_digest(listing.images)):
+            raise HTTPException(409, "The room photo tour is out of date. Reject it and request a new submission.")
+        try:
+            listing.room_photo_tour_snapshot = room_tour.checked_tour_edit(listing, proposed[room_tour.FIELD])
+        except HTTPException:
+            raise HTTPException(409, "The room photo tour is out of date. Reject it and request a new submission.") from None
+    elif room_tour.changed_gallery(listing, proposed):
+        room_tour.invalidate_room_tour(db, listing)
     from utils.location_quality import stage_location_change
     stage_location_change(db, listing, proposed, user.id)
     _NOT_NULL_BOOLEANS = {"seller_financing", "hoa", "tax_exempt", "gated_community", "co_listing_enabled"}
@@ -471,13 +502,7 @@ def approve_listing_edit(edit_id: UUID, user=Depends(require_admin), db: Session
 
 @router.post("/listing-edits/{edit_id}/reject", status_code=204)
 def reject_listing_edit(edit_id: UUID, body: ListingEditRejectBody, user=Depends(require_admin), db: Session = Depends(get_db)):
-    edit = db.query(ListingEdit).filter(ListingEdit.id == edit_id).first()
-    if not edit:
-        raise HTTPException(status_code=404, detail="Edit not found")
-    if edit.status != "pending":
-        raise HTTPException(status_code=409, detail="Edit already reviewed")
-
-    listing = db.query(Listing).filter(Listing.id == edit.listing_id).first()
+    _, edit, _ = _locked_listing_edit(db, edit_id)
     edit.status = "rejected"
     edit.reviewed_by = user.id
     edit.reviewed_at = datetime.now(timezone.utc)

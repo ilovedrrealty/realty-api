@@ -1,8 +1,10 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from typing import Annotated, Optional, List, Literal
 from decimal import Decimal
 from datetime import datetime
 import uuid
+
+from schemas.listing_room_tour import RoomPhotoTour
 
 Bathrooms = Annotated[float, Field(ge=0, multiple_of=0.5)]
 
@@ -60,6 +62,13 @@ class ListingCreate(BaseModel):
 
 
 class ListingUpdate(BaseModel):
+    @model_validator(mode="before")
+    @classmethod
+    def separate_room_tour_submission(cls, data):
+        if isinstance(data, dict) and "room_photo_tour" in data:
+            raise ValueError("Submit the room photo tour separately for review")
+        return data
+
     title: Optional[str] = None
     description: Optional[str] = None
     description_es: Optional[str] = None
@@ -211,6 +220,23 @@ class ListingPageResponse(BaseModel):
 class PublicListingResponse(ListingResponse):
     location_precision: Literal["exact", "area", "hidden"] = "exact"
     location_verified: bool = False
+
+
+class PublicListingDetailResponse(PublicListingResponse):
+    room_photo_tour: RoomPhotoTour | None = None
+
+
+class ListingRoomTourUpdate(BaseModel):
+    model_config = {"extra": "forbid"}
+
+    room_photo_tour: RoomPhotoTour | None
+
+
+class ListingRoomTourEditorResponse(BaseModel):
+    listing_id: uuid.UUID
+    images: list[str]
+    room_photo_tour: RoomPhotoTour | None
+    pending_review: Literal["none", "room_photo_tour", "other"]
 
 
 class PublicListingPageResponse(ListingPageResponse):

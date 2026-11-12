@@ -1,6 +1,6 @@
 import uuid
 from sqlalchemy import Column, Text, Numeric, Integer, Boolean, Enum as SAEnum, TIMESTAMP, ARRAY, func, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from database import Base
 
 listing_status = SAEnum("draft", "pending_approval", "active", "rejected", "archived", name="listing_status", create_type=True)
@@ -75,3 +75,4 @@ class Listing(Base):
     co_listing_agreement_url   = Column(Text)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())
     updated_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())
+    room_photo_tour_snapshot = Column(JSONB(none_as_null=True))

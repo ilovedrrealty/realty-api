@@ -20,7 +20,9 @@ from models.user import User
 from models.deal_request import DealRequest
 from models.listing_location_review import ListingLocationReview
 from schemas.listing import (ListingCreate, ListingUpdate, ListingResponse, ListingPageResponse, ListingFilterOptionsResponse,
-    ListingMapResponse, ListingMapPoint, ListingMapArea, ListingMapBounds, PublicListingResponse, PublicListingPageResponse)
+    ListingRoomTourEditorResponse, ListingRoomTourUpdate,
+    ListingMapResponse, ListingMapPoint, ListingMapArea, ListingMapBounds, PublicListingDetailResponse, PublicListingResponse,
+    PublicListingPageResponse)
 from schemas.deal_request import DealRequestCreate
 from utils.auth import get_current_user
 from utils.permission import require_role
@@ -30,6 +32,7 @@ from utils.limiter import limiter
 from utils.listing_constants import ALL_REGIONS
 from utils.listing_search import normalized_location, normalized_location_column, escape_like, search_price_expression
 from utils.location_quality import public_location, public_coordinate_expression, stage_location_change
+from utils import listing_room_tour as room_tour
 
 router = APIRouter(prefix="/listings", tags=["listings"])
 
@@ -440,7 +443,7 @@ def create_listing(body: ListingCreate, user=Depends(require_role("realtor", "ad
     return listing
 
 
-@router.get("/{listing_id}", response_model=PublicListingResponse)
+@router.get("/{listing_id}", response_model=PublicListingDetailResponse)
 def get_listing(listing_id: UUID, response: Response, db: Session = Depends(get_db)):
     response.headers["Cache-Control"] = "no-store"
     AssignedRealtor = aliased(User)
@@ -456,7 +459,9 @@ def get_listing(listing_id: UUID, response: Response, db: Session = Depends(get_
     listing, submitter, assigned_realtor = row
     # The assigned realtor (if any) takes over as the public "Listed by" contact.
     contact = assigned_realtor or submitter
-    return public_responses(db, [listing])[0].model_copy(update={"submitted_by_name": contact.display_name})
+    detail = public_responses(db, [listing])[0].model_dump()
+    detail["submitted_by_name"] = contact.display_name
+    return PublicListingDetailResponse(**detail, room_photo_tour=room_tour.public_room_tour(listing))
 
 
 @router.post("/{listing_id}/deal-request", status_code=201)
@@ -502,15 +507,61 @@ def record_view(request: Request, listing_id: UUID, db: Session = Depends(get_db
         db.commit()
 
 
+def _room_tour_editor_listing(db, listing_id, user, *, lock=False):
+    if lock:
+        user = room_tour.lock_tour_author(db, user.id)
+    query = db.query(Listing).filter(Listing.id == listing_id, Listing.status == "active")
+    if lock:
+        query = query.populate_existing().with_for_update()
+    listing = query.first()
+    if listing is None or not room_tour.can_edit_room_tour(listing, user, allow_admin=True):
+        raise HTTPException(404, "Listing not found", headers={"Cache-Control": "no-store"})
+    return listing
+
+
+@router.get("/{listing_id}/room-photo-tour", response_model=ListingRoomTourEditorResponse)
+def get_room_photo_tour_editor(listing_id: UUID, response: Response, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    response.headers["Cache-Control"] = "no-store"
+    listing = _room_tour_editor_listing(db, listing_id, user, lock=True)
+    edits = room_tour.pending_edits(db, listing.id).all()
+    pending = "none"
+    if edits:
+        pending = "room_photo_tour" if all(room_tour.is_tour_edit(edit) for edit in edits) else "other"
+    return ListingRoomTourEditorResponse(
+        listing_id=listing.id, images=listing.images or [], room_photo_tour=room_tour.public_room_tour(listing),
+        pending_review=pending,
+    )
+
+
+@router.put("/{listing_id}/room-photo-tour", status_code=202)
+def submit_room_photo_tour(listing_id: UUID, body: ListingRoomTourUpdate, response: Response, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    response.headers["Cache-Control"] = "no-store"
+    listing = _room_tour_editor_listing(db, listing_id, user, lock=True)
+    edits = room_tour.pending_edits(db, listing.id).all()
+    if any(not room_tour.is_tour_edit(edit) or edit.submitted_by != user.id for edit in edits):
+        raise HTTPException(409, "A different listing edit is awaiting review", headers={"Cache-Control": "no-store"})
+
+    snapshot = room_tour.checked_tour_edit(listing, body.room_photo_tour)
+    for edit in edits:
+        db.delete(edit)
+    db.add(ListingEdit(
+        listing_id=listing.id, submitted_by=user.id,
+        proposed_data={room_tour.FIELD: snapshot["tour"] if snapshot is not None else None},
+        room_photo_tour_base_gallery_sha256=room_tour.gallery_digest(listing.images),
+    ))
+    db.add(ListingEvent(listing_id=listing.id, event_type="edit_submitted", actor_id=user.id))
+    db.commit()
+    return {"message": "Room photo tour submitted for review.", "listing_id": listing.id}
+
+
 @router.put("/{listing_id}", response_model=ListingResponse)
 def update_listing(listing_id: UUID, body: ListingUpdate, user=Depends(get_current_user), db: Session = Depends(get_db)):
-    listing = db.query(Listing).filter(Listing.id == listing_id).with_for_update().first()
+    listing = db.query(Listing).filter(Listing.id == listing_id).populate_existing().with_for_update().first()
     if not listing:
         raise HTTPException(status_code=404, detail="Listing not found")
 
     if listing.submitted_by != user.id and listing.assigned_realtor_id != user.id and user.role != "admin":
         raise HTTPException(status_code=403, detail="Insufficient permissions")
-
     update_data = body.model_dump(exclude_unset=True)
     if user.role == "owner" and update_data.get("transaction") and update_data["transaction"] != "rent":
         raise HTTPException(status_code=422, detail="Owners may only submit rental listings.")
@@ -518,16 +569,15 @@ def update_listing(listing_id: UUID, body: ListingUpdate, user=Depends(get_curre
     # Active listings edited by realtors go into a pending-edit queue instead of
     # updating in place so the live listing is not disrupted until admin approves.
     if listing.status == "active" and user.role != "admin":
-        # Supersede any existing pending edit for this listing
-        db.query(ListingEdit).filter(
-            ListingEdit.listing_id == listing.id,
-            ListingEdit.status == "pending",
-        ).delete(synchronize_session=False)
-
+        pending = room_tour.pending_edits(db, listing.id)
+        if any(room_tour.is_tour_edit(edit) for edit in pending.all()):
+            raise HTTPException(409, "A room photo tour is awaiting review")
+        pending.delete(synchronize_session=False)
+        proposed = body.model_dump(exclude_unset=True, mode="json")
         edit = ListingEdit(
             listing_id=listing.id,
             submitted_by=user.id,
-            proposed_data=body.model_dump(exclude_unset=True, mode='json'),
+            proposed_data=proposed,
         )
         db.add(edit)
         db.add(ListingEvent(listing_id=listing.id, event_type="edit_submitted", actor_id=user.id))
@@ -538,8 +588,10 @@ def update_listing(listing_id: UUID, body: ListingUpdate, user=Depends(get_curre
     was_rejected = listing.status == "rejected"
     # Explicit null location fields clear candidate evidence. Other nullable
     # input keeps the existing generic-edit behavior of ignoring null values.
-    changed = {key: value for key, value in body.model_dump(exclude_unset=True).items()
+    changed = {key: value for key, value in update_data.items()
                if value is not None or key in {"latitude", "longitude", "maps_url"}}
+    if room_tour.changed_gallery(listing, changed):
+        room_tour.invalidate_room_tour(db, listing)
     stage_location_change(db, listing, changed, user.id)
     for field, value in changed.items():
         setattr(listing, field, value)
@@ -555,7 +607,7 @@ def update_listing(listing_id: UUID, body: ListingUpdate, user=Depends(get_curre
 
 @router.delete("/{listing_id}", status_code=204)
 def archive_listing(listing_id: UUID, user=Depends(get_current_user), db: Session = Depends(get_db)):
-    listing = db.query(Listing).filter(Listing.id == listing_id).first()
+    listing = db.query(Listing).filter(Listing.id == listing_id).populate_existing().with_for_update().first()
     if not listing:
         raise HTTPException(status_code=404, detail="Listing not found")
 
@@ -563,4 +615,5 @@ def archive_listing(listing_id: UUID, user=Depends(get_current_user), db: Sessio
         raise HTTPException(status_code=403, detail="Insufficient permissions")
 
     listing.status = "archived"
+    room_tour.invalidate_room_tour(db, listing)
     db.commit()
