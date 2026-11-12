@@ -524,7 +524,8 @@ def reject_listing_edit(edit_id: UUID, body: ListingEditRejectBody, user=Depends
 # ── Listing History ───────────────────────────────────────────────────────────
 
 @router.get("/listings/{listing_id}/history", response_model=List[ListingEventResponse])
-def get_listing_history(listing_id: UUID, user=Depends(require_admin), db: Session = Depends(get_db)):
+def get_listing_history(listing_id: UUID, response: Response, user=Depends(require_admin), db: Session = Depends(get_db)):
+    response.headers["Cache-Control"] = "no-store"
     listing = db.query(Listing).filter(Listing.id == listing_id).first()
     if not listing:
         raise HTTPException(status_code=404, detail="Listing not found")

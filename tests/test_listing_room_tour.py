@@ -109,6 +109,9 @@ class ListingRoomPhotoTourTests(unittest.TestCase):
         self.review(edit["id"])
         self.assertEqual(self.detail()["room_photo_tour"], self.tour())
         self.assertEqual(self.detail()["images"], IMAGES)
+        history = self.request("GET", f"/admin/listings/{self.listing_id}/history", "admin")
+        self.assertEqual(history.headers.get("cache-control"), "no-store")
+        self.assertTrue(any(row["snapshot_after"] == {"room_photo_tour": self.tour()} for row in history.json()))
         for rows in (self.request("GET", "/listings").json()["items"], self.request("GET", "/listings/deal").json()):
             self.assertIn(self.listing_id, {row["id"] for row in rows})
             self.assertTrue(all("room_photo_tour" not in row for row in rows))
