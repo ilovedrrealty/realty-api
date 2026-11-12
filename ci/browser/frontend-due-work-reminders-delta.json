@@ -1,0 +1,64 @@
+{
+  "files": {
+    "apps/dashboard/src/api/dueWorkReminders.ts": {
+      "binary_nul_detected": false,
+      "bytes": 10259,
+      "change": "A",
+      "git_blob_oid": "0241424a8ca49dbe9dcdddd397367dccf056ba32",
+      "mode": "100644",
+      "sha256": "36a1e76aeab8051cf7dd2f0ba77d3b6330607f22da7958b3fd10d8af103634d4"
+    },
+    "apps/dashboard/src/components/network/DueWorkReminders.tsx": {
+      "binary_nul_detected": false,
+      "bytes": 12404,
+      "change": "A",
+      "git_blob_oid": "47bad2950c6b00fef1403bacc48e7f8ae469aba6",
+      "mode": "100644",
+      "sha256": "ee608ff6e73953b39b0fa88a226458604ceb6ce5d17a087ac5b9445e61bff8a0"
+    },
+    "apps/dashboard/src/components/network/ProjectWorkspace.tsx": {
+      "binary_nul_detected": false,
+      "bytes": 30537,
+      "change": "M",
+      "git_blob_oid": "3463acb009f54a4bca0c6a92acd1c110ce9718cd",
+      "mode": "100644",
+      "sha256": "f914b83998c82f6f1c10130dd7fba11e07f18c03aee4c4ea68f55a977af27fe0"
+    },
+    "apps/dashboard/src/locale/en/property_network.json": {
+      "binary_nul_detected": false,
+      "bytes": 28188,
+      "change": "M",
+      "git_blob_oid": "387322a4f9a8b64148f1c96f28bc78ec3b54fec0",
+      "mode": "100644",
+      "sha256": "545ac3a30c6d41b0d70d3023620b7f00a38d1e534dcdbb50328cbde47f9c358f"
+    },
+    "apps/dashboard/src/locale/es/property_network.json": {
+      "binary_nul_detected": false,
+      "bytes": 31355,
+      "change": "M",
+      "git_blob_oid": "3b631641d838c80e3a79265bfac73339e125af6c",
+      "mode": "100644",
+      "sha256": "cc86332ef796e3cbd340fb438f5971bd49258cd6a386f0e32f8d06e8e91777d8"
+    },
+    "apps/dashboard/src/pages/shared/PropertyNetwork.tsx": {
+      "binary_nul_detected": false,
+      "bytes": 4392,
+      "change": "M",
+      "git_blob_oid": "e8fe5f2185a63c50d178b4ee881945e495ef58b5",
+      "mode": "100644",
+      "sha256": "4c46dcf05f88de9e12082b21d11819f007f483b943d17faee252939c0a62a4d1"
+    },
+    "tests/due-work-reminders.test.cjs": {
+      "binary_nul_detected": false,
+      "bytes": 12041,
+      "change": "A",
+      "git_blob_oid": "5af24a41e9af5cfd863f83c1e09e282536ac4385",
+      "mode": "100644",
+      "sha256": "ee8827e0e7fd3daa6e93ae95508b87375d2da66ecc352dd43a858b5505030486"
+    }
+  },
+  "frontend_commit": "fd3c72c0e5bcdcea51172f47dd44adea6ecaf1cf",
+  "frontend_tree": "63b3f5744faf0eeac848789ac10389c0f5c3ee71",
+  "parent_commit": "72467a697489345c9102f1e23968d68c9fd5fc87",
+  "parent_tree": "7d868765663f7205269aba64753431572d18060f"
+}
