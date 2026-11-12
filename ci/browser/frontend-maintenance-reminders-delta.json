@@ -1,0 +1,72 @@
+{
+  "files": {
+    "apps/dashboard/src/api/maintenanceReminders.ts": {
+      "binary_nul_detected": false,
+      "bytes": 10271,
+      "change": "A",
+      "git_blob_oid": "28e80105bdb704c7c72e7f5c2dccc178db4b5762",
+      "mode": "100644",
+      "sha256": "cd1a561c04c877b353a28e57bd544c7422165305baa308f8d3015d69ee92d187"
+    },
+    "apps/dashboard/src/components/network/MaintenanceReminders.tsx": {
+      "binary_nul_detected": false,
+      "bytes": 13516,
+      "change": "A",
+      "git_blob_oid": "7ea31f2b574c74292829b5635e83d5376ed3823e",
+      "mode": "100644",
+      "sha256": "7fa45a4fe79f7b0de338f329f48ec30ac01f8a7c64edadd75eedc97c1b57e251"
+    },
+    "apps/dashboard/src/components/network/PropertyRegistry.tsx": {
+      "binary_nul_detected": false,
+      "bytes": 17084,
+      "change": "M",
+      "git_blob_oid": "db3c737180a64063aab5125605db129e70bb5380",
+      "mode": "100644",
+      "sha256": "7c84acb8eaf22cddb3262f10c75d4069afddae41bc33b159c677a2d7ae40ac24"
+    },
+    "apps/dashboard/src/locale/en/property_network.json": {
+      "binary_nul_detected": false,
+      "bytes": 27489,
+      "change": "M",
+      "git_blob_oid": "a346837b84447e1c981d2faab09f08deb4a8ba1e",
+      "mode": "100644",
+      "sha256": "be93a5db6d70d59725506d2dfdbff8c25b55533a8b4e66f3b5bcbe938ee093cc"
+    },
+    "apps/dashboard/src/locale/es/property_network.json": {
+      "binary_nul_detected": false,
+      "bytes": 30561,
+      "change": "M",
+      "git_blob_oid": "438f0707f04c28b78246efb4b39502f93a34d74d",
+      "mode": "100644",
+      "sha256": "f8549c1fc6f18047f007ad50fe5163b7d1e208e6bb60b3f5f7194513354fb477"
+    },
+    "apps/dashboard/src/pages/shared/PropertyManagement.tsx": {
+      "binary_nul_detected": false,
+      "bytes": 24252,
+      "change": "M",
+      "git_blob_oid": "d89ace2a8fb67988f30cc9fe80cb4412bda81d78",
+      "mode": "100644",
+      "sha256": "f950e5825febb1c619b66b662c3ba0bf161ea44c8566cc72247eb89c9473ce69"
+    },
+    "apps/dashboard/src/pages/shared/PropertyNetwork.tsx": {
+      "binary_nul_detected": false,
+      "bytes": 4376,
+      "change": "M",
+      "git_blob_oid": "c3e261917f163ff28b37837006401d6e3597038d",
+      "mode": "100644",
+      "sha256": "e5717c167607ca01a16b75d066f61b9835f65ce057e049276503f123ab14352b"
+    },
+    "tests/maintenance-reminders.test.cjs": {
+      "binary_nul_detected": false,
+      "bytes": 10517,
+      "change": "A",
+      "git_blob_oid": "5cd8c09bf0f9100f94bd35097314e64557d3f3a1",
+      "mode": "100644",
+      "sha256": "8e187d31ef4a5b45702ec2d1ef35a69e0a378191001d7538214734505ca96678"
+    }
+  },
+  "frontend_commit": "72467a697489345c9102f1e23968d68c9fd5fc87",
+  "frontend_tree": "7d868765663f7205269aba64753431572d18060f",
+  "parent_commit": "c593006658fa1f2ac1943fac7f93c266eaf79ec1",
+  "parent_tree": "d35be3c8b9e2cd8255001c9d7027dcd16de3335f"
+}
