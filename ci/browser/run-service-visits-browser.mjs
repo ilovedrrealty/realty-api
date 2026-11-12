@@ -266,7 +266,13 @@ async function submit(session, seed, operation, version, status, fields = {}) {
   }
   if (operation === 'request_completion') {
     await form.getByLabel(t.date, { exact: true }).fill(fields.completed_on)
-    await form.getByLabel(t.summary, { exact: true }).fill(fields.note)
+    const summary = form.locator('textarea')
+    check(await summary.count() === 1 && await summary.evaluate(element =>
+      [...(element.closest('label')?.childNodes ?? [])]
+        .filter(node => node.nodeType === Node.TEXT_NODE).map(node => node.textContent).join('').trim()) === t.summary,
+    'COMPLETION_SUMMARY_FIELD_OR_LABEL_CHANGED')
+    check(await summary.inputValue() === (version === 11 ? INITIAL : ''), 'EXPECTED_COMPLETION_PREFILL_CHANGED')
+    await summary.fill(fields.note)
   }
   if (operation === 'request_changes') await form.getByLabel(t.review, { exact: true }).fill(fields.note)
   if (operation === 'approve_completion') {
