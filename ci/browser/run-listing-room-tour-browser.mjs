@@ -221,7 +221,8 @@ async function openPublic(guest, f, tour) {
   ])
   require(document?.status() === 200 && detail.status() === 200 && noStore(detail), 'REAL_EXPORTED_LISTING_REQUIRED')
   exactDetail(await detail.json(), f, tour)
-  await page.getByRole('heading', { name: f.title, exact: true, level: 1 }).waitFor()
+  const visibleTitle = f.title.toLowerCase().replace(/\b\w/g, character => character.toUpperCase())
+  await page.getByRole('heading', { name: visibleTitle, exact: true, level: 1 }).waitFor()
   await button(page, copy[guest.lang].booking).waitFor()
   if (tour === null) require(await button(page, copy[guest.lang].open).count() === 0, 'UNAPPROVED_TOUR_VISIBLE_PUBLICLY')
 }

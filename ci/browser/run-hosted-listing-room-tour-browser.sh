@@ -8,7 +8,7 @@ bounded() { timeout --kill-after=8s "$@"; }
 
 [[ $# == 5 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api ]] || die CI_REQUIRED
 [[ ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 && ${GITHUB_RUN_ATTEMPT:-} == 1 ]] || die STANDARD_LINUX_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-listing-room-tour-browser-20261112 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
+[[ ${GITHUB_REF:-} == refs/heads/codex-ci-listing-room-tour-browser-heading-20261112 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 
 ops="$1"; relay="$2"; frontend="$3"; backend="$4"; migration="$5"
 [[ "$ops" == "$GITHUB_WORKSPACE/browser-ops" && "$relay" == "$GITHUB_WORKSPACE/frontend-relay" && "$frontend" == "$GITHUB_WORKSPACE/frontend-base" && "$backend" == "$GITHUB_WORKSPACE/browser-backend" && "$migration" == "$GITHUB_WORKSPACE/migration-relay" ]] || die CHECKOUT_PATHS_REQUIRED
@@ -16,7 +16,7 @@ for checkout in "$ops" "$relay" "$frontend" "$backend" "$migration"; do
   checkout_status=$(git -C "$checkout" status --porcelain=v1 --untracked-files=all) || die CLEAN_CHECKOUT_REQUIRED
   [[ $(realpath "$checkout") == "$checkout" && -z "$checkout_status" ]] || die CLEAN_CHECKOUT_REQUIRED
 done
-[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == bf272275804d0ec41441ec18d4cd258aa156f8f4 ]] || die EXACT_OPERATIONS_PARENT_REQUIRED
+[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == b8e56070936c3c0901c3a21ed8773327e7447c20 ]] || die EXACT_OPERATIONS_PARENT_REQUIRED
 [[ $(git -C "$relay" rev-parse HEAD) == 441efdc288c3a38b8607c816c684abec080d83ad ]] || die EXACT_FRONTEND_RELAY_REQUIRED
 [[ $(git -C "$frontend" rev-parse HEAD) == 73d771940e73d42ed044cea77a5258a93a445b05 ]] || die EXACT_FRONTEND_BASE_REQUIRED
 [[ $(git -C "$backend" rev-parse HEAD) == a93a100e1f2edc5cb38969e1df04a799890295a6 && $(git -C "$backend" rev-parse 'HEAD^{tree}') == 4db62d7bedde662ebf9bae74dfecf644fe8a82e5 ]] || die EXACT_API_SOURCE_REQUIRED

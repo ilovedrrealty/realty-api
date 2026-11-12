@@ -2,7 +2,7 @@ name: Isolated room-tour editor and public mobile rehearsal
 
 on:
   push:
-    branches: [codex-ci-listing-room-tour-browser-20261112]
+    branches: [codex-ci-listing-room-tour-browser-heading-20261112]
 
 permissions:
   contents: read
