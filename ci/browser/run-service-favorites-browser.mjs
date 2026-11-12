@@ -11,13 +11,13 @@ const copy = {
     choose: 'Choose an authorized property', propertyClass: 'Property class', category: 'Requested service',
     save: 'Save professional', saved: 'Saved', title: 'Saved professionals',
     remove: 'Remove saved professional', refresh: 'Refresh', unavailable: 'Professional unavailable',
-    empty: "You haven't saved any professionals yet.", preferences: 'Offer services privately',
+    empty: "You haven't saved any professionals yet.", memberCode: code => `Member #${code}`, preferences: 'Offer services privately',
     optIn: 'Let members find me for these services', saveChanges: 'Save changes' },
   es: { nav: 'Flujo privado de servicios', newRequest: 'Nueva solicitud privada de servicio',
     source: 'Contexto de la propiedad', choose: 'Elige una propiedad autorizada', propertyClass: 'Clase de propiedad',
     category: 'Servicio solicitado', save: 'Guardar profesional', saved: 'Guardado', title: 'Profesionales guardados',
     remove: 'Quitar profesional guardado', refresh: 'Actualizar', unavailable: 'Profesional no disponible',
-    empty: 'Todavía no has guardado profesionales.' },
+    empty: 'Todavía no has guardado profesionales.', memberCode: code => `Miembro n.º ${code}` },
 }
 const result = { status: 'FAIL', scope: 'isolated_synthetic_service_favorites', checks: [],
   favorite_saves: 0, favorite_removes: 0, preference_updates: 0,
@@ -243,12 +243,13 @@ async function main() {
       const { page, text } = saver
       await openServices(saver, fixture)
       await page.getByRole('button', { name: text.newRequest, exact: true }).click()
-      await page.getByLabel(text.source, { exact: true }).selectOption('listing')
-      await page.getByLabel(text.choose, { exact: true }).selectOption(data.listingId)
-      await page.getByLabel(text.propertyClass, { exact: true }).selectOption('house_villa')
+      const select = name => page.getByRole('combobox', { name: new RegExp(`^${name}`) })
+      await select(text.source).selectOption('listing')
+      await select(text.choose).selectOption(data.listingId)
+      await select(text.propertyClass).selectOption('house_villa')
       const [discovery] = await Promise.all([
         page.waitForResponse(response => endpoint(response, discoverPath)),
-        page.getByLabel(text.category, { exact: true }).selectOption('pool_service'),
+        select(text.category).selectOption('pool_service'),
       ])
       require(discovery.status() === 200 && privateHeaders(discovery), 'ACTUAL_PROVIDER_DISCOVERY_REQUIRED')
       const row = page.getByRole('group', { name: data.providerAlias, exact: true })
@@ -304,7 +305,8 @@ async function main() {
       await hidden
       const entry = panel.getByRole('listitem').filter({ hasText: reader.text.unavailable })
       require(await panel.getByText(data.providerAlias, { exact: true }).count() === 0
-        && !(await entry.innerText()).includes(String(data.providerUserCode)), 'REDACTED_FAVORITE_LEAKED_PROVIDER_IDENTITY')
+        && await entry.getByText(reader.text.memberCode(data.providerUserCode), { exact: true }).count() === 0,
+      'REDACTED_FAVORITE_LEAKED_PROVIDER_IDENTITY')
       expectFavorite(expectPage(await read(reader.context, favoritesPath), 1), null, null, ownedFavoriteId)
       await fits(entry)
     })

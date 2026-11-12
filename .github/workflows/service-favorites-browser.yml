@@ -2,7 +2,7 @@ name: Isolated private saved professionals browser rehearsal
 
 on:
   push:
-    branches: [codex-ci-service-favorites-browser-20261112]
+    branches: [codex-ci-service-favorites-browser-controls-20261112]
 
 permissions:
   contents: read
