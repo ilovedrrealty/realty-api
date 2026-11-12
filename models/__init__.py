@@ -26,3 +26,4 @@ from .service_visit import NetworkServiceWork, NetworkServiceWorkAction
 from .service_conversation import NetworkServiceConversationMessage
 from .service_negotiation import NetworkServiceNegotiationMessage
 from .service_review import NetworkServiceReview
+from .service_favorites import NetworkServiceFavorite

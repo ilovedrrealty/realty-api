@@ -9,8 +9,8 @@ from schemas.service_conversation import ServiceConversationWrite
 from schemas.service_review import ServiceReviewWrite
 from schemas.service_visit import ServiceWorkWrite
 from schemas.service_workflow import (PreferenceWrite, RequestCreate, RecipientAction, ManagedRecipientAction,
-    QuoteWrite, CounterWrite, ProposalAction, RequestAction, AwardWrite)
-from services import service_conversation, service_negotiation, service_rebooking, service_review, service_visit, service_workflow as service
+    QuoteWrite, CounterWrite, ProposalAction, RequestAction, AwardWrite, ServiceFavoriteWrite)
+from services import service_conversation, service_favorites, service_negotiation, service_rebooking, service_review, service_visit, service_workflow as service
 from utils.auth import get_current_user
 from utils.limiter import limiter
 
@@ -228,3 +228,23 @@ def service_review_submission(request_id: UUID, submission_id: UUID, user=Depend
 @router.get("/service-requests/{request_id}/rebook-context")
 def service_rebook_context(request_id: UUID, user=Depends(get_current_user), db: Session = Depends(get_db)):
     return service_rebooking.context(db, user, request_id)
+
+
+@router.get("/service-favorites")
+def service_favorite_list(page: int = Page, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return service_favorites.list_favorites(db, user, page)
+
+
+@router.post("/service-favorites", status_code=201)
+@limiter.limit("30/minute")
+def save_service_favorite(request: Request, response: Response, body: ServiceFavoriteWrite,
+                          user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return service_favorites.save(db, user, body.provider_user_code)
+
+
+@router.delete("/service-favorites/{favorite_id}", status_code=204, response_class=Response)
+@limiter.limit("30/minute")
+def remove_service_favorite(request: Request, response: Response, favorite_id: UUID,
+                            user=Depends(get_current_user), db: Session = Depends(get_db)):
+    service_favorites.remove(db, user, favorite_id)
+    return Response(status_code=204)

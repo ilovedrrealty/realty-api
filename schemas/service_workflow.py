@@ -12,6 +12,10 @@ class Submission(Input):
     submission_id: UUID
 
 
+class ServiceFavoriteWrite(Input):
+    provider_user_code: int = Field(gt=0, le=2147483647, strict=True)
+
+
 class PreferenceWrite(Submission):
     expected_version: int = Field(ge=0, strict=True)
     service_opt_in: StrictBool
