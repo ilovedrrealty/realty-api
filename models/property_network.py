@@ -71,8 +71,10 @@ class NetworkProjectMember(Base):
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
     role = Column(Text, nullable=False)
     active = Column(Boolean, nullable=False, default=True)
+    reminder_grant_version = Column(Integer, nullable=False, server_default="1")
     __table_args__ = (UniqueConstraint("project_id", "user_id", name="uq_network_project_member"),
                      CheckConstraint("role IN ('manager','professional','viewer')", name="ck_network_member_role"),
+                     CheckConstraint("reminder_grant_version >= 1", name="ck_network_member_reminder_grant"),
                      Index("ix_network_member_user", "user_id", "active"))
 
 
@@ -84,7 +86,9 @@ class NetworkMilestone(Base):
     due_date = Column(Date)
     status = Column(Text, nullable=False, default="open")
     version = Column(Integer, nullable=False, default=1)
+    reminder_occurrence_version = Column(Integer, nullable=False, server_default="1")
     __table_args__ = (CheckConstraint("version >= 1", name="ck_network_milestone_version"),
+                     CheckConstraint("reminder_occurrence_version BETWEEN 1 AND version", name="ck_network_milestone_reminder_occurrence"),
                      CheckConstraint("status IN ('open','in_progress','completed','cancelled')", name="ck_network_milestone_status"))
 
 

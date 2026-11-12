@@ -29,3 +29,4 @@ from .service_review import NetworkServiceReview
 from .service_favorites import NetworkServiceFavorite
 from .maintenance_reminders import (NetworkMaintenancePreference, NetworkMaintenanceSchedule, NetworkMaintenanceOccurrence,
     NetworkMaintenanceAction)
+from .due_work_reminders import NetworkDueWorkPreference, NetworkDueWorkDisposition, NetworkDueWorkAction

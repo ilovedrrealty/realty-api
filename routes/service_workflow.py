@@ -5,13 +5,14 @@ from fastapi import APIRouter, Depends, Request, Response
 from sqlalchemy.orm import Session
 from database import get_db
 from routes.property_network import NetworkRoute, Page
+from schemas.due_work_reminders import DueWorkActionWrite, DueWorkKind, DueWorkPreferencesWrite
 from schemas.maintenance_reminders import MaintenanceActionWrite, MaintenancePreferencesWrite, MaintenanceScheduleCreate, SourceKind
 from schemas.service_conversation import ServiceConversationWrite
 from schemas.service_review import ServiceReviewWrite
 from schemas.service_visit import ServiceWorkWrite
 from schemas.service_workflow import (PreferenceWrite, RequestCreate, RecipientAction, ManagedRecipientAction,
     QuoteWrite, CounterWrite, ProposalAction, RequestAction, AwardWrite, ServiceFavoriteWrite)
-from services import (maintenance_reminders, service_conversation, service_favorites, service_negotiation, service_rebooking,
+from services import (due_work_reminders, maintenance_reminders, service_conversation, service_favorites, service_negotiation, service_rebooking,
     service_review, service_visit, service_workflow as service)
 from utils.auth import get_current_user
 from utils.limiter import limiter
@@ -284,3 +285,29 @@ def maintenance_reminder_action(request: Request, response: Response, source_kin
 def maintenance_reminder_submission(source_kind: SourceKind, source_id: UUID, submission_id: UUID,
                                      user=Depends(get_current_user), db: Session = Depends(get_db)):
     return maintenance_reminders.own_submission(db, user, source_kind, source_id, submission_id)
+
+
+@router.get("/projects/{project_id}/due-work-reminders")
+def list_due_work_reminders(project_id: UUID, page: int = Page,
+                            user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return due_work_reminders.list_due_work(db, user, project_id, page)
+
+
+@router.put("/projects/{project_id}/due-work-reminders/preferences")
+@limiter.limit("30/minute")
+def due_work_reminder_preferences(request: Request, response: Response, project_id: UUID, body: DueWorkPreferencesWrite,
+                                  user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return due_work_reminders.save_preferences(db, user, project_id, body)
+
+
+@router.post("/projects/{project_id}/due-work-reminders/{kind}/{item_id}/actions")
+@limiter.limit("30/minute")
+def due_work_reminder_action(request: Request, response: Response, project_id: UUID, kind: DueWorkKind, item_id: UUID,
+                             body: DueWorkActionWrite, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return due_work_reminders.apply_action(db, user, project_id, kind, item_id, body)
+
+
+@router.get("/projects/{project_id}/due-work-reminders/submissions/{submission_id}")
+def due_work_reminder_submission(project_id: UUID, submission_id: UUID,
+                                 user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return due_work_reminders.own_submission(db, user, project_id, submission_id)

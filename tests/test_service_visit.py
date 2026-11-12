@@ -270,6 +270,12 @@ class PrivateAwardedServiceWork(unittest.TestCase):
             self.revision.upgrade()  # Upgrade now creates both tables itself.
             assert_private_objects(db)
             NetworkServiceReview.__table__.create(db)
+            path = Path(__file__).resolve().parents[1] / "alembic/versions/a6e4c2b8d517_private_due_work_reminders.py"
+            spec = importlib.util.spec_from_file_location("legacy_work_generation_upgrade", path)
+            generation_revision = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(generation_revision)
+            generation_revision.op = Operations(MigrationContext.configure(db))
+            generation_revision.upgrade_work_generation()
 
         path, _ = self.awarded()
         self.change(path, self.proposal(0))

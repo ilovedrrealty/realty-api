@@ -21,10 +21,13 @@ class NetworkServiceWork(Base):
     completion_review_note = Column(Text)
     completion_update_id = Column(UUID(as_uuid=True), ForeignKey("network_project_updates.id", ondelete="RESTRICT"), unique=True)
     updated_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())
+    confirmed_reminder_version = Column(Integer)
 
     __table_args__ = (
         CheckConstraint("version>=1 AND status IN ('unscheduled','proposed','confirmed','cancelled','completion_requested','completed')",
                         name="ck_service_work_state"),
+        CheckConstraint("confirmed_reminder_version IS NULL OR (confirmed_starts_at IS NOT NULL "
+                        "AND confirmed_reminder_version BETWEEN 2 AND version)", name="ck_service_work_reminder_occurrence"),
         CheckConstraint("(confirmed_starts_at IS NULL)=(confirmed_duration_minutes IS NULL) "
                         "AND (confirmed_duration_minutes IS NULL OR confirmed_duration_minutes BETWEEN 15 AND 480) "
                         "AND (status NOT IN ('confirmed','completion_requested','completed') OR confirmed_starts_at IS NOT NULL) "

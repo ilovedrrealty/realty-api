@@ -306,6 +306,8 @@ def assign(db, user, identity, body):
             raise HTTPException(409, "This project has reached its member limit")
         member = Member(project_id=row.id, user_id=target.id)
         db.add(member)
+    elif not member.active or member.role != body.role:
+        member.reminder_grant_version += 1
     member.role, member.active = body.role, True
     row.version += 1; row.updated_at = now()
     audit(db, user, "project", row.id, "member_assigned", {"member_code": target.user_code, "role": body.role})
@@ -320,6 +322,8 @@ def revoke(db, user, identity, code, body):
     member = db.query(Member).filter(Member.project_id == row.id, Member.user_id == target.id).first() if target else None
     if member is None:
         raise HTTPException(404, "Project member not found")
+    if member.active:
+        member.reminder_grant_version += 1
     member.active = False
     row.version += 1; row.updated_at = now()
     audit(db, user, "project", row.id, "member_revoked", {"member_code": code})
@@ -355,8 +359,12 @@ def edit_milestone(db, user, identity, body):
     project_for(db, user, row.project_id, lock=True, permission="manage")
     db.refresh(row)
     version(row, body.expected_version)
+    new_occurrence = (row.due_date != body.due_date
+                      or row.status in {"completed", "cancelled"} and body.status in {"open", "in_progress"})
     row.title, row.due_date, row.status = body.title, body.due_date, body.status
     row.version += 1
+    if new_occurrence:
+        row.reminder_occurrence_version = row.version
     milestone_event(db, user, row); db.commit()
     return milestone_view(row)
 

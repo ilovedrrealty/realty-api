@@ -218,6 +218,7 @@ def _apply_operation(db, work, user, actor, project, provider_id, body, instant)
         _require_available_window(db, work, provider_id)
         work.confirmed_starts_at = work.proposed_starts_at
         work.confirmed_duration_minutes = work.proposed_duration_minutes
+        work.confirmed_reminder_version = work.version + 1
         _clear_proposal(work)
         _clear_completion(work)
         work.status = "confirmed"
@@ -226,6 +227,7 @@ def _apply_operation(db, work, user, actor, project, provider_id, body, instant)
         work.status = "confirmed" if work.confirmed_starts_at is not None else "unscheduled"
     elif body.operation == "cancel_visit":
         work.confirmed_starts_at = work.confirmed_duration_minutes = None
+        work.confirmed_reminder_version = None
         _clear_proposal(work)
         _clear_completion(work)
         work.status = "cancelled"
