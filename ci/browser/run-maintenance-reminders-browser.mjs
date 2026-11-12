@@ -244,7 +244,7 @@ async function create(state, scope, title, due, repeat) {
 
 function scheduleRow(state, title) {
   const panel = reminderPanel(state)
-  return panel.getByRole('listitem').filter({ has: panel.getByRole('heading', { name: title, exact: true }) })
+  return panel.getByRole('listitem').filter({ has: state.page.getByRole('heading', { name: title, exact: true }) })
 }
 
 async function renderedDue(state, title, due) {

@@ -2,7 +2,7 @@ name: Isolated private owner maintenance reminders browser rehearsal
 
 on:
   push:
-    branches: [codex-ci-maintenance-reminders-browser-20261112]
+    branches: [codex-ci-maintenance-reminders-browser-rows-20261112]
 
 permissions:
   contents: read
