@@ -6,10 +6,11 @@ from sqlalchemy.orm import Session
 from database import get_db
 from routes.property_network import NetworkRoute, Page
 from schemas.service_conversation import ServiceConversationWrite
+from schemas.service_review import ServiceReviewWrite
 from schemas.service_visit import ServiceWorkWrite
 from schemas.service_workflow import (PreferenceWrite, RequestCreate, RecipientAction, ManagedRecipientAction,
     QuoteWrite, CounterWrite, ProposalAction, RequestAction, AwardWrite)
-from services import service_conversation, service_negotiation, service_visit, service_workflow as service
+from services import service_conversation, service_negotiation, service_review, service_visit, service_workflow as service
 from utils.auth import get_current_user
 from utils.limiter import limiter
 
@@ -204,3 +205,21 @@ def send_negotiation_message(request: Request, response: Response, request_id: U
 def negotiation_conversation_submission(request_id: UUID, recipient_id: UUID, submission_id: UUID,
                                         user=Depends(get_current_user), db: Session = Depends(get_db)):
     return service_negotiation.own_submission(db, user, request_id, recipient_id, submission_id)
+
+
+@router.get("/service-requests/{request_id}/review")
+def service_review_detail(request_id: UUID, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return service_review.detail(db, user, request_id)
+
+
+@router.post("/service-requests/{request_id}/review", status_code=201)
+@limiter.limit("30/minute")
+def submit_service_review(request: Request, response: Response, request_id: UUID, body: ServiceReviewWrite,
+                          user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return service_review.submit(db, user, request_id, body)
+
+
+@router.get("/service-requests/{request_id}/review/submissions/{submission_id}")
+def service_review_submission(request_id: UUID, submission_id: UUID, user=Depends(get_current_user),
+                              db: Session = Depends(get_db)):
+    return service_review.own_submission(db, user, request_id, submission_id)
