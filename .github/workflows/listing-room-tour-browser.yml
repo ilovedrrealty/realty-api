@@ -2,7 +2,7 @@ name: Isolated room-tour editor and public mobile rehearsal
 
 on:
   push:
-    branches: [codex-ci-listing-room-tour-browser-heading-20261112]
+    branches: [codex-ci-listing-room-tour-browser-approval-20261112]
 
 permissions:
   contents: read
@@ -48,7 +48,7 @@ jobs:
       - name: Read exact backend application
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: a93a100e1f2edc5cb38969e1df04a799890295a6
+          ref: 381e05cc73ca08e5a6645f003f72631c61577101
           path: browser-backend
           persist-credentials: false
       - name: Read accepted migration dependency recipe
