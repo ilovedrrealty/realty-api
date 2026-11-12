@@ -1,0 +1,96 @@
+{
+  "files": {
+    "apps/dashboard/src/api/historyShares.ts": {
+      "binary_nul_detected": false,
+      "bytes": 11514,
+      "change": "A",
+      "git_blob_oid": "a6c731977ff753c677456196cfb084e26bb978a1",
+      "mode": "100644",
+      "sha256": "bcaed265a728f11cd6c2fec664a6f856df674e1577953ee92715e2937c25ef1b"
+    },
+    "apps/dashboard/src/components/network/HistoryShareCreate.tsx": {
+      "binary_nul_detected": false,
+      "bytes": 12873,
+      "change": "A",
+      "git_blob_oid": "9371d9caffc59128783520327d9f96dd33caa936",
+      "mode": "100644",
+      "sha256": "256353ebf1f09c354b8ed878e1c87d62c7247e7c55231fd5c2eb7e34fb311df4"
+    },
+    "apps/dashboard/src/components/network/HistorySharing.tsx": {
+      "binary_nul_detected": false,
+      "bytes": 8932,
+      "change": "A",
+      "git_blob_oid": "62e1a90ed4e06d3b8c3c6c0f0758af715444046a",
+      "mode": "100644",
+      "sha256": "6881db4eff68cda0735459b4cc4e572d454d0290cd374be31993aefc57ec4a19"
+    },
+    "apps/dashboard/src/components/network/ProjectWorkspace.tsx": {
+      "binary_nul_detected": false,
+      "bytes": 31188,
+      "change": "M",
+      "git_blob_oid": "8bf322faed987827740ea1a48eeba7e725117af1",
+      "mode": "100644",
+      "sha256": "0a8655c4e45ac6d2115feea954530b3908e21a23de9e7539176e70901b1513ea"
+    },
+    "apps/dashboard/src/components/network/PropertyRegistry.tsx": {
+      "binary_nul_detected": false,
+      "bytes": 17520,
+      "change": "M",
+      "git_blob_oid": "1d06a34cac4c8a958eb65cc9a64f33fbd1273344",
+      "mode": "100644",
+      "sha256": "95af1384df568a52788b4ee3f5f06a7f4da804da02cae07ffaa6744938fc64b4"
+    },
+    "apps/dashboard/src/locale/en/property_network.json": {
+      "binary_nul_detected": false,
+      "bytes": 33852,
+      "change": "M",
+      "git_blob_oid": "4ab0c2734d4b341ac2ee9decb6d29bfad88c0cfa",
+      "mode": "100644",
+      "sha256": "1116763b0b6874ab5496c789fcc04b48693f080f31850a237d8e0641f2b727fd"
+    },
+    "apps/dashboard/src/locale/es/property_network.json": {
+      "binary_nul_detected": false,
+      "bytes": 37592,
+      "change": "M",
+      "git_blob_oid": "d659cc06723de2231c11c629997872099f829a38",
+      "mode": "100644",
+      "sha256": "9ed06e3e5d6b5e7a222b57b1e98789d5f0965784531c94a7aa3967367dce0552"
+    },
+    "apps/dashboard/src/pages/shared/PropertyNetwork.tsx": {
+      "binary_nul_detected": false,
+      "bytes": 4971,
+      "change": "M",
+      "git_blob_oid": "1f6ecfb860f9c1637a6dbed31ae0cf98b741d830",
+      "mode": "100644",
+      "sha256": "65bc5c024a2e5047960f287140449b6fd7542705805c287d54edc9c77de2402e"
+    },
+    "tests/due-work-reminders.test.cjs": {
+      "binary_nul_detected": false,
+      "bytes": 12075,
+      "change": "M",
+      "git_blob_oid": "2a01923f656ced349aab663f5ffd540226f699bc",
+      "mode": "100644",
+      "sha256": "60d75f3163acd731b043d190f8776bf95a32449a891bfa45589755c52d7a7b4c"
+    },
+    "tests/history-shares.test.cjs": {
+      "binary_nul_detected": false,
+      "bytes": 6382,
+      "change": "A",
+      "git_blob_oid": "372bf5674f84d0748043ccdb3cd7fb1a06402bd5",
+      "mode": "100644",
+      "sha256": "4aa5065a20ef6c4ef35f8c5ce5d14a0c4e198d0803d6cecf8d3e8d2a4741187b"
+    },
+    "tests/property-network-ui.test.cjs": {
+      "binary_nul_detected": false,
+      "bytes": 80389,
+      "change": "M",
+      "git_blob_oid": "90badcde2fbab768c0116b37bd3bcc0332224677",
+      "mode": "100644",
+      "sha256": "83e9e14ff58ed938d9f9fa30db3f16dbb9e39b3a2cbf08c86d20134d86ab42df"
+    }
+  },
+  "frontend_commit": "3e2afea7ea533dc53813279fefbe140ce077ff20",
+  "frontend_tree": "62555da3ff085109105f7224ed1c1f4b5ca743c3",
+  "parent_commit": "ee1596b4e9b9902f7bbcbd91fb6b072b2577601d",
+  "parent_tree": "3ee0bedeaabb0a2f01e087d45be0d82c245282b6"
+}
