@@ -15,6 +15,7 @@ from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import Session
 
 from models.property_network import NetworkProjectUpdate
+from models.service_review import NetworkServiceReview
 from models.service_visit import NetworkServiceWork, NetworkServiceWorkAction
 from services import service_visit
 from services.property_management import today_dr
@@ -258,6 +259,8 @@ class PrivateAwardedServiceWork(unittest.TestCase):
 
         with self.engine.begin() as db:
             assert_private_objects(db)  # The ORM bootstrap had already made both tables.
+            # The fixture precreates the later review table, unlike a real rollback of this revision.
+            NetworkServiceReview.__table__.drop(db)
             self.revision.op = Operations(MigrationContext.configure(db))
             self.revision.downgrade()
             self.assertEqual(tuple(db.execute(text("""
@@ -266,6 +269,7 @@ class PrivateAwardedServiceWork(unittest.TestCase):
             """)).one()), (None, None, None))
             self.revision.upgrade()  # Upgrade now creates both tables itself.
             assert_private_objects(db)
+            NetworkServiceReview.__table__.create(db)
 
         path, _ = self.awarded()
         self.change(path, self.proposal(0))
