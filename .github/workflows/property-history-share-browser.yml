@@ -2,7 +2,7 @@ name: Isolated private property history share browser rehearsal
 
 on:
   push:
-    branches: [codex-ci-property-history-share-browser-20261112]
+    branches: [codex-ci-property-history-share-browser-20261112-v2]
 
 permissions:
   contents: read

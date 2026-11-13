@@ -13,7 +13,7 @@ const copy = {
     mainNav: 'Property network sections', historyNav: 'History shares', list: 'Property history shares', detail: 'Property history share',
     history: 'Property service history', create: 'Share property history', received: 'Received', open: 'Open history share',
     back: 'Back to history shares', pending: 'Awaiting acceptance', accepted: 'Accepted', summaries: 'Shared work summaries',
-    accept: 'Accept invitation', confirm: 'Confirm action', empty: 'You have no current history invitations or shares.',
+    accept: 'Accept invitation', confirm: 'Confirm action', refresh: 'Refresh', empty: 'You have no current history invitations or shares.',
     unavailable: 'This record is unavailable or your current account no longer has access.',
   },
   es: {
@@ -349,14 +349,31 @@ async function verifyVisibleSummary(winner, source) {
 
 async function verifyLostAccess(winner, id, source) {
   const { page } = winner
-  const [response] = await Promise.all([
-    page.waitForResponse(response => endpoint(response, detailPath(id)) && response.status() === 404),
-    foreground(page),
-  ])
-  require(privateHeaders(response), 'LOST_ACCESS_RESPONSE_IS_CACHEABLE')
-  await detailPanel(winner).getByRole('alert').filter({ hasText: winner.t.unavailable }).waitFor()
-  await detailPanel(winner).getByText(source.sharedSummary, { exact: true }).waitFor({ state: 'detached' })
-  await button(detailPanel(winner), winner.t.back).click()
+  const panel = detailPanel(winner)
+  const denied = panel.getByRole('alert').filter({ hasText: winner.t.unavailable })
+  const refresh = button(panel, winner.t.refresh)
+  const denials = []
+  const recordDenial = response => {
+    if (endpoint(response, detailPath(id)) && response.status() === 404) denials.push(response)
+  }
+  page.on('response', recordDenial)
+  try {
+    await foreground(page)
+    // Focusing another Chromium context may not dispatch a new read. Use the
+    // existing Refresh control when automatic revalidation has not run yet.
+    const ready = await Promise.race([
+      denied.waitFor().then(() => 'denied'),
+      refresh.waitFor().then(() => 'refresh'),
+    ])
+    if (ready === 'refresh' && !await denied.isVisible()) {
+      // Automatic revalidation can remove Refresh while the click is resolving.
+      await Promise.race([refresh.click(), denied.waitFor()])
+    }
+    await denied.waitFor()
+    require(denials.length > 0 && denials.every(privateHeaders), 'LOST_ACCESS_RESPONSE_REQUIRED_AND_PRIVATE')
+    await panel.getByText(source.sharedSummary, { exact: true }).waitFor({ state: 'detached' })
+  } finally { page.off('response', recordDenial) }
+  await button(panel, winner.t.back).click()
   await listPanel(winner).getByText(winner.t.empty, { exact: true }).waitFor()
   require(await heading(listPanel(winner), source.shareLabel, 3).count() === 0, 'CLOSED_SHARE_REMAINED_IN_RECEIVED_UI')
 }
