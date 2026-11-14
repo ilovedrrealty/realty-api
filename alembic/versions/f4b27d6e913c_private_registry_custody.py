@@ -49,6 +49,9 @@ def _existing_schema():
                 "(property_id IS NOT NULL AND char_length(closed_custody_title) BETWEEN 1 AND 180))")
     op.execute(f"ALTER TABLE {REQUESTS} ADD COLUMN IF NOT EXISTS custody_closed BOOLEAN NOT NULL DEFAULT false")
     _constraint(REQUESTS, "ck_service_request_closed_custody", "CHECK (NOT custody_closed OR property_id IS NOT NULL)")
+
+
+def upgrade_maintenance_preferences():
     op.execute(f"ALTER TABLE {MAINTENANCE} ADD COLUMN IF NOT EXISTS custody_version INTEGER")
     op.execute(f"UPDATE {MAINTENANCE} SET custody_version=1 WHERE property_id IS NOT NULL AND custody_version IS NULL")
     op.execute(f"ALTER TABLE {MAINTENANCE} DROP CONSTRAINT IF EXISTS uq_maintenance_preference_registry")
@@ -270,6 +273,7 @@ def _custody_guards():
 
 def upgrade():
     _existing_schema()
+    upgrade_maintenance_preferences()
     _transfer_tables()
     _service_identity(True)
     _custody_guards()

@@ -43,13 +43,19 @@ class PrivateMaintenanceReminders(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls._workflow.setUpClass.__func__(cls)
-        path = Path(__file__).resolve().parents[1] / "alembic/versions/e2b8c4a6d903_private_maintenance_reminders.py"
-        spec = importlib.util.spec_from_file_location("maintenance_reminders_fixture_migration", path)
-        cls.revision = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(cls.revision)
+        cls.revision = cls.load_revision("e2b8c4a6d903_private_maintenance_reminders.py")
+        cls.custody_revision = cls.load_revision("f4b27d6e913c_private_registry_custody.py")
         with cls.engine.begin() as db:
             cls.revision.op = Operations(MigrationContext.configure(db))
             cls.revision.upgrade()
+
+    @staticmethod
+    def load_revision(filename):
+        path = Path(__file__).resolve().parents[1] / "alembic/versions" / filename
+        spec = importlib.util.spec_from_file_location("maintenance_reminders_fixture_" + path.stem, path)
+        revision = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(revision)
+        return revision
 
     def setUp(self):
         self._workflow.setUp(self)
@@ -247,6 +253,11 @@ class PrivateMaintenanceReminders(unittest.TestCase):
             for table in self.revision.TABLES:
                 self.assertTrue(db.execute(text("SELECT relrowsecurity FROM pg_class WHERE oid=to_regclass(:name)"),
                                            {"name": table}).scalar_one())
+            # The native rollback exercises the older maintenance revision in
+            # isolation. Restore the current column/constraints before testing
+            # the current API or running the next case in this same schema.
+            self.custody_revision.op = Operations(MigrationContext.configure(db))
+            self.custody_revision.upgrade_maintenance_preferences()
 
         schedule, _ = self.create(self.listing_path)
         with self.assertRaises(DBAPIError) as denied, Session(self.engine) as db:
