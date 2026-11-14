@@ -93,7 +93,7 @@ def _live_scope(db):
     """One database snapshot for current custody, identity, assignment and share rows."""
     owner = aliased(User, name="history_owner")
     recipient = aliased(User, name="history_recipient")
-    property_current = and_(Property.id == Share.property_id, Property.custodian_id == Share.owner_id,
+    property_current = and_(Property.id == Share.property_id, Property.current_custodian_id == Share.owner_id,
                             Property.status == "active")
     listing_current = and_(Listing.id == Share.listing_id, Listing.status == "active", or_(
         and_(Listing.owner_id == Share.owner_id, owner.role.in_(("owner", "realtor"))),

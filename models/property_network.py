@@ -23,6 +23,8 @@ class NetworkProperty(Base):
     updated_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())
     creation_sha256 = Column(Text, nullable=False)
     authority_acknowledged = Column(Boolean, nullable=False)
+    current_custodian_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
+    custody_version = Column(Integer, nullable=False, server_default="1")
     __table_args__ = (
         UniqueConstraint("custodian_id", "submission_id", name="uq_network_property_submission"),
         CheckConstraint("version >= 1", name="ck_network_property_version"),
@@ -32,7 +34,9 @@ class NetworkProperty(Base):
         CheckConstraint("creation_sha256 ~ '^[0-9a-f]{64}$'", name="ck_network_property_creation_hash"),
         CheckConstraint("authority_acknowledged IS TRUE", name="ck_network_property_authority"),
         CheckConstraint("property_class IN ('house_villa','apartment_condominium','multiunit_building','vacation_rental','hotel_hospitality','office','retail_restaurant','warehouse_industrial','farm_rural','vacant_land')", name="ck_network_property_class"),
-        Index("ix_network_property_custodian", "custodian_id", "updated_at", "id"))
+        Index("ix_network_property_custodian", "custodian_id", "updated_at", "id"),
+        CheckConstraint("custody_version >= 1", name="ck_network_property_custody_version"),
+        Index("ix_network_property_current_custodian", "current_custodian_id", "updated_at", "id"))
 
 
 class NetworkProject(Base):
@@ -53,6 +57,7 @@ class NetworkProject(Base):
     created_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"))
     submission_id = Column(UUID(as_uuid=True))
     creation_sha256 = Column(Text)
+    closed_custody_title = Column(Text)
     __table_args__ = (CheckConstraint("version >= 1", name="ck_network_project_version"),
                      CheckConstraint("status IN ('open','in_progress','completed','archived')", name="ck_network_project_status"),
                      Index("ix_network_project_listing", "listing_id", "created_at"),
@@ -61,7 +66,9 @@ class NetworkProject(Base):
                      CheckConstraint("property_id IS NULL OR submission_id IS NOT NULL", name="ck_network_registry_project_submission"),
                      UniqueConstraint("created_by_id", "submission_id", name="uq_network_project_submission"),
                      Index("ix_network_project_registry", "property_id", "created_at"),
-                     Index("ix_network_project_owner", "owner_id", "updated_at"))
+                     Index("ix_network_project_owner", "owner_id", "updated_at"),
+                     CheckConstraint("closed_custody_title IS NULL OR (property_id IS NOT NULL AND char_length(closed_custody_title) BETWEEN 1 AND 180)",
+                                     name="ck_network_project_closed_custody_title"))
 
 
 class NetworkProjectMember(Base):

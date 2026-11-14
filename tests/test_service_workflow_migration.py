@@ -22,8 +22,8 @@ from database import Base
 from models.user import User
 from models.listing import Listing
 from models.property_network import NetworkProperty
-from models.service_workflow import (NetworkServicePreference as Preference, NetworkServiceRequest as ServiceRequest,
-    NetworkServiceRecipient as Recipient, NetworkServiceProposal as Proposal, NetworkServiceAction as Action)
+from models.service_workflow import (NetworkServicePreference as Preference, NetworkServiceRecipient as Recipient,
+    NetworkServiceProposal as Proposal, NetworkServiceAction as Action)
 
 TABLES = ("network_service_preferences", "network_service_requests", "network_service_recipients",
           "network_service_proposals", "network_service_actions")
@@ -78,6 +78,10 @@ class PrivateServiceMigration(unittest.TestCase):
 
     def build(self, fresh=True):
         Base.metadata.create_all(self.engine, **({} if fresh else {"tables": [User.__table__, Listing.__table__]}))
+        if fresh:
+            # Compare schemas only at a4b6, before the later custody revision.
+            with self.engine.begin() as connection:
+                connection.execute(text("ALTER TABLE network_service_requests DROP COLUMN custody_closed"))
         self.revision("d1e3f7a9b521")
         self.revision("f3a5b9c1d723")
         if fresh:
@@ -95,6 +99,15 @@ class PrivateServiceMigration(unittest.TestCase):
                 result[table] = {"columns": [tuple(r) for r in columns], "constraints": [tuple(r) for r in constraints], "indexes": [tuple(r) for r in indexes]}
         return result
 
+    def seed_request(self, db, property_id, owner, title, brief, digest):
+        request_id = uuid4()
+        db.execute(text("""INSERT INTO network_service_requests(id,property_id,custodian_id,requester_id,category_id,
+            property_class,title,brief,area_label,requester_alias,recipient_user_codes,scope_sha256,status,version)
+            VALUES(:request,:property,:owner,:owner,'pool_service','house_villa',:title,:brief,'Coarse',
+                'Custodian','[8002]'::jsonb,:digest,'open',1)"""),
+            {"request": request_id, "property": property_id, "owner": owner, "title": title, "brief": brief, "digest": digest})
+        return request_id
+
     def seed(self):
         from datetime import date
         with Session(self.engine) as db:
@@ -103,28 +116,26 @@ class PrivateServiceMigration(unittest.TestCase):
                 db.add(User(id=identity, user_code=code, email=f"{code}@example.com", display_name="Synthetic member",
                     role="owner" if identity == owner else "buyer", status="active", email_verified=True))
             db.flush()
-            private = NetworkProperty(custodian_id=owner, submission_id=uuid4(), title="Private synthetic", location="Synthetic",
+            private = NetworkProperty(custodian_id=owner, current_custodian_id=owner, submission_id=uuid4(), title="Private synthetic", location="Synthetic",
                 address="", property_class="house_villa", relationship="owner", notes="", status="active", version=1,
                 creation_sha256="a" * 64, authority_acknowledged=True)
             db.add(private); db.flush()
             preference = Preference(user_id=provider, service_opt_in=True, member_alias="Synthetic provider",
                 category_ids=["pool_service"], property_class_ids=["house_villa"], version=1)
-            request = ServiceRequest(property_id=private.id, custodian_id=owner, requester_id=owner, category_id="pool_service",
-                property_class="house_villa", title="Work", brief="Shared scope", area_label="Coarse", requester_alias="Custodian",
-                recipient_user_codes=[8002], scope_sha256="b" * 64, status="open", version=1)
-            db.add_all([preference, request]); db.flush()
-            recipient = Recipient(request_id=request.id, provider_id=provider, user_code=8002, member_alias="Synthetic provider", status="accepted", version=1)
+            db.add(preference)
+            request_id = self.seed_request(db, private.id, owner, "Work", "Shared scope", "b" * 64)
+            recipient = Recipient(request_id=request_id, provider_id=provider, user_code=8002, member_alias="Synthetic provider", status="accepted", version=1)
             db.add(recipient); db.flush()
-            proposal = Proposal(request_id=request.id, recipient_id=recipient.id, author_id=provider, revision_no=1,
+            proposal = Proposal(request_id=request_id, recipient_id=recipient.id, author_id=provider, revision_no=1,
                 kind="provider_quote", status="submitted", version=1, amount="10.01", currency="USD", pricing_basis="fixed",
                 scope_text="Work", exclusions="", valid_until=date(2030, 1, 1))
             db.add(proposal); db.flush()
             recipient.current_proposal_id = proposal.id; recipient.version += 1
             action = Action(actor_id=provider, submission_id=uuid4(), operation="provider_quote", target_id=recipient.id,
-                request_id=request.id, recipient_id=recipient.id, proposal_id=proposal.id, creation_sha256="c" * 64,
+                request_id=request_id, recipient_id=recipient.id, proposal_id=proposal.id, creation_sha256="c" * 64,
                 result_versions={"recipient_version": 2, "proposal_version": 1})
             db.add(action); db.commit()
-            return {"owner": owner, "provider": provider, "property": private.id, "request": request.id,
+            return {"owner": owner, "provider": provider, "property": private.id, "request": request_id,
                 "recipient": recipient.id, "proposal": proposal.id, "action": action.id}
 
     def test_fresh_and_real_prior_revision_upgrade_have_identical_raw_five_table_shape(self):
@@ -188,20 +199,17 @@ class PrivateServiceMigration(unittest.TestCase):
         # Real foreign-scope rows distinguish composite scope enforcement from
         # an ordinary missing-FK rejection. No extra accounts/schema are used.
         with Session(self.engine) as db:
-            other_request = ServiceRequest(property_id=ids["property"], custodian_id=ids["owner"], requester_id=ids["owner"],
-                category_id="pool_service", property_class="house_villa", title="Other work", brief="Other scope",
-                area_label="", requester_alias="Custodian", recipient_user_codes=[8002], scope_sha256="e" * 64, status="open", version=1)
-            db.add(other_request); db.flush()
-            other_recipient = Recipient(request_id=other_request.id, provider_id=ids["provider"], user_code=8002,
+            other_request_id = self.seed_request(db, ids["property"], ids["owner"], "Other work", "Other scope", "e" * 64)
+            other_recipient = Recipient(request_id=other_request_id, provider_id=ids["provider"], user_code=8002,
                 member_alias="Synthetic provider", status="accepted", version=1)
             db.add(other_recipient); db.flush()
-            other_proposal = Proposal(request_id=other_request.id, recipient_id=other_recipient.id, author_id=ids["provider"],
+            other_proposal = Proposal(request_id=other_request_id, recipient_id=other_recipient.id, author_id=ids["provider"],
                 revision_no=1, kind="provider_quote", status="submitted", version=1, amount="20.02", currency="USD",
                 pricing_basis="fixed", scope_text="Other work", exclusions="", valid_until=db.get(Proposal, ids["proposal"]).valid_until)
             db.add(other_proposal); db.flush()
             other_recipient.current_proposal_id = other_proposal.id; other_recipient.version += 1
             db.commit()
-            foreign = {"request": other_request.id, "recipient": other_recipient.id, "proposal": other_proposal.id}
+            foreign = {"request": other_request_id, "recipient": other_recipient.id, "proposal": other_proposal.id}
             self.assertNotEqual(foreign["request"], ids["request"])
             self.assertEqual(db.get(Proposal, foreign["proposal"]).recipient_id, foreign["recipient"])
             self.assertEqual(db.get(Recipient, foreign["recipient"]).request_id, foreign["request"])

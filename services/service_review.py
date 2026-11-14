@@ -8,17 +8,18 @@ from models.property_network import NetworkProjectUpdate as Update
 from models.service_review import NetworkServiceReview as Review
 from models.service_visit import NetworkServiceWork as Work, NetworkServiceWorkAction as Action
 from models.service_workflow import NetworkServiceRecipient as Recipient, NetworkServiceRequest as ServiceRequest
+from models.user import User
 from services import service_visit, service_workflow as workflow
 
 
-def completed_award(db, user, request_id, *, owner_only=False):
+def completed_award(db, user, request_id, *, owner_only=False, allow_custody_history=False):
     workflow.checked_user(user)
     if user.role == "admin":
         workflow.unavailable()
     participant = ServiceRequest.custodian_id == user.id
     if not owner_only:
         participant = or_(participant, Recipient.provider_id == user.id)
-    candidate = db.query(ServiceRequest.id).join(Recipient, Recipient.request_id == ServiceRequest.id).join(
+    candidate = db.query(ServiceRequest).join(Recipient, Recipient.request_id == ServiceRequest.id).join(
         Work, Work.request_id == ServiceRequest.id).filter(
         ServiceRequest.id == request_id, ServiceRequest.status == "awarded", Recipient.status == "awarded",
         Work.status == "completed", participant,
@@ -26,14 +27,20 @@ def completed_award(db, user, request_id, *, owner_only=False):
     if candidate is None:
         workflow.unavailable()
 
-    # Keep the award and source locked through the caller's projection or write.
-    actor, role = service_visit.require_live_participant(db, user, request_id, for_write=True)
+    # Only retained reviews for a closed transfer can use the historical read path.
+    historical = allow_custody_history and candidate.custody_closed
+    actor, role = service_visit.require_live_participant(
+        db, user, request_id, for_write=not historical, allow_custody_history=historical,
+    )
     if owner_only and role != "owner":
         workflow.unavailable()
     request = db.get(ServiceRequest, request_id)
-    source, custodian = workflow.source_row(db, request.property_id, request.listing_id)
-    if custodian is None or not workflow.source_authorized(db, custodian, source):
-        workflow.unavailable()
+    if historical:
+        source, custodian = None, db.get(User, request.custodian_id)
+    else:
+        source, custodian = workflow.source_row(db, request.property_id, request.listing_id)
+        if custodian is None or not workflow.source_authorized(db, custodian, source):
+            workflow.unavailable()
     approved = exists().where(Action.request_id == Work.request_id, Action.actor_id == custodian.id,
                               Action.operation == "approve_completion").correlate(Work)
     winner = db.query(Recipient).join(Work, Work.request_id == Recipient.request_id).join(
@@ -60,14 +67,14 @@ def _review(db, request_id, custodian_id, provider_id):
 
 
 def detail(db, user, request_id):
-    _, role, request, _, winner = completed_award(db, user, request_id)
+    _, role, request, _, winner = completed_award(db, user, request_id, allow_custody_history=True)
     row = _review(db, request_id, request.custodian_id, winner.provider_id)
     return {"request_id": str(request_id), "review": _view(row) if row is not None else None,
-            "can_submit": role == "owner" and row is None}
+            "can_submit": not request.custody_closed and role == "owner" and row is None}
 
 
 def own_submission(db, user, request_id, submission_id):
-    actor, _, request, _, winner = completed_award(db, user, request_id)
+    actor, _, request, _, winner = completed_award(db, user, request_id, allow_custody_history=True)
     row = _review(db, request_id, request.custodian_id, winner.provider_id)
     if row is None or row.reviewer_id != actor.id or row.submission_id != submission_id:
         workflow.unavailable()

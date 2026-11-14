@@ -15,13 +15,13 @@ def _own_message(db, sender_id, submission_id):
 
 
 def list_messages(db, user, request_id, page):
-    service_visit.require_live_participant(db, user, request_id)
+    service_visit.require_live_participant(db, user, request_id, allow_custody_history=True)
     rows = db.query(Message).filter_by(request_id=request_id).order_by(Message.created_at.desc(), Message.id.desc())
     return {"request_id": str(request_id), **network.page(rows, page, message_view)}
 
 
 def own_submission(db, user, request_id, submission_id):
-    actor, _ = service_visit.require_live_participant(db, user, request_id)
+    actor, _ = service_visit.require_live_participant(db, user, request_id, allow_custody_history=True)
     row = _own_message(db, actor.id, submission_id)
     if row is None or row.request_id != request_id:
         workflow.unavailable()

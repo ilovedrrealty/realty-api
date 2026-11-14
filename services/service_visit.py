@@ -34,7 +34,7 @@ def _access(db, user, request, source, recipients, *, lock_project=False):
 
     source = source or workflow.source_row(db, request.property_id, request.listing_id)
     _, custodian = source
-    if custodian is None or custodian.id != request.custodian_id:
+    if not request.custody_closed and (custodian is None or custodian.id != request.custodian_id):
         workflow.unavailable()
     if actor != "provider" and not workflow.managed(db, user, request, source):
         workflow.unavailable()
@@ -77,8 +77,8 @@ def _read_access(db, user, request_id):
     return request, actor, project, can_change
 
 
-def require_live_participant(db, user, request_id, *, for_write=False):
-    """Recheck both sides on every request and take the existing locks for writes."""
+def require_live_participant(db, user, request_id, *, for_write=False, allow_custody_history=False):
+    """Recheck both sides, including the original participants of retained history."""
     if user.role == "admin":
         workflow.unavailable()
     if for_write:
@@ -88,8 +88,16 @@ def require_live_participant(db, user, request_id, *, for_write=False):
         request, recipients = _read_request(db, user, request_id)
         source = None
     role, project, provider_id, can_change = _access(db, user, request, source, recipients, lock_project=for_write)
-    if (not can_change or project.status == "archived" or db.get(User, request.custodian_id).role == "admin"
-            or db.get(User, provider_id).role == "admin"):
+    original = db.get(User, request.custodian_id)
+    provider = db.get(User, provider_id)
+    if original is None or original.role == "admin" or provider is None or provider.role == "admin":
+        workflow.unavailable()
+    if (allow_custody_history and not for_write and request.custody_closed
+            and project.closed_custody_title is not None):
+        if role == "owner" and (original.status != "active" or original.email_verified is not True):
+            workflow.unavailable()
+        return user, role
+    if not can_change or project.status == "archived":
         workflow.unavailable()
     return user, role
 

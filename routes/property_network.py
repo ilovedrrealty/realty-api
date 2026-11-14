@@ -16,9 +16,10 @@ from models.listing import Listing
 from models.property_network import NetworkProject as Project, NetworkMilestone as Milestone, NetworkProjectUpdate as Update, NetworkProjectComment as ProjectComment
 from schemas.history_share import HistoryShareAction, HistoryShareCreate
 from schemas.maintenance_reminders import SourceKind
+from schemas.property_custody import PropertyCustodyAction, PropertyCustodyOffer
 from schemas.property_network import (ProjectCreate, ProjectEdit, MemberWrite, MilestoneCreate, MilestoneEdit,
     ProgressWrite, CommentWrite, ProfileWrite, PostWrite, ModeratePost, BlockWrite, Version, RegistryCreate, RegistryEdit)
-from services import history_share
+from services import history_share, property_custody
 from services import property_network as service
 from utils.auth import get_current_user
 from utils.limiter import limiter
@@ -115,6 +116,41 @@ def edit_registry(request: Request, response: Response, property_id: UUID, body:
 @router.get("/registry/{property_id}/history")
 def registry_history(property_id: UUID, page: int = Page, user=Depends(get_current_user), db: Session = Depends(get_db)):
     return service.registry_history(db, user, property_id, page)
+
+
+@router.get("/registry-custody/options/{property_id}")
+def property_custody_options(property_id: UUID, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return property_custody.options(db, user, property_id)
+
+
+@router.get("/registry-custody/submissions/{submission_id}")
+def property_custody_receipt(submission_id: UUID, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return property_custody.own_submission(db, user, submission_id)
+
+
+@router.get("/registry-custody")
+def property_custody_list(view: Literal["sent", "received"], page: int = Page,
+                          user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return property_custody.listed(db, user, view, page)
+
+
+@router.post("/registry-custody", status_code=201)
+@limiter.limit("15/minute")
+def offer_property_custody(request: Request, response: Response, body: PropertyCustodyOffer,
+                           user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return property_custody.offer(db, user, body)
+
+
+@router.get("/registry-custody/{transfer_id}")
+def property_custody_detail(transfer_id: UUID, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return property_custody.detail(db, user, transfer_id)
+
+
+@router.post("/registry-custody/{transfer_id}/actions")
+@limiter.limit("30/minute")
+def change_property_custody(request: Request, response: Response, transfer_id: UUID, body: PropertyCustodyAction,
+                            user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return property_custody.change(db, user, transfer_id, body)
 
 
 @router.get("/history-shares/options/{source_kind}/{source_id}")

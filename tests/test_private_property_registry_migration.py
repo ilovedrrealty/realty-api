@@ -76,6 +76,10 @@ class PrivateRegistryMigration(unittest.TestCase):
     def build_schema(self, fresh):
         if fresh:
             Base.metadata.create_all(self.engine)
+            # Compare schemas only at f3a5, before the later custody revision.
+            with self.engine.begin() as connection:
+                connection.execute(text("ALTER TABLE network_projects DROP COLUMN closed_custody_title"))
+                connection.execute(text("ALTER TABLE network_properties DROP COLUMN custody_version, DROP COLUMN current_custodian_id"))
         else:
             Base.metadata.create_all(self.engine, tables=[User.__table__, Listing.__table__])
         self.revision("d1e3f7a9b521")

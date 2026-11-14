@@ -15,11 +15,15 @@ class NetworkMaintenancePreference(Base):
     enabled = Column(Boolean, nullable=False, server_default=text("false"))
     lead_days = Column(Integer, nullable=False, server_default="7")
     version = Column(Integer, nullable=False, server_default="0")
+    custody_version = Column(Integer)
 
     __table_args__ = (
-        UniqueConstraint("actor_id", "property_id", name="uq_maintenance_preference_registry"),
+        UniqueConstraint("actor_id", "property_id", "custody_version", name="uq_maintenance_preference_registry_custody"),
         UniqueConstraint("actor_id", "listing_id", name="uq_maintenance_preference_listing"),
         CheckConstraint("(property_id IS NULL) <> (listing_id IS NULL)", name="ck_maintenance_preference_one_source"),
+        CheckConstraint("(property_id IS NULL AND custody_version IS NULL) OR "
+                        "(property_id IS NOT NULL AND custody_version IS NOT NULL AND custody_version >= 1)",
+                        name="ck_maintenance_preference_custody"),
         CheckConstraint("lead_days BETWEEN 0 AND 30 AND version >= 0 AND (version > 0 OR (NOT enabled AND lead_days = 7))",
                         name="ck_maintenance_preference_bounds"),
     )

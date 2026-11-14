@@ -43,8 +43,10 @@ class NetworkServiceRequest(Base):
     project_id = Column(UUID(as_uuid=True), ForeignKey("network_projects.id", ondelete="RESTRICT"), unique=True)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())
     updated_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())
+    custody_closed = Column(Boolean, nullable=False, server_default=text("false"))
     __table_args__ = (
         CheckConstraint("(property_id IS NULL) <> (listing_id IS NULL)", name="ck_service_request_source"),
+        CheckConstraint("NOT custody_closed OR property_id IS NOT NULL", name="ck_service_request_closed_custody"),
         CheckConstraint("version>=1 AND status IN ('open','awarded','cancelled')", name="ck_service_request_state"),
         CheckConstraint("(status='awarded') = (project_id IS NOT NULL)", name="ck_service_request_project"),
         CheckConstraint("char_length(title) BETWEEN 1 AND 180 AND char_length(brief) BETWEEN 1 AND 4000 AND char_length(area_label)<=120 AND char_length(requester_alias) BETWEEN 1 AND 120 AND scope_sha256 ~ '^[0-9a-f]{64}$'", name="ck_service_request_bounds"),

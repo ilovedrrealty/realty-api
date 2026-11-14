@@ -31,7 +31,7 @@ def _scope(db, user, project_id):
     if user.role == "admin":
         workflow.unavailable()
     hint = db.get(Project, project_id)
-    if (hint is None or hint.status not in LIVE_PROJECT
+    if (hint is None or hint.status not in LIVE_PROJECT or hint.closed_custody_title is not None
             or hint.owner_id != user.id and _membership(db, project_id, user.id) is None):
         workflow.unavailable()
     owner_id, property_id, listing_id = hint.owner_id, hint.property_id, hint.listing_id
@@ -39,7 +39,7 @@ def _scope(db, user, project_id):
     actor = workflow.lock_users(db, user, {owner_id})
     source, custodian = workflow.source_row(db, property_id, listing_id, lock=True)
     project = db.query(Project).filter_by(id=project_id).populate_existing().with_for_update().first()
-    if (project is None or project.status not in LIVE_PROJECT or actor.role == "admin"
+    if (project is None or project.status not in LIVE_PROJECT or project.closed_custody_title is not None or actor.role == "admin"
             or (project.owner_id, project.property_id, project.listing_id) != (owner_id, property_id, listing_id)
             or custodian is None or custodian.id != owner_id or custodian.role == "admin"
             or custodian.status != "active" or custodian.email_verified is not True or source.status != "active"

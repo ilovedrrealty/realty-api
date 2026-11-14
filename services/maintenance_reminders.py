@@ -33,8 +33,10 @@ def _scope(db, user, source_kind, source_id):
     _require_custody(db, user, *workflow.source_row(db, **fields))
     # Serialize the actor's submissions and current source changes in workflow order.
     actor = workflow.lock_users(db, user, ())
-    _require_custody(db, actor, *workflow.source_row(db, **fields, lock=True))
-    return actor, {"actor_id": actor.id, **fields}, network.now().astimezone(DR_TIMEZONE).date()
+    source, custodian = workflow.source_row(db, **fields, lock=True)
+    _require_custody(db, actor, source, custodian)
+    custody_version = source.custody_version if source_kind == "private" else None
+    return actor, {"actor_id": actor.id, "custody_version": custody_version, **fields}, network.now().astimezone(DR_TIMEZONE).date()
 
 
 def _preference(db, fields):

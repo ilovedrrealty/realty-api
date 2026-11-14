@@ -76,7 +76,7 @@ def lock_actor(db, user):
 
 def registry_query(db, user):
     query = db.query(Property)
-    return query if user.role == "admin" else query.filter(Property.custodian_id == user.id)
+    return query if user.role == "admin" else query.filter(Property.current_custodian_id == user.id)
 
 
 def registry_for(db, user, identity, *, lock=False):
@@ -88,10 +88,10 @@ def registry_for(db, user, identity, *, lock=False):
 
 
 def registry_view(db, user, row):
-    manage = user.role == "admin" or row.custodian_id == user.id
+    manage = user.role == "admin" or row.current_custodian_id == user.id
     if not manage:
         raise HTTPException(404, "Private property not found")
-    custodian = db.get(User, row.custodian_id)
+    custodian = db.get(User, row.current_custodian_id)
     can_start = (row.status == "active" and custodian is not None
                  and custodian.status == "active" and custodian.email_verified is True)
     return {"id": str(row.id), "title": row.title, "location": row.location, "address": row.address,
@@ -113,7 +113,7 @@ def registry_page(db, user, number, status="all"):
 def registry_submission(db, user, submission_id):
     # Even Admin resolves only their own actor key, never another account's key.
     row = db.query(Property).filter(Property.custodian_id == user.id, Property.submission_id == submission_id).first()
-    if row is None:
+    if row is None or row.current_custodian_id != user.id or row.custody_version != 1:
         raise HTTPException(404, "Private property submission not found")
     return registry_view(db, user, row)
 
@@ -123,12 +123,14 @@ def create_registry(db, user, body):
     digest = creation_digest(body)
     existing = db.query(Property).filter(Property.custodian_id == user.id, Property.submission_id == body.submission_id).first()
     if existing is not None:
+        if existing.current_custodian_id != user.id or existing.custody_version != 1:
+            raise HTTPException(404, "Private property submission not found")
         if existing.creation_sha256 != digest:
             raise HTTPException(409, "This submission key was used with different property details")
         return registry_view(db, user, existing)
-    if db.query(Property).filter(Property.custodian_id == user.id).count() >= MAX_REGISTRY_PROPERTIES:
+    if db.query(Property).filter(Property.current_custodian_id == user.id).count() >= MAX_REGISTRY_PROPERTIES:
         raise HTTPException(409, "This account has reached its private property limit")
-    row = Property(custodian_id=user.id, submission_id=body.submission_id,
+    row = Property(custodian_id=user.id, current_custodian_id=user.id, submission_id=body.submission_id,
                    title=body.title, location=body.location, address=body.address,
                    property_class=body.property_class, relationship=body.relationship, notes=body.notes,
                    status="active", version=1, creation_sha256=digest, authority_acknowledged=True)
@@ -159,7 +161,7 @@ def accessible_projects(db, user):
 
 def project_for(db, user, identity, *, lock=False, permission="read"):
     query = accessible_projects(db, user).filter(Project.id == identity)
-    row = (query.with_for_update() if lock else query).first()
+    row = (query.with_for_update() if lock else query).populate_existing().first()
     if row is None:
         raise HTTPException(404, "Project not found")
     role = "admin" if user.role == "admin" else "owner" if row.owner_id == user.id else None
@@ -171,7 +173,7 @@ def project_for(db, user, identity, *, lock=False, permission="read"):
     allowed = {"read": {"admin", "owner", "manager", "professional", "viewer"},
                "manage": {"admin", "owner", "manager"}, "assign": {"admin", "owner"},
                "update": {"admin", "owner", "manager", "professional"}}
-    if role not in allowed[permission]:
+    if role not in allowed[permission] or (permission != "read" and row.closed_custody_title is not None):
         raise HTTPException(403, "This project action is not permitted")
     return row, role
 
@@ -184,19 +186,20 @@ def progress(db, project_id):
 
 
 def project_view(db, user, row):
-    _, role = project_for(db, user, row.id)
+    row, role = project_for(db, user, row.id)
     listing = db.get(Listing, row.listing_id) if row.listing_id is not None else None
     private = db.get(Property, row.property_id) if row.property_id is not None else None
     if listing is None and private is None:
         raise HTTPException(404, "Project property not found")
-    label = listing.title if listing is not None else private.title
+    label = listing.title if listing is not None else row.closed_custody_title or private.title
+    editable = row.closed_custody_title is None
     return {"id": str(row.id), "listing_id": str(row.listing_id) if row.listing_id is not None else None,
             "listing_title": label, "property_id": str(row.property_id) if row.property_id is not None else None,
-            "property_title": private.title if private is not None else None,
+            "property_title": label if private is not None else None,
             "title": row.title, "summary": row.summary, "property_class": row.property_class,
             "service_category_ids": row.service_category_ids, "status": row.status, "version": row.version,
-            "my_role": role, "can_manage": role in {"admin", "owner", "manager"},
-            "can_assign": role in {"admin", "owner"}, "can_update": role != "viewer",
+            "my_role": role, "can_manage": editable and role in {"admin", "owner", "manager"},
+            "can_assign": editable and role in {"admin", "owner"}, "can_update": editable and role != "viewer",
             "progress": progress(db, row.id), "created_at": row.created_at, "updated_at": row.updated_at}
 
 
@@ -224,7 +227,7 @@ def construct_project(db, user, body, *, actor_locked=False):
             raise HTTPException(409, "Archived private properties cannot start new projects")
         if body.property_class != private.property_class:
             raise HTTPException(422, "Choose the private property's current property class")
-        owner = db.get(User, private.custodian_id)
+        owner = db.get(User, private.current_custodian_id)
         count_query = db.query(Project).filter(Project.property_id == private.id)
     else:
         listing = property_for(db, user, body.listing_id, lock=True)

@@ -24,7 +24,7 @@ PRIORITY = {"completion_review": 0, "visit_completion_due": 1, "visit_response":
 def _sources(db, actor, view, source_kind, source_id):
     custodian = aliased(User, name="operations_custodian")
     private = ServiceRequest.property_id.is_not(None)
-    registry_current = and_(private, Property.status == "active", Property.custodian_id == ServiceRequest.custodian_id,
+    registry_current = and_(private, Property.status == "active", Property.current_custodian_id == ServiceRequest.custodian_id,
                             Property.property_class == ServiceRequest.property_class)
     listing_current = and_(ServiceRequest.listing_id.is_not(None), Listing.status == "active",
         cast(Listing.type, Text) == ServiceRequest.source_listing_type,
@@ -40,7 +40,7 @@ def _sources(db, actor, view, source_kind, source_id):
         case((private, Property.title), else_=Listing.title).label("source_title")).select_from(ServiceRequest).join(
         custodian, custodian.id == ServiceRequest.custodian_id).outerjoin(Property, Property.id == ServiceRequest.property_id).outerjoin(
         Listing, Listing.id == ServiceRequest.listing_id).where(
-        visible, ServiceRequest.status.in_(("open", "awarded")), custodian.status == "active",
+        visible, ServiceRequest.custody_closed.is_(False), ServiceRequest.status.in_(("open", "awarded")), custodian.status == "active",
         custodian.email_verified.is_(True), custodian.role != "admin", or_(registry_current, listing_current),
     )
     if source_kind is not None:

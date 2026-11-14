@@ -60,7 +60,7 @@ def source_row(db, property_id, listing_id, *, lock=False):
     row = (query.with_for_update() if lock else query).first()
     if row is None:
         unavailable()
-    owner_id = row.custodian_id if property_id is not None else row.owner_id or row.submitted_by
+    owner_id = row.current_custodian_id if property_id is not None else row.owner_id or row.submitted_by
     owner = db.get(User, owner_id) if owner_id else None
     if property_id is None and row.owner_id is None and owner is not None and owner.role != "owner":
         owner = None
@@ -71,7 +71,7 @@ def source_authorized(db, user, row):
     if user.role == "admin":
         return True
     if isinstance(row, Property):
-        return row.custodian_id == user.id
+        return row.current_custodian_id == user.id
     try:
         return listings_for(db, user).filter(Listing.id == row.id).first() is not None
     except HTTPException:
@@ -84,11 +84,15 @@ def managed(db, user, request, source=None):
         return True
     if user.id not in {request.custodian_id, request.requester_id}:
         return False
+    if request.custody_closed:
+        return True  # Original parties retain the agreement under its separate ACL.
     row, owner = source or source_row(db, request.property_id, request.listing_id)
     return owner is not None and owner.id == request.custodian_id and source_authorized(db, user, row)
 
 
 def source_current(db, request, source=None):
+    if request.custody_closed:
+        return False
     row, owner = source or source_row(db, request.property_id, request.listing_id)
     if owner is None or owner.id != request.custodian_id or owner.status != "active" or owner.email_verified is not True or row.status != "active":
         return False
@@ -171,13 +175,17 @@ def request_view(db, user, request, *, received=False):
         "brief": request.brief, "area_label": request.area_label, "requester_alias": request.requester_alias,
         "desired_start_on": request.desired_start_on, "created_at": request.created_at}
     if not received and managed(db, user, request):
-        row, _ = source_row(db, request.property_id, request.listing_id)
         recipients = [managed_recipient(db, user, request, r) for r in db.query(Recipient).filter(
             Recipient.request_id == request.id).order_by(Recipient.id).limit(5)]
         project = linked_project(db, user, request)
+        if request.custody_closed:
+            source_title = project["property_title"] if project else request.title
+        else:
+            source, _ = source_row(db, request.property_id, request.listing_id)
+            source_title = source.title
         return {**common, "view": "managed", "version": request.version, "status": request.status,
             "source": {"property_id": str(request.property_id) if request.property_id else None,
-                "listing_id": str(request.listing_id) if request.listing_id else None, "title": row.title,
+                "listing_id": str(request.listing_id) if request.listing_id else None, "title": source_title,
                 "property_class": request.property_class}, "updated_at": request.updated_at,
             "recipients": recipients, "project_id": project["id"] if project else None, "can_open_project": project is not None,
             "capabilities": {"can_cancel": request.status == "open", "can_compare": True,
@@ -344,8 +352,9 @@ def managed_query(db, user):
     query = db.query(ServiceRequest)
     if user.role == "admin":
         return query
-    registry = exists().where(Property.id == ServiceRequest.property_id, Property.custodian_id == ServiceRequest.custodian_id,
-                              Property.custodian_id == user.id)
+    registry = exists().where(Property.id == ServiceRequest.property_id,
+                              Property.current_custodian_id == ServiceRequest.custodian_id,
+                              Property.current_custodian_id == user.id)
     if user.role in {"owner", "realtor"}:
         permitted = or_(Listing.owner_id == user.id,
             and_(Listing.owner_id.is_(None), Listing.submitted_by == user.id)) if user.role == "owner" else or_(
@@ -356,7 +365,8 @@ def managed_query(db, user):
             or_(Listing.owner_id.is_not(None), exists().where(User.id == Listing.submitted_by, User.role == "owner")))
     else:
         listing = False
-    return query.filter(or_(ServiceRequest.custodian_id == user.id, ServiceRequest.requester_id == user.id), or_(registry, listing))
+    return query.filter(or_(ServiceRequest.custodian_id == user.id, ServiceRequest.requester_id == user.id),
+                        or_(ServiceRequest.custody_closed.is_(True), registry, listing))
 
 
 def requests_page(db, user, view, status, number):
@@ -415,6 +425,8 @@ def locked_request(db, user, identity):
     source = source_row(db, hint.property_id, hint.listing_id, lock=True)
     db.query(Preference).filter(Preference.user_id.in_([r.provider_id for r in recipient_hints])).order_by(Preference.user_id).populate_existing().with_for_update().all()
     request = db.query(ServiceRequest).filter(ServiceRequest.id == identity).populate_existing().with_for_update().one()
+    if request.custody_closed:
+        conflict()
     recipients = db.query(Recipient).filter(Recipient.request_id == identity).order_by(Recipient.id).populate_existing().with_for_update().all()
     db.query(Proposal).filter(Proposal.request_id == identity).order_by(Proposal.id).populate_existing().with_for_update().all()
     return user, request, source, {r.id: r for r in recipients}
