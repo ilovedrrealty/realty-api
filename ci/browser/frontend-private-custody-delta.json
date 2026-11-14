@@ -1,0 +1,96 @@
+{
+  "parent_commit": "3e2afea7ea533dc53813279fefbe140ce077ff20",
+  "parent_tree": "62555da3ff085109105f7224ed1c1f4b5ca743c3",
+  "frontend_commit": "047d5fbf6f78993b0404992ef666cd419001c65d",
+  "frontend_tree": "a0429808349e5221b7b4103cb1268ff9c7f67250",
+  "files": {
+    "apps/dashboard/src/api/registryCustody.ts": {
+      "change": "A",
+      "mode": "100644",
+      "git_blob_oid": "a657dd901976d94e790a411d649d488db228610b",
+      "bytes": 10299,
+      "sha256": "6482ac5a294d2c99b290fd1016e93531cd9cdc01fe75c8103bb429637a11f4c8",
+      "binary_nul_detected": false
+    },
+    "apps/dashboard/src/components/network/CustodyTransferOffer.tsx": {
+      "change": "A",
+      "mode": "100644",
+      "git_blob_oid": "ae5e0cee23d9340901541f350ae5862b58afa545",
+      "bytes": 8380,
+      "sha256": "5a0238feff81f93697f858cee60a4741b991dc7667bda7c7c7b5c5176e4416f1",
+      "binary_nul_detected": false
+    },
+    "apps/dashboard/src/components/network/CustodyTransfers.tsx": {
+      "change": "A",
+      "mode": "100644",
+      "git_blob_oid": "8e798f4aa27411a6cc7d8ed2a861238dc59309f4",
+      "bytes": 9253,
+      "sha256": "f48d524e5b2866b73ffabb2f70fd38000a332b63e88fd4c81a68fe076a48523e",
+      "binary_nul_detected": false
+    },
+    "apps/dashboard/src/components/network/PropertyRegistry.tsx": {
+      "change": "M",
+      "mode": "100644",
+      "git_blob_oid": "a46aa206482caa52f0fcf7423855a1732ea7d04c",
+      "bytes": 18054,
+      "sha256": "87ecdf584af81b540b97aa2b2ce9bf70f57b2731333dc965031e875474ddfb05",
+      "binary_nul_detected": false
+    },
+    "apps/dashboard/src/components/network/ServiceConversationPanel.tsx": {
+      "change": "M",
+      "mode": "100644",
+      "git_blob_oid": "1f01af8cb929abb2a348ded0dd101decb9eef10d",
+      "bytes": 5281,
+      "sha256": "cfab838268999c017f0a849d58f5b577b7f4ca2fa178b1e1fb2962fcddad8afe",
+      "binary_nul_detected": false
+    },
+    "apps/dashboard/src/components/network/ServiceRequestDetail.tsx": {
+      "change": "M",
+      "mode": "100644",
+      "git_blob_oid": "43f4f2d699740e780784221e3387850389620fdf",
+      "bytes": 23082,
+      "sha256": "88329128e91e409006444dd2b27b144df9a7e1f621fa78eb4af3cc2bfe1efcd7",
+      "binary_nul_detected": false
+    },
+    "apps/dashboard/src/locale/en/property_network.json": {
+      "change": "M",
+      "mode": "100644",
+      "git_blob_oid": "3a6661f595a1382d36d1e474e81f7f35df5b620c",
+      "bytes": 37313,
+      "sha256": "4509ef61c45eb8d5eb6b6ebed5fa9713516e87eceaf8f86d33bf4fd3d05def7a",
+      "binary_nul_detected": false
+    },
+    "apps/dashboard/src/locale/es/property_network.json": {
+      "change": "M",
+      "mode": "100644",
+      "git_blob_oid": "5ccc73d3ed70c4f5f4022596d1fcdb5c5553b63b",
+      "bytes": 41409,
+      "sha256": "d07a0b5580f3c3c9d9cc062fd142d9df8810ad63797f888ebe049e9f652dfcba",
+      "binary_nul_detected": false
+    },
+    "apps/dashboard/src/pages/shared/PropertyNetwork.tsx": {
+      "change": "M",
+      "mode": "100644",
+      "git_blob_oid": "9405f7de710b2a7217e05e6e82c49ec4eca6221c",
+      "bytes": 5590,
+      "sha256": "ef7415be6b93d9f20ec98085543e9933bae6dfc08f748dfa811797e84854c1a9",
+      "binary_nul_detected": false
+    },
+    "tests/property-network-ui.test.cjs": {
+      "change": "M",
+      "mode": "100644",
+      "git_blob_oid": "581bc86ddc405f5fd6a5f8ea90872f96f3badcfa",
+      "bytes": 85703,
+      "sha256": "3a4132347c0b258bfe527d924c9740ebf2633fb6313c024ff79ee9049c5cb4b7",
+      "binary_nul_detected": false
+    },
+    "tests/registry-custody.test.cjs": {
+      "change": "A",
+      "mode": "100644",
+      "git_blob_oid": "752c8e7c6e8050d7fb8e9ac81daad67d5cd9d389",
+      "bytes": 6483,
+      "sha256": "c1548f320d56cc8fcace8ea527b3e328ceead50cd4743030967c49a3dcf64b78",
+      "binary_nul_detected": false
+    }
+  }
+}
