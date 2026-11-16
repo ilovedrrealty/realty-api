@@ -1,8 +1,8 @@
-name: Isolated property network release-pair and Professionals rehearsal
+name: Isolated private stay arrival guide rehearsal
 
 on:
   push:
-    branches: [codex-ci-network-member-entry-release-20261116]
+    branches: [codex-ci-stay-arrival-browser-20261116]
 
 permissions:
   contents: read
@@ -31,17 +31,17 @@ jobs:
           path: browser-ops
           fetch-depth: 2
           persist-credentials: false
-      - name: Read exact merged property network frontend
+      - name: Read exact arrival guide frontend
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: ilovedrrealty/iLoveDRRealty
-          ref: 5d883b25744152f1cafbd659f1bc63b24b57e40b
+          ref: 9eeaa2f189094dacaf5ba69a0eba8f47896cccf5
           path: frontend-base
           persist-credentials: false
       - name: Read exact backend application
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 08c78f58cf4052a267480a8c27a406c7f8afaf2c
+          ref: 170870dcfc844712ea2e5fcf5137d59939de8979
           path: browser-backend
           persist-credentials: false
       - name: Read accepted migration dependency recipe
@@ -50,7 +50,7 @@ jobs:
           ref: c193a925ba57ea2d67ea48c44e5262817885c8a2
           path: migration-relay
           persist-credentials: false
-      - name: Verify customer messages, Professionals entry and role-scoped contact sharing
+      - name: Verify private bilingual stay instructions and guest authorization
         shell: bash
         run: |
           set -euo pipefail
