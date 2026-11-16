@@ -1,8 +1,8 @@
-name: Isolated property network release-pair rehearsal
+name: Isolated property network release-pair and Professionals rehearsal
 
 on:
   push:
-    branches: [codex-ci-network-live-share-release-20261116]
+    branches: [codex-ci-network-member-entry-release-20261116]
 
 permissions:
   contents: read
@@ -35,7 +35,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: ilovedrrealty/iLoveDRRealty
-          ref: 5aa6494d05757964e58eb063f9234c0360217ff7
+          ref: 5d883b25744152f1cafbd659f1bc63b24b57e40b
           path: frontend-base
           persist-credentials: false
       - name: Read exact backend application
@@ -50,7 +50,7 @@ jobs:
           ref: c193a925ba57ea2d67ea48c44e5262817885c8a2
           path: migration-relay
           persist-credentials: false
-      - name: Verify customer message copy and role-scoped contact sharing
+      - name: Verify customer messages, Professionals entry and role-scoped contact sharing
         shell: bash
         run: |
           set -euo pipefail

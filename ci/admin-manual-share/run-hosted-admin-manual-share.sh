@@ -8,7 +8,7 @@ bounded() { timeout --kill-after=8s "$@"; }
 
 [[ $# == 4 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api ]] || die CI_REQUIRED
 [[ ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 && ${GITHUB_RUN_ATTEMPT:-} == 1 ]] || die STANDARD_LINUX_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-network-live-share-release-20261116 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
+[[ ${GITHUB_REF:-} == refs/heads/codex-ci-network-member-entry-release-20261116 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 
 ops="$1"; frontend="$2"; backend="$3"; migration="$4"
 [[ "$ops" == "$GITHUB_WORKSPACE/browser-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-base" &&
@@ -18,10 +18,10 @@ for checkout in "$ops" "$frontend" "$backend" "$migration"; do
   checkout_status=$(git -C "$checkout" status --porcelain=v1 --untracked-files=all) || die CLEAN_CHECKOUT_REQUIRED
   [[ $(realpath "$checkout") == "$checkout" && -z "$checkout_status" ]] || die CLEAN_CHECKOUT_REQUIRED
 done
-[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == 93d6dcad93e6bbf486bed2e5fb8b3cc1c43865d8 ]] ||
+[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == 6946ee9926301db03c792d79aace4b623b939630 ]] ||
   die EXACT_OPERATIONS_PARENT_REQUIRED
-[[ $(git -C "$frontend" rev-parse HEAD) == 5aa6494d05757964e58eb063f9234c0360217ff7 &&
-   $(git -C "$frontend" rev-parse 'HEAD^{tree}') == 3573d2f70c48d094ab9c5277dd0291ad45df3766 ]] || die EXACT_FRONTEND_REQUIRED
+[[ $(git -C "$frontend" rev-parse HEAD) == 5d883b25744152f1cafbd659f1bc63b24b57e40b &&
+   $(git -C "$frontend" rev-parse 'HEAD^{tree}') == fc0146d3424fddf5ceeb54f134acbed198aa5434 ]] || die EXACT_FRONTEND_REQUIRED
 [[ $(git -C "$backend" rev-parse HEAD) == 08c78f58cf4052a267480a8c27a406c7f8afaf2c &&
    $(git -C "$backend" rev-parse 'HEAD^{tree}') == ad70125fd25bb57e8a830ad3ae3dd25e3f259ed4 ]] || die EXACT_BACKEND_REQUIRED
 [[ $(git -C "$migration" rev-parse HEAD) == c193a925ba57ea2d67ea48c44e5262817885c8a2 ]] ||
@@ -138,6 +138,7 @@ printf '%s  %s\n' \
   1126aeb69e32b34394cca03ac440848f7b88b339042496cb6722a1781a204337 "$state/frontend-work/apps/dashboard/package.json" \
   45893e6dfebaad4d2e73f7e7d6b26f176883bc1ba8c8dc025f188cc1b4d12344 "$state/frontend-work/apps/landing/package.json" \
   32a58ba8e28b4231ab7cc92cf557c519d77138e54e6c7c47a2eacf799167288f "$state/frontend-work/tests/contact-share.test.cjs" \
+  dc3722b78e0cf4bd7c110430e2aade1e4509434615965ab695c17ce096b85d59 "$state/frontend-work/tests/professionals-contract.test.cjs" \
   | sha256sum --check --status || die EXACT_PACKAGE_AND_TEST_PINS_REQUIRED
 
 prepare=(--label "$label=$run_key" --user "$uids" --read-only --cap-drop ALL --security-opt no-new-privileges:true
@@ -214,6 +215,33 @@ PY
   die LOCKED_FRONTEND_INSTALL_FAILED
 fi
 printf 'NETWORK_LIVE_SHARE_INSTALL native=0 summary=success codes=none\n'
+verify_frontend_files || die INSTALLED_FRONTEND_SOURCE_CHANGED
+professionals_exit=0
+bounded 120s docker run "${prepare[@]}" --network none --workdir /work \
+  --mount "type=bind,src=$state/frontend-work,dst=/work,readonly" "$node_image" \
+  env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp CI=true \
+  node --test --test-reporter=tap tests/professionals-contract.test.cjs \
+  >"$state/professionals-contracts.log" 2>&1 || professionals_exit=$?
+python3 -I -B - "$state/professionals-contracts.log" "$professionals_exit" <<'PY' || die PROFESSIONALS_CONTRACT_RESULT_INVALID
+from pathlib import Path
+import os, re, sys
+with Path(sys.argv[1]).open('rb') as log:
+    log.seek(max(0, os.fstat(log.fileno()).st_size - 131072))
+    body = log.read(131072)
+native = int(sys.argv[2])
+if native:
+    failures = sorted({int(index) for index in re.findall(rb'(?m)^not ok ([1-9]|1[0-6]) - ', body)})
+    print(f'NETWORK_LIVE_SHARE_PROFESSIONALS_FAILURE native={native} failed_indices='
+          + (','.join(map(str, failures)) or 'none'))
+    sys.exit(0)
+lines = body.splitlines()
+for row in (b'# tests 16', b'# pass 16', b'# fail 0', b'# skipped 0', b'# todo 0'):
+    assert lines.count(row) == 1
+hero = b'professional landing leads with member signup in both languages and keeps provider applications separate'
+assert sum(line.startswith(b'ok ') and line.endswith(hero) for line in lines) == 1
+print('NETWORK_LIVE_SHARE_PROFESSIONALS_UNIT native=0 tests=16 pass=16 bilingual_hero=pass')
+PY
+[[ "$professionals_exit" == 0 ]] || die OFFLINE_PROFESSIONALS_CONTRACTS_FAILED
 if ! bounded 360s docker run "${prepare[@]}" --network none --workdir /work \
   --mount "type=bind,src=$state/frontend-work,dst=/work" "$node_image" \
   env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp CI=true NODE_OPTIONS=--max-old-space-size=1536 \
@@ -395,5 +423,5 @@ printf 'BROWSER_API_FIXTURE_SHUTDOWN state=%s login_file=absent\n' "$api_state"
 backend_status=$(git -C "$backend" status --porcelain=v1 --untracked-files=all) || die API_SOURCE_CHANGED
 [[ -z "$backend_status" ]] || die API_SOURCE_CHANGED
 printf 'NETWORK_LIVE_SHARE_ACCEPTANCE operations=%s frontend=%s frontend_tree=%s backend=%s backend_tree=%s migration=%s postgres_version_num=170006 run=%s attempt=1\n' \
-  "$GITHUB_SHA" 5aa6494d05757964e58eb063f9234c0360217ff7 3573d2f70c48d094ab9c5277dd0291ad45df3766 \
+  "$GITHUB_SHA" 5d883b25744152f1cafbd659f1bc63b24b57e40b fc0146d3424fddf5ceeb54f134acbed198aa5434 \
   08c78f58cf4052a267480a8c27a406c7f8afaf2c ad70125fd25bb57e8a830ad3ae3dd25e3f259ed4 f4b27d6e913c "$GITHUB_RUN_ID"
