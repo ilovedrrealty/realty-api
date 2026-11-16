@@ -6,7 +6,7 @@ const dashboard = 'http://127.0.0.1:4175'
 const api = 'http://127.0.0.1:8000'
 const landing = 'http://127.0.0.1:8917'
 const management = 'https://management.kaobahotel.com/'
-const roles = ['admin', 'realtor']
+const roles = ['admin', 'owner', 'realtor', 'buyer']
 const timeout = 10_000
 const desktop = { width: 1366, height: 900 }
 const mobile = { width: 390, height: 844 }
@@ -24,8 +24,10 @@ async function readFixtures() {
   const stat = await lstat(path)
   check(stat.isFile() && (stat.mode & 0o777) === 0o600 && stat.size > 0 && stat.size <= 4096, 'PRIVATE_FIXTURE_REQUIRED')
   const fixture = JSON.parse(await readFile(path, 'utf8'))
-  check(fixture && Object.keys(fixture).length === 2 && Object.keys(fixture.accounts ?? {}).length === roles.length
-    && /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/.test(fixture.shareLeadId), 'EXACT_FIXTURE_FIELDS_REQUIRED')
+  const ids = ['shareLeadId', 'foreignListingId', 'foreignLeadId', 'legacyInquiryId'].map(key => fixture?.[key])
+  check(fixture && Object.keys(fixture).length === 5 && Object.keys(fixture.accounts ?? {}).length === roles.length
+    && ids.every(id => typeof id === 'string' && /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/.test(id))
+    && new Set(ids).size === ids.length, 'EXACT_FIXTURE_FIELDS_REQUIRED')
   for (const role of roles) {
     const account = fixture.accounts[role]
     check(account && Object.keys(account).length === 2 && account.email === 'browser-' + role + '@example.com'
@@ -143,6 +145,57 @@ async function verifyRealtor(context, page, fixture, markStep) {
   check(await page.locator(`aside nav a[href="${management}"]`).count() === 0, 'REALTOR_MANAGEMENT_LINK_EXPOSED')
 }
 
+async function verifyOwnerScope(context, page, fixture, lead) {
+  await openSignedIn(page, '/leads?workspace=owner', fixture.accounts.owner, 'owner')
+  const response = await context.request.get(`${api}/owner/leads`, { maxRedirects: 0, timeout })
+  check(response.status() === 200 && response.headers()['cache-control'] === 'no-store', 'OWNER_CURRENT_READ_REQUIRED')
+  const pageData = await response.json()
+  await response.dispose()
+  const own = pageData.items?.[0]
+  check(pageData.total === 1 && pageData.items?.length === 1 && own.id === lead.id && own.name === lead.name
+    && own.email === lead.email && own.phone === lead.phone && own.property_id !== fixture.foreignListingId,
+  'OWNER_CURRENT_SCOPE_MISMATCH')
+  const filtered = await context.request.get(`${api}/owner/leads?property_id=${fixture.foreignListingId}`, { maxRedirects: 0, timeout })
+  check(filtered.status() === 200 && filtered.headers()['cache-control'] === 'no-store', 'OWNER_FOREIGN_SCOPE_READ_REQUIRED')
+  const foreignPage = await filtered.json()
+  await filtered.dispose()
+  check(foreignPage.total === 0 && foreignPage.items?.length === 0, 'FOREIGN_OWNER_INQUIRY_EXPOSED')
+  const visible = page.getByRole('heading', { name: lead.name, exact: true })
+  await visible.waitFor({ state: 'visible' })
+  check(await page.getByText('Synthetic other owner contact', { exact: true }).count() === 0, 'FOREIGN_OWNER_CONTACT_RENDERED')
+  check(await page.locator(`aside nav a[href="${management}"]`).count() === 0, 'OWNER_MANAGEMENT_LINK_EXPOSED')
+}
+
+async function verifyLegacyRead(page, fixture, role) {
+  const route = role === 'owner' ? '/inquiries/for-owner' : '/inquiries/mine'
+  const toggle = page.getByRole('button', { name: 'Previous inquiries · separate history', exact: true })
+  const [response] = await Promise.all([page.waitForResponse(item => endpoint(item, route)), toggle.click()])
+  check(response.status() === 200, 'LEGACY_INQUIRY_READ_REQUIRED')
+  const rows = await response.json()
+  check(Array.isArray(rows) && rows.length === 1 && rows[0]?.id === fixture.legacyInquiryId
+    && rows[0].id !== fixture.shareLeadId, 'LEGACY_INQUIRY_SCOPE_MISMATCH')
+  const note = page.getByText('Synthetic legacy inquiry history note', { exact: true })
+  const row = page.getByRole('listitem').filter({ has: note })
+  await row.waitFor({ state: 'visible' })
+  check(await row.getByRole('button', { name: 'Share contact', exact: true }).count() === 0, 'LEGACY_INQUIRY_SHARE_EXPOSED')
+}
+
+async function verifyBuyerScope(context, page, fixture) {
+  await openSignedIn(page, '/inquiries?workspace=admin', fixture.accounts.buyer, 'buyer')
+  const response = await context.request.get(`${api}/leads/mine`, { maxRedirects: 0, timeout })
+  check(response.status() === 200 && response.headers()['cache-control'] === 'no-store', 'BUYER_OWN_INQUIRY_READ_REQUIRED')
+  const rows = await response.json()
+  await response.dispose()
+  check(Array.isArray(rows) && rows.length === 1 && rows[0]?.id === fixture.shareLeadId
+    && rows[0]?.id !== fixture.foreignLeadId, 'BUYER_CURRENT_SCOPE_MISMATCH')
+  await page.getByText('Synthetic private lead note sentinel', { exact: true }).waitFor({ state: 'visible' })
+  const denied = await context.request.get(`${api}/owner/leads`, { maxRedirects: 0, timeout })
+  check(denied.status() === 403 && denied.headers()['cache-control'] === 'no-store', 'BUYER_OWNER_ROUTE_NOT_DENIED')
+  await denied.dispose()
+  await verifyLegacyRead(page, fixture, 'buyer')
+  check(await page.getByRole('button', { name: 'Share contact', exact: true }).count() === 0, 'BUYER_SHARE_EXPOSED')
+}
+
 async function run() {
   const contexts = []
   let stage = 'fixture_and_launch'
@@ -184,12 +237,32 @@ async function run() {
     await mobileContext.close()
     results.checks.push(stage)
 
+    stage = 'owner_current_and_foreign_scope'
+    const [ownerContext, owner] = await pageFor('owner', desktop)
+    await verifyOwnerScope(ownerContext, owner, fixture, lead)
+    results.checks.push(stage)
+    stage = 'owner_current_contact_sharing'
+    results.owner_desktop = await verifyShareContact(owner, lead, { role: 'owner' })
+    results.checks.push(stage)
+    stage = 'owner_legacy_has_no_share'
+    await verifyLegacyRead(owner, fixture, 'owner')
+    check(await owner.getByRole('button', { name: 'Share contact', exact: true }).count() === 1,
+      'OWNER_CURRENT_AND_LEGACY_SHARE_COUNTS_CHANGED')
+    await ownerContext.close()
+    results.checks.push(stage)
+
     stage = 'realtor_login'
     const [realtorContext, realtor] = await pageFor('realtor', desktop)
     await verifyRealtor(realtorContext, realtor, fixture, step => { stage = step })
     stage = 'realtor_context_cleanup'
     await realtorContext.close()
     results.checks.push('realtor_assigned_lead_has_no_share')
+
+    stage = 'buyer_own_inquiry_has_no_share'
+    const [buyerContext, buyer] = await pageFor('buyer', desktop)
+    await verifyBuyerScope(buyerContext, buyer, fixture)
+    await buyerContext.close()
+    results.checks.push(stage)
 
     stage = 'browser_stays_local'
     check(!results.blocked_external_navigation, 'EXTERNAL_BROWSER_NAVIGATION_REFUSED')
@@ -212,7 +285,7 @@ async function run() {
       results.error_code = 'BROWSER_CLEANUP_FAILED'
       process.exitCode = 1
     }
-    console.log('ADMIN_MANUAL_SHARE_BROWSER_RESULT ' + JSON.stringify(results))
+    console.log('NETWORK_LIVE_SHARE_BROWSER_RESULT ' + JSON.stringify(results))
   }
 }
 

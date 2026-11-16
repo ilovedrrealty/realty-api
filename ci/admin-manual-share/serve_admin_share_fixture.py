@@ -15,15 +15,15 @@ from pathlib import Path
 from uuid import uuid4
 
 
-APP_COMMIT = "0811946ea02a310b03116960663e3ba6871a07d0"
-APP_TREE = "18b2087a31853a275c5c6ca791a68214b1cd38ef"
-MIGRATION_HEAD = "52b2edc810ad"
+APP_COMMIT = "b38d477c0e2e50f87f1f2e4cc1ceb3c707af92c5"
+APP_TREE = "a53b3f829f70717069f5c637c826fb8f92c02f7c"
+MIGRATION_HEAD = "f4b27d6e913c"
 HOST = "127.0.0.1"
 DATABASE_PORT = 55449
 API_PORT = 8000
 DASHBOARD_ORIGIN = "http://127.0.0.1:4175"
 LANDING_ORIGIN = "http://127.0.0.1:8917"
-ROLES = {"admin": "admin", "realtor": "realtor"}
+ROLES = ("admin", "owner", "realtor", "buyer")
 FIXTURE_FILE = Path("/browser-fixtures/fixtures.json")
 stage = "checkout"
 
@@ -103,6 +103,7 @@ def configure_application(application, database_url):
         "GHL_ENABLED": "false",
         "LEAD_DELIVERY_ENABLED": "false",
         "CUSTOMER_MESSAGES_ENABLED": "false",
+        "PROPERTY_INQUIRY_REQUIRE_CONSENT": "false",
         "PAYPAL_CLIENT_ID": "",
         "PAYPAL_CLIENT_SECRET": "",
         "PAYPAL_WEBHOOK_ID": "",
@@ -118,6 +119,7 @@ def migrate_and_seed():
     from sqlalchemy import text
 
     from database import SessionLocal
+    from models.inquiry import Inquiry
     from models.lead import Lead
     from models.listing import Listing
     from models.user import User
@@ -132,8 +134,9 @@ def migrate_and_seed():
                 for role in ROLES}
     with SessionLocal.begin() as db:
         require(db.execute(text("SELECT version_num FROM alembic_version")).scalars().all() == [MIGRATION_HEAD],
-                "Exact live Alembic head required")
-        require(db.query(User).count() == db.query(Lead).count() == 0, "Synthetic database must start empty")
+                "Exact candidate Alembic head required")
+        require(db.query(User).count() == db.query(Lead).count() == db.query(Inquiry).count() == 0,
+                "Synthetic database must start empty")
         advance("seed_accounts")
         users = {}
         for role, account in accounts.items():
@@ -145,15 +148,26 @@ def migrate_and_seed():
         advance("seed_lead")
         listing = Listing(id=uuid4(), title="Browser rehearsal villa", type="villa", transaction="rent",
                           price=1000, currency="USD", location="Cabarete", status="active", images=[],
-                          submitted_by=users["admin"].id, assigned_realtor_id=users["realtor"].id)
-        db.add(listing)
+                          submitted_by=users["owner"].id, owner_id=users["owner"].id,
+                          assigned_realtor_id=users["realtor"].id)
+        foreign = Listing(id=uuid4(), title="Synthetic other owner property", type="villa", transaction="sale",
+                          price=1000, currency="USD", location="Cabarete", status="active", images=[],
+                          submitted_by=users["admin"].id)
+        db.add_all((listing, foreign))
         db.flush()
-        lead = Lead(id=uuid4(), type="buyer_interest", name="Browser Share Contact",
+        lead = Lead(id=uuid4(), type="property_inquiry", name="Browser Share Contact",
                     email="browser-share+ci@example.com", phone="(809) 555-0119",
                     message="Synthetic private lead note sentinel", property_id=listing.id,
-                    assigned_realtor_id=users["realtor"].id, status="new")
-        db.add(lead)
-        return {"accounts": accounts, "shareLeadId": str(lead.id)}
+                    assigned_realtor_id=users["realtor"].id, from_user_id=users["buyer"].id, status="new")
+        foreign_lead = Lead(id=uuid4(), type="property_inquiry", name="Synthetic other owner contact",
+                            email="browser-foreign@example.com", phone="(809) 555-0142",
+                            message="Synthetic other owner inquiry note", property_id=foreign.id, status="new")
+        legacy = Inquiry(id=uuid4(), listing_id=listing.id, name="Browser Legacy Contact",
+                         email="browser-legacy@example.com", phone="(809) 555-0191",
+                         message="Synthetic legacy inquiry history note", from_user_id=users["buyer"].id)
+        db.add_all((lead, foreign_lead, legacy))
+        return {"accounts": accounts, "shareLeadId": str(lead.id), "foreignListingId": str(foreign.id),
+                "foreignLeadId": str(foreign_lead.id), "legacyInquiryId": str(legacy.id)}
 
 
 def confined_api(api):

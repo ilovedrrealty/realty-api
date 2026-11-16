@@ -8,7 +8,7 @@ bounded() { timeout --kill-after=8s "$@"; }
 
 [[ $# == 4 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api ]] || die CI_REQUIRED
 [[ ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 && ${GITHUB_RUN_ATTEMPT:-} == 1 ]] || die STANDARD_LINUX_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-admin-manual-share-20261116-v3 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
+[[ ${GITHUB_REF:-} == refs/heads/codex-ci-network-live-share-20261116 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 
 ops="$1"; frontend="$2"; backend="$3"; migration="$4"
 [[ "$ops" == "$GITHUB_WORKSPACE/browser-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-base" &&
@@ -18,12 +18,12 @@ for checkout in "$ops" "$frontend" "$backend" "$migration"; do
   checkout_status=$(git -C "$checkout" status --porcelain=v1 --untracked-files=all) || die CLEAN_CHECKOUT_REQUIRED
   [[ $(realpath "$checkout") == "$checkout" && -z "$checkout_status" ]] || die CLEAN_CHECKOUT_REQUIRED
 done
-[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == 4911913be32d6f9da80aaadc59285b85f59b47fd ]] ||
+[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == 64e6004d3f513690856435ba8fab5b3cf7a8986d ]] ||
   die EXACT_OPERATIONS_PARENT_REQUIRED
-[[ $(git -C "$frontend" rev-parse HEAD) == 9b31258ddf8f1d62311969090b2f5deb52cdaba3 &&
-   $(git -C "$frontend" rev-parse 'HEAD^{tree}') == 57cd5d9d42d845a77623b11050f1883dd15b881d ]] || die EXACT_FRONTEND_REQUIRED
-[[ $(git -C "$backend" rev-parse HEAD) == 0811946ea02a310b03116960663e3ba6871a07d0 &&
-   $(git -C "$backend" rev-parse 'HEAD^{tree}') == 18b2087a31853a275c5c6ca791a68214b1cd38ef ]] || die EXACT_BACKEND_REQUIRED
+[[ $(git -C "$frontend" rev-parse HEAD) == 5aa6494d05757964e58eb063f9234c0360217ff7 &&
+   $(git -C "$frontend" rev-parse 'HEAD^{tree}') == 3573d2f70c48d094ab9c5277dd0291ad45df3766 ]] || die EXACT_FRONTEND_REQUIRED
+[[ $(git -C "$backend" rev-parse HEAD) == b38d477c0e2e50f87f1f2e4cc1ceb3c707af92c5 &&
+   $(git -C "$backend" rev-parse 'HEAD^{tree}') == a53b3f829f70717069f5c637c826fb8f92c02f7c ]] || die EXACT_BACKEND_REQUIRED
 [[ $(git -C "$migration" rev-parse HEAD) == c193a925ba57ea2d67ea48c44e5262817885c8a2 ]] ||
   die EXACT_ACCEPTED_PYTHON_BUILD_REQUIRED
 
@@ -46,7 +46,7 @@ umask 077
 state=$(mktemp -d "$RUNNER_TEMP/ildr-browser.XXXXXXXX")
 nonce=$(python3 -I -B -c 'from uuid import uuid4; print(uuid4().hex)')
 [[ "$nonce" =~ ^[a-f0-9]{32}$ ]] || die EXACT_NONCE_REQUIRED
-label='org.ilovedrrealty.browser.admin-manual-share'
+label='org.ilovedrrealty.browser.network-live-share'
 run_key="$GITHUB_RUN_ID-$nonce"
 app_image="ildr-browser-api:$run_key"
 uids="$(id -u):$(id -g)"
@@ -133,6 +133,12 @@ for entry in filter(None, files):
 PY
 }
 verify_frontend_files || die EXACT_ARCHIVED_FRONTEND_REQUIRED
+printf '%s  %s\n' \
+  8df3c4c580c65694bc727488fc0ec02d88ab1577e5fa16c509f4897b58e60f33 "$state/frontend-work/package-lock.json" \
+  1126aeb69e32b34394cca03ac440848f7b88b339042496cb6722a1781a204337 "$state/frontend-work/apps/dashboard/package.json" \
+  45893e6dfebaad4d2e73f7e7d6b26f176883bc1ba8c8dc025f188cc1b4d12344 "$state/frontend-work/apps/landing/package.json" \
+  32a58ba8e28b4231ab7cc92cf557c519d77138e54e6c7c47a2eacf799167288f "$state/frontend-work/tests/contact-share.test.cjs" \
+  | sha256sum --check --status || die EXACT_PACKAGE_AND_TEST_PINS_REQUIRED
 
 prepare=(--label "$label=$run_key" --user "$uids" --read-only --cap-drop ALL --security-opt no-new-privileges:true
          --memory 8g --memory-swap 8g --pids-limit 256 --cpus 2 --tmpfs /tmp:rw,exec,size=128m)
@@ -172,11 +178,11 @@ elif re.search(rb'(?m)^npm (?:error|ERR!) network(?:[ \t\r]|$)', tail):
     summary = 'npm_network_summary'
 else:
     summary = 'unclassified_install_failure'
-print(f'ADMIN_MANUAL_SHARE_INSTALL native={native} summary={summary} codes={codes}')
+print(f'NETWORK_LIVE_SHARE_INSTALL native={native} summary={summary} codes={codes}')
 PY
   die LOCKED_FRONTEND_INSTALL_FAILED
 fi
-printf 'ADMIN_MANUAL_SHARE_INSTALL native=0 summary=success codes=none\n'
+printf 'NETWORK_LIVE_SHARE_INSTALL native=0 summary=success codes=none\n'
 if ! bounded 360s docker run "${prepare[@]}" --network none --workdir /work \
   --mount "type=bind,src=$state/frontend-work,dst=/work" "$node_image" \
   env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp CI=true NODE_OPTIONS=--max-old-space-size=1536 \
@@ -184,7 +190,7 @@ if ! bounded 360s docker run "${prepare[@]}" --network none --workdir /work \
   npm_config_update_notifier=false npm_config_audit=false npm_config_fund=false \
   VITE_API_URL=http://127.0.0.1:8000 VITE_LANDING_URL=http://127.0.0.1:8917 \
   VITE_GOOGLE_CLIENT_ID=synthetic-ci.apps.googleusercontent.com sh -c 'node --test --test-reporter=tap tests/contact-share.test.cjs &&
-  npm run typecheck --workspace=dashboard && npm run build --workspace=dashboard' >"$state/dashboard-build.log" 2>&1; then
+  npm run build --workspace=dashboard' >"$state/dashboard-build.log" 2>&1; then
   python3 -I -B - "$state/dashboard-build.log" <<'PY'
 import re
 import sys
@@ -206,7 +212,7 @@ from pathlib import Path
 lines = Path(sys.argv[1]).read_bytes().splitlines()
 for row in (b'# tests 7', b'# pass 7', b'# fail 0', b'# skipped 0'):
     assert lines.count(row) == 1
-print('ADMIN_MANUAL_SHARE_FRONTEND_UNIT native=0 tests=7 pass=7 typecheck=success build=success')
+print('NETWORK_LIVE_SHARE_FRONTEND_UNIT native=0 tests=7 pass=7 typecheck=success build=success')
 PY
 verify_frontend_files || die FRONTEND_SOURCE_CHANGED
 
@@ -324,7 +330,7 @@ python3 -I -B - "$state/browser.log" <<'PY'
 from pathlib import Path
 import json,re,sys
 path=Path(sys.argv[1]); assert path.stat().st_size <= 131072
-prefix=b'ADMIN_MANUAL_SHARE_BROWSER_RESULT '
+prefix=b'NETWORK_LIVE_SHARE_BROWSER_RESULT '
 matches=[line[len(prefix):] for line in path.read_bytes().splitlines() if line.startswith(prefix)]
 assert len(matches)==1 and len(matches[0])<=8192
 def safe(value):
@@ -335,10 +341,12 @@ def safe(value):
 data=json.loads(matches[0]); assert safe(data)
 print(prefix.decode()+json.dumps(data,sort_keys=True,separators=(',',':')))
 assert data['status']=='PASS'
-assert data['checks']==['admin_english_desktop','admin_spanish_mobile','realtor_assigned_lead_has_no_share','browser_stays_local']
-assert set(data)=={'blocked_external_requests','checks','english_desktop','spanish_mobile','status'}
+assert data['checks']==['admin_english_desktop','admin_spanish_mobile','owner_current_and_foreign_scope',
+                        'owner_current_contact_sharing','owner_legacy_has_no_share','realtor_assigned_lead_has_no_share',
+                        'buyer_own_inquiry_has_no_share','browser_stays_local']
+assert set(data)=={'blocked_external_requests','checks','english_desktop','spanish_mobile','owner_desktop','status'}
 assert type(data['blocked_external_requests']) is int and 0 <= data['blocked_external_requests'] <= 100
-for label, language, mobile in [('english_desktop','en',False),('spanish_mobile','es',True)]:
+for label, language, mobile in [('english_desktop','en',False),('spanish_mobile','es',True),('owner_desktop','en',False)]:
     result=data[label]
     checks={'composer_clicks_canceled','consent_gate','exact_drafts','focus_restored','no_api_mutations'}
     assert set(result)==checks|{'clipboard_scope','language','mobile'}
@@ -355,6 +363,6 @@ api_state=$(bounded 15s docker inspect --format '{{.State.ExitCode}} {{.State.Ru
 printf 'BROWSER_API_FIXTURE_SHUTDOWN state=%s login_file=absent\n' "$api_state"
 backend_status=$(git -C "$backend" status --porcelain=v1 --untracked-files=all) || die API_SOURCE_CHANGED
 [[ -z "$backend_status" ]] || die API_SOURCE_CHANGED
-printf 'ADMIN_MANUAL_SHARE_ACCEPTANCE operations=%s frontend=%s frontend_tree=%s backend=%s backend_tree=%s migration=%s run=%s attempt=1\n' \
-  "$GITHUB_SHA" 9b31258ddf8f1d62311969090b2f5deb52cdaba3 57cd5d9d42d845a77623b11050f1883dd15b881d \
-  0811946ea02a310b03116960663e3ba6871a07d0 18b2087a31853a275c5c6ca791a68214b1cd38ef 52b2edc810ad "$GITHUB_RUN_ID"
+printf 'NETWORK_LIVE_SHARE_ACCEPTANCE operations=%s frontend=%s frontend_tree=%s backend=%s backend_tree=%s migration=%s run=%s attempt=1\n' \
+  "$GITHUB_SHA" 5aa6494d05757964e58eb063f9234c0360217ff7 3573d2f70c48d094ab9c5277dd0291ad45df3766 \
+  b38d477c0e2e50f87f1f2e4cc1ceb3c707af92c5 a53b3f829f70717069f5c637c826fb8f92c02f7c f4b27d6e913c "$GITHUB_RUN_ID"

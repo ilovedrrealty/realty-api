@@ -1,8 +1,8 @@
-name: Isolated Admin manual contact share rehearsal
+name: Isolated property network contact share rehearsal
 
 on:
   push:
-    branches: [codex-ci-admin-manual-share-20261116-v3]
+    branches: [codex-ci-network-live-share-20261116]
 
 permissions:
   contents: read
@@ -31,17 +31,17 @@ jobs:
           path: browser-ops
           fetch-depth: 2
           persist-credentials: false
-      - name: Read exact Admin manual-share frontend
+      - name: Read exact merged property network frontend
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: ilovedrrealty/iLoveDRRealty
-          ref: 9b31258ddf8f1d62311969090b2f5deb52cdaba3
+          ref: 5aa6494d05757964e58eb063f9234c0360217ff7
           path: frontend-base
           persist-credentials: false
       - name: Read exact backend application
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 0811946ea02a310b03116960663e3ba6871a07d0
+          ref: b38d477c0e2e50f87f1f2e4cc1ceb3c707af92c5
           path: browser-backend
           persist-credentials: false
       - name: Read accepted migration dependency recipe
@@ -50,7 +50,7 @@ jobs:
           ref: c193a925ba57ea2d67ea48c44e5262817885c8a2
           path: migration-relay
           persist-credentials: false
-      - name: Verify isolated Admin contact sharing and Realtor access boundaries
+      - name: Verify Admin and Owner sharing with Realtor and Buyer boundaries
         shell: bash
         run: |
           set -euo pipefail

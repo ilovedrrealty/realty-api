@@ -71,10 +71,11 @@ async function installBrowserBoundary(dialog, expected) {
   }, expected)
 }
 
-/** Requires the v4 harness's authenticated, loopback-only Admin page. Set its app language first for ES. */
-export async function verifyShareContact(page, { id, name, email, phone, message }, { language = 'en', mobile = false } = {}) {
+/** Requires an authenticated loopback page with the selected synthetic lead. */
+export async function verifyShareContact(page, { id, name, email, phone, message }, { language = 'en', mobile = false, role = 'admin' } = {}) {
   const ui = Object.hasOwn(labels, language) ? labels[language] : null
-  check(ui && new URL(page.url()).origin === dashboard, 'SHARE_CONTACT_LOCAL_ADMIN_PAGE_REQUIRED')
+  check(ui && ['admin', 'owner'].includes(role) && new URL(page.url()).origin === dashboard,
+    'SHARE_CONTACT_LOCAL_AUTHENTICATED_PAGE_REQUIRED')
   check(/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(id)
     && /^Browser [^\r\n]{1,120}$/.test(name) && /^[\w.+-]+@example\.com$/.test(email)
     && phone === '(809) 555-0119' && /^Synthetic [^\r\n]{1,180}$/.test(message),
@@ -96,19 +97,27 @@ export async function verifyShareContact(page, { id, name, email, phone, message
   try {
     await page.bringToFront()
     await page.waitForFunction(() => document.visibilityState === 'visible', undefined, { timeout })
-    const [identity, leads, agents] = await Promise.all([
-      expectGet(page, '/auth/me'), expectGet(page, '/admin/leads'), expectGet(page, '/admin/agents'),
-      page.goto(`${dashboard}/leads?workspace=admin&openId=${id}`, { waitUntil: 'domcontentloaded', timeout }),
-    ])
-    check(identity.status() === 200 && leads.status() === 200 && agents.status() === 200,
-      'SHARE_CONTACT_REAL_ADMIN_READS_REQUIRED')
-    const user = await identity.json()
-    check(user.role === 'admin' && user.email === 'browser-admin@example.com', 'SHARE_CONTACT_FIXTURE_ADMIN_REQUIRED')
-    const lead = (await leads.json()).find(lead => lead.id === id)
-    check(lead?.name === name && lead.email === email && lead.phone === phone && lead.message === message
-      && lead.property_id && lead.property_title, 'SHARE_CONTACT_FIXTURE_LEAD_MISMATCH')
+    let scope = page
+    if (role === 'admin') {
+      const [identity, leads, agents] = await Promise.all([
+        expectGet(page, '/auth/me'), expectGet(page, '/admin/leads'), expectGet(page, '/admin/agents'),
+        page.goto(`${dashboard}/leads?workspace=admin&openId=${id}`, { waitUntil: 'domcontentloaded', timeout }),
+      ])
+      check(identity.status() === 200 && leads.status() === 200 && agents.status() === 200,
+        'SHARE_CONTACT_REAL_ADMIN_READS_REQUIRED')
+      const user = await identity.json()
+      check(user.role === 'admin' && user.email === 'browser-admin@example.com', 'SHARE_CONTACT_FIXTURE_ADMIN_REQUIRED')
+      const lead = (await leads.json()).find(lead => lead.id === id)
+      check(lead?.type === 'property_inquiry' && lead.name === name && lead.email === email
+        && lead.phone === phone && lead.message === message && lead.property_id && lead.property_title,
+      'SHARE_CONTACT_FIXTURE_LEAD_MISMATCH')
+    } else {
+      check(new URL(page.url()).pathname === '/leads', 'SHARE_CONTACT_CURRENT_OWNER_PAGE_REQUIRED')
+      scope = page.getByRole('listitem').filter({ has: page.getByRole('heading', { name, exact: true }) })
+      await scope.waitFor({ state: 'visible' })
+    }
 
-    const trigger = page.getByRole('button', { name: ui.trigger, exact: true })
+    const trigger = scope.getByRole('button', { name: ui.trigger, exact: true })
     const dialog = page.getByRole('dialog', { name: ui.title, exact: true })
     const preview = dialog.getByRole('region', { name: ui.preview, exact: true }).locator('pre')
     const nameOption = dialog.getByRole('checkbox', { name: `${ui.name}: ${name}`, exact: true })
