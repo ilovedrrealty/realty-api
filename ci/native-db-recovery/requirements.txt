@@ -11,4 +11,4 @@ cryptography==50.0.2 \
 cffi==2.1.1 \
     --hash=sha256:34e261f78cb6ceaaa36f42f2613f4380d94d9c759a9c73c769ee6e0247364632 \
     --hash=sha256:a931079504ecc49efed7744c476a5c343a92fabf66dec2db95edb1b2fdc770e2
-pycparser==3.12 --hash=sha256:a076f3f4899b39b43ed13563a1dafe42447445bec2e294154ec5c57fcdda4c85e
+pycparser==3.12 --hash=sha256:a076f3f489b39b43ed13563a1dafe42447445bec2e294154ec5c57fcdda4c85e

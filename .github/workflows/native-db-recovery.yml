@@ -2,7 +2,7 @@ name: Isolated native database backup and restore rehearsal
 
 on:
   push:
-    branches: [codex-ci-native-db-recovery-20261116]
+    branches: [codex-ci-native-db-recovery-20261116-v2]
 
 permissions:
   contents: read
@@ -32,8 +32,18 @@ jobs:
           image="ildr-native-db-recovery:$GITHUB_RUN_ID"
           container="ildr-native-db-recovery-$GITHUB_RUN_ID"
           bash -n "$fixture/start_loopback_fixture.sh"
-          timeout 420s docker build --quiet --platform linux/amd64 --tag "$image" \
-            --label "org.ilovedrrealty.fixture=$GITHUB_RUN_ID" "$fixture" >/dev/null
+          umask 077
+          build_log=$(mktemp "$RUNNER_TEMP/ildr-native-db-build.XXXXXXXX")
+          trap 'rm -f -- "$build_log"' EXIT
+          if timeout 420s docker build --progress=plain --platform linux/amd64 --tag "$image" \
+            --label "org.ilovedrrealty.fixture=$GITHUB_RUN_ID" "$fixture" >"$build_log" 2>&1; then
+            printf 'NATIVE_DB_RECOVERY_BUILD status=PASS\n'
+          else
+            build_status=$?
+            python3 -I -B "$fixture/report-build-failure.py" "$build_log" "$build_status"
+            exit "$build_status"
+          fi
+          rm -f -- "$build_log"
           cleanup() {
             local status=$?
             trap - EXIT
