@@ -1,0 +1,61 @@
+name: Isolated cumulative migration rehearsal
+
+on:
+  push:
+    branches: [codex-ci-cumulative-network-migration-20261116]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cumulative-network-migration-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  rehearsal:
+    if: >-
+      github.repository == 'ilovedrrealty/realty-api' &&
+      github.event.repository.private == false &&
+      github.event.created == true && github.event.deleted == false &&
+      github.event.forced == false &&
+      github.event.before == '0000000000000000000000000000000000000000' &&
+      github.run_attempt == 1 && github.event.after == github.sha &&
+      github.workflow_sha == github.sha
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Read exact rehearsal operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          path: migration-ops
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Read exact cumulative backend
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: b38d477c0e2e50f87f1f2e4cc1ceb3c707af92c5
+          path: migration-app
+          persist-credentials: false
+      - name: Read exact deployed backend
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 0811946ea02a310b03116960663e3ba6871a07d0
+          path: migration-baseline
+          persist-credentials: false
+      - name: Read prior immutable migration recipe
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: c193a925ba57ea2d67ea48c44e5262817885c8a2
+          path: migration-recipe
+          persist-credentials: false
+      - name: Rehearse both database paths in loopback Postgres
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$RUNNER_ENVIRONMENT" == github-hosted && "$RUNNER_OS" == Linux && "$RUNNER_ARCH" == X64 ]]
+          rehearsal="$GITHUB_WORKSPACE/migration-ops/ci/cumulative-network-migration/run-hosted-cumulative-migration.sh"
+          bash --noprofile --norc -n "$rehearsal"
+          exec bash --noprofile --norc "$rehearsal" \
+            "$GITHUB_WORKSPACE/migration-ops" "$GITHUB_WORKSPACE/migration-app" \
+            "$GITHUB_WORKSPACE/migration-baseline" "$GITHUB_WORKSPACE/migration-recipe"
