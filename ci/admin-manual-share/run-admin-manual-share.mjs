@@ -118,19 +118,28 @@ async function closeDrawer(page) {
   await page.waitForFunction(() => (document.querySelector('aside')?.getBoundingClientRect().right ?? 1) <= 1)
 }
 
-async function verifyRealtor(context, page, fixture) {
+async function verifyRealtor(context, page, fixture, markStep) {
+  markStep('realtor_identity_and_page')
   await openSignedIn(page, '/leads?workspace=admin', fixture.accounts.realtor, 'realtor')
+  markStep('realtor_admin_route_denial')
   const denied = await context.request.get(`${api}/admin/leads`, { maxRedirects: 0, timeout })
   check(denied.status() === 403, 'REAL_REALTOR_ADMIN_LEADS_DENIAL_REQUIRED')
   await denied.dispose()
+  markStep('realtor_assigned_route_read')
   const assigned = await context.request.get(`${api}/realtor/leads`, { maxRedirects: 0, timeout })
-  check(assigned.status() === 200 && (await assigned.json()).some(lead => lead.id === fixture.shareLeadId),
+  check(assigned.status() === 200, 'REALTOR_ASSIGNED_LEADS_READ_FAILED')
+  const leads = await assigned.json()
+  check(Array.isArray(leads) && leads.some(lead => lead?.id === fixture.shareLeadId && lead.name === 'Browser Share Contact'),
     'ASSIGNED_LEAD_REQUIRED_FOR_REALTOR_NEGATIVE')
   await assigned.dispose()
-  await page.getByText('Browser Share Contact', { exact: true }).filter({ visible: true }).first().click()
-  await page.getByText('Contact', { exact: true }).waitFor({ state: 'visible' })
+  markStep('realtor_assigned_lead_row')
+  await page.locator('main').getByText('Browser Share Contact', { exact: true }).filter({ visible: true }).click()
+  markStep('realtor_assigned_lead_detail')
+  await page.getByRole('button', { name: 'Copy email', exact: true }).waitFor({ state: 'visible' })
+  markStep('realtor_share_control_absence')
   check(await page.getByRole('button', { name: 'Share contact', exact: true }).count() === 0,
     'REALTOR_LEAD_SHARE_EXPOSED')
+  markStep('realtor_management_link_absence')
   check(await page.locator(`aside nav a[href="${management}"]`).count() === 0, 'REALTOR_MANAGEMENT_LINK_EXPOSED')
 }
 
@@ -175,11 +184,12 @@ async function run() {
     await mobileContext.close()
     results.checks.push(stage)
 
-    stage = 'realtor_assigned_lead_has_no_share'
+    stage = 'realtor_login'
     const [realtorContext, realtor] = await pageFor('realtor', desktop)
-    await verifyRealtor(realtorContext, realtor, fixture)
+    await verifyRealtor(realtorContext, realtor, fixture, step => { stage = step })
+    stage = 'realtor_context_cleanup'
     await realtorContext.close()
-    results.checks.push(stage)
+    results.checks.push('realtor_assigned_lead_has_no_share')
 
     stage = 'browser_stays_local'
     check(!results.blocked_external_navigation, 'EXTERNAL_BROWSER_NAVIGATION_REFUSED')
