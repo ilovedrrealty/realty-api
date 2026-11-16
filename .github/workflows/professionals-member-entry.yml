@@ -1,0 +1,44 @@
+name: Isolated Professionals member entry validation
+
+on:
+  push:
+    branches: [codex-ci-professionals-member-entry-20261116]
+
+permissions:
+  contents: read
+
+jobs:
+  landing:
+    if: >-
+      github.repository == 'ilovedrrealty/realty-api' &&
+      github.event.repository.private == false &&
+      github.event.created == true && github.event.deleted == false &&
+      github.event.forced == false &&
+      github.event.before == '0000000000000000000000000000000000000000' &&
+      github.run_attempt == 1 && github.event.after == github.sha &&
+      github.workflow_sha == github.sha
+    runs-on: ubuntu-24.04
+    timeout-minutes: 22
+    steps:
+      - name: Read exact validation operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          path: professionals-ops
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Read exact Professionals frontend
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: ilovedrrealty/iLoveDRRealty
+          path: professionals-frontend
+          ref: 295fedc085ef982bd212f98ff7edfa6aec303fd4
+          persist-credentials: false
+      - name: Verify Professionals contracts and static landing export
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$RUNNER_ENVIRONMENT" == github-hosted && "$RUNNER_OS" == Linux && "$RUNNER_ARCH" == X64 ]]
+          script="$GITHUB_WORKSPACE/professionals-ops/ci/professionals-member-entry/run-hosted-validation.sh"
+          bash --noprofile --norc -n "$script"
+          exec bash --noprofile --norc "$script" "$GITHUB_WORKSPACE/professionals-ops" "$GITHUB_WORKSPACE/professionals-frontend"
