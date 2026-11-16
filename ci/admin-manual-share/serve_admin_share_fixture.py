@@ -15,8 +15,8 @@ from pathlib import Path
 from uuid import uuid4
 
 
-APP_COMMIT = "b38d477c0e2e50f87f1f2e4cc1ceb3c707af92c5"
-APP_TREE = "a53b3f829f70717069f5c637c826fb8f92c02f7c"
+APP_COMMIT = "08c78f58cf4052a267480a8c27a406c7f8afaf2c"
+APP_TREE = "ad70125fd25bb57e8a830ad3ae3dd25e3f259ed4"
 MIGRATION_HEAD = "f4b27d6e913c"
 HOST = "127.0.0.1"
 DATABASE_PORT = 55449
@@ -81,8 +81,8 @@ def claim_disposable_database():
                 FROM pg_database WHERE datname = current_database()
             """)
             identity = cursor.fetchone()
-    require(identity == (database_name, HOST, DATABASE_PORT, 170011, f"ildr-admin-share-ci:{nonce}", True),
-            "Fresh, marked loopback database required")
+    require(identity == (database_name, HOST, DATABASE_PORT, 170006, f"ildr-admin-share-ci:{nonce}", True),
+            "Fresh, marked PostgreSQL 17.6 loopback database required")
     return f"postgresql+psycopg2://postgres@{HOST}:{DATABASE_PORT}/{database_name}"
 
 

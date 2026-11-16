@@ -1,8 +1,8 @@
-name: Isolated property network contact share rehearsal
+name: Isolated property network release-pair rehearsal
 
 on:
   push:
-    branches: [codex-ci-network-live-share-20261116]
+    branches: [codex-ci-network-live-share-release-20261116]
 
 permissions:
   contents: read
@@ -41,7 +41,7 @@ jobs:
       - name: Read exact backend application
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: b38d477c0e2e50f87f1f2e4cc1ceb3c707af92c5
+          ref: 08c78f58cf4052a267480a8c27a406c7f8afaf2c
           path: browser-backend
           persist-credentials: false
       - name: Read accepted migration dependency recipe
@@ -50,7 +50,7 @@ jobs:
           ref: c193a925ba57ea2d67ea48c44e5262817885c8a2
           path: migration-relay
           persist-credentials: false
-      - name: Verify Admin and Owner sharing with Realtor and Buyer boundaries
+      - name: Verify customer message copy and role-scoped contact sharing
         shell: bash
         run: |
           set -euo pipefail

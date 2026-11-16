@@ -8,7 +8,7 @@ bounded() { timeout --kill-after=8s "$@"; }
 
 [[ $# == 4 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api ]] || die CI_REQUIRED
 [[ ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 && ${GITHUB_RUN_ATTEMPT:-} == 1 ]] || die STANDARD_LINUX_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-network-live-share-20261116 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
+[[ ${GITHUB_REF:-} == refs/heads/codex-ci-network-live-share-release-20261116 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 
 ops="$1"; frontend="$2"; backend="$3"; migration="$4"
 [[ "$ops" == "$GITHUB_WORKSPACE/browser-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-base" &&
@@ -18,12 +18,12 @@ for checkout in "$ops" "$frontend" "$backend" "$migration"; do
   checkout_status=$(git -C "$checkout" status --porcelain=v1 --untracked-files=all) || die CLEAN_CHECKOUT_REQUIRED
   [[ $(realpath "$checkout") == "$checkout" && -z "$checkout_status" ]] || die CLEAN_CHECKOUT_REQUIRED
 done
-[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == 64e6004d3f513690856435ba8fab5b3cf7a8986d ]] ||
+[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == 93d6dcad93e6bbf486bed2e5fb8b3cc1c43865d8 ]] ||
   die EXACT_OPERATIONS_PARENT_REQUIRED
 [[ $(git -C "$frontend" rev-parse HEAD) == 5aa6494d05757964e58eb063f9234c0360217ff7 &&
    $(git -C "$frontend" rev-parse 'HEAD^{tree}') == 3573d2f70c48d094ab9c5277dd0291ad45df3766 ]] || die EXACT_FRONTEND_REQUIRED
-[[ $(git -C "$backend" rev-parse HEAD) == b38d477c0e2e50f87f1f2e4cc1ceb3c707af92c5 &&
-   $(git -C "$backend" rev-parse 'HEAD^{tree}') == a53b3f829f70717069f5c637c826fb8f92c02f7c ]] || die EXACT_BACKEND_REQUIRED
+[[ $(git -C "$backend" rev-parse HEAD) == 08c78f58cf4052a267480a8c27a406c7f8afaf2c &&
+   $(git -C "$backend" rev-parse 'HEAD^{tree}') == ad70125fd25bb57e8a830ad3ae3dd25e3f259ed4 ]] || die EXACT_BACKEND_REQUIRED
 [[ $(git -C "$migration" rev-parse HEAD) == c193a925ba57ea2d67ea48c44e5262817885c8a2 ]] ||
   die EXACT_ACCEPTED_PYTHON_BUILD_REQUIRED
 
@@ -38,7 +38,7 @@ printf '%s  %s\n' e546d8c5668b87ef28e604107bbb330e6f4b3873cf0208b4d24ca378bd0851
 node_image='node:24.22.1-bookworm-slim@sha256:be8204d4bd327363357f532187b752ff62759c31bedf98e9e18fc08c9cbd605c'
 python_digest='sha256:673719e071ecf27434fd2635bbd8d00f49f4fdd81f243143438a42ced8bedf60'
 python_image="docker.io/library/python:3.11-slim@$python_digest"
-postgres_image='docker.io/library/postgres:17@sha256:3b0cda93be7c8dba2ed484d19393d93845dc3dafb88973e248ba8e6d99d784e1'
+postgres_image='docker.io/library/postgres:17.6@sha256:b86568d3e0fe1dfaeff52714f9da36f206a30e4c49131b82bf96982d78627409'
 browser_image='mcr.microsoft.com/playwright@sha256:ee15712262f017b8157421b212b12099146645f44b1bc5c0514cbbe6a229b1d0'
 
 umask 077
@@ -142,6 +142,37 @@ printf '%s  %s\n' \
 
 prepare=(--label "$label=$run_key" --user "$uids" --read-only --cap-drop ALL --security-opt no-new-privileges:true
          --memory 8g --memory-swap 8g --pids-limit 256 --cpus 2 --tmpfs /tmp:rw,exec,size=128m)
+
+if ! bounded 30s docker run -i "${prepare[@]}" --network none --workdir /application \
+  --mount "type=bind,src=$backend,dst=/application,readonly" "$app_image" \
+  env -i PATH=/usr/local/bin:/usr/bin:/bin /usr/local/bin/python -I -B - \
+  >"$state/customer-copy.log" 2>&1 <<'PY'
+from io import StringIO
+from pathlib import Path
+import importlib.util
+import os
+import sys
+import unittest
+
+checkout = Path("/application")
+assert os.statvfs(checkout).f_flag & os.ST_RDONLY
+assert {interface.name for interface in Path("/sys/class/net").iterdir()} == {"lo"}
+sys.path.insert(0, str(checkout))
+spec = importlib.util.spec_from_file_location("customer_copy_tests", checkout / "tests/test_customer_messages.py")
+tests = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(tests)
+suite = unittest.defaultTestLoader.loadTestsFromTestCase(tests.CustomerMessageTests)
+result = unittest.TextTestRunner(stream=StringIO()).run(suite)
+assert result.testsRun == 7 and result.wasSuccessful() and not result.skipped and not result.expectedFailures
+print("NETWORK_LIVE_SHARE_CUSTOMER_COPY native=0 tests=7 pass=7")
+PY
+then
+  die OFFLINE_CUSTOMER_COPY_TEST_FAILED
+fi
+[[ $(<"$state/customer-copy.log") == 'NETWORK_LIVE_SHARE_CUSTOMER_COPY native=0 tests=7 pass=7' ]] ||
+  die CUSTOMER_COPY_RESULT_REQUIRED
+printf 'NETWORK_LIVE_SHARE_CUSTOMER_COPY native=0 tests=7 pass=7\n'
+
 install_exit=0
 bounded 500s docker run "${prepare[@]}" --network bridge --workdir /work \
   --mount "type=bind,src=$state/frontend-work,dst=/work" "$node_image" \
@@ -363,6 +394,6 @@ api_state=$(bounded 15s docker inspect --format '{{.State.ExitCode}} {{.State.Ru
 printf 'BROWSER_API_FIXTURE_SHUTDOWN state=%s login_file=absent\n' "$api_state"
 backend_status=$(git -C "$backend" status --porcelain=v1 --untracked-files=all) || die API_SOURCE_CHANGED
 [[ -z "$backend_status" ]] || die API_SOURCE_CHANGED
-printf 'NETWORK_LIVE_SHARE_ACCEPTANCE operations=%s frontend=%s frontend_tree=%s backend=%s backend_tree=%s migration=%s run=%s attempt=1\n' \
+printf 'NETWORK_LIVE_SHARE_ACCEPTANCE operations=%s frontend=%s frontend_tree=%s backend=%s backend_tree=%s migration=%s postgres_version_num=170006 run=%s attempt=1\n' \
   "$GITHUB_SHA" 5aa6494d05757964e58eb063f9234c0360217ff7 3573d2f70c48d094ab9c5277dd0291ad45df3766 \
-  b38d477c0e2e50f87f1f2e4cc1ceb3c707af92c5 a53b3f829f70717069f5c637c826fb8f92c02f7c f4b27d6e913c "$GITHUB_RUN_ID"
+  08c78f58cf4052a267480a8c27a406c7f8afaf2c ad70125fd25bb57e8a830ad3ae3dd25e3f259ed4 f4b27d6e913c "$GITHUB_RUN_ID"
