@@ -2,7 +2,7 @@ name: Isolated Admin manual contact share rehearsal
 
 on:
   push:
-    branches: [codex-ci-admin-manual-share-20261116-v2]
+    branches: [codex-ci-admin-manual-share-20261116-v3]
 
 permissions:
   contents: read
