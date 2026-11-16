@@ -1,0 +1,61 @@
+name: Exact service history categories (synthetic only)
+
+on:
+  push:
+    branches: [codex-ci-service-history-categories-20261116]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: service-history-categories-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  contracts:
+    if: >-
+      github.repository == 'ilovedrrealty/realty-api' &&
+      github.event.repository.private == false &&
+      github.event.created == true && github.event.deleted == false &&
+      github.event.forced == false &&
+      github.event.before == '0000000000000000000000000000000000000000' &&
+      github.run_attempt == 1 && github.event.after == github.sha &&
+      github.workflow_sha == github.sha
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Read exact rehearsal operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          path: history-ops
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Read accepted frontend tools
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 441efdc288c3a38b8607c816c684abec080d83ad
+          path: frontend-relay
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Read exact public frontend base (no frontend push)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: ilovedrrealty/iLoveDRRealty
+          ref: 73d771940e73d42ed044cea77a5258a93a445b05
+          path: frontend-base
+          persist-credentials: false
+      - name: Bind exact backend source (no server or database)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: b38d477c0e2e50f87f1f2e4cc1ceb3c707af92c5
+          path: backend-source
+          persist-credentials: false
+      - name: Run focused network history contracts offline
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$RUNNER_ENVIRONMENT" == github-hosted && "$RUNNER_OS" == Linux && "$RUNNER_ARCH" == X64 ]]
+          script="$GITHUB_WORKSPACE/history-ops/ci/service-history-categories/run.sh"
+          bash --noprofile --norc -n "$script"
+          exec bash --noprofile --norc "$script" "$GITHUB_WORKSPACE/history-ops" "$GITHUB_WORKSPACE/frontend-relay" "$GITHUB_WORKSPACE/frontend-base" "$GITHUB_WORKSPACE/backend-source"

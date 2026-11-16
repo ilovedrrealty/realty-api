@@ -1,0 +1,26 @@
+{
+  "base_commit": "ff59f37cef4f1b6f4ee4b970bf7226f46b76e762",
+  "base_tree": "a0429808349e5221b7b4103cb1268ff9c7f67250",
+  "commit": "5ba8fa7afb38dc0a8705cb659417781e01d94703",
+  "tree": "632874430e45c35aaf858393f3718c8e08c27c39",
+  "files": {
+    "apps/dashboard/src/components/network/ProjectWorkspace.tsx": {
+      "previous_git_oid": "8bf322faed987827740ea1a48eeba7e725117af1",
+      "git_oid": "d868494924397d31ceab20883f56526c6adb9491",
+      "sha256": "1f74b802657cc028fabe0c69ff4a0141d42397e419aef73ff0ded8c0299e7e30",
+      "bytes": 31418
+    },
+    "apps/dashboard/src/components/network/PropertyRegistry.tsx": {
+      "previous_git_oid": "a46aa206482caa52f0fcf7423855a1732ea7d04c",
+      "git_oid": "2f90618a47717afe0e9f47d831228498f33d6d10",
+      "sha256": "d6075a339b374433a16c8eeec5d9cebe869889bc0f7cf02a6e42de55be417185",
+      "bytes": 18086
+    },
+    "tests/property-network-ui.test.cjs": {
+      "previous_git_oid": "581bc86ddc405f5fd6a5f8ea90872f96f3badcfa",
+      "git_oid": "a409fc1d5e6a97b5fcf7a96c09bd4826efe81483",
+      "sha256": "7dd36c3cc28ececff527796a57572c5da1addc2463e4054d8a574a99b903f8b5",
+      "bytes": 86233
+    }
+  }
+}
