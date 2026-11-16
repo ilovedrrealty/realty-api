@@ -1,0 +1,60 @@
+name: Isolated customer follow-up email rehearsal
+
+on:
+  push:
+    branches: [codex-ci-customer-followup-20261116]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: customer-followup-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  rehearsal:
+    if: >-
+      github.repository == 'ilovedrrealty/realty-api' &&
+      github.event.repository.private == false &&
+      github.event.created == true && github.event.deleted == false &&
+      github.event.forced == false &&
+      github.event.before == '0000000000000000000000000000000000000000' &&
+      github.run_attempt == 1 && github.event.after == github.sha &&
+      github.workflow_sha == github.sha
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Read exact rehearsal operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          path: followup-ops
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Read exact customer follow-up backend
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 08c78f58cf4052a267480a8c27a406c7f8afaf2c
+          path: followup-app
+          persist-credentials: false
+      - name: Read accepted communications fixture and assertions
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: e660040e0c514aca3f7f5b7d7a5007e4fdc596c4
+          path: communications-recipe
+          persist-credentials: false
+      - name: Read accepted Python dependency recipe
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: c193a925ba57ea2d67ea48c44e5262817885c8a2
+          path: migration-recipe
+          persist-credentials: false
+      - name: Verify actual queued emails at the simulated transport
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$RUNNER_ENVIRONMENT" == github-hosted && "$RUNNER_OS" == Linux && "$RUNNER_ARCH" == X64 ]]
+          runner="$GITHUB_WORKSPACE/followup-ops/ci/customer-followup/run-hosted-customer-followup.sh"
+          bash --noprofile --norc -n "$runner"
+          exec bash --noprofile --norc "$runner" "$GITHUB_WORKSPACE/followup-ops" \
+            "$GITHUB_WORKSPACE/followup-app" "$GITHUB_WORKSPACE/communications-recipe" "$GITHUB_WORKSPACE/migration-recipe"
