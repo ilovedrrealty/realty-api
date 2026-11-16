@@ -1,0 +1,51 @@
+name: Exact property network landing and Spanish export rehearsal
+
+on:
+  push:
+    branches: [codex-ci-network-member-entry-landing-20261116]
+
+permissions:
+  contents: read
+
+jobs:
+  landing:
+    if: >-
+      github.repository == 'ilovedrrealty/realty-api' &&
+      github.event.repository.private == false &&
+      github.event.created == true && github.event.deleted == false &&
+      github.event.forced == false &&
+      github.event.before == '0000000000000000000000000000000000000000' &&
+      github.run_attempt == 1 && github.event.after == github.sha &&
+      github.workflow_sha == github.sha
+    runs-on: ubuntu-24.04
+    timeout-minutes: 27
+    steps:
+      - name: Read exact rehearsal operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          path: member-landing-ops
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Read the accepted loopback fixture
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 441efdc288c3a38b8607c816c684abec080d83ad
+          path: member-landing-fixture
+          persist-credentials: false
+      - name: Read exact candidate frontend source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: ilovedrrealty/iLoveDRRealty
+          ref: 5d883b25744152f1cafbd659f1bc63b24b57e40b
+          path: member-landing-source
+          persist-credentials: false
+      - name: Verify exact static export and Spanish route parity
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$RUNNER_ENVIRONMENT" == github-hosted && "$RUNNER_OS" == Linux && "$RUNNER_ARCH" == X64 ]]
+          script="$GITHUB_WORKSPACE/member-landing-ops/ci/cumulative-landing/run-member-entry.sh"
+          bash --noprofile --norc -n "$script"
+          exec bash --noprofile --norc "$script" "$GITHUB_WORKSPACE/member-landing-ops" \
+            "$GITHUB_WORKSPACE/member-landing-fixture" "$GITHUB_WORKSPACE/member-landing-source"
