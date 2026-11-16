@@ -1,0 +1,55 @@
+name: Exact cumulative network landing build (synthetic only)
+
+on:
+  push:
+    branches: [codex-ci-cumulative-network-landing-20261116]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cumulative-network-landing-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  landing:
+    if: >-
+      github.repository == 'ilovedrrealty/realty-api' &&
+      github.event.repository.private == false &&
+      github.event.created == true && github.event.deleted == false &&
+      github.event.forced == false &&
+      github.event.before == '0000000000000000000000000000000000000000' &&
+      github.run_attempt == 1 && github.event.after == github.sha &&
+      github.workflow_sha == github.sha
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Read exact rehearsal operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          path: landing-ops
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Read accepted frontend tools and synthetic fixture
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 441efdc288c3a38b8607c816c684abec080d83ad
+          path: frontend-relay
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Read exact public frontend base (no frontend push)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: ilovedrrealty/iLoveDRRealty
+          ref: 73d771940e73d42ed044cea77a5258a93a445b05
+          path: frontend-base
+          persist-credentials: false
+      - name: Build exact landing source without network access
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$RUNNER_ENVIRONMENT" == github-hosted && "$RUNNER_OS" == Linux && "$RUNNER_ARCH" == X64 ]]
+          script="$GITHUB_WORKSPACE/landing-ops/ci/cumulative-landing/run.sh"
+          bash --noprofile --norc -n "$script"
+          exec bash --noprofile --norc "$script" "$GITHUB_WORKSPACE/landing-ops" "$GITHUB_WORKSPACE/frontend-relay" "$GITHUB_WORKSPACE/frontend-base"
