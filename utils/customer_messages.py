@@ -5,6 +5,9 @@ import re
 from uuid import UUID
 
 
+WHATSAPP_URL = "https://wa.me/18096108094"
+
+
 @dataclass(frozen=True)
 class CustomerMessage:
     subject: str
@@ -22,6 +25,7 @@ COPY = {
         "property_inquiry": ("Thank you for your property inquiry", "Thank you for your interest! I Love DR Realty received your property inquiry.", "Our team can help confirm availability and arrange the next step. A request does not reserve a property or confirm a viewing.", "Review your property", "/search/"),
         "booking": ("We received your stay request", "Thank you for contacting I Love DR Realty about your stay.", "Your request is not a confirmed booking. Please follow the booking page for availability, terms and secure payment.", "Explore rentals", "/rentals/"),
         "greeting": "Hi", "footer": "This message acknowledges your request. It does not subscribe you to marketing.",
+        "whatsapp": "Message our team on WhatsApp",
         "sms_stop": "Reply STOP to opt out.",
     },
     "es": {
@@ -32,6 +36,7 @@ COPY = {
         "property_inquiry": ("Gracias por tu consulta sobre la propiedad", "¡Gracias por tu interés! I Love DR Realty recibió tu consulta sobre la propiedad.", "Nuestro equipo puede ayudarte a confirmar la disponibilidad y coordinar el siguiente paso. La solicitud no reserva la propiedad ni confirma una visita.", "Ver la propiedad", "/search/"),
         "booking": ("Recibimos tu solicitud de estadía", "Gracias por contactar a I Love DR Realty sobre tu estadía.", "Tu solicitud no es una reserva confirmada. Consulta la página de reservas para ver disponibilidad, condiciones y realizar el pago seguro.", "Explorar alquileres", "/rentals/"),
         "greeting": "Hola", "footer": "Este mensaje confirma la recepción de tu solicitud. No te suscribe a publicidad.",
+        "whatsapp": "Escríbenos por WhatsApp",
         "sms_stop": "Responde STOP para dejar de recibir mensajes.",
     },
 }
@@ -60,8 +65,10 @@ def customer_message(event: str, name: str = "", locale: str = "en", *, public_l
     # Strip control characters and bound customer-supplied names before render.
     safe_name = " ".join(re.sub(r"[\x00-\x1f\x7f]", "", str(name)).split())[:100]
     greeting = f"{copy['greeting']} {safe_name}," if safe_name else f"{copy['greeting']},"
-    text = f"{greeting}\n\n{thanks}\n\n{next_step}\n\n{label}: {url}\n\n{copy['footer']}"
-    html = f'''<!DOCTYPE html><html lang="{language}"><body style="margin:0;background:#f5f3ef;font-family:Arial,sans-serif"><main style="max-width:520px;margin:24px auto;background:white;padding:28px;color:#00102e"><h1 style="font-size:22px">{escape(subject)}</h1><p>{escape(greeting)}</p><p>{escape(thanks)}</p><p style="line-height:1.6">{escape(next_step)}</p><p><a href="{url}" style="display:inline-block;padding:12px 20px;background:#00102e;color:white;border-radius:8px">{escape(label)}</a></p><p style="font-size:12px;color:#666">{escape(copy['footer'])}</p></main></body></html>'''
+    whatsapp_label = copy["whatsapp"]
+    text = f"{greeting}\n\n{thanks}\n\n{next_step}\n\n{label}: {url}\n\n{whatsapp_label}: {WHATSAPP_URL}\n\n{copy['footer']}"
+    whatsapp_link = f'<p><a href="{WHATSAPP_URL}">{escape(whatsapp_label)}</a></p>'
+    html = f'''<!DOCTYPE html><html lang="{language}"><body style="margin:0;background:#f5f3ef;font-family:Arial,sans-serif"><main style="max-width:520px;margin:24px auto;background:white;padding:28px;color:#00102e"><h1 style="font-size:22px">{escape(subject)}</h1><p>{escape(greeting)}</p><p>{escape(thanks)}</p><p style="line-height:1.6">{escape(next_step)}</p><p><a href="{url}" style="display:inline-block;padding:12px 20px;background:#00102e;color:white;border-radius:8px">{escape(label)}</a></p>{whatsapp_link}<p style="font-size:12px;color:#666">{escape(copy['footer'])}</p></main></body></html>'''
     # No user name, free text or property address is needed in a phone alert.
     sms = f"{thanks} {label}: {url} {copy['sms_stop']}"
     return CustomerMessage(subject, html, text, sms)
