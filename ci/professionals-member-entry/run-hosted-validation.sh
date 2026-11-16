@@ -7,12 +7,12 @@ bounded() { timeout --kill-after=8s "$@"; }
 [[ $# == 2 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 ]] ||
   die GITHUB_HOSTED_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-professionals-member-entry-20261116 && ${GITHUB_RUN_ATTEMPT:-} == 1 &&
+[[ ${GITHUB_REF:-} == refs/heads/codex-ci-professionals-member-entry-v2-20261116 && ${GITHUB_RUN_ATTEMPT:-} == 1 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 
 ops="$1"; frontend="$2"
-frontend_sha=295fedc085ef982bd212f98ff7edfa6aec303fd4
-frontend_tree=738be4057ebf259913c0bead7d880b4309a79b97
+frontend_sha=fe68db99b0d6dfe0b5288bee96db42e71836f844
+frontend_tree=443a0135244a8be3a83a7620543db0e48e77accd
 [[ "$ops" == "$GITHUB_WORKSPACE/professionals-ops" && "$frontend" == "$GITHUB_WORKSPACE/professionals-frontend" ]] ||
   die CHECKOUT_PATHS_REQUIRED
 for checkout in "$ops" "$frontend"; do
@@ -20,7 +20,7 @@ for checkout in "$ops" "$frontend"; do
   [[ $(realpath "$checkout") == "$checkout" && -z "$status" ]] || die CLEAN_CHECKOUT_REQUIRED
 done
 [[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" &&
-   $(git -C "$ops" rev-parse HEAD^) == 6946ee9926301db03c792d79aace4b623b939630 ]] || die EXACT_OPERATIONS_REQUIRED
+   $(git -C "$ops" rev-parse HEAD^) == b6ac57f5399e831bb64c7b6bf42d749a99292f34 ]] || die EXACT_OPERATIONS_REQUIRED
 [[ $(git -C "$frontend" rev-parse HEAD) == "$frontend_sha" &&
    $(git -C "$frontend" rev-parse 'HEAD^{tree}') == "$frontend_tree" ]] || die EXACT_FRONTEND_REQUIRED
 
@@ -82,7 +82,7 @@ printf '%s  %s\n' \
   be3b1828f5b10cb69bcf24d289020360c6e36da68ac9b6064a70e9ade0ec32dd "$state/frontend-work/package.json" \
   d32f9a37792098bcad7deae4501e9a407747b8d6dcd95c97302605b0f4404dcb "$state/frontend-work/apps/landing/package.json" \
   4f4587eb432013b20c771d3a045fb04b67d146794c47c007e805299d2c562a43 "$state/frontend-work/apps/dashboard/package.json" \
-  4bafb5080c86d4540b76a1b38f476251221c04167b69be9d216fe330e130fec0 "$state/frontend-work/tests/professionals-contract.test.cjs" \
+  dc3722b78e0cf4bd7c110430e2aade1e4509434615965ab695c17ce096b85d59 "$state/frontend-work/tests/professionals-contract.test.cjs" \
   | sha256sum --check --status || die EXACT_PACKAGE_AND_TEST_PINS_REQUIRED
 
 bounded 180s docker pull --platform linux/amd64 "$node_image" >/dev/null || die PINNED_NODE_PULL_FAILED
@@ -120,19 +120,35 @@ fi
 printf 'PROFESSIONALS_INSTALL native=0 codes=none\n'
 verify_frontend || die FRONTEND_CHANGED_DURING_INSTALL
 
+contract_exit=0
 bounded 120s docker run "${prepare[@]}" --network none "$node_image" "${runtime_env[@]}" \
   node --test --test-reporter=tap tests/professionals-contract.test.cjs \
-  >"$state/contracts.log" 2>&1 || die PROFESSIONALS_CONTRACTS_FAILED
-python3 -I -B - "$state/contracts.log" <<'PY'
+  >"$state/contracts.log" 2>&1 || contract_exit=$?
+python3 -I -B - "$state/contracts.log" "$contract_exit" <<'PY' || die PROFESSIONALS_CONTRACT_RESULT_INVALID
 from pathlib import Path
-import sys
-lines = Path(sys.argv[1]).read_bytes().splitlines()
+import os, re, sys
+native = int(sys.argv[2])
+with Path(sys.argv[1]).open('rb') as log:
+    log.seek(max(0, os.fstat(log.fileno()).st_size - 131072))
+    body = log.read(131072)
+if native:
+    indices = sorted({int(index) for index in re.findall(rb'(?m)^not ok ([1-9]|1[0-6]) - ', body)})
+    summary = {}
+    for key in (b'tests', b'pass', b'fail', b'cancelled', b'skipped', b'todo'):
+        matches = re.findall(rb'(?m)^# ' + key + rb' (0|[1-9]|1[0-6])\r?$', body)
+        summary[key.decode()] = matches[0].decode() if len(matches) == 1 else 'unavailable'
+    failed = ','.join(map(str, indices)) or 'none'
+    totals = ' '.join(f'{key}={value}' for key, value in summary.items())
+    print(f'PROFESSIONALS_CONTRACT_FAILURE native={native} failed_indices={failed} {totals}')
+    sys.exit(0)
+lines = body.splitlines()
 for row in (b'# tests 16', b'# pass 16', b'# fail 0', b'# skipped 0', b'# todo 0'):
     assert lines.count(row) == 1
 assert any(line.endswith(b'professional landing leads with member signup in both languages and keeps provider applications separate')
            and line.startswith(b'ok ') for line in lines)
 print('PROFESSIONALS_CONTRACTS native=0 tests=16 pass=16 bilingual_hero=pass')
 PY
+[[ "$contract_exit" == 0 ]] || die PROFESSIONALS_CONTRACTS_FAILED
 verify_frontend || die FRONTEND_CHANGED_DURING_CONTRACTS
 
 if ! bounded 500s docker run "${prepare[@]}" --network none \

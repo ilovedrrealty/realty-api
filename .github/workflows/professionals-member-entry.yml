@@ -2,7 +2,7 @@ name: Isolated Professionals member entry validation
 
 on:
   push:
-    branches: [codex-ci-professionals-member-entry-20261116]
+    branches: [codex-ci-professionals-member-entry-v2-20261116]
 
 permissions:
   contents: read
@@ -32,7 +32,7 @@ jobs:
         with:
           repository: ilovedrrealty/iLoveDRRealty
           path: professionals-frontend
-          ref: 295fedc085ef982bd212f98ff7edfa6aec303fd4
+          ref: fe68db99b0d6dfe0b5288bee96db42e71836f844
           persist-credentials: false
       - name: Verify Professionals contracts and static landing export
         shell: bash
