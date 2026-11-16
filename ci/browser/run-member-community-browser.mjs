@@ -49,6 +49,15 @@ const blockPath = code => `${network}/me/blocks/${code}`
 const wallURL = code => `${network}?tab=people&member=${code}`
 const noStore = response => /\bno-store\b/.test(response.headers()['cache-control'] ?? '')
 
+async function selectUnderLabel(scope, prompt) {
+  // The label contains the select and its option text, so match the prompt
+  // within that label before selecting the single paired control.
+  const select = scope.locator('label').filter({ hasText: prompt }).locator('select')
+  await select.first().waitFor()
+  check(await select.count() === 1, 'WRAPPED_SELECT_SCOPE_AMBIGUOUS')
+  return select
+}
+
 async function readFixture() {
   const path = process.env.ILDR_BROWSER_FIXTURES
   check(path === '/browser-fixtures/fixtures.json', 'FIXTURE_PATH_INVALID')
@@ -202,8 +211,10 @@ async function main() {
       const form = panel(owner.page, owner.t.edit)
       await form.getByLabel(owner.t.name, { exact: true }).fill(fixture.profile)
       await form.getByLabel(owner.t.status, { exact: true }).fill(fixture.status)
-      await form.getByLabel(owner.t.visibility, { exact: true }).selectOption('members')
-      await form.getByLabel(owner.t.policy, { exact: true }).selectOption('approval_required')
+      const visibility = await selectUnderLabel(form, owner.t.visibility)
+      const wallPolicy = await selectUnderLabel(form, owner.t.policy)
+      await visibility.selectOption('members')
+      await wallPolicy.selectOption('approval_required')
       const saved = await write(owner.page, `${network}/me/profile`, 'PUT', 200, () => button(form, owner.t.save).click())
       check(saved.version === 1 && saved.visibility === 'members' && saved.wall_policy === 'approval_required'
         && saved.status_text === fixture.status, 'MEMBER_OPT_IN_MISMATCH')
@@ -278,7 +289,7 @@ async function main() {
     await run('member_comments_on_exact_photo_en', async () => {
       const article = postArticle(readerWall, fixture.crossPost)
       await button(article, reader.t.comments).click()
-      const selector = article.getByLabel(reader.t.commentContext, { exact: true })
+      const selector = await selectUnderLabel(article, reader.t.commentContext)
       await selector.selectOption({ label: reader.t.photo })
       check(await selector.inputValue() === photoId, 'COMMENT_PHOTO_SELECTION_MISMATCH')
       await entry(reader, article, fixture.comment)
@@ -300,8 +311,8 @@ async function main() {
       await foreground(reader.page)
       await reader.page.evaluate(() => window.dispatchEvent(new Event('focus')))
       check(noStore(await denial), 'LIVE_PROFILE_DENIAL_HEADERS')
-      await exactText(reader.page, reader.t.denied).waitFor()
       await readerWall.waitFor({ state: 'detached' })
+      await exactText(reader.page, reader.t.denied).waitFor()
       check(await exactText(reader.page, fixture.status).count() === 0 && await exactText(reader.page, fixture.comment).count() === 0
         && await reader.page.getByRole('img', { name: reader.t.photoAlt, exact: true }).count() === 0,
       'BLOCKED_VIEWER_PRIVATE_DOM_RETAINED')
