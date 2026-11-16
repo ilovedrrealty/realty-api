@@ -2,7 +2,7 @@ name: Isolated cumulative network member-community browser rehearsal
 
 on:
   push:
-    branches: [codex-ci-cumulative-network-member-community-20261116-v2]
+    branches: [codex-ci-cumulative-network-member-community-20261116-v3]
 
 permissions:
   contents: read

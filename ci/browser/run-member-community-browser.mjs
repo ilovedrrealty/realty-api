@@ -49,13 +49,19 @@ const blockPath = code => `${network}/me/blocks/${code}`
 const wallURL = code => `${network}?tab=people&member=${code}`
 const noStore = response => /\bno-store\b/.test(response.headers()['cache-control'] ?? '')
 
-async function selectUnderLabel(scope, prompt) {
-  // The label contains the select and its option text, so match the prompt
-  // within that label before selecting the single paired control.
-  const select = scope.locator('label').filter({ hasText: prompt }).locator('select')
-  await select.first().waitFor()
-  check(await select.count() === 1, 'WRAPPED_SELECT_SCOPE_AMBIGUOUS')
-  return select
+async function controlUnderLabel(scope, prompt, selector) {
+  // A wrapped select or textarea can change the label's descendant text.
+  // Identify the control by its stable prompt and native label association.
+  const field = scope.locator('label').filter({ hasText: prompt }).locator(selector)
+  await field.first().waitFor()
+  check(await field.count() === 1, 'WRAPPED_CONTROL_SCOPE_AMBIGUOUS')
+  check(await field.evaluate((element, expected) => {
+    const label = element.closest('label')
+    const text = [...(label?.childNodes ?? [])].filter(node => node.nodeType === Node.TEXT_NODE)
+      .map(node => node.textContent).join('').replace(/\s+/g, ' ').trim()
+    return label?.control === element && text === expected
+  }, prompt), 'WRAPPED_CONTROL_LABEL_MISMATCH')
+  return field
 }
 
 async function readFixture() {
@@ -168,9 +174,9 @@ async function write(page, path, method, status, act) {
 }
 
 async function entry(state, scope, text) {
-  await scope.getByLabel(state.t.message, { exact: true }).fill(text)
-  const id = scope.getByLabel(state.t.message, { exact: true })
-  check(await id.inputValue() === text, 'DRAFT_MESSAGE_MISMATCH')
+  const field = await controlUnderLabel(scope, state.t.message, 'textarea')
+  await field.fill(text)
+  check(await field.inputValue() === text, 'DRAFT_MESSAGE_MISMATCH')
 }
 
 function postArticle(wall, body) { return wall.locator('article').filter({ hasText: body }) }
@@ -209,10 +215,12 @@ async function main() {
       await read(reader, profilePath(ownerCode), 404)
       await foreground(owner.page)
       const form = panel(owner.page, owner.t.edit)
-      await form.getByLabel(owner.t.name, { exact: true }).fill(fixture.profile)
-      await form.getByLabel(owner.t.status, { exact: true }).fill(fixture.status)
-      const visibility = await selectUnderLabel(form, owner.t.visibility)
-      const wallPolicy = await selectUnderLabel(form, owner.t.policy)
+      const name = await controlUnderLabel(form, owner.t.name, 'input:not([type]), input[type="text"]')
+      await name.fill(fixture.profile)
+      const status = await controlUnderLabel(form, owner.t.status, 'textarea')
+      await status.fill(fixture.status)
+      const visibility = await controlUnderLabel(form, owner.t.visibility, 'select')
+      const wallPolicy = await controlUnderLabel(form, owner.t.policy, 'select')
       await visibility.selectOption('members')
       await wallPolicy.selectOption('approval_required')
       const saved = await write(owner.page, `${network}/me/profile`, 'PUT', 200, () => button(form, owner.t.save).click())
@@ -244,8 +252,9 @@ async function main() {
         context.fillStyle = '#c05a20'; context.fillRect(0, 0, 36, 24)
         return image.toDataURL('image/png').split(',')[1]
       })
+      const file = await controlUnderLabel(authorWall, author.t.attach, 'input[type="file"]')
       const uploaded = await write(author.page, `${network}/media`, 'POST', 201, () =>
-        authorWall.getByLabel(author.t.attach, { exact: true }).setInputFiles({
+        file.setInputFiles({
           name: 'synthetic-wall-photo.png', mimeType: 'image/png', buffer: Buffer.from(png, 'base64'),
         }))
       check(uuid.test(uploaded.id) && uploaded.url === mediaPath(uploaded.id)
@@ -289,7 +298,7 @@ async function main() {
     await run('member_comments_on_exact_photo_en', async () => {
       const article = postArticle(readerWall, fixture.crossPost)
       await button(article, reader.t.comments).click()
-      const selector = await selectUnderLabel(article, reader.t.commentContext)
+      const selector = await controlUnderLabel(article, reader.t.commentContext, 'select')
       await selector.selectOption({ label: reader.t.photo })
       check(await selector.inputValue() === photoId, 'COMMENT_PHOTO_SELECTION_MISMATCH')
       await entry(reader, article, fixture.comment)
@@ -303,7 +312,8 @@ async function main() {
     await run('block_revokes_profile_wall_comment_and_photo', async () => {
       await foreground(owner.page)
       const privacy = panel(owner.page, owner.t.privacy)
-      await privacy.getByLabel(owner.t.code, { exact: true }).fill(String(fixture.codes.reader))
+      const memberCode = await controlUnderLabel(privacy, owner.t.code, 'input[type="number"]')
+      await memberCode.fill(String(fixture.codes.reader))
       const blocked = await write(owner.page, blockPath(fixture.codes.reader), 'PUT', 200,
         () => button(privacy, owner.t.block).click())
       check(blocked.blocked === true, 'EXACT_BLOCK_NOT_SAVED')
