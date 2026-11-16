@@ -2,7 +2,7 @@ name: Isolated Professionals member entry validation
 
 on:
   push:
-    branches: [codex-ci-professionals-member-entry-v2-20261116]
+    branches: [codex-ci-professionals-member-entry-v3-20261116]
 
 permissions:
   contents: read

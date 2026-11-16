@@ -7,7 +7,7 @@ bounded() { timeout --kill-after=8s "$@"; }
 [[ $# == 2 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 ]] ||
   die GITHUB_HOSTED_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-professionals-member-entry-v2-20261116 && ${GITHUB_RUN_ATTEMPT:-} == 1 &&
+[[ ${GITHUB_REF:-} == refs/heads/codex-ci-professionals-member-entry-v3-20261116 && ${GITHUB_RUN_ATTEMPT:-} == 1 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 
 ops="$1"; frontend="$2"
@@ -20,7 +20,7 @@ for checkout in "$ops" "$frontend"; do
   [[ $(realpath "$checkout") == "$checkout" && -z "$status" ]] || die CLEAN_CHECKOUT_REQUIRED
 done
 [[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" &&
-   $(git -C "$ops" rev-parse HEAD^) == b6ac57f5399e831bb64c7b6bf42d749a99292f34 ]] || die EXACT_OPERATIONS_REQUIRED
+   $(git -C "$ops" rev-parse HEAD^) == a15940c940b01517e761934717b7dae56db2ecfa ]] || die EXACT_OPERATIONS_REQUIRED
 [[ $(git -C "$frontend" rev-parse HEAD) == "$frontend_sha" &&
    $(git -C "$frontend" rev-parse 'HEAD^{tree}') == "$frontend_tree" ]] || die EXACT_FRONTEND_REQUIRED
 
@@ -151,26 +151,45 @@ PY
 [[ "$contract_exit" == 0 ]] || die PROFESSIONALS_CONTRACTS_FAILED
 verify_frontend || die FRONTEND_CHANGED_DURING_CONTRACTS
 
-if ! bounded 500s docker run "${prepare[@]}" --network none \
-  --mount "type=bind,src=$controls,dst=/controls,readonly" "$node_image" "${runtime_env[@]}" \
-  NEXT_TELEMETRY_DISABLED=1 NODE_OPTIONS=--max-old-space-size=3072 \
-  NEXT_PUBLIC_API_URL=http://127.0.0.1:8000 NEXT_PUBLIC_APP_URL=http://127.0.0.1:4175 \
-  NEXT_PUBLIC_SITE_URL=http://127.0.0.1:8917 NEXT_PUBLIC_GOOGLE_CLIENT_ID=synthetic-ci.apps.googleusercontent.com \
-  node /controls/build-landing-fixture.mjs >"$state/landing-build.log" 2>&1; then
-  python3 -I -B - "$state/landing-build.log" <<'PY'
+landing_exit=0
+bounded 620s docker run "${prepare[@]}" --network none \
+  --mount "type=bind,src=$controls,dst=/controls,readonly" "$node_image" \
+  env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp CI=true NEXT_PUBLIC_API_URL=http://127.0.0.1:8000 \
+  node /controls/build-landing-fixture.mjs >"$state/landing-build.log" 2>&1 || landing_exit=$?
+python3 -I -B - "$state/landing-build.log" "$landing_exit" <<'PY' || die LANDING_DIAGNOSTIC_INVALID
 from pathlib import Path
 import os, re, sys
 with Path(sys.argv[1]).open('rb') as log:
     log.seek(max(0, os.fstat(log.fileno()).st_size - 262144))
     tail = log.read(262144)
-for label, pattern in [('type_error', rb'Type error:|error TS[0-9]+'), ('missing_module', rb'Module not found:'),
-                       ('static_params', rb'generateStaticParams'), ('export', rb'Export encountered'),
-                       ('fetch', rb'fetch failed'), ('assertion', rb'AssertionError')]:
-    if re.search(pattern, tail):
-        print(f'PROFESSIONALS_LANDING_DIAGNOSTIC {label}')
+phases = rb'(?:env|sys_net|fixture_bind|npm_build|typecheck|fixture_counts|fixture_close)'
+signals = rb'(?:none|other|SIGHUP|SIGINT|SIGKILL|SIGABRT|SIGSEGV|SIGTERM)'
+errors = rb'(?:GUARD_FAILED|EACCES|EADDRINUSE|EADDRNOTAVAIL|ENOENT|ENOTDIR|EEXIST|EPERM)'
+patterns = (rb'PROFESSIONALS_LANDING_PHASE phase=' + phases + rb' status=(?:started|pass)',
+            rb'PROFESSIONALS_LANDING_NATIVE phase=(?:npm_build|typecheck) exit=(?:[0-9]{1,3}|none) signal=' + signals,
+            rb'PROFESSIONALS_LANDING_FAILURE phase=' + phases + rb' code=' + errors)
+found = [line for line in tail.splitlines() if any(re.fullmatch(p, line) for p in patterns)]
+assert len(found) <= 13
+for line in found:
+    print(line.decode('ascii'))
+native = int(sys.argv[2])
+print(f'PROFESSIONALS_LANDING_CONTAINER native={native}')
+if native:
+    for label, pattern in [('type_error', rb'Type error:|error TS[0-9]+'), ('missing_module', rb'Module not found:'),
+                           ('static_params', rb'generateStaticParams'), ('export', rb'Export encountered'),
+                           ('fetch', rb'fetch failed'), ('swc', rb'Failed to load SWC|@next/swc'),
+                           ('npm_code', rb'(?m)^npm (?:error|ERR!) code (?:EUSAGE|ENOENT|EACCES|ENOTDIR|ENOSPC)\b'),
+                           ('compiler_missing', rb'\bnext: (?:not found|Permission denied)\b')]:
+        if re.search(pattern, tail):
+            print(f'PROFESSIONALS_LANDING_DIAGNOSTIC {label}')
+else:
+    required = [b'PROFESSIONALS_LANDING_PHASE phase=' + phase + b' status=pass'
+                for phase in (b'env', b'sys_net', b'fixture_bind', b'npm_build', b'typecheck', b'fixture_counts', b'fixture_close')]
+    required += [b'PROFESSIONALS_LANDING_NATIVE phase=' + phase + b' exit=0 signal=none'
+                 for phase in (b'npm_build', b'typecheck')]
+    assert all(found.count(line) == 1 for line in required)
 PY
-  die LANDING_BUILD_OR_TYPECHECK_FAILED
-fi
+[[ "$landing_exit" == 0 ]] || die LANDING_BUILD_OR_TYPECHECK_FAILED
 python3 -I -B - "$state/landing-build.log" "$state/frontend-work/apps/landing/out" <<'PY'
 from pathlib import Path
 import re, sys
