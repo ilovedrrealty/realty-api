@@ -5,7 +5,7 @@ die() { printf 'CUMULATIVE_MIGRATION_REFUSED %s\n' "$1" >&2; exit 1; }
 bounded() { timeout --kill-after=8s "$@"; }
 
 [[ $# == 4 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api ]] || die CI_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-cumulative-network-migration-20261116 && ${GITHUB_RUN_ATTEMPT:-} == 1 ]] || die EXACT_EVENT_REQUIRED
+[[ ${GITHUB_REF:-} == refs/heads/codex-ci-cumulative-network-migration-20261116-pg176 && ${GITHUB_RUN_ATTEMPT:-} == 1 ]] || die EXACT_EVENT_REQUIRED
 [[ ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die HOSTED_LINUX_REQUIRED
 ops="$1"; app="$2"; baseline="$3"; recipe="$4"
 [[ "$ops" == "$GITHUB_WORKSPACE/migration-ops" && "$app" == "$GITHUB_WORKSPACE/migration-app" &&
@@ -17,14 +17,14 @@ done
 app_commit=$(git -C "$app" rev-parse HEAD)
 app_tree=$(git -C "$app" rev-parse 'HEAD^{tree}')
 [[ $app_commit == b38d477c0e2e50f87f1f2e4cc1ceb3c707af92c5 && $app_tree == a53b3f829f70717069f5c637c826fb8f92c02f7c ]] || die EXACT_PRODUCT_REQUIRED
-[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == "$app_commit" ]] \
-  || die EXACT_APPLICATION_PARENT_REQUIRED
+prior_operations_commit=45d48a0acb0d2c33572bbe02806bf1e672dfe919
+[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" show -s --format=%P HEAD) == "$prior_operations_commit" &&
+   $(git -C "$ops" show -s --format=%P "$prior_operations_commit") == "$app_commit" ]] || die EXACT_OPERATIONS_ANCESTRY_REQUIRED
 [[ $(git -C "$recipe" rev-parse HEAD) == c193a925ba57ea2d67ea48c44e5262817885c8a2 ]] || die EXACT_IMAGE_RECIPE_REQUIRED
 baseline_commit=$(git -C "$baseline" rev-parse HEAD)
 baseline_tree=$(git -C "$baseline" rev-parse 'HEAD^{tree}')
 [[ $baseline_commit == 0811946ea02a310b03116960663e3ba6871a07d0 && $baseline_tree == 18b2087a31853a275c5c6ca791a68214b1cd38ef ]] \
   || die EXACT_BASELINE_REQUIRED
-[[ $(git -C "$ops" show -s --format=%P HEAD) == "$app_commit" ]] || die SOLE_APPLICATION_PARENT_REQUIRED
 for source in "$app" "$baseline"; do
   [[ ! -e "$source/.env" && ! -L "$source/.env" ]] || die APP_ENV_FILE_REFUSED
   git -C "$source" show HEAD:Dockerfile | grep -Fqx 'CMD ["sh", "-c", "python bootstrap_db.py && alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]' \
@@ -45,7 +45,7 @@ run_key="$GITHUB_RUN_ID-$nonce"
 label=org.ilovedrrealty.cumulative-migration
 image="ildr-cumulative-network-migration:$run_key"
 python_digest=sha256:673719e071ecf27434fd2635bbd8d00f49f4fdd81f243143438a42ced8bedf60
-postgres='docker.io/library/postgres:17@sha256:3b0cda93be7c8dba2ed484d19393d93845dc3dafb88973e248ba8e6d99d784e1'
+postgres='docker.io/library/postgres:17.6@sha256:b86568d3e0fe1dfaeff52714f9da36f206a30e4c49131b82bf96982d78627409'
 database=ildr_platform_test_20261025
 pg=''
 
@@ -146,7 +146,8 @@ print(prefix.decode() + json.dumps(report, sort_keys=True, separators=(',', ':')
 assert report['status'] == 'PASS'
 for key, expected in zip(('application_commit', 'application_tree', 'baseline_commit', 'baseline_tree'), sys.argv[2:]):
     assert report[key] == expected
-assert report['postgres_major'] == 17 and report['baseline_revisions'] == 45 and report['application_revisions'] == 62
+assert report['postgres_major'] == 17 and report['postgres_version_num'] == 170006
+assert report['baseline_revisions'] == 45 and report['application_revisions'] == 62
 assert report['baseline_head'] == '52b2edc810ad' and report['application_head'] == 'f4b27d6e913c'
 assert report['migration_delta'] == 17 and report['private_table_count'] == 40
 assert report['private_draft_profile_count'] == 46 and report['historical_lead_count'] == 1

@@ -359,7 +359,7 @@ def parent():
                     "EXPECTED_DISPOSABLE_DATABASE_MARKER_REQUIRED")
             cursor.execute("SHOW server_version_num")
             postgres_version = int(cursor.fetchone()[0])
-            require(postgres_version // 10000 == 17, "POSTGRES17_REQUIRED")
+            require(postgres_version == 170006, "EXACT_POSTGRES_17_6_REQUIRED")
             try:
                 for role in prior.ALLOWED_ROLE:
                     cursor.execute(sql.SQL("CREATE ROLE {} NOLOGIN NOSUPERUSER NOBYPASSRLS").format(sql.Identifier(role)))

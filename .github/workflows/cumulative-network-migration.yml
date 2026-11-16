@@ -1,8 +1,8 @@
-name: Isolated cumulative migration rehearsal
+name: Isolated cumulative migration rehearsal on PostgreSQL 17.6
 
 on:
   push:
-    branches: [codex-ci-cumulative-network-migration-20261116]
+    branches: [codex-ci-cumulative-network-migration-20261116-pg176]
 
 permissions:
   contents: read
@@ -29,7 +29,7 @@ jobs:
         with:
           ref: ${{ github.sha }}
           path: migration-ops
-          fetch-depth: 2
+          fetch-depth: 3
           persist-credentials: false
       - name: Read exact cumulative backend
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
