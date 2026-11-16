@@ -2,7 +2,7 @@ name: Isolated private property custody browser rehearsal
 
 on:
   push:
-    branches: [codex-ci-private-registry-custody-browser-20261114]
+    branches: [codex-ci-private-registry-custody-browser-20261116-v2]
 
 permissions:
   contents: read

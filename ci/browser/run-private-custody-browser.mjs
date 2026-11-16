@@ -422,7 +422,9 @@ async function main() {
       const key = await decide(incoming, accepted, 'accept', incoming.t.accept, incoming.t.confirmAccept)
       const region = detailPanel(incoming)
       await region.getByText(incoming.t.accepted, { exact: true }).waitFor()
-      const transferred = region.locator('section').filter({ has: heading(region, incoming.t.fields, 4) })
+      const transferred = region.locator('section').filter({ has: heading(incoming.page, incoming.t.fields, 4) })
+      await transferred.waitFor()
+      require(await transferred.count() === 1, 'EXACT_TRANSFERRED_FIELDS_SECTION_REQUIRED')
       for (const field of ['title', 'location', 'address']) await transferred.getByText(f.fields[field], { exact: true }).waitFor()
       require(await transferred.locator('dd').count() === 5 && await transferred.getByText(f.priorNotes, { exact: true }).count() === 0
         && await transferred.getByText(f.historyBody, { exact: true }).count() === 0, 'TRANSFER_UI_EXPOSED_OUT_OF_SCOPE_FIELDS')
