@@ -1,0 +1,55 @@
+name: Isolated native database backup and restore rehearsal
+
+on:
+  push:
+    branches: [codex-ci-native-db-recovery-20261116]
+
+permissions:
+  contents: read
+
+jobs:
+  rehearsal:
+    if: >-
+      github.repository == 'ilovedrrealty/realty-api' &&
+      github.event.created == true && github.event.deleted == false &&
+      github.event.forced == false && github.event.before == '0000000000000000000000000000000000000000' &&
+      github.run_attempt == 1 && github.event.after == github.sha && github.workflow_sha == github.sha
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - name: Check out the exact fixture revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Run backup, decrypt, and restore on loopback only
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$RUNNER_ENVIRONMENT" == github-hosted && "$RUNNER_OS" == Linux && "$RUNNER_ARCH" == X64 ]]
+          [[ "$GITHUB_RUN_ID" =~ ^[0-9]+$ ]]
+          fixture="$GITHUB_WORKSPACE/ci/native-db-recovery"
+          image="ildr-native-db-recovery:$GITHUB_RUN_ID"
+          container="ildr-native-db-recovery-$GITHUB_RUN_ID"
+          bash -n "$fixture/start_loopback_fixture.sh"
+          timeout 420s docker build --quiet --platform linux/amd64 --tag "$image" \
+            --label "org.ilovedrrealty.fixture=$GITHUB_RUN_ID" "$fixture" >/dev/null
+          cleanup() {
+            local status=$?
+            trap - EXIT
+            if docker container inspect "$container" >/dev/null 2>&1; then
+              [[ $(docker container inspect --format '{{index .Config.Labels "org.ilovedrrealty.fixture"}}' "$container") == "$GITHUB_RUN_ID" ]]
+              docker container rm --force --volumes "$container" >/dev/null
+            fi
+            [[ $(docker image inspect --format '{{index .Config.Labels "org.ilovedrrealty.fixture"}}' "$image") == "$GITHUB_RUN_ID" ]]
+            docker image rm "$image" >/dev/null
+            printf 'NATIVE_DB_RECOVERY_CONTAINER_REMOVED\n'
+            exit "$status"
+          }
+          trap cleanup EXIT
+          timeout 180s docker run --rm --name "$container" --label "org.ilovedrrealty.fixture=$GITHUB_RUN_ID" \
+            --platform linux/amd64 --network none --cap-drop ALL --security-opt no-new-privileges:true \
+            --memory 512m --memory-swap 512m --pids-limit 64 --user postgres --read-only \
+            --tmpfs /tmp:rw,nosuid,nodev,size=128m,mode=1777 \
+            --mount "type=bind,source=$fixture,target=/fixture,readonly" \
+            --entrypoint /bin/bash "$image" /fixture/start_loopback_fixture.sh

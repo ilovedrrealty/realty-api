@@ -1,0 +1,88 @@
+{
+  "reviewed_capture_sha256": "a7a221dd971589b2a6fb1cd7fc9e34f663132202f56ce428c69b1290571761db",
+  "reviewed_archive_format_sha256": "d5a01eaf052ca03062f7de698936ce8e65726c2f30a85c5b3c0d3e45a94368aa",
+  "reviewed_catalog_sha256": "06b8e6c46068e10845b4e17122906c336cbc704804bb1809f1e2f4b71910920d",
+  "capture_original_lines_inclusive": {
+    "TABLES": [
+      37,
+      40
+    ],
+    "UNSUPPORTED": [
+      41,
+      41
+    ],
+    "MAX_DUMP": [
+      42,
+      42
+    ],
+    "MAX_TOC": [
+      43,
+      43
+    ],
+    "MAX_RECORDS_PER_TABLE": [
+      44,
+      44
+    ],
+    "PROFILE_COUNTS": [
+      58,
+      65
+    ],
+    "Stop": [
+      68,
+      69
+    ],
+    "require": [
+      72,
+      74
+    ],
+    "pg_environment": [
+      113,
+      121
+    ],
+    "private_process": [
+      124,
+      180
+    ],
+    "checked_catalog": [
+      183,
+      186
+    ],
+    "snapshot_plan": [
+      189,
+      218
+    ],
+    "validate_toc": [
+      221,
+      228
+    ],
+    "pg_dump_credentials": [
+      231,
+      238
+    ],
+    "capture": [
+      241,
+      281
+    ]
+  },
+  "archive_original_lines_inclusive": {
+    "MAGIC": [
+      9,
+      9
+    ],
+    "seal": [
+      11,
+      15
+    ],
+    "unseal": [
+      17,
+      27
+    ]
+  },
+  "catalog_transform": "UTF-8 LF without BOM; exactly one project_ref literal replaced with synthetic-native-db",
+  "transformation": "Selected AST source segments and imports only; owner paths, identifiers, pins and entry points omitted",
+  "files_sha256_lf": {
+    "capture_fixture_source.py": "efc4d808e64df9a79c3234aaaba40c6f28d4390b4b2b77ab4b799275771503d7",
+    "archive_fixture_source.py": "aae7277bb916d9a8db442efe64ac1969faaf0aa6041a54e1f39ed717c3059407",
+    "catalog.sql": "d924d599236a23783c652c3cee6f025de6a9189d4599aec10b228e1e86dd8995"
+  }
+}

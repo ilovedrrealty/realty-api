@@ -1,0 +1,22 @@
+-- CATALOG_V2: definitions and grants; mutable sequence values captured but excluded from definition fingerprint.
+WITH catalog_capture AS (SELECT jsonb_build_object(
+ 'project_ref','synthetic-native-db',
+ 'table_names',(SELECT jsonb_agg(tablename ORDER BY tablename) FROM pg_tables WHERE schemaname='public'),
+ 'columns',(SELECT jsonb_agg(to_jsonb(c) ORDER BY table_name,ordinal_position) FROM (SELECT table_name,column_name,ordinal_position,data_type,udt_name,is_nullable,column_default FROM information_schema.columns WHERE table_schema='public') c),
+ 'constraints',(SELECT coalesce(jsonb_agg(jsonb_build_object('table',cl.relname,'name',c.conname,'type',c.contype,'definition',pg_get_constraintdef(c.oid)) ORDER BY cl.relname,c.conname),'[]') FROM pg_constraint c JOIN pg_class cl ON cl.oid=c.conrelid JOIN pg_namespace n ON n.oid=cl.relnamespace WHERE n.nspname='public'),
+ 'indexes',(SELECT coalesce(jsonb_agg(to_jsonb(i) ORDER BY tablename,indexname),'[]') FROM (SELECT tablename,indexname,indexdef FROM pg_indexes WHERE schemaname='public') i),
+ 'tables',(SELECT jsonb_agg(jsonb_build_object('name',c.relname,'rls_enabled',c.relrowsecurity,'rls_forced',c.relforcerowsecurity) ORDER BY c.relname) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relkind='r'),
+ 'policies',(SELECT coalesce(jsonb_agg(to_jsonb(p) ORDER BY tablename,policyname),'[]') FROM (SELECT tablename,policyname,permissive,roles,cmd,qual,with_check FROM pg_policies WHERE schemaname='public') p),
+ 'enums',(SELECT coalesce(jsonb_agg(jsonb_build_object('name',t.typname,'label',e.enumlabel,'order',e.enumsortorder) ORDER BY t.typname,e.enumsortorder),'[]') FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace JOIN pg_enum e ON e.enumtypid=t.oid WHERE n.nspname='public'),
+ 'sequences',(SELECT coalesce(jsonb_agg(to_jsonb(s) ORDER BY sequencename),'[]') FROM (SELECT sequencename,data_type,start_value,min_value,max_value,increment_by,cycle,cache_size,last_value FROM pg_sequences WHERE schemaname='public') s),
+ 'functions',(SELECT coalesce(jsonb_agg(jsonb_build_object('name',p.proname,'definition',pg_get_functiondef(p.oid)) ORDER BY p.proname,p.oid),'[]') FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.prokind IN ('f','p') AND NOT EXISTS (SELECT 1 FROM pg_depend d WHERE d.classid='pg_proc'::regclass AND d.objid=p.oid AND d.deptype='e')),
+ 'triggers',(SELECT coalesce(jsonb_agg(jsonb_build_object('table',c.relname,'name',t.tgname,'definition',pg_get_triggerdef(t.oid)) ORDER BY c.relname,t.tgname),'[]') FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND NOT t.tgisinternal),
+ 'views',(SELECT coalesce(jsonb_agg(to_jsonb(v) ORDER BY viewname),'[]') FROM (SELECT viewname,definition FROM pg_views WHERE schemaname='public') v),
+ 'materialized_views',(SELECT coalesce(jsonb_agg(to_jsonb(v) ORDER BY matviewname),'[]') FROM (SELECT matviewname,definition FROM pg_matviews WHERE schemaname='public') v),
+ 'foreign_tables',(SELECT coalesce(jsonb_agg(foreign_table_name ORDER BY foreign_table_name),'[]') FROM information_schema.foreign_tables WHERE foreign_table_schema='public'),
+ 'partitioned_or_partition_tables',(SELECT coalesce(jsonb_agg(c.relname ORDER BY c.relname),'[]') FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND (c.relkind='p' OR c.relispartition)),
+ 'table_grants',(SELECT coalesce(jsonb_agg(to_jsonb(g) ORDER BY table_name,grantee,privilege_type),'[]') FROM (SELECT grantor,grantee,table_name,privilege_type,is_grantable,with_hierarchy FROM information_schema.table_privileges WHERE table_schema='public') g),
+ 'routine_grants',(SELECT coalesce(jsonb_agg(to_jsonb(g) ORDER BY routine_name,grantee,privilege_type),'[]') FROM (SELECT grantor,grantee,routine_name,privilege_type,is_grantable FROM information_schema.routine_privileges WHERE routine_schema='public') g),
+ 'alembic_heads',(SELECT jsonb_agg(version_num ORDER BY version_num) FROM public.alembic_version)
+) AS data)
+SELECT data || jsonb_build_object('definition_sha256',encode(sha256(convert_to(((data - 'sequences') || jsonb_build_object('sequences',coalesce((SELECT jsonb_agg(item - 'last_value' ORDER BY item->>'sequencename') FROM jsonb_array_elements(data->'sequences') item),'[]'::jsonb)))::text,'UTF8')),'hex')) AS schema_catalog FROM catalog_capture;
