@@ -6,6 +6,7 @@ from .inquiry import Inquiry, AnonymousLead
 from .listing_edit import ListingEdit
 from .saved_home import SavedHome
 from .booking import Booking
+from .arrival_guide import ListingArrivalGuide
 from .activity_log import ActivityLog
 from .deal_request import DealRequest
 from .listing_event import ListingEvent
