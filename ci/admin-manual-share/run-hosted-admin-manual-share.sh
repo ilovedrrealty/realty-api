@@ -8,7 +8,7 @@ bounded() { timeout --kill-after=8s "$@"; }
 
 [[ $# == 5 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api ]] || die CI_REQUIRED
 [[ ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 && ${GITHUB_RUN_ATTEMPT:-} == 1 ]] || die STANDARD_LINUX_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-neighborhood-comparison-browser-20261117 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
+[[ ${GITHUB_REF:-} == refs/heads/codex-ci-market-report-browser-20261117 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 
 ops="$1"; frontend="$2"; backend="$3"; migration="$4"; landing_relay="$5"
 [[ "$ops" == "$GITHUB_WORKSPACE/browser-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-base" &&
@@ -19,35 +19,31 @@ for checkout in "$ops" "$frontend" "$backend" "$migration" "$landing_relay"; do
   checkout_status=$(git -C "$checkout" status --porcelain=v1 --untracked-files=all) || die CLEAN_CHECKOUT_REQUIRED
   [[ $(realpath "$checkout") == "$checkout" && -z "$checkout_status" ]] || die CLEAN_CHECKOUT_REQUIRED
 done
-[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == 2122b7ecee3c7745e4b8539a6b5143fd4bfec00a ]] ||
+[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == 2ebce1a0d1ca72852641e7fa0c91e121a6cc5fbc ]] ||
   die EXACT_OPERATIONS_PARENT_REQUIRED
 operations_delta=$(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) || die EXACT_OPERATIONS_DELTA_REQUIRED
-[[ "$operations_delta" == $'.github/workflows/admin-manual-share.yml\nci/admin-manual-share/run-hosted-admin-manual-share.sh\nci/admin-manual-share/run-neighborhood-comparison.mjs\nci/admin-manual-share/serve_neighborhood_comparison_fixture.py' ]] ||
+[[ "$operations_delta" == $'.github/workflows/admin-manual-share.yml\nci/admin-manual-share/run-hosted-admin-manual-share.sh\nci/admin-manual-share/run-market-report.mjs\nci/admin-manual-share/serve_market_report_fixture.py' ]] ||
   die EXACT_OPERATIONS_DELTA_REQUIRED
-frontend_commit=f332f37ca1a7c17283071c551792985af232e287
-frontend_tree=87bfbc79bdbaa0dd9d0f1bd7d1483e8b5406f7e0
-frontend_paths=544
-frontend_admin_test_sha=1d59cb6e017f2ba3f4c69578c254013c38df8f5209f34a12fec1e135b7653557
+frontend_commit=919948242f0bf53bb993899cf6d2f08fff2d86c4
+frontend_tree=05de0ac1179f43fcb0ee23bcdb37a1c9ae9c284f
+frontend_paths=548
+frontend_market_test_sha=7e9e463db3581a7123a7096c3240c560b3bb56c0164edcdbe19076e8f64fbd91
 frontend_public_test_sha=8affe09be9f007208ca5e44efc0d2e4a84abe9151fdc1c47cb76d24512b5c2a2
-frontend_test_count=14
-backend_commit=e03c968bed233362de4ec69c76c4432af184d341
-backend_tree=f5e7ba61c17de994f1204b26f307fefe2afc7e10
+frontend_test_count=11
+backend_commit=7f8a3c4682fd0037383926051e96fe155ab77583
+backend_tree=16a94a41d1b0fa07493df7a74e4a124071cf7aaf
 migration_head=e12ac7d49f03
-browser_failure_stages='fixture,auth,scope,first_form,first_draft,first_review,first_publish,second_form,second_draft,'\
-'second_review,second_publish,public_index_english,public_compare_english,public_compare_spanish,'\
-'listing_handoff,new_draft,withdraw,public_withdrawn'
+browser_failure_stages='fixture,desktop_resources,desktop_sitewide,desktop_scope,spanish_entry,spanish_scope,sale_search,empty_scope,invalid_scope'
 browser_checks=(
-  admin_only_two_bilingual_staged_neighborhoods
-  reviewed_sources_and_explicit_publication
-  public_next_english_two_area_comparison_390px
-  spanish_facts_dates_sources_and_unknowns
-  exact_location_listing_filter
-  private_draft_keeps_published_revision
-  unpublish_removes_only_withdrawn_neighborhood
-  actual_loopback_only_without_outbound
+  normal_resources_and_local_guides_show_sitewide_sale_inventory
+  real_postgres_scope_preserves_native_prices_samples_and_hidden_boundary
+  spanish_mobile_keyboard_filter_and_area_labels
+  sale_search_receives_exact_catalog_location
+  empty_and_invalid_scopes_never_invent_prices_or_widen_scope
+  actual_loopback_anonymous_read_only
 )
 [[ "$frontend_commit" =~ ^[a-f0-9]{40}$ && "$frontend_tree" =~ ^[a-f0-9]{40}$ &&
-   "$frontend_admin_test_sha" =~ ^[a-f0-9]{64}$ && "$frontend_public_test_sha" =~ ^[a-f0-9]{64}$ &&
+   "$frontend_market_test_sha" =~ ^[a-f0-9]{64}$ && "$frontend_public_test_sha" =~ ^[a-f0-9]{64}$ &&
    "$frontend_paths" =~ ^[1-9][0-9]{2,3}$ &&
    "$frontend_test_count" =~ ^[1-9][0-9]?$ ]] || die FRONTEND_PINS_INCOMPLETE
 [[ "$browser_failure_stages" =~ ^[a-z][a-z0-9_]*(,[a-z][a-z0-9_]*)+$ ]] || die BROWSER_PINS_INCOMPLETE
@@ -62,8 +58,8 @@ browser_checks=(
 
 tools="$ops/ci/admin-manual-share"
 dockerfile="$migration/ci/migration/services163.Dockerfile"
-for file in serve_admin_share_fixture.py serve_dashboard_fixture.mjs serve_neighborhood_comparison_fixture.py \
-  run-neighborhood-comparison.mjs; do
+for file in serve_admin_share_fixture.py serve_dashboard_fixture.mjs serve_market_report_fixture.py \
+  run-market-report.mjs; do
   [[ -f "$tools/$file" && ! -L "$tools/$file" ]] || die EXACT_FIXTURE_SOURCE_REQUIRED
 done
 printf '%s  %s\n' e546d8c5668b87ef28e604107bbb330e6f4b3873cf0208b4d24ca378bd0851f9 "$dockerfile" \
@@ -139,7 +135,7 @@ trap cleanup EXIT
 
 mkdir "$state/frontend-work" "$state/fixtures" "$state/browser-run" "$state/python-context" "$state/landing-run"
 cp "$backend/requirements.txt" "$state/python-context/requirements.txt"
-cp "$tools/run-neighborhood-comparison.mjs" "$state/browser-run/"
+cp "$tools/run-market-report.mjs" "$state/browser-run/"
 
 # Public, pinned dependency preparation. No app or browser process is running yet.
 for image in "$node_image" "$python_image" "$postgres_image" "$browser_image"; do
@@ -172,7 +168,7 @@ printf '%s  %s\n' \
   8df3c4c580c65694bc727488fc0ec02d88ab1577e5fa16c509f4897b58e60f33 "$state/frontend-work/package-lock.json" \
   1126aeb69e32b34394cca03ac440848f7b88b339042496cb6722a1781a204337 "$state/frontend-work/apps/dashboard/package.json" \
   45893e6dfebaad4d2e73f7e7d6b26f176883bc1ba8c8dc025f188cc1b4d12344 "$state/frontend-work/apps/landing/package.json" \
-  "$frontend_admin_test_sha" "$state/frontend-work/tests/editorial-admin.test.cjs" \
+  "$frontend_market_test_sha" "$state/frontend-work/tests/local-market-report.test.cjs" \
   "$frontend_public_test_sha" "$state/frontend-work/tests/public-editorial.test.cjs" \
   | sha256sum --check --status || die EXACT_PACKAGE_AND_TEST_PINS_REQUIRED
 
@@ -215,20 +211,20 @@ elif re.search(rb'(?m)^npm (?:error|ERR!) network(?:[ \t\r]|$)', tail):
     summary = 'npm_network_summary'
 else:
     summary = 'unclassified_install_failure'
-print(f'NEIGHBORHOOD_COMPARE_INSTALL native={native} summary={summary} codes={codes}')
+print(f'MARKET_REPORT_INSTALL native={native} summary={summary} codes={codes}')
 PY
   die LOCKED_FRONTEND_INSTALL_FAILED
 fi
-printf 'NEIGHBORHOOD_COMPARE_INSTALL native=0 summary=success codes=none\n'
+printf 'MARKET_REPORT_INSTALL native=0 summary=success codes=none\n'
 verify_frontend_files || die INSTALLED_FRONTEND_SOURCE_CHANGED
 if ! bounded 360s docker run "${prepare[@]}" --network none --workdir /work \
   --mount "type=bind,src=$state/frontend-work,dst=/work" "$node_image" \
   env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp CI=true NODE_OPTIONS=--max-old-space-size=1536 \
   npm_config_userconfig=/tmp/ildr-user.npmrc npm_config_globalconfig=/tmp/ildr-global.npmrc npm_config_cache=/tmp/npm \
   npm_config_update_notifier=false npm_config_audit=false npm_config_fund=false \
-  VITE_API_URL=http://127.0.0.1:8000 VITE_LANDING_URL=http://127.0.0.1:8917 \
+  VITE_API_URL=http://127.0.0.1:8918 VITE_LANDING_URL=http://127.0.0.1:8917 \
   VITE_GOOGLE_CLIENT_ID=synthetic-ci.apps.googleusercontent.com sh -c 'node --test --test-reporter=tap \
-    tests/editorial-admin.test.cjs tests/public-editorial.test.cjs && npm run build --workspace=dashboard' \
+    tests/local-market-report.test.cjs tests/public-editorial.test.cjs && npm run build --workspace=dashboard' \
     >"$state/dashboard-build.log" 2>&1; then
   python3 -I -B - "$state/dashboard-build.log" <<'PY'
 import re
@@ -245,7 +241,7 @@ PY
   die DASHBOARD_BUILD_FAILED
 fi
 
-python3 -I -B - "$state/dashboard-build.log" "$frontend_test_count" <<'PY' || die NEIGHBORHOOD_FRONTEND_RESULT_REQUIRED
+python3 -I -B - "$state/dashboard-build.log" "$frontend_test_count" <<'PY' || die MARKET_REPORT_FRONTEND_RESULT_REQUIRED
 import sys
 from pathlib import Path
 path = Path(sys.argv[1])
@@ -254,7 +250,7 @@ count = int(sys.argv[2])
 lines = path.read_bytes().splitlines()
 for row in (f'# tests {count}'.encode(), f'# pass {count}'.encode(), b'# fail 0', b'# skipped 0', b'# todo 0'):
     assert lines.count(row) == 1
-print(f'NEIGHBORHOOD_FRONTEND_CONTRACTS native=0 tests={count} pass={count} typecheck=success build=success')
+print(f'MARKET_REPORT_FRONTEND_CONTRACTS native=0 tests={count} pass={count} typecheck=success build=success')
 PY
 verify_frontend_files || die FRONTEND_SOURCE_CHANGED
 
@@ -275,8 +271,8 @@ import sys
 source, copy = map(Path, sys.argv[1:])
 data = source.read_bytes()
 for before, after in (
-    (b"NEXT_PUBLIC_API_URL: 'http://127.0.0.1:8917'", b"NEXT_PUBLIC_API_URL: 'http://127.0.0.1:8000'"),
-    (b"await startFixture(8917)", b"await startFixture(8000)"),
+    (b"NEXT_PUBLIC_API_URL: 'http://127.0.0.1:8917'", b"NEXT_PUBLIC_API_URL: 'http://127.0.0.1:8918'"),
+    (b"await startFixture(8917)", b"await startFixture(8918)"),
 ):
     assert data.count(before) == 1
     data = data.replace(before, after, 1)
@@ -290,7 +286,7 @@ bounded 690s docker run "${prepare[@]}" --network none --workdir /work \
   --mount "type=bind,src=$state/landing-run,dst=/rehearsal,readonly" "$node_image" \
   env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp CI=true node /rehearsal/landing.cjs \
   >"$state/landing.log" 2>&1 || landing_exit=$?
-python3 -I -B - "$state/landing.log" "$state/frontend-work/apps/landing/out" "$landing_exit" <<'PY' || die NEIGHBORHOOD_LANDING_EXPORT_REQUIRED
+python3 -I -B - "$state/landing.log" "$state/frontend-work/apps/landing/out" "$landing_exit" <<'PY' || die MARKET_REPORT_LANDING_EXPORT_REQUIRED
 from pathlib import Path
 import json, sys
 log, output = map(Path, sys.argv[1:3])
@@ -303,16 +299,16 @@ phases = [json.loads(line[len(prefix):]) for line in lines if line.startswith(pr
 for phase in phases:
     assert phase["name"] in names and type(phase["native_exit"]) in (int, type(None))
     assert phase["native_exit"] is None or 0 <= phase["native_exit"] <= 255
-    print(f'NEIGHBORHOOD_NEXT_PHASE stage={phase["name"]} native={phase["native_exit"]}')
+    print(f'MARKET_REPORT_NEXT_PHASE stage={phase["name"]} native={phase["native_exit"]}')
 assert sys.argv[3] == "0"
 assert len(phases) == len(names) and {phase["name"] for phase in phases} == names
 assert all(phase["native_exit"] == 0 and phase["child_group_absent"] == True for phase in phases)
 assert sum(line.startswith(b"CUMULATIVE_LANDING_RESULT ") for line in lines) == 1
-for route in ("local-guides/index.html", "local-guides/compare/index.html", "search/index.html"):
+for route in ("blog/index.html", "local-guides/index.html", "local-guides/market-report/index.html", "search/index.html"):
     path = output / route
     assert path.is_file() and not path.is_symlink()
-    assert b"D01_PRIVATE_EDITORIAL_NOTE" not in path.read_bytes()
-print("NEIGHBORHOOD_NEXT_EXPORT native=0 compare=static guides=static search=static typecheck=success")
+    assert b"D02_SYNTHETIC_" not in path.read_bytes()
+print("MARKET_REPORT_NEXT_EXPORT native=0 report=static guides=static resources=static search=static typecheck=success")
 PY
 verify_frontend_files || die LANDING_BUILD_SOURCE_CHANGED
 
@@ -324,7 +320,7 @@ workspace, browser = map(Path, sys.argv[1:])
 dist = workspace/'apps/dashboard/dist'
 assert (dist/'index.html').is_file() and not (dist/'index.html').is_symlink()
 assets = [f.read_bytes() for f in (dist/'assets').glob('*.js') if f.is_file() and not f.is_symlink()]
-assert any(b'http://127.0.0.1:8000' in body for body in assets)
+assert any(b'http://127.0.0.1:8918' in body for body in assets)
 assert any(b'http://127.0.0.1:8917' in body for body in assets)
 url = 'https://registry.npmjs.org/playwright-core/-/playwright-core-1.64.1.tgz'
 with urllib.request.urlopen(url, timeout=30) as response:
@@ -378,12 +374,12 @@ runtime=(--label "$label=$run_key" --network "container:$pg" --user "$uids" --re
 
 api=$(bounded 25s docker create "${runtime[@]}" --memory 2g --memory-swap 2g \
   --tmpfs /tmp:rw,exec,size=128m --env "ILDR_BROWSER_CI_NONCE=$nonce" \
-  --env "ILDR_NEIGHBORHOOD_APP_COMMIT=$backend_commit" --env "ILDR_NEIGHBORHOOD_APP_TREE=$backend_tree" \
-  --env "ILDR_NEIGHBORHOOD_MIGRATION=$migration_head" \
+  --env "ILDR_MARKET_APP_COMMIT=$backend_commit" --env "ILDR_MARKET_APP_TREE=$backend_tree" \
+  --env "ILDR_MARKET_MIGRATION=$migration_head" \
   --mount "type=bind,src=$backend,dst=/application,readonly" \
   --mount "type=bind,src=$tools,dst=/tools,readonly" \
   --mount "type=bind,src=$state/fixtures,dst=/browser-fixtures" \
-  "$app_image" /usr/local/bin/python -I -B /tools/serve_neighborhood_comparison_fixture.py) || die API_CREATE_FAILED
+  "$app_image" /usr/local/bin/python -I -B /tools/serve_market_report_fixture.py) || die API_CREATE_FAILED
 owned "$api" && bounded 25s docker start "$api" >/dev/null || die API_START_FAILED
 dashboard=$(bounded 25s docker create "${runtime[@]}" --memory 512m --memory-swap 512m \
   --mount "type=bind,src=$state/frontend-work/apps/dashboard/dist,dst=/dashboard-dist,readonly" \
@@ -399,7 +395,7 @@ owned "$landing" && bounded 25s docker start "$landing" >/dev/null || die LANDIN
 ready=0
 for ((attempt=0; attempt<90; attempt++)); do
   if [[ -s "$state/fixtures/fixtures.json" ]] && bounded 4s docker exec "$api" /usr/local/bin/python -I -B -c \
-    'from urllib.request import urlopen; assert all(urlopen(url,timeout=1).status==200 for url in ("http://127.0.0.1:8000/health","http://127.0.0.1:4175/","http://127.0.0.1:8917/local-guides/compare/"))' >/dev/null 2>&1; then ready=1; break; fi
+    'from urllib.request import urlopen; assert all(urlopen(url,timeout=1).status==200 for url in ("http://127.0.0.1:8918/health","http://127.0.0.1:4175/","http://127.0.0.1:8917/local-guides/market-report/"))' >/dev/null 2>&1; then ready=1; break; fi
   if [[ $(bounded 5s docker inspect --format '{{.State.Running}}' "$api") != true ]]; then
     if bounded 5s docker logs --tail 120 "$api" >"$state/api-start.log" 2>&1; then
       python3 -I -B - "$state/api-start.log" <<'PY'
@@ -412,7 +408,7 @@ assert len(reports)<=1
 if reports:
     value=json.loads(reports[0]); assert set(value)=={'stage','error_type','fixture_line','sqlstate'}
     assert value['stage'] in {'checkout','claim_database','configure_application','load_application','bootstrap_database',
-        'apply_alembic','seed_accounts','seed_lead','seed_neighborhood_listings',
+        'apply_alembic','seed_accounts','seed_lead','seed_market_listings',
         'write_fixture','serve_application'}
     assert re.fullmatch(r'[A-Za-z][A-Za-z0-9_]{0,62}',value['error_type'])
     assert value['fixture_line'] is None or type(value['fixture_line']) is int and 0<value['fixture_line']<=1000
@@ -431,7 +427,7 @@ browser=$(bounded 25s docker create "${runtime[@]}" --memory 2g --memory-swap 2g
   --env PLAYWRIGHT_BROWSERS_PATH=/ms-playwright --env ILDR_BROWSER_FIXTURES=/browser-fixtures/fixtures.json \
   --mount "type=bind,src=$state/browser-run,dst=/rehearsal,readonly" \
   --mount "type=bind,src=$state/fixtures,dst=/browser-fixtures,readonly" \
-  "$browser_image" node /rehearsal/run-neighborhood-comparison.mjs) || die BROWSER_CREATE_FAILED
+  "$browser_image" node /rehearsal/run-market-report.mjs) || die BROWSER_CREATE_FAILED
 owned "$browser" || die OWNED_BROWSER_REQUIRED
 client_exit=0
 bounded 300s docker start --attach "$browser" >"$state/browser.log" 2>&1 || client_exit=$?
@@ -439,7 +435,7 @@ container_state=$(bounded 15s docker inspect --format '{{.State.ExitCode}} {{.St
 [[ "$container_state" =~ ^[0-9]+\ (true|false)\ (true|false)$ ]] || die BROWSER_NATIVE_STATE_REQUIRED
 printf 'BROWSER_REHEARSAL_NATIVE client=%s state=%s\n' "$client_exit" "$container_state"
 
-python3 -I -B - "$state/browser.log" "$browser_failure_stages" "${browser_checks[@]}" <<'PY' || die NEIGHBORHOOD_BROWSER_RESULT_REQUIRED
+python3 -I -B - "$state/browser.log" "$browser_failure_stages" "${browser_checks[@]}" <<'PY' || die MARKET_REPORT_BROWSER_RESULT_REQUIRED
 from pathlib import Path
 import json
 import re
@@ -449,7 +445,7 @@ path = Path(sys.argv[1])
 assert path.stat().st_size <= 131072
 lines = path.read_bytes().splitlines()
 allowed_stages = set(sys.argv[2].split(','))
-failure = b'NEIGHBORHOOD_BROWSER_FAILURE '
+failure = b'MARKET_REPORT_BROWSER_FAILURE '
 failures = [line[len(failure):] for line in lines if line.startswith(failure)]
 assert len(failures) <= 1
 if failures:
@@ -458,7 +454,7 @@ if failures:
     print(failure.decode('ascii') + failures[0].decode('ascii'))
     raise SystemExit(1)
 
-prefix = b'NEIGHBORHOOD_BROWSER '
+prefix = b'MARKET_REPORT_BROWSER '
 matches = [line[len(prefix):] for line in lines if line.startswith(prefix)]
 assert len(matches) == 1 and len(matches[0]) <= 8192
 value = json.loads(matches[0])
@@ -470,9 +466,9 @@ PY
 bounded 20s docker stop --time 10 "$api" >/dev/null || die API_STOP_FAILED
 api_state=$(bounded 15s docker inspect --format '{{.State.ExitCode}} {{.State.Running}} {{.State.OOMKilled}}' "$api") || die API_SHUTDOWN_STATE_REQUIRED
 [[ "$api_state" == '0 false false' ]] || die API_GRACEFUL_SHUTDOWN_REQUIRED
-[[ ! -e "$state/fixtures/fixtures.json" ]] || die SYNTHETIC_LOGIN_FILE_CLEANUP_REQUIRED
-printf 'BROWSER_API_FIXTURE_SHUTDOWN state=%s login_file=absent\n' "$api_state"
+[[ ! -e "$state/fixtures/fixtures.json" ]] || die SYNTHETIC_FIXTURE_FILE_CLEANUP_REQUIRED
+printf 'BROWSER_API_FIXTURE_SHUTDOWN state=%s fixture_file=absent\n' "$api_state"
 backend_status=$(git -C "$backend" status --porcelain=v1 --untracked-files=all) || die API_SOURCE_CHANGED
 [[ -z "$backend_status" ]] || die API_SOURCE_CHANGED
-printf 'NEIGHBORHOOD_COMPARISON_ACCEPTANCE operations=%s frontend=%s frontend_tree=%s backend=%s backend_tree=%s migration=%s postgres_version_num=%s run=%s attempt=1\n' \
+printf 'MARKET_REPORT_ACCEPTANCE operations=%s frontend=%s frontend_tree=%s backend=%s backend_tree=%s migration=%s postgres_version_num=%s run=%s attempt=1\n' \
   "$GITHUB_SHA" "$frontend_commit" "$frontend_tree" "$backend_commit" "$backend_tree" "$migration_head" "$postgres_version_num" "$GITHUB_RUN_ID"
