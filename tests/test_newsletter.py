@@ -9,10 +9,11 @@ from uuid import uuid4
 
 import httpx
 from fastapi.testclient import TestClient
-from sqlalchemy import select, text
+from sqlalchemy import MetaData, select, text
+from sqlalchemy.schema import CreateSchema
 
 from config import settings
-from database import SessionLocal
+from database import SessionLocal, engine
 from main import app
 from models.newsletter import NewsletterSubscription
 from services import newsletter
@@ -47,6 +48,36 @@ class NewsletterTest(unittest.TestCase):
     def read(self):
         with SessionLocal() as db:
             return db.scalar(select(NewsletterSubscription).where(NewsletterSubscription.email == self.email))
+
+    def test_model_created_table_matches_migrated_columns_and_constraints(self):
+        # Frozen bootstrap currently leaves this table to Alembic. Exercise
+        # model-first creation independently so future bootstrap registration
+        # cannot silently lose the migration's defaults or consent checks.
+        def catalog(connection, schema):
+            columns = connection.execute(text("""SELECT column_name,ordinal_position,
+                data_type,udt_name,is_nullable,column_default
+                FROM information_schema.columns
+                WHERE table_schema=:schema AND table_name='newsletter_subscriptions'
+                ORDER BY ordinal_position"""), {"schema": schema}).all()
+            constraints = connection.execute(text("""SELECT c.conname,c.contype,
+                pg_get_constraintdef(c.oid) FROM pg_constraint c
+                JOIN pg_class t ON t.oid=c.conrelid JOIN pg_namespace n ON n.oid=t.relnamespace
+                WHERE n.nspname=:schema AND t.relname='newsletter_subscriptions'
+                ORDER BY c.conname"""), {"schema": schema}).all()
+            return columns, constraints
+
+        schema = f"newsletter_model_{uuid4().hex}"
+        with engine.connect() as connection:
+            transaction = connection.begin()
+            try:
+                connection.execute(CreateSchema(schema))
+                fresh = NewsletterSubscription.__table__.to_metadata(MetaData(), schema=schema)
+                fresh.create(connection)
+                self.assertEqual(catalog(connection, schema), catalog(connection, "public"))
+            finally:
+                # PostgreSQL DDL is transactional; this removes only the
+                # synthetic schema without touching migrated application data.
+                transaction.rollback()
 
     def test_consent_requires_specific_explicit_confirmation_and_unsubscribe(self):
         fields = {"email": self.email, "language": "es", "consent": True}
