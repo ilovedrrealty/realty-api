@@ -2,7 +2,7 @@ name: Isolated transaction task evidence Dashboard rehearsal
 
 on:
   push:
-    branches: [codex-ci-transaction-task-evidence-browser-20261117]
+    branches: [codex-ci-transaction-task-evidence-browser-20261117-v2]
 
 permissions:
   contents: read

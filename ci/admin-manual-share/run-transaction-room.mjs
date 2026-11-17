@@ -399,6 +399,14 @@ async function verifyEvidenceDenied(context, page, room, role, task, docs) {
     'PRIVATE_EVIDENCE_CONTROLS_VISIBLE')
 }
 
+async function verifyReceipt(row, reviewedAt) {
+  const receipt = row.locator('p').filter({ hasText: /^Reviewed by Browser Closing Professional\b/ })
+  await receipt.waitFor()
+  const time = receipt.locator('time[datetime]')
+  await time.waitFor()
+  check(await time.getAttribute('datetime') === reviewedAt, 'EXACT_REVIEW_TIMESTAMP_REQUIRED')
+}
+
 async function finishEvidence(professional, page, room, task, docs) {
   step = 'evidence_focus'
   await refreshRoom(page, room.path)
@@ -414,21 +422,26 @@ async function finishEvidence(professional, page, room, task, docs) {
 
   step = 'evidence_download'
   await verifyBytes(page, docs.latestPath, docs.image, 2)
-  step = 'evidence_finish'
+  step = 'evidence_open_status'
   await section(page, 'Tasks')
   await button(row, 'Change task status').click()
   const editor = dialog(page, 'Change task status')
+  await editor.waitFor()
+  step = 'evidence_select_status'
   await editor.locator('select:has(>option[value="done"])').selectOption('done')
+  step = 'evidence_save_status'
   const response = await action(page, 'PATCH', room.path + '/tasks/' + task.id, 200, button(editor, 'Save changes'))
   const payload = response.request().postDataJSON()
   check(payload.status === 'done' && Number.isSafeInteger(payload.expected_version)
     && Object.keys(payload).length === 2, 'EXACT_REVIEWER_COMPLETION_REQUIRED')
   await editor.waitFor({ state: 'hidden' })
+  step = 'evidence_receipt_api'
   const done = (await readRoom(professional, room.path, 'professional')).tasks.find(item => item.id === task.id)
   check(done?.status === 'done' && done.evidence?.version_id === docs.latest.id
     && done.evidence.reviewer_name === professionalName && Number.isFinite(Date.parse(done.evidence.reviewed_at)),
   'EXACT_NAMED_REVIEW_RECEIPT_REQUIRED')
-  await text(row, 'Reviewed by ' + professionalName).waitFor()
+  step = 'evidence_receipt_ui'
+  await verifyReceipt(row, done.evidence.reviewed_at)
   return done.evidence.reviewed_at
 }
 
@@ -557,9 +570,10 @@ async function main() {
     check(historyAfter.items.filter(event => event.action === 'task_evidence_reviewed' && event.target_id === task.id
       && event.actor_role === 'professional').length === 1, 'EXACT_HISTORICAL_REVIEW_EVENT_REQUIRED')
     await verifyEvidenceDenied(otherProfessional, other.page, room, 'professional', task, docs)
+    step = 'evidence_historical_ui'
     await refreshRoom(room.page, room.path)
     const finalTasks = await section(room.page, 'Tasks')
-    await text(rowFor(finalTasks, evidenceTaskTitle), 'Reviewed by ' + professionalName).waitFor()
+    await verifyReceipt(rowFor(finalTasks, evidenceTaskTitle), reviewedAt)
     await text(rowFor(finalTasks, taskTitle), 'Unassigned · Done').waitFor()
     checks.push('revoked_reviewer_receipt_retained_and_ordinary_task_unchanged')
     console.log('TRANSACTION_ROOM_BROWSER', JSON.stringify({ status: 'PASS', checks }))
