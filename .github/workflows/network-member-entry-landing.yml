@@ -1,8 +1,8 @@
-name: Exact published development inventory landing browser rehearsal
+name: Exact seller valuation mobile intake rehearsal
 
 on:
   push:
-    branches: [codex-ci-development-landing-20261117-v2]
+    branches: [codex-ci-seller-valuation-landing-20261117]
 
 permissions:
   contents: read
@@ -37,16 +37,16 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: ilovedrrealty/iLoveDRRealty
-          ref: 954b79f7c01e85a57230165eae82d741d88e3e73
+          ref: 35f6380f8a3046cd1b3e8768f4207e8b2c31be3c
           path: member-landing-source
           persist-credentials: false
       - name: Read the exact candidate backend source for pair identity
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 8f679b0bceefbf5b5f2565a5412746109d0f18e1
+          ref: 8936bec9f42f2affed00cea7cf952f49535898bb
           path: member-landing-backend
           persist-credentials: false
-      - name: Verify mobile development availability and prior landing journeys in Chromium
+      - name: Verify mobile seller valuation intake and prior landing journeys in Chromium
         shell: bash
         run: |
           set -euo pipefail

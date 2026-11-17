@@ -7,6 +7,7 @@ import listingFixture from '/listing-fixture/landing_fixture.cjs'
 import { createEditorialFixture, verifyEditorial } from './editorial-browser.mjs'
 import { createSpatialFixture, verifySpatial } from './spatial-browser.mjs'
 import { createDevelopmentFixture, verifyDevelopment } from './development-browser.mjs'
+import { createSellerValuationFixture, verifySellerValuation } from './seller-valuation-browser.mjs'
 
 const host = '127.0.0.1'
 const landing = `http://${host}:8918`
@@ -17,6 +18,7 @@ const editorial = createEditorialFixture(api)
 const spatialSearch = createSpatialFixture(api)
 const { LISTING_ID: listing, fixtureResponse } = listingFixture
 const development = createDevelopmentFixture(api, listing)
+const sellerValuation = createSellerValuationFixture()
 const listingPath = `/listing/${listing}/`
 const grant = 'b357412c-d096-47d6-8a77-30cf544e8d97'
 const shortlist = { loginPath: `/login/?shortlist=${grant}`, destination: `/shortlists?grant=${grant}` }
@@ -80,6 +82,8 @@ async function serveAuth(request, response) {
   if (spatialResult) return json(response, spatialResult.status, spatialResult.data, cors)
   const developmentResult = development.responseFor(request)
   if (developmentResult) return json(response, developmentResult.status, developmentResult.data, cors)
+  const sellerResult = await sellerValuation.responseFor(request)
+  if (sellerResult) return json(response, sellerResult.status, sellerResult.data, cors)
   if (key === 'GET /auth/me') {
     if (!hasCookie(request)) {
       observations.signedOutReads++
@@ -230,6 +234,7 @@ async function main() {
   let editorialResult
   let spatialResult
   let developmentResult
+  let sellerValuationResult
   try {
     stage = 'static_export'
     check(await realpath(exportRoot + '/login/index.html') === exportRoot + '/login/index.html'
@@ -257,6 +262,9 @@ async function main() {
     stage = 'development_export'
     developmentResult = await verifyDevelopment(browser, development, { landing, api }, exportRoot, listing,
       next => { stage = next })
+    stage = 'seller_export'
+    sellerValuationResult = await verifySellerValuation(browser, sellerValuation, { landing, api }, exportRoot,
+      next => { stage = next })
   } finally {
     try { if (browser) await browser.close() } finally {
       await Promise.all(servers.map(server => new Promise(resolve => {
@@ -274,6 +282,7 @@ async function main() {
   console.log('EDITORIAL_RUNTIME_BROWSER', JSON.stringify(editorialResult))
   console.log('SPATIAL_SEARCH_BROWSER', JSON.stringify(spatialResult))
   console.log('DEVELOPMENT_INVENTORY_BROWSER', JSON.stringify(developmentResult))
+  console.log('SELLER_VALUATION_INTAKE_BROWSER', JSON.stringify(sellerValuationResult))
 }
 
 const safeBrowserFailures = new Set([
@@ -288,6 +297,11 @@ const safeBrowserFailures = new Set([
   'DATED_DEVELOPMENT_PAYMENT_REQUIRED', 'DATED_DEVELOPMENT_UPDATE_REQUIRED', 'DEVELOPMENT_MOBILE_CARDS_REQUIRED',
   'DEVELOPMENT_PHASE_FILTER_REQUIRED', 'DEVELOPMENT_STALE_STOCK_VISIBLE',
   'DEVELOPMENT_STATIC_STOCK_OR_DRAFT_REQUIRED_ABSENT', 'DEVELOPMENT_PUBLIC_API_LIFECYCLE_REQUIRED',
+  'SELLER_POST_RESPONSE_MISSING', 'SELLER_POST_CONTRACT_REJECTED', 'ACTUAL_SELLING_EXPORT_REQUIRED',
+  'SELLER_PRIVATE_FORM_INCLUDED_COMMENTS', 'ORDINARY_SELLER_INCLUDES_VALUATION_FIELDS', 'SELLER_MOBILE_FORM_REQUIRED',
+  'SELLER_CONSENT_REQUIRED', 'SELLER_SENT_WITHOUT_CONSENT', 'SELLER_FORM_NOT_PRESERVED_ON_RETRY',
+  'SELLER_UNCONFIRMED_RECEIPT_NOT_ANNOUNCED', 'SELLER_ANONYMOUS_RECEIPT_REQUIRED',
+  'SELLER_SYNTHETIC_PRIVATE_DATA_IN_STATIC_HTML', 'SELLER_SYNTHETIC_RECEIPT_COUNT_MISMATCH',
 ])
 function browserFailureCode(error) {
   if (safeBrowserFailures.has(error?.message)) return error.message

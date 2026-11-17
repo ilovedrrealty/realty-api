@@ -7,22 +7,22 @@ bounded() { timeout --kill-after=8s "$@"; }
 [[ $# == 4 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 &&
    ${GITHUB_RUN_ATTEMPT:-} == 1 ]] || die HOST_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-development-landing-20261117-v2 &&
+[[ ${GITHUB_REF:-} == refs/heads/codex-ci-seller-valuation-landing-20261117 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 
 ops="$1"; fixture="$2"; frontend="$3"; backend="$4"
-parent=2ceae7d01c05c6b011980e0097b1097baba693bd
+parent=cca546e94da5b36e164cadf9093374fd62c4960a
 g06_regression_ops=36ea3f1a58905453030454077edb27bf8922937f
 fixture_commit=441efdc288c3a38b8607c816c684abec080d83ad
 fixture_tree=6c01c7577e343d5e2542d4f8a84cbc0f103e4b5d
-frontend_commit=954b79f7c01e85a57230165eae82d741d88e3e73
-frontend_tree=7767d3072952015f87e0d405a9c2290c133c6342
-frontend_files=508
-backend_commit=8f679b0bceefbf5b5f2565a5412746109d0f18e1
-backend_tree=dc9b1789871c72829356215746fcd39a8891d7db
+frontend_commit=35f6380f8a3046cd1b3e8768f4207e8b2c31be3c
+frontend_tree=c52b762985864e63931adc2b022fa14e3a427332
+frontend_files=520
+backend_commit=8936bec9f42f2affed00cea7cf952f49535898bb
+backend_tree=ff89fa613e001bbc5564e8da9ea778ada69329c1
 [[ "$frontend_commit" =~ ^[a-f0-9]{40}$ && "$frontend_tree" =~ ^[a-f0-9]{40}$ &&
    "$backend_commit" =~ ^[a-f0-9]{40}$ && "$backend_tree" =~ ^[a-f0-9]{40}$ &&
-   "$frontend_files" =~ ^[1-9][0-9]{0,3}$ ]] || die G05_EXACT_PAIR_NOT_PINNED
+   "$frontend_files" =~ ^[1-9][0-9]{0,3}$ ]] || die S01_EXACT_PAIR_NOT_PINNED
 [[ "$ops" == "$GITHUB_WORKSPACE/member-landing-ops" && "$fixture" == "$GITHUB_WORKSPACE/member-landing-fixture" &&
    "$frontend" == "$GITHUB_WORKSPACE/member-landing-source" &&
    "$backend" == "$GITHUB_WORKSPACE/member-landing-backend" ]] || die EXACT_CHECKOUT_PATHS_REQUIRED
@@ -36,13 +36,14 @@ done
    $(git -C "$frontend" rev-parse 'HEAD^{tree}') == "$frontend_tree" &&
    $(git -C "$backend" rev-parse HEAD) == "$backend_commit" &&
    $(git -C "$backend" rev-parse 'HEAD^{tree}') == "$backend_tree" ]] || die EXACT_CHECKOUTS_REQUIRED
-expected=$'.github/workflows/network-member-entry-landing.yml\nci/cumulative-landing/development-browser.mjs\nci/cumulative-landing/run-member-entry.sh\nci/cumulative-landing/run-shortlist-login.mjs'
+expected=$'.github/workflows/network-member-entry-landing.yml\nci/cumulative-landing/run-member-entry.sh\nci/cumulative-landing/run-shortlist-login.mjs\nci/cumulative-landing/seller-valuation-browser.mjs'
 [[ $(git -C "$ops" diff --name-only "$parent" "$GITHUB_SHA") == "$expected" ]] || die EXACT_OPERATIONS_DELTA_REQUIRED
 tools="$ops/ci/cumulative-landing"
 fixture_tools="$fixture/ci/frontend"
 printf '%s  %s\n' \
   c57087318e513ad8d2d38c0fc08fa5f081bc77932aa3a89e33734ca8f2f560c4 "$tools/landing.cjs" \
-  bb1630ecee354f1f3b846579336b65d071972678b55250367b4e7445595bd20b "$tools/run-shortlist-login.mjs" \
+  6d701e7702200f8090c05d0a7327a5d595e802fa9e6de7cd7c75026e40bc3e9f "$tools/run-shortlist-login.mjs" \
+  d52b7d1e6183b0936188bde98b53831ff856fdb61d819b9eb9587a8080fb328a "$tools/seller-valuation-browser.mjs" \
   ade09eb22229c52a6f4ea0feec0d2053966fa4cda134be50529d26f53ed05469 "$tools/development-browser.mjs" \
   af438d517fcd98883fbf8237cfc8e22d53b662209704c8a4ea5a03a75ae9a38c "$tools/spatial-browser.mjs" \
   f20dc2ee8d949f5e971a47bef6334d6d7cd1aa7a741a4a58d8005adb4e7ffa57 "$tools/editorial-browser.mjs" \
@@ -110,6 +111,7 @@ printf '%s  %s\n' \
   9b2fc413ff653011eed0e127ccea3db23d326a47a85040151c99da488b8b494d "$state/frontend-work/tests/search-map.test.cjs" \
   7d6e336151b00f9aed669b088f18a76ca9b9fd2e1c7e75dbcb44f9e4d22e3655 "$state/frontend-work/tests/spatial-search-geometry.test.cjs" \
   f2ccbdce0958f0fc1cf53e434eb25613ce3869e431142d02e662f0a8e6e42e07 "$state/frontend-work/tests/development-inventory-public.test.cjs" \
+  abc08dfc11671b1615878dd2d6c39c234832e028484d9a648ad5dea547cb7f79 "$state/frontend-work/tests/seller-valuation-intake.test.cjs" \
   | sha256sum --check --status || die EXACT_LANDING_UNIT_SOURCES_REQUIRED
 printf '%s  %s\n' \
   8df3c4c580c65694bc727488fc0ec02d88ab1577e5fa16c509f4897b58e60f33 "$state/frontend-work/package-lock.json" \
@@ -214,6 +216,15 @@ grep -qx '# tests 5' "$state/development-unit.log" && grep -qx '# pass 5' "$stat
   grep -qx '# fail 0' "$state/development-unit.log" && grep -qx '# skipped 0' "$state/development-unit.log" ||
   die EXACT_DEVELOPMENT_PUBLIC_UNIT_RESULT_REQUIRED
 printf 'MEMBER_LANDING_DEVELOPMENT_UNIT tests=5 pass=5 fail=0 skipped=0\n'
+bounded 45s docker run --rm "${prepare[@]}" --network none \
+  --mount "type=bind,src=$state/frontend-work,dst=/work,readonly" \
+  "$node_image" env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp CI=true \
+  node --test --test-concurrency=1 --test-reporter=tap tests/seller-valuation-intake.test.cjs \
+  >"$state/seller-valuation-unit.log" 2>&1 || die SELLER_VALUATION_UNIT_FAILED
+grep -qx '# tests 7' "$state/seller-valuation-unit.log" && grep -qx '# pass 7' "$state/seller-valuation-unit.log" &&
+  grep -qx '# fail 0' "$state/seller-valuation-unit.log" && grep -qx '# skipped 0' "$state/seller-valuation-unit.log" ||
+  die EXACT_SELLER_VALUATION_UNIT_RESULT_REQUIRED
+printf 'MEMBER_LANDING_SELLER_VALUATION_UNIT tests=7 pass=7 fail=0 skipped=0\n'
 
 landing_exit=0
 bounded 690s docker run --rm "${prepare[@]}" --network none \
@@ -277,7 +288,7 @@ python3 -I -B "$tools/verify-member-entry-export.py" "$state/frontend-work/apps/
 
 mkdir "$state/browser-run"
 cp -- "$tools/run-shortlist-login.mjs" "$tools/editorial-browser.mjs" "$tools/spatial-browser.mjs" \
-  "$tools/development-browser.mjs" "$state/browser-run/"
+  "$tools/development-browser.mjs" "$tools/seller-valuation-browser.mjs" "$state/browser-run/"
 bounded 180s docker pull --platform linux/amd64 "$browser_image" >/dev/null || die PINNED_BROWSER_PULL_FAILED
 [[ $(bounded 15s docker image inspect --format '{{.Os}}/{{.Architecture}}' "$browser_image") == linux/amd64 ]] ||
   die EXACT_BROWSER_PLATFORM_REQUIRED
@@ -334,7 +345,9 @@ if int(sys.argv[2]):
                'spatial_initial_cards','spatial_open_map','spatial_polygon','spatial_polygon_apply','spatial_polygon_http',
                'spatial_polygon_cards','spatial_radius','spatial_radius_apply','spatial_radius_http',
                'spatial_reload','spatial_legacy_mismatch','spatial_clear','development_export',
-               'development_context','development_routes')
+               'development_context','development_routes','seller_export','seller_context','seller_selling','seller_cta',
+               'seller_ordinary','seller_form_fields','seller_consent','seller_initial_post','seller_receipt_unconfirmed',
+               'seller_retry','seller_receipt_confirmed')
     allowed += tuple(f'development_{state}_{step}'
                      for state in ('absent','published','unconfirmed','withdrawn_focus','withdrawn_reload')
                      for step in ('navigation','response','rendered'))
@@ -348,7 +361,12 @@ if int(sys.argv[2]):
                   DEVELOPMENT_WITHDRAWN_CONTENT_VISIBLE ACTUAL_DEVELOPMENT_LISTING_EXPORT_REQUIRED
                   DEVELOPMENT_FLOOR_PLAN_SAFETY_REQUIRED DATED_DEVELOPMENT_PAYMENT_REQUIRED DATED_DEVELOPMENT_UPDATE_REQUIRED
                   DEVELOPMENT_MOBILE_CARDS_REQUIRED DEVELOPMENT_PHASE_FILTER_REQUIRED DEVELOPMENT_STALE_STOCK_VISIBLE
-                  DEVELOPMENT_STATIC_STOCK_OR_DRAFT_REQUIRED_ABSENT DEVELOPMENT_PUBLIC_API_LIFECYCLE_REQUIRED'''.split())
+                  DEVELOPMENT_STATIC_STOCK_OR_DRAFT_REQUIRED_ABSENT DEVELOPMENT_PUBLIC_API_LIFECYCLE_REQUIRED
+                  SELLER_POST_RESPONSE_MISSING SELLER_POST_CONTRACT_REJECTED ACTUAL_SELLING_EXPORT_REQUIRED
+                  SELLER_PRIVATE_FORM_INCLUDED_COMMENTS ORDINARY_SELLER_INCLUDES_VALUATION_FIELDS SELLER_MOBILE_FORM_REQUIRED
+                  SELLER_CONSENT_REQUIRED SELLER_SENT_WITHOUT_CONSENT SELLER_FORM_NOT_PRESERVED_ON_RETRY
+                  SELLER_UNCONFIRMED_RECEIPT_NOT_ANNOUNCED SELLER_ANONYMOUS_RECEIPT_REQUIRED
+                  SELLER_SYNTHETIC_PRIVATE_DATA_IN_STATIC_HTML SELLER_SYNTHETIC_RECEIPT_COUNT_MISMATCH'''.split())
     marker = re.compile(r'VIEWINGS_LANDING_LOGIN_FAILED stage=([a-z_]+) code=([A-Z0-9_]+) phase=(caught|unhandled)')
     matched = next((m for line in lines if (m := marker.fullmatch(line)) and m[1] in allowed and m[2] in codes), None)
     if matched:
@@ -402,6 +420,14 @@ else:
                                  withdrawal_removes_same_page=True, no_false_static_stock_or_draft=True,
                                  synthetic_public_endpoint=True)]
     print('MEMBER_LANDING_DEVELOPMENT_BROWSER ' + json.dumps(development[0], sort_keys=True, separators=(',', ':')))
+    prefix = 'SELLER_VALUATION_INTAKE_BROWSER '
+    seller = [json.loads(line[len(prefix):]) for line in lines if line.startswith(prefix)]
+    assert seller == [dict(status='PASS', actual_static_export=True, selling_cta_en_es=True,
+                            mobile_structured_fields=True, contact_consent_required=True, anonymous_seller_post=True,
+                            subject_only_private_channel=True, independent_submission_ids=True,
+                            same_submission_id_on_missing_ack_retry=True, success_requires_valuation_ack=True,
+                            ordinary_seller_unchanged=True, synthetic_loopback_only=True)]
+    print('MEMBER_LANDING_SELLER_VALUATION_BROWSER ' + json.dumps(seller[0], sort_keys=True, separators=(',', ':')))
 PY
 [[ "$browser_exit" == 0 ]] || die LANDING_LOGIN_BROWSER_FAILED
 printf 'MEMBER_LANDING_LOGIN_PAIR frontend=%s frontend_tree=%s backend=%s backend_tree=%s g06_regression_ops=%s\n' \
