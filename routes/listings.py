@@ -35,6 +35,7 @@ from utils.listing_search import (normalized_location, normalized_location_colum
 from utils.location_quality import public_location, public_coordinate_expression, stage_location_change
 from utils.search_geometry import INVALID_SHAPE, Polygon, Radius, parse_shape
 from utils import listing_room_tour as room_tour
+from services import listing_performance
 
 router = APIRouter(prefix="/listings", tags=["listings"])
 
@@ -539,10 +540,7 @@ def submit_deal_request(
 @router.post("/{listing_id}/view", status_code=204)
 @limiter.limit("5/minute")
 def record_view(request: Request, listing_id: UUID, db: Session = Depends(get_db)):
-    listing = db.query(Listing).filter(Listing.id == listing_id, Listing.status == "active").first()
-    if listing:
-        listing.view_count += 1
-        db.commit()
+    listing_performance.record_view(db, listing_id)
 
 
 def _room_tour_editor_listing(db, listing_id, user, *, lock=False):

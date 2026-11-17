@@ -1,6 +1,7 @@
 from .user import User
 from .pending_user import PendingUser
 from .listing import Listing
+from .listing_performance import ListingDailyView, ListingPerformanceEntry, ListingViewCoverage
 from .upgrade_request import UpgradeRequest
 from .inquiry import Inquiry, AnonymousLead
 from .listing_edit import ListingEdit
