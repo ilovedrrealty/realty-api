@@ -1,0 +1,54 @@
+name: Isolated purchase-cost worksheet PostgreSQL rehearsal
+
+on:
+  push:
+    branches: [codex-ci-purchase-cost-worksheet-native-20261117]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: purchase-costs-native-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  purchase-costs:
+    if: >-
+      github.repository == 'ilovedrrealty/realty-api' &&
+      github.event.repository.private == false &&
+      github.event.created == true && github.event.deleted == false &&
+      github.event.forced == false &&
+      github.event.before == '0000000000000000000000000000000000000000' &&
+      github.run_attempt == 1 && github.event.after == github.sha &&
+      github.workflow_sha == github.sha
+    runs-on: ubuntu-24.04
+    timeout-minutes: 16
+    steps:
+      - name: Read exact rehearsal operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          path: rehearsal-ops
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Read exact purchase-cost worksheet application
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: d1a8e4f9ed5708e97bc3dcaa9f60f96543e60cbe
+          path: purchase-cost-backend
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Read accepted Python dependency recipe
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: c193a925ba57ea2d67ea48c44e5262817885c8a2
+          path: migration-relay
+          persist-credentials: false
+      - name: Rehearse the exact account-private worksheet on native PostgreSQL
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$RUNNER_ENVIRONMENT" == github-hosted && "$RUNNER_OS" == Linux && "$RUNNER_ARCH" == X64 ]]
+          runner="$GITHUB_WORKSPACE/rehearsal-ops/ci/purchase-costs/run-hosted-native.sh"
+          bash --noprofile --norc -n "$runner"
+          exec bash --noprofile --norc "$runner"
