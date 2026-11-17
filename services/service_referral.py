@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from uuid import uuid4
 
 from fastapi import HTTPException
-from sqlalchemy import and_, exists, func, or_
+from sqlalchemy import Text, and_, cast, exists, or_
 from sqlalchemy.orm import aliased
 
 from models.listing import Listing
@@ -163,7 +163,7 @@ def _current_source():
         NetworkProperty.property_class == Request.property_class,
     )
     listing = exists().where(
-        Listing.id == Request.listing_id, Listing.status == "active", Listing.type == Request.source_listing_type,
+        Listing.id == Request.listing_id, Listing.status == "active", cast(Listing.type, Text) == Request.source_listing_type,
         or_(Listing.owner_id == Request.custodian_id, and_(
             Listing.owner_id.is_(None), Listing.submitted_by == Request.custodian_id,
             exists().where(owner.id == Request.custodian_id, owner.role == "owner").correlate(Request),
