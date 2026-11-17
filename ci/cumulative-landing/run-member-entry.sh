@@ -7,11 +7,11 @@ bounded() { timeout --kill-after=8s "$@"; }
 [[ $# == 4 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 &&
    ${GITHUB_RUN_ATTEMPT:-} == 1 ]] || die HOST_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-development-landing-20261117 &&
+[[ ${GITHUB_REF:-} == refs/heads/codex-ci-development-landing-20261117-v2 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 
 ops="$1"; fixture="$2"; frontend="$3"; backend="$4"
-parent=a39b8f7ae598e23ca24f1c9c480a599ebfc5f0e6
+parent=2ceae7d01c05c6b011980e0097b1097baba693bd
 g06_regression_ops=36ea3f1a58905453030454077edb27bf8922937f
 fixture_commit=441efdc288c3a38b8607c816c684abec080d83ad
 fixture_tree=6c01c7577e343d5e2542d4f8a84cbc0f103e4b5d
@@ -42,8 +42,8 @@ tools="$ops/ci/cumulative-landing"
 fixture_tools="$fixture/ci/frontend"
 printf '%s  %s\n' \
   c57087318e513ad8d2d38c0fc08fa5f081bc77932aa3a89e33734ca8f2f560c4 "$tools/landing.cjs" \
-  5321c453002067089e1723b9923f2df99f51c43a87c74b639b898e1249ae2d9c "$tools/run-shortlist-login.mjs" \
-  8b5a3b322f6590c2177131c595e1058b831265735753db09f15da9d047399e2e "$tools/development-browser.mjs" \
+  bb1630ecee354f1f3b846579336b65d071972678b55250367b4e7445595bd20b "$tools/run-shortlist-login.mjs" \
+  ade09eb22229c52a6f4ea0feec0d2053966fa4cda134be50529d26f53ed05469 "$tools/development-browser.mjs" \
   af438d517fcd98883fbf8237cfc8e22d53b662209704c8a4ea5a03a75ae9a38c "$tools/spatial-browser.mjs" \
   f20dc2ee8d949f5e971a47bef6334d6d7cd1aa7a741a4a58d8005adb4e7ffa57 "$tools/editorial-browser.mjs" \
   a166dc60598e76b7fdcc3fe2aa5253bc56952b48fd99e4cab5eb4a24523a548e "$fixture_tools/landing_fixture.cjs" \
@@ -333,18 +333,23 @@ if int(sys.argv[2]):
                'editorial_updated','editorial_removed','spatial_export','spatial_initial','spatial_initial_http',
                'spatial_initial_cards','spatial_open_map','spatial_polygon','spatial_polygon_apply','spatial_polygon_http',
                'spatial_polygon_cards','spatial_radius','spatial_radius_apply','spatial_radius_http',
-               'spatial_reload','spatial_legacy_mismatch','spatial_clear','development_export','development_absent',
-               'development_published','development_unconfirmed','development_withdrawn')
+               'spatial_reload','spatial_legacy_mismatch','spatial_clear','development_export',
+               'development_context','development_routes')
+    allowed += tuple(f'development_{state}_{step}'
+                     for state in ('absent','published','unconfirmed','withdrawn_focus','withdrawn_reload')
+                     for step in ('navigation','response','rendered'))
     codes = set('''ACTUAL_SEARCH_EXPORT_REQUIRED SEARCH_FILTERS_MUST_SURVIVE_SHAPE_CHANGES SAME_PUBLIC_EXCLUDED_COUNT_REQUIRED
                   FULLSCREEN_MAP_SURFACE_REQUIRED BROAD_RESULTS_IN_ACTIVE_SHAPE SPA_MUST_NOT_BROADEN_MISSING_SCOPE
                   LIST_RESPONSE_MISSING MAP_RESPONSE_MISSING MAP_SHIM_METHOD_MISSING MAP_INITIALIZATION_FAILED
                   BROWSER_PAGE_EXCEPTION LOOPBACK_CLEANUP_REQUIRED PLAYWRIGHT_TIMEOUT JS_TYPE_ERROR JS_SYNTAX_ERROR
-                  UNCLASSIFIED_BROWSER_FAILURE DEVELOPMENT_NO_STORE_RESPONSE_REQUIRED DEVELOPMENT_PRIVATE_RESPONSE_LEAK
+                  UNCLASSIFIED_BROWSER_FAILURE DEVELOPMENT_GET_RESPONSE_MISSING DEVELOPMENT_HTTP_2XX
+                  DEVELOPMENT_HTTP_3XX DEVELOPMENT_HTTP_4XX DEVELOPMENT_HTTP_5XX DEVELOPMENT_HTTP_OTHER
+                  DEVELOPMENT_NO_STORE_RESPONSE_REQUIRED DEVELOPMENT_PRIVATE_RESPONSE_LEAK
                   DEVELOPMENT_WITHDRAWN_CONTENT_VISIBLE ACTUAL_DEVELOPMENT_LISTING_EXPORT_REQUIRED
                   DEVELOPMENT_FLOOR_PLAN_SAFETY_REQUIRED DATED_DEVELOPMENT_PAYMENT_REQUIRED DATED_DEVELOPMENT_UPDATE_REQUIRED
                   DEVELOPMENT_MOBILE_CARDS_REQUIRED DEVELOPMENT_PHASE_FILTER_REQUIRED DEVELOPMENT_STALE_STOCK_VISIBLE
                   DEVELOPMENT_STATIC_STOCK_OR_DRAFT_REQUIRED_ABSENT DEVELOPMENT_PUBLIC_API_LIFECYCLE_REQUIRED'''.split())
-    marker = re.compile(r'VIEWINGS_LANDING_LOGIN_FAILED stage=([a-z_]+) code=([A-Z_]+) phase=(caught|unhandled)')
+    marker = re.compile(r'VIEWINGS_LANDING_LOGIN_FAILED stage=([a-z_]+) code=([A-Z0-9_]+) phase=(caught|unhandled)')
     matched = next((m for line in lines if (m := marker.fullmatch(line)) and m[1] in allowed and m[2] in codes), None)
     if matched:
         stage, code, phase = matched.groups()

@@ -2,7 +2,7 @@ name: Exact published development inventory landing browser rehearsal
 
 on:
   push:
-    branches: [codex-ci-development-landing-20261117]
+    branches: [codex-ci-development-landing-20261117-v2]
 
 permissions:
   contents: read

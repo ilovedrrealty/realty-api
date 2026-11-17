@@ -67,11 +67,12 @@ export function createDevelopmentFixture(api, listing) {
       if (url.search || request.headers.cookie || request.headers.authorization) {
         return { status: 400, data: { detail: 'Expected anonymous development read' } }
       }
+      const missing = visibility === 'absent' || visibility === 'withdrawn'
+      const response = missing ? { status: 404, data: { detail: 'Development unavailable' } }
+        : { status: 200, data: { ...shape, availability_current: visibility === 'current' } }
+      check(!JSON.stringify(response.data).includes(draftNote), 'DEVELOPMENT_PRIVATE_RESPONSE_LEAK')
       seen.set(visibility, (seen.get(visibility) ?? 0) + 1)
-      if (visibility === 'absent' || visibility === 'withdrawn') {
-        return { status: 404, data: { detail: 'Development unavailable' } }
-      }
-      return { status: 200, data: { ...shape, availability_current: visibility === 'current' } }
+      return response
     },
   }
 }
@@ -80,23 +81,30 @@ function dateLabel(day, locale) {
   return new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeZone: 'UTC' }).format(new Date(`${day}T12:00:00Z`))
 }
 
-async function observeRead(page, api, fixture, status, action) {
+async function observeRead(page, api, fixture, status, action, setStage, phase) {
   const pending = page.waitForResponse(response => response.url() === api + fixture.requestPath
-    && response.request().method() === 'GET' && response.status() === status).catch(() => null)
+    && response.request().method() === 'GET', { timeout: 12_000 }).catch(() => null)
+  setStage(`development_${phase}_navigation`)
   await action()
+  setStage(`development_${phase}_response`)
   const response = await pending
-  check(response && /(?:^|,\s*)no-store(?:,|$)/i.test(response.headers()['cache-control'] ?? ''),
-    'DEVELOPMENT_NO_STORE_RESPONSE_REQUIRED')
-  await response.finished()
-  check(!(await response.text()).includes(draftNote), 'DEVELOPMENT_PRIVATE_RESPONSE_LEAK')
+  check(response, 'DEVELOPMENT_GET_RESPONSE_MISSING')
+  const responseClass = Math.floor(response.status() / 100)
+  const mismatch = [2, 3, 4, 5].includes(responseClass) ? `DEVELOPMENT_HTTP_${responseClass}XX` : 'DEVELOPMENT_HTTP_OTHER'
+  check(response.status() === status, mismatch)
+  check(/(?:^|,\s*)no-store(?:,|$)/i.test(response.headers()['cache-control'] ?? ''), 'DEVELOPMENT_NO_STORE_RESPONSE_REQUIRED')
+  setStage(`development_${phase}_rendered`)
 }
 
 async function verifyLocale(browser, fixture, { landing, api }, route, language, setStage) {
+  setStage('development_context')
   const copy = locales[language]
   const context = await browser.newContext({ locale: copy.locale, viewport: { width: 390, height: 844 },
     isMobile: true, hasTouch: true, serviceWorkers: 'block' })
   try {
     context.setDefaultTimeout(12_000)
+    context.setDefaultNavigationTimeout(12_000)
+    setStage('development_routes')
     await context.addCookies([{ name: 'ildr_synthetic_dev_cookie', value: 'fixture-only', url: api }])
     await context.route('**/*', request => [landing, api].includes(new URL(request.request().url()).origin)
       ? request.continue() : request.abort('blockedbyclient'))
@@ -116,17 +124,15 @@ async function verifyLocale(browser, fixture, { landing, api }, route, language,
         'DEVELOPMENT_WITHDRAWN_CONTENT_VISIBLE')
     }
 
-    setStage('development_absent')
     fixture.setVisibility('absent')
     await observeRead(page, api, fixture, 404, async () => {
       const document = await page.goto(landing + route, { waitUntil: 'domcontentloaded' })
       check(document?.ok(), 'ACTUAL_DEVELOPMENT_LISTING_EXPORT_REQUIRED')
-    })
+    }, setStage, 'absent')
     await absence()
 
-    setStage('development_published')
     fixture.setVisibility('current')
-    await observeRead(page, api, fixture, 200, pageRead)
+    await observeRead(page, api, fixture, 200, pageRead, setStage, 'published')
     await section.waitFor()
     await section.getByText(projectName[language], { exact: true }).waitFor()
     await section.getByText(`${copy.checked} ${dateLabel(verified, copy.locale)}.`, { exact: true }).waitFor()
@@ -154,19 +160,18 @@ async function verifyLocale(browser, fixture, { landing, api }, route, language,
     await card('B201').waitFor({ state: 'detached' })
     check(await card('A101').isVisible() && await card('A102').isVisible(), 'DEVELOPMENT_PHASE_FILTER_REQUIRED')
 
-    setStage('development_unconfirmed')
     fixture.setVisibility('unconfirmed')
-    await observeRead(page, api, fixture, 200, pageRead)
+    await observeRead(page, api, fixture, 200, pageRead, setStage, 'unconfirmed')
     await card('A101').getByText(copy.unconfirmed, { exact: true }).waitFor()
     await card('A102').getByText(copy.unconfirmed, { exact: true }).waitFor()
     await card('B201').getByText(copy.unconfirmed, { exact: true }).waitFor()
     check(await section.getByText(copy.available, { exact: true }).count() === 0, 'DEVELOPMENT_STALE_STOCK_VISIBLE')
 
-    setStage('development_withdrawn')
     fixture.setVisibility('withdrawn')
-    await observeRead(page, api, fixture, 404, () => page.evaluate(() => window.dispatchEvent(new Event('focus'))))
+    await observeRead(page, api, fixture, 404, () => page.evaluate(() => window.dispatchEvent(new Event('focus'))),
+      setStage, 'withdrawn_focus')
     await absence()
-    await observeRead(page, api, fixture, 404, pageRead)
+    await observeRead(page, api, fixture, 404, pageRead, setStage, 'withdrawn_reload')
     await absence()
   } finally {
     await context.close()
