@@ -8,7 +8,7 @@ bounded() { timeout --kill-after=8s "$@"; }
 
 [[ $# == 4 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api ]] || die CI_REQUIRED
 [[ ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 && ${GITHUB_RUN_ATTEMPT:-} == 1 ]] || die STANDARD_LINUX_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-transaction-task-evidence-browser-20261117-v2 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
+[[ ${GITHUB_REF:-} == refs/heads/codex-ci-transaction-task-evidence-browser-20261117-v3 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 
 ops="$1"; frontend="$2"; backend="$3"; migration="$4"
 [[ "$ops" == "$GITHUB_WORKSPACE/browser-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-base" &&
@@ -18,10 +18,10 @@ for checkout in "$ops" "$frontend" "$backend" "$migration"; do
   checkout_status=$(git -C "$checkout" status --porcelain=v1 --untracked-files=all) || die CLEAN_CHECKOUT_REQUIRED
   [[ $(realpath "$checkout") == "$checkout" && -z "$checkout_status" ]] || die CLEAN_CHECKOUT_REQUIRED
 done
-[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == 8870f254c0033895d0a3066488724ab8041faaea ]] ||
+[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == 273fe8a9264d422a73db08b358bdc048877f3316 ]] ||
   die EXACT_OPERATIONS_PARENT_REQUIRED
 operations_delta=$(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) || die EXACT_OPERATIONS_DELTA_REQUIRED
-[[ "$operations_delta" == $'.github/workflows/admin-manual-share.yml\nci/admin-manual-share/run-hosted-admin-manual-share.sh\nci/admin-manual-share/run-transaction-room.mjs' ]] ||
+[[ "$operations_delta" == $'.github/workflows/admin-manual-share.yml\nci/admin-manual-share/run-hosted-admin-manual-share.sh' ]] ||
   die EXACT_OPERATIONS_DELTA_REQUIRED
 frontend_commit=7de7bc27e894263f6f00589dd0e24d3f2d9d1dfa
 frontend_tree=f01a732a2f0f736a1bcb1b00373b7faf731ce9ac
@@ -142,6 +142,7 @@ cleanup() {
 trap cleanup EXIT
 
 mkdir "$state/frontend-work" "$state/fixtures" "$state/browser-run" "$state/python-context"
+mkdir "$state/npm-cache"
 cp "$backend/requirements.txt" "$state/python-context/requirements.txt"
 cp "$tools/run-transaction-room.mjs" "$state/browser-run/"
 
@@ -184,12 +185,12 @@ prepare=(--label "$label=$run_key" --user "$uids" --read-only --cap-drop ALL --s
 
 install_exit=0
 bounded 500s docker run "${prepare[@]}" --network bridge --workdir /work \
-  --mount "type=bind,src=$state/frontend-work,dst=/work" "$node_image" \
+  --mount "type=bind,src=$state/frontend-work,dst=/work" --mount "type=bind,src=$state/npm-cache,dst=/npm-cache" "$node_image" \
   env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp CI=true NODE_OPTIONS=--max-old-space-size=1024 \
   npm_config_registry=https://registry.npmjs.org/ npm_config_userconfig=/tmp/ildr-user.npmrc \
-  npm_config_globalconfig=/tmp/ildr-global.npmrc npm_config_cache=/tmp/npm \
-  npm_config_update_notifier=false npm_config_audit=false npm_config_fund=false \
-  npm ci --ignore-scripts --no-audit --no-fund --include=dev --include=optional \
+  npm_config_globalconfig=/tmp/ildr-global.npmrc npm_config_cache=/npm-cache \
+  npm_config_update_notifier=false npm_config_audit=false npm_config_fund=false npm_config_ignore_scripts=true \
+  node /usr/local/lib/node_modules/npm/bin/npm-cli.js ci --ignore-scripts --no-audit --no-fund --include=dev --include=optional \
   >"$state/npm-install.log" 2>&1 || install_exit=$?
 if [[ "$install_exit" != 0 ]]; then
   python3 -I -B - "$state/npm-install.log" "$install_exit" <<'PY'
