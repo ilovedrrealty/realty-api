@@ -8,7 +8,7 @@ bounded() { timeout --kill-after=8s "$@"; }
 
 [[ $# == 5 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api ]] || die CI_REQUIRED
 [[ ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 && ${GITHUB_RUN_ATTEMPT:-} == 1 ]] || die STANDARD_LINUX_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-neighborhood-comparison-browser-20261117-v6 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
+[[ ${GITHUB_REF:-} == refs/heads/codex-listing-floor-plans-browser-ci-20261117 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 
 ops="$1"; frontend="$2"; backend="$3"; migration="$4"; landing_relay="$5"
 [[ "$ops" == "$GITHUB_WORKSPACE/browser-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-base" &&
@@ -19,35 +19,29 @@ for checkout in "$ops" "$frontend" "$backend" "$migration" "$landing_relay"; do
   checkout_status=$(git -C "$checkout" status --porcelain=v1 --untracked-files=all) || die CLEAN_CHECKOUT_REQUIRED
   [[ $(realpath "$checkout") == "$checkout" && -z "$checkout_status" ]] || die CLEAN_CHECKOUT_REQUIRED
 done
-[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == 3ae12e6ac0ac933ba664e2e03449d155976a8458 ]] ||
+[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == 7264d777d42520f00e79fe16051a647a0e965d6a ]] ||
   die EXACT_OPERATIONS_PARENT_REQUIRED
 operations_delta=$(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) || die EXACT_OPERATIONS_DELTA_REQUIRED
-[[ "$operations_delta" == $'.github/workflows/admin-manual-share.yml\nci/admin-manual-share/run-hosted-admin-manual-share.sh' ]] ||
+[[ "$operations_delta" == $'.github/workflows/admin-manual-share.yml\nci/admin-manual-share/run-hosted-admin-manual-share.sh\nci/admin-manual-share/run-listing-floor-plans.mjs\nci/admin-manual-share/serve_listing_floor_plans_fixture.py' ]] ||
   die EXACT_OPERATIONS_DELTA_REQUIRED
-frontend_commit=f332f37ca1a7c17283071c551792985af232e287
-frontend_tree=87bfbc79bdbaa0dd9d0f1bd7d1483e8b5406f7e0
-frontend_paths=544
-frontend_admin_test_sha=1d59cb6e017f2ba3f4c69578c254013c38df8f5209f34a12fec1e135b7653557
-frontend_public_test_sha=8affe09be9f007208ca5e44efc0d2e4a84abe9151fdc1c47cb76d24512b5c2a2
-frontend_test_count=14
-backend_commit=e03c968bed233362de4ec69c76c4432af184d341
-backend_tree=f5e7ba61c17de994f1204b26f307fefe2afc7e10
-migration_head=e12ac7d49f03
-browser_failure_stages='fixture,auth,scope,first_form,first_draft,first_review,first_publish,second_form,second_draft,'\
-'second_review,second_publish,public_index_english,public_compare_english,public_compare_spanish,'\
-'listing_handoff,new_draft,withdraw,public_withdrawn'
+frontend_commit=74e81bd8680565dc68b532a6b7871fe9b5db2e82
+frontend_tree=29f7e6721a4faf23bfe2c58435a80aef3a770c84
+frontend_paths=558
+frontend_test_count=26
+backend_commit=eb0a47c7fe18feb5c0695608bc0ebd6d5c048298
+backend_tree=0ab55d99df8804a1f16a487e8286180b2325d6b6
+migration_head=86fc1b2e4a79
+browser_failure_stages='fixture,auth,admin_entry,stage_preview,deny_before_approval,publish_first,public_bilingual,stage_replacement,withdraw,publish_replacement'
 browser_checks=(
-  admin_only_two_bilingual_staged_neighborhoods
-  reviewed_sources_and_explicit_publication
-  public_next_english_two_area_comparison_390px
-  spanish_facts_dates_sources_and_unknowns
-  exact_location_listing_filter
-  private_draft_keeps_published_revision
-  unpublish_removes_only_withdrawn_neighborhood
-  actual_loopback_only_without_outbound
+  normal_admin_edit_stages_and_previews_exact_private_png
+  draft_hidden_from_visitor_and_owner_permission_enforced
+  attestation_publishes_same_approved_asset_revision
+  english_and_spanish_public_mobile_load_only_approved_bytes
+  staging_replacement_keeps_prior_public_and_replacement_private
+  withdraw_revokes_old_public_url_and_preserves_private_draft
+  replacement_publication_never_restores_withdrawn_old_url
 )
 [[ "$frontend_commit" =~ ^[a-f0-9]{40}$ && "$frontend_tree" =~ ^[a-f0-9]{40}$ &&
-   "$frontend_admin_test_sha" =~ ^[a-f0-9]{64}$ && "$frontend_public_test_sha" =~ ^[a-f0-9]{64}$ &&
    "$frontend_paths" =~ ^[1-9][0-9]{2,3}$ &&
    "$frontend_test_count" =~ ^[1-9][0-9]?$ ]] || die FRONTEND_PINS_INCOMPLETE
 [[ "$browser_failure_stages" =~ ^[a-z][a-z0-9_]*(,[a-z][a-z0-9_]*)+$ ]] || die BROWSER_PINS_INCOMPLETE
@@ -62,8 +56,8 @@ browser_checks=(
 
 tools="$ops/ci/admin-manual-share"
 dockerfile="$migration/ci/migration/services163.Dockerfile"
-for file in serve_admin_share_fixture.py serve_dashboard_fixture.mjs serve_neighborhood_comparison_fixture.py \
-  run-neighborhood-comparison.mjs; do
+for file in serve_admin_share_fixture.py serve_dashboard_fixture.mjs serve_listing_floor_plans_fixture.py \
+  run-listing-floor-plans.mjs; do
   [[ -f "$tools/$file" && ! -L "$tools/$file" ]] || die EXACT_FIXTURE_SOURCE_REQUIRED
 done
 printf '%s  %s\n' e546d8c5668b87ef28e604107bbb330e6f4b3873cf0208b4d24ca378bd0851f9 "$dockerfile" \
@@ -140,7 +134,7 @@ trap cleanup EXIT
 mkdir "$state/frontend-work" "$state/fixtures" "$state/browser-run" "$state/python-context" "$state/landing-run"
 mkdir "$state/npm-cache"
 cp "$backend/requirements.txt" "$state/python-context/requirements.txt"
-cp "$tools/run-neighborhood-comparison.mjs" "$state/browser-run/"
+cp "$tools/run-listing-floor-plans.mjs" "$state/browser-run/"
 
 # Public, pinned dependency preparation. No app or browser process is running yet.
 for image in "$node_image" "$python_image" "$postgres_image" "$browser_image"; do
@@ -173,8 +167,12 @@ printf '%s  %s\n' \
   8df3c4c580c65694bc727488fc0ec02d88ab1577e5fa16c509f4897b58e60f33 "$state/frontend-work/package-lock.json" \
   1126aeb69e32b34394cca03ac440848f7b88b339042496cb6722a1781a204337 "$state/frontend-work/apps/dashboard/package.json" \
   45893e6dfebaad4d2e73f7e7d6b26f176883bc1ba8c8dc025f188cc1b4d12344 "$state/frontend-work/apps/landing/package.json" \
-  "$frontend_admin_test_sha" "$state/frontend-work/tests/editorial-admin.test.cjs" \
-  "$frontend_public_test_sha" "$state/frontend-work/tests/public-editorial.test.cjs" \
+  012c38713811827e2173d2fd696ec6f3863a4d92418addd37e9bc6ea211ebd25 "$state/frontend-work/tests/listing-floor-plans.test.cjs" \
+  039308edad77ef1254357cda5d4332475370dd1fb7dccbaa5cb502631d05531d "$state/frontend-work/tests/listing-brochure.test.cjs" \
+  a48d09a43d840dabc5547d8451a06bb9ffd4349fc1088a375b5a7595199b6617 "$state/frontend-work/tests/listing-room-tour.test.cjs" \
+  5e408fb59d3a70b97f110f904829dc3be6ebe43d835d0a49c14c18046c5f62be "$state/frontend-work/tests/location-review.test.cjs" \
+  265dd02c033c5783bfb04564986878bd4b863dfa5292be2b02a1bfa3867b615a "$state/frontend-work/tests/blog-articles.test.cjs" \
+  3e7e7005ea90dec134deb01ea8892b9409cbe7115d5f37eba17f0d76b9cf09d6 "$state/frontend-work/tests/listing-export.test.cjs" \
   | sha256sum --check --status || die EXACT_PACKAGE_AND_TEST_PINS_REQUIRED
 
 prepare=(--label "$label=$run_key" --user "$uids" --read-only --cap-drop ALL --security-opt no-new-privileges:true
@@ -216,11 +214,11 @@ elif re.search(rb'(?m)^npm (?:error|ERR!) network(?:[ \t\r]|$)', tail):
     summary = 'npm_network_summary'
 else:
     summary = 'unclassified_install_failure'
-print(f'NEIGHBORHOOD_COMPARE_INSTALL native={native} summary={summary} codes={codes}')
+print(f'LISTING_FLOOR_PLAN_INSTALL native={native} summary={summary} codes={codes}')
 PY
   die LOCKED_FRONTEND_INSTALL_FAILED
 fi
-printf 'NEIGHBORHOOD_COMPARE_INSTALL native=0 summary=success codes=none\n'
+printf 'LISTING_FLOOR_PLAN_INSTALL native=0 summary=success codes=none\n'
 verify_frontend_files || die INSTALLED_FRONTEND_SOURCE_CHANGED
 swc_exit=0
 bounded 30s docker run --rm "${prepare[@]}" --network none \
@@ -241,13 +239,13 @@ bounded 30s docker run --rm "${prepare[@]}" --network none \
   } catch (error) {
     process.exit(error.code === "ERR_DLOPEN_FAILED" ? 5 : 6);
   }
-  console.log("NEIGHBORHOOD_COMPARE_SWC native=0 locked_version=15.5.18 platform=linux-x64-gnu");
+  console.log("LISTING_FLOOR_PLAN_SWC native=0 locked_version=15.5.18 platform=linux-x64-gnu");
 ' >"$state/swc.log" 2>&1 || swc_exit=$?
 if [[ "$swc_exit" != 0 ]]; then
-  printf 'NEIGHBORHOOD_COMPARE_SWC native=%s\n' "$swc_exit"
+  printf 'LISTING_FLOOR_PLAN_SWC native=%s\n' "$swc_exit"
   die LOCKED_LINUX_SWC_UNAVAILABLE
 fi
-[[ $(<"$state/swc.log") == 'NEIGHBORHOOD_COMPARE_SWC native=0 locked_version=15.5.18 platform=linux-x64-gnu' ]] ||
+[[ $(<"$state/swc.log") == 'LISTING_FLOOR_PLAN_SWC native=0 locked_version=15.5.18 platform=linux-x64-gnu' ]] ||
   die SWC_RESULT_REQUIRED
 cat "$state/swc.log"
 
@@ -258,7 +256,7 @@ if ! bounded 360s docker run "${prepare[@]}" --network none --workdir /work \
   npm_config_update_notifier=false npm_config_audit=false npm_config_fund=false \
   VITE_API_URL=http://127.0.0.1:8918 VITE_LANDING_URL=http://127.0.0.1:8917 \
   VITE_GOOGLE_CLIENT_ID=synthetic-ci.apps.googleusercontent.com sh -c 'node --test --test-reporter=tap \
-    tests/editorial-admin.test.cjs tests/public-editorial.test.cjs && npm run build --workspace=dashboard' \
+    tests/listing-floor-plans.test.cjs tests/listing-brochure.test.cjs tests/listing-room-tour.test.cjs tests/location-review.test.cjs && npm run build --workspace=dashboard' \
     >"$state/dashboard-build.log" 2>&1; then
   python3 -I -B - "$state/dashboard-build.log" <<'PY'
 import re
@@ -275,7 +273,7 @@ PY
   die DASHBOARD_BUILD_FAILED
 fi
 
-python3 -I -B - "$state/dashboard-build.log" "$frontend_test_count" <<'PY' || die NEIGHBORHOOD_FRONTEND_RESULT_REQUIRED
+python3 -I -B - "$state/dashboard-build.log" "$frontend_test_count" <<'PY' || die LISTING_FLOOR_PLAN_FRONTEND_RESULT_REQUIRED
 import sys
 from pathlib import Path
 path = Path(sys.argv[1])
@@ -284,7 +282,7 @@ count = int(sys.argv[2])
 lines = path.read_bytes().splitlines()
 for row in (f'# tests {count}'.encode(), f'# pass {count}'.encode(), b'# fail 0', b'# skipped 0', b'# todo 0'):
     assert lines.count(row) == 1
-print(f'NEIGHBORHOOD_FRONTEND_CONTRACTS native=0 tests={count} pass={count} typecheck=success build=success')
+print(f'LISTING_FLOOR_PLAN_FRONTEND_CONTRACTS native=0 tests={count} pass={count} typecheck=success build=success')
 PY
 verify_frontend_files || die FRONTEND_SOURCE_CHANGED
 
@@ -303,11 +301,11 @@ log = Path(sys.argv[1])
 assert log.stat().st_size <= 262144
 lines = log.read_bytes().splitlines()
 rows = {group[1]: int(group[2]) for row in lines if (group := re.fullmatch(rb"# (tests|pass|fail|skipped) ([0-9]{1,3})", row))}
-print(f"NEIGHBORHOOD_LANDING_PRETESTS native={int(sys.argv[2])} tests={rows.get(b'tests', 0)} "
+print(f"LISTING_FLOOR_PLAN_LANDING_PRETESTS native={int(sys.argv[2])} tests={rows.get(b'tests', 0)} "
       f"pass={rows.get(b'pass', 0)} fail={rows.get(b'fail', 0)}")
 for row in lines:
     if group := re.fullmatch(rb"not ok ([1-9][0-9]{0,2}) - [A-Za-z0-9 _.,:/-]{1,180}", row):
-        print("NEIGHBORHOOD_LANDING_PRETEST_FAILURE index=" + group[1].decode("ascii"))
+        print("LISTING_FLOOR_PLAN_LANDING_PRETEST_FAILURE index=" + group[1].decode("ascii"))
 assert sys.argv[2] == "0"
 assert rows == {b"tests": 20, b"pass": 20, b"fail": 0, b"skipped": 0}
 PY
@@ -345,7 +343,7 @@ bounded 690s docker run "${prepare[@]}" --network none --workdir /work \
   --mount "type=bind,src=$state/landing-run,dst=/rehearsal,readonly" "$node_image" \
   env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp CI=true node /rehearsal/landing.cjs \
   >"$state/landing.log" 2>&1 || landing_exit=$?
-python3 -I -B - "$state/landing.log" "$state/frontend-work/apps/landing/out" "$landing_exit" <<'PY' || die NEIGHBORHOOD_LANDING_EXPORT_REQUIRED
+python3 -I -B - "$state/landing.log" "$state/frontend-work/apps/landing/out" "$landing_exit" <<'PY' || die LISTING_FLOOR_PLAN_LANDING_EXPORT_REQUIRED
 from hashlib import sha256
 from pathlib import Path
 import json, re, sys
@@ -360,7 +358,7 @@ for phase in phases:
     assert phase["name"] in names and type(phase["native_exit"]) in (int, type(None))
     assert phase["native_exit"] is None or 0 <= phase["native_exit"] <= 255
     assert all(type(phase[key]) is int and 0 <= phase[key] <= 4194304 for key in ("stdout_bytes", "stderr_bytes"))
-    print(f'NEIGHBORHOOD_NEXT_PHASE stage={phase["name"]} native={phase["native_exit"]}'
+    print(f'LISTING_FLOOR_PLAN_NEXT_PHASE stage={phase["name"]} native={phase["native_exit"]}'
           f' stdout_bytes={phase["stdout_bytes"]} stderr_bytes={phase["stderr_bytes"]}')
 allowed = {b"FIXTURE_PORT_REFUSED", b"FIXTURE_LISTEN_REFUSED", b"FIXTURE_BINDING_REFUSED",
            b"FIXTURE_CONTRACT_NOT_ACCEPTED", b"UNEXPECTED_GENERATED_TYPE_SOURCE_CHANGE",
@@ -368,7 +366,7 @@ allowed = {b"FIXTURE_PORT_REFUSED", b"FIXTURE_LISTEN_REFUSED", b"FIXTURE_BINDING
 failure_prefix = b"CUMULATIVE_LANDING_FAILED "
 for line in lines:
     if line.startswith(failure_prefix) and line[len(failure_prefix):] in allowed:
-        print("NEIGHBORHOOD_NEXT_FAILURE " + line[len(failure_prefix):].decode("ascii"))
+        print("LISTING_FLOOR_PLAN_NEXT_FAILURE " + line[len(failure_prefix):].decode("ascii"))
 if sys.argv[3] != "0":
     raw = b"\n".join(lines)
     categories = (
@@ -386,30 +384,30 @@ if sys.argv[3] != "0":
     )
     for token, tag in categories:
         if token in raw:
-            print(f"NEIGHBORHOOD_NEXT_DETAIL code={tag}")
+            print(f"LISTING_FLOOR_PLAN_NEXT_DETAIL code={tag}")
     sources = re.findall(
         rb"(?m)^(?:\./)?(src/[A-Za-z0-9_./\[\]-]+\.(?:tsx?|jsx?))(?::([0-9]{1,5}):([0-9]{1,5}))?\s*$",
         raw,
     )
     for source, line, column in sorted(set(sources))[:10]:
-        print("NEIGHBORHOOD_NEXT_DETAIL file=" + source.decode("ascii")
+        print("LISTING_FLOOR_PLAN_NEXT_DETAIL file=" + source.decode("ascii")
               + " line=" + (line or b"0").decode("ascii") + " column=" + (column or b"0").decode("ascii"))
-    known_routes = {b"/local-guides", b"/local-guides/compare", b"/search", b"/listing/[id]"}
+    known_routes = {b"/local-guides", b"/search", b"/listing/[id]"}
     paths = re.findall(rb'(?m)(?:prerendering page|Page) "(/[A-Za-z0-9_/\[\]-]+)"', raw)
     for route in sorted(set(paths) & known_routes):
-        print("NEIGHBORHOOD_NEXT_DETAIL route=" + route.decode("ascii"))
+        print("LISTING_FLOOR_PLAN_NEXT_DETAIL route=" + route.decode("ascii"))
     for count in re.findall(rb"(?m)^(?:#|\xe2\x84\xb9) fail ([1-9][0-9]{0,2})$", raw)[:3]:
-        print("NEIGHBORHOOD_NEXT_DETAIL unit_failures=" + count.decode("ascii"))
+        print("LISTING_FLOOR_PLAN_NEXT_DETAIL unit_failures=" + count.decode("ascii"))
     started = b"Creating an optimized production build" in raw or bool(re.search(rb"Next\.js [0-9]+\.[0-9]+\.[0-9]+", raw))
-    print(f"NEIGHBORHOOD_NEXT_DETAIL next_started={int(started)}")
+    print(f"LISTING_FLOOR_PLAN_NEXT_DETAIL next_started={int(started)}")
     for script, line, column in sorted(set(re.findall(
             rb"(?m)^test at (?:/work/)?tests/(listing-export|blog-articles)\.test\.cjs:([0-9]{1,4}):([0-9]{1,4})",
             raw,
     )))[:8]:
-        print(f"NEIGHBORHOOD_NEXT_DETAIL test={script.decode()} line={line.decode()} column={column.decode()}")
+        print(f"LISTING_FLOOR_PLAN_NEXT_DETAIL test={script.decode()} line={line.decode()} column={column.decode()}")
     codes = re.findall(rb"\b(?:ERR_[A-Z0-9_]{3,45}|EACCES|EEXIST|ENOENT|ENOSPC|ENOMEM|SIGKILL|SIGSEGV|EPIPE|MODULE_NOT_FOUND)\b", raw)
     for code in sorted(set(codes))[:14]:
-        print("NEIGHBORHOOD_NEXT_DETAIL native_code=" + code.decode("ascii"))
+        print("LISTING_FLOOR_PLAN_NEXT_DETAIL native_code=" + code.decode("ascii"))
     headers = re.findall(
         rb"(?m)^\s*(?:> )?((?:Error|TypeError|AssertionError|SyntaxError|RangeError|ReferenceError)(?: \[[A-Z0-9_]{3,45}\])?): ([^\r\n]{1,320})",
         raw,
@@ -421,7 +419,7 @@ if sys.argv[3] != "0":
         cleaned = re.sub(rb"[^A-Za-z0-9 .,:!?()_\[\]-]", b" ", cleaned)
         cleaned = b" ".join(cleaned.split())[:192]
         if cleaned:
-            print(f"NEIGHBORHOOD_NEXT_DETAIL exception={kind.decode('ascii')} summary={cleaned.decode('ascii')}")
+            print(f"LISTING_FLOOR_PLAN_NEXT_DETAIL exception={kind.decode('ascii')} summary={cleaned.decode('ascii')}")
     segment = "none"
     tails = {"stdout": [], "stderr": []}
     label = b" landing_declared_full_build_synthetic_input"
@@ -442,18 +440,18 @@ if sys.argv[3] != "0":
             line = re.sub(rb"[^A-Za-z0-9 .,:!?()_\[\]>+&=-]", b" ", line)
             summary = b" ".join(line.split())[:168]
             if summary:
-                print(f"NEIGHBORHOOD_NEXT_SYNTHETIC_TAIL stream={stream} summary={summary.decode('ascii')}")
+                print(f"LISTING_FLOOR_PLAN_NEXT_SYNTHETIC_TAIL stream={stream} summary={summary.decode('ascii')}")
 assert sys.argv[3] == "0"
 assert len(phases) == len(names) and {phase["name"] for phase in phases} == names
 assert all(phase["native_exit"] == 0 and phase["child_group_absent"] == True for phase in phases)
 assert sum(line.startswith(b"CUMULATIVE_LANDING_RESULT ") for line in lines) == 1
-for route in ("local-guides/index.html", "local-guides/compare/index.html", "search/index.html"):
+for route in ("listing/10000000-0000-0000-0000-000000000001/index.html", "search/index.html"):
     path = output / route
     assert path.is_file() and not path.is_symlink()
     data = path.read_bytes()
-    assert b"D01_PRIVATE_EDITORIAL_NOTE" not in data
-    print(f"NEIGHBORHOOD_EXPORT_SHA256 route={route} sha256={sha256(data).hexdigest()}")
-print("NEIGHBORHOOD_NEXT_EXPORT native=0 compare=static guides=static search=static typecheck=success")
+    assert all(token not in data for token in (b"synthetic-original.png", b"synthetic-replacement.jpg"))
+    print(f"LISTING_FLOOR_PLAN_EXPORT_SHA256 route={route} sha256={sha256(data).hexdigest()}")
+print("LISTING_FLOOR_PLAN_NEXT_EXPORT native=0 exact_listing=static search=static private_plan_bytes=absent typecheck=success")
 PY
 verify_frontend_files || die LANDING_BUILD_SOURCE_CHANGED
 
@@ -519,12 +517,12 @@ runtime=(--label "$label=$run_key" --network "container:$pg" --user "$uids" --re
 
 api=$(bounded 25s docker create "${runtime[@]}" --memory 2g --memory-swap 2g \
   --tmpfs /tmp:rw,exec,size=128m --env "ILDR_BROWSER_CI_NONCE=$nonce" \
-  --env "ILDR_NEIGHBORHOOD_APP_COMMIT=$backend_commit" --env "ILDR_NEIGHBORHOOD_APP_TREE=$backend_tree" \
-  --env "ILDR_NEIGHBORHOOD_MIGRATION=$migration_head" \
+  --env "ILDR_FLOOR_PLAN_APP_COMMIT=$backend_commit" --env "ILDR_FLOOR_PLAN_APP_TREE=$backend_tree" \
+  --env "ILDR_FLOOR_PLAN_MIGRATION=$migration_head" \
   --mount "type=bind,src=$backend,dst=/application,readonly" \
   --mount "type=bind,src=$tools,dst=/tools,readonly" \
   --mount "type=bind,src=$state/fixtures,dst=/browser-fixtures" \
-  "$app_image" /usr/local/bin/python -I -B /tools/serve_neighborhood_comparison_fixture.py) || die API_CREATE_FAILED
+  "$app_image" /usr/local/bin/python -I -B /tools/serve_listing_floor_plans_fixture.py) || die API_CREATE_FAILED
 owned "$api" && bounded 25s docker start "$api" >/dev/null || die API_START_FAILED
 dashboard=$(bounded 25s docker create "${runtime[@]}" --memory 512m --memory-swap 512m \
   --mount "type=bind,src=$state/frontend-work/apps/dashboard/dist,dst=/dashboard-dist,readonly" \
@@ -540,7 +538,7 @@ owned "$landing" && bounded 25s docker start "$landing" >/dev/null || die LANDIN
 ready=0
 for ((attempt=0; attempt<90; attempt++)); do
   if [[ -s "$state/fixtures/fixtures.json" ]] && bounded 4s docker exec "$api" /usr/local/bin/python -I -B -c \
-    'from urllib.request import urlopen; assert all(urlopen(url,timeout=1).status==200 for url in ("http://127.0.0.1:8918/health","http://127.0.0.1:4175/","http://127.0.0.1:8917/local-guides/compare/"))' >/dev/null 2>&1; then ready=1; break; fi
+    'from urllib.request import urlopen; assert all(urlopen(url,timeout=1).status==200 for url in ("http://127.0.0.1:8918/health","http://127.0.0.1:4175/","http://127.0.0.1:8917/listing/10000000-0000-0000-0000-000000000001/"))' >/dev/null 2>&1; then ready=1; break; fi
   if [[ $(bounded 5s docker inspect --format '{{.State.Running}}' "$api") != true ]]; then
     if bounded 5s docker logs --tail 120 "$api" >"$state/api-start.log" 2>&1; then
       python3 -I -B - "$state/api-start.log" <<'PY'
@@ -553,7 +551,7 @@ assert len(reports)<=1
 if reports:
     value=json.loads(reports[0]); assert set(value)=={'stage','error_type','fixture_line','sqlstate'}
     assert value['stage'] in {'checkout','claim_database','configure_application','load_application','bootstrap_database',
-        'apply_alembic','seed_accounts','seed_lead','seed_neighborhood_listings',
+        'apply_alembic','seed_accounts','seed_lead','seed_floor_plan_listing',
         'write_fixture','serve_application'}
     assert re.fullmatch(r'[A-Za-z][A-Za-z0-9_]{0,62}',value['error_type'])
     assert value['fixture_line'] is None or type(value['fixture_line']) is int and 0<value['fixture_line']<=1000
@@ -572,7 +570,7 @@ browser=$(bounded 25s docker create "${runtime[@]}" --memory 2g --memory-swap 2g
   --env PLAYWRIGHT_BROWSERS_PATH=/ms-playwright --env ILDR_BROWSER_FIXTURES=/browser-fixtures/fixtures.json \
   --mount "type=bind,src=$state/browser-run,dst=/rehearsal,readonly" \
   --mount "type=bind,src=$state/fixtures,dst=/browser-fixtures,readonly" \
-  "$browser_image" node /rehearsal/run-neighborhood-comparison.mjs) || die BROWSER_CREATE_FAILED
+  "$browser_image" node /rehearsal/run-listing-floor-plans.mjs) || die BROWSER_CREATE_FAILED
 owned "$browser" || die OWNED_BROWSER_REQUIRED
 client_exit=0
 bounded 300s docker start --attach "$browser" >"$state/browser.log" 2>&1 || client_exit=$?
@@ -580,7 +578,7 @@ container_state=$(bounded 15s docker inspect --format '{{.State.ExitCode}} {{.St
 [[ "$container_state" =~ ^[0-9]+\ (true|false)\ (true|false)$ ]] || die BROWSER_NATIVE_STATE_REQUIRED
 printf 'BROWSER_REHEARSAL_NATIVE client=%s state=%s\n' "$client_exit" "$container_state"
 
-python3 -I -B - "$state/browser.log" "$browser_failure_stages" "${browser_checks[@]}" <<'PY' || die NEIGHBORHOOD_BROWSER_RESULT_REQUIRED
+python3 -I -B - "$state/browser.log" "$browser_failure_stages" "${browser_checks[@]}" <<'PY' || die LISTING_FLOOR_PLAN_BROWSER_RESULT_REQUIRED
 from pathlib import Path
 import json
 import re
@@ -590,7 +588,7 @@ path = Path(sys.argv[1])
 assert path.stat().st_size <= 131072
 lines = path.read_bytes().splitlines()
 allowed_stages = set(sys.argv[2].split(','))
-failure = b'NEIGHBORHOOD_BROWSER_FAILURE '
+failure = b'LISTING_FLOOR_PLAN_BROWSER_FAILURE '
 failures = [line[len(failure):] for line in lines if line.startswith(failure)]
 assert len(failures) <= 1
 if failures:
@@ -599,7 +597,7 @@ if failures:
     print(failure.decode('ascii') + failures[0].decode('ascii'))
     raise SystemExit(1)
 
-prefix = b'NEIGHBORHOOD_BROWSER '
+prefix = b'LISTING_FLOOR_PLAN_BROWSER '
 matches = [line[len(prefix):] for line in lines if line.startswith(prefix)]
 assert len(matches) == 1 and len(matches[0]) <= 8192
 value = json.loads(matches[0])
@@ -615,5 +613,5 @@ api_state=$(bounded 15s docker inspect --format '{{.State.ExitCode}} {{.State.Ru
 printf 'BROWSER_API_FIXTURE_SHUTDOWN state=%s login_file=absent\n' "$api_state"
 backend_status=$(git -C "$backend" status --porcelain=v1 --untracked-files=all) || die API_SOURCE_CHANGED
 [[ -z "$backend_status" ]] || die API_SOURCE_CHANGED
-printf 'NEIGHBORHOOD_COMPARISON_ACCEPTANCE operations=%s frontend=%s frontend_tree=%s backend=%s backend_tree=%s migration=%s postgres_version_num=%s run=%s attempt=1\n' \
+printf 'LISTING_FLOOR_PLAN_ACCEPTANCE operations=%s frontend=%s frontend_tree=%s backend=%s backend_tree=%s migration=%s postgres_version_num=%s run=%s attempt=1\n' \
   "$GITHUB_SHA" "$frontend_commit" "$frontend_tree" "$backend_commit" "$backend_tree" "$migration_head" "$postgres_version_num" "$GITHUB_RUN_ID"

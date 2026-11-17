@@ -1,8 +1,8 @@
-name: Isolated neighborhood editorial and public comparison browser rehearsal
+name: Isolated approved listing floor plan browser rehearsal
 
 on:
   push:
-    branches: [codex-ci-neighborhood-comparison-browser-20261117-v6]
+    branches: [codex-listing-floor-plans-browser-ci-20261117]
 
 permissions:
   contents: read
@@ -31,17 +31,17 @@ jobs:
           path: browser-ops
           fetch-depth: 2
           persist-credentials: false
-      - name: Read exact neighborhood comparison frontend
+      - name: Read exact listing floor plan frontend
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: ilovedrrealty/iLoveDRRealty
-          ref: f332f37ca1a7c17283071c551792985af232e287
+          ref: 74e81bd8680565dc68b532a6b7871fe9b5db2e82
           path: frontend-base
           persist-credentials: false
       - name: Read exact backend application
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: e03c968bed233362de4ec69c76c4432af184d341
+          ref: eb0a47c7fe18feb5c0695608bc0ebd6d5c048298
           path: browser-backend
           persist-credentials: false
       - name: Read accepted migration dependency recipe
@@ -56,7 +56,7 @@ jobs:
           ref: d49acd7d48e92dac6d06b1678570bc137fb6a5ba
           path: landing-relay
           persist-credentials: false
-      - name: Verify normal Editorial publication and public mobile comparison
+      - name: Verify Admin staging, owner approval and public mobile floor plan lifecycle
         shell: bash
         run: |
           set -euo pipefail
