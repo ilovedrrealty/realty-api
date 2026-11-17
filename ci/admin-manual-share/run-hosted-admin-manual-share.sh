@@ -8,7 +8,7 @@ bounded() { timeout --kill-after=8s "$@"; }
 
 [[ $# == 4 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api ]] || die CI_REQUIRED
 [[ ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 && ${GITHUB_RUN_ATTEMPT:-} == 1 ]] || die STANDARD_LINUX_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-editorial-20261117 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
+[[ ${GITHUB_REF:-} == refs/heads/codex-ci-spatial-search-20261117 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 
 ops="$1"; frontend="$2"; backend="$3"; migration="$4"
 [[ "$ops" == "$GITHUB_WORKSPACE/browser-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-base" &&
@@ -18,12 +18,12 @@ for checkout in "$ops" "$frontend" "$backend" "$migration"; do
   checkout_status=$(git -C "$checkout" status --porcelain=v1 --untracked-files=all) || die CLEAN_CHECKOUT_REQUIRED
   [[ $(realpath "$checkout") == "$checkout" && -z "$checkout_status" ]] || die CLEAN_CHECKOUT_REQUIRED
 done
-[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == 91eae5e3ec2c0172e206f88f4050a0d1a6eaf1c4 ]] ||
+[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == d07eb04416d5c92173a9a65fe0f4ec66bf1fb999 ]] ||
   die EXACT_OPERATIONS_PARENT_REQUIRED
-frontend_commit=f628e36eebd93eaef3a8193c74b2f6b1c5d3cc74
-frontend_tree=e02c1cd27fa79fc7dd0da10930d94cd950594778
-backend_commit=483cb04f149a003dfca35fdd6b19ec43f942d127
-backend_tree=a7d4526175f85ffed2ef668e72e361522612bba6
+frontend_commit=d38e372a5a41ccc4f1baa8cc857b7350136f81e2
+frontend_tree=effb45e3eaeaba4d6e99b16175ca47de2553506f
+backend_commit=833d35becff5a75ddfa3cd02fb999785c07bcdfa
+backend_tree=e5f3ca52624af829f15b008cf0a51cf763ae72dc
 migration_head=b35e60f12da4
 [[ $(git -C "$frontend" rev-parse HEAD) == "$frontend_commit" &&
    $(git -C "$frontend" rev-parse 'HEAD^{tree}') == "$frontend_tree" ]] || die EXACT_FRONTEND_REQUIRED
@@ -149,6 +149,8 @@ printf '%s  %s\n' \
   6f2307b05bcfc0c1fc3653f91a575ccb46af70afc5e2b591f63299a13b1acdea "$state/frontend-work/tests/property-viewings.test.cjs" \
   99f79eb9cb04bcff5a0979c730f7c9189bb9bdc40b9b3bbca20fd8850d1f231a "$state/frontend-work/tests/editorial-admin.test.cjs" \
   e9c35cc7feee51f722f9a592052e6034b00e1aed3cb6d9551cdbf6878a1f89a0 "$state/frontend-work/tests/public-editorial.test.cjs" \
+  9b2fc413ff653011eed0e127ccea3db23d326a47a85040151c99da488b8b494d "$state/frontend-work/tests/search-map.test.cjs" \
+  7d6e336151b00f9aed669b088f18a76ca9b9fd2e1c7e75dbcb44f9e4d22e3655 "$state/frontend-work/tests/spatial-search-geometry.test.cjs" \
   | sha256sum --check --status || die EXACT_PACKAGE_AND_TEST_PINS_REQUIRED
 
 prepare=(--label "$label=$run_key" --user "$uids" --read-only --cap-drop ALL --security-opt no-new-privileges:true
@@ -322,6 +324,24 @@ expected = (f'# tests {count}'.encode(), f'# pass {count}'.encode(), b'# fail 0'
 assert all(lines.count(line) == 1 for line in expected)
 print(f'EDITORIAL_FRONTEND_CONTRACTS native=0 tests={count} pass={count}')
 PY
+if ! bounded 120s docker run "${prepare[@]}" --network none --workdir /work \
+  --mount "type=bind,src=$state/frontend-work,dst=/work,readonly" "$node_image" \
+  env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp CI=true \
+  node --test --test-reporter=tap tests/search-map.test.cjs tests/spatial-search-geometry.test.cjs \
+  >"$state/spatial-contracts.log" 2>&1; then
+  die OFFLINE_SPATIAL_CONTRACTS_FAILED
+fi
+python3 -I -B - "$state/spatial-contracts.log" <<'PY' || die OFFLINE_SPATIAL_CONTRACT_RESULT_REQUIRED
+from pathlib import Path
+import sys
+path = Path(sys.argv[1])
+count = 19
+assert path.stat().st_size <= 32768
+lines = path.read_bytes().splitlines()
+expected = (f'# tests {count}'.encode(), f'# pass {count}'.encode(), b'# fail 0', b'# skipped 0', b'# todo 0')
+assert all(lines.count(line) == 1 for line in expected)
+print(f'SPATIAL_SEARCH_FRONTEND_CONTRACTS native=0 tests={count} pass={count}')
+PY
 if ! bounded 360s docker run "${prepare[@]}" --network none --workdir /work \
   --mount "type=bind,src=$state/frontend-work,dst=/work" "$node_image" \
   env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp CI=true NODE_OPTIONS=--max-old-space-size=1536 \
@@ -436,6 +456,8 @@ for name, marker, count in (
     ('shortlists', 'SHARED_SHORTLIST', 6),
     ('property_viewings', 'PROPERTY_VIEWINGS', 9),
     ('editorial', 'EDITORIAL', 7),
+    ('listing_search', 'SPATIAL_SEARCH', 19),
+    ('search_geometry', 'SPATIAL_GEOMETRY', 3),
 ):
     spec = spec_from_file_location(name + '_tests', app / f'tests/test_{name}.py')
     tests = module_from_spec(spec)
@@ -452,9 +474,9 @@ import re, sys
 from pathlib import Path
 path = Path(sys.argv[1])
 assert path.stat().st_size <= 131072
-pattern = rb'(?:STAY_ARRIVAL|SHARED_SHORTLIST|PROPERTY_VIEWINGS|EDITORIAL)_BACKEND_CONTRACTS tests=[0-9]+ failed=[0-9]+ skipped=[0-9]+ methods=[a-z0-9_,]+'
+pattern = rb'(?:STAY_ARRIVAL|SHARED_SHORTLIST|PROPERTY_VIEWINGS|EDITORIAL|SPATIAL_SEARCH|SPATIAL_GEOMETRY)_BACKEND_CONTRACTS tests=[0-9]+ failed=[0-9]+ skipped=[0-9]+ methods=[a-z0-9_,]+'
 matches = [line for line in path.read_bytes().splitlines() if re.fullmatch(pattern, line)]
-assert 1 <= len(matches) <= 4
+assert 1 <= len(matches) <= 6
 for line in matches:
     print(line.decode('ascii'))
 PY

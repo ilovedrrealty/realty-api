@@ -1,8 +1,8 @@
-name: Isolated bilingual editorial lifecycle rehearsal
+name: Isolated spatial search and editorial regression rehearsal
 
 on:
   push:
-    branches: [codex-ci-editorial-20261117]
+    branches: [codex-ci-spatial-search-20261117]
 
 permissions:
   contents: read
@@ -31,17 +31,17 @@ jobs:
           path: browser-ops
           fetch-depth: 2
           persist-credentials: false
-      - name: Read exact Admin editorial and public reading frontend
+      - name: Read exact spatial search frontend and editorial regression
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: ilovedrrealty/iLoveDRRealty
-          ref: f628e36eebd93eaef3a8193c74b2f6b1c5d3cc74
+          ref: d38e372a5a41ccc4f1baa8cc857b7350136f81e2
           path: frontend-base
           persist-credentials: false
       - name: Read exact backend application
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 483cb04f149a003dfca35fdd6b19ec43f942d127
+          ref: 833d35becff5a75ddfa3cd02fb999785c07bcdfa
           path: browser-backend
           persist-credentials: false
       - name: Read accepted migration dependency recipe
@@ -50,7 +50,7 @@ jobs:
           ref: c193a925ba57ea2d67ea48c44e5262817885c8a2
           path: migration-relay
           persist-credentials: false
-      - name: Verify private drafts and bilingual review, publication and withdrawal
+      - name: Verify spatial listing filters and retain the editorial browser flow
         shell: bash
         run: |
           set -euo pipefail
