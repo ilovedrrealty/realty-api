@@ -313,7 +313,7 @@ async function uploads(buyer, room, png) {
 async function approve(page, version, path, grant) {
   await button(documentRow(page), 'Review version ' + version.number).click()
   const review = dialog(page, 'Review document version')
-  await review.getByText('Version ' + version.number).waitFor()
+  await text(review, documentTitle + ' · Version ' + version.number).waitFor()
   const buyer = label(review, 'Allow the buyer to download')
   if (grant) {
     await buyer.check()
@@ -332,7 +332,8 @@ async function verifyBytes(page, path, file) {
   const pending = page.waitForEvent('download', { timeout: 12_000 }).catch(() => null)
   const response = await action(page, 'GET', path + '/download', 200, button(documentRow(page), 'Download version 1'))
   check(response.headers()['content-type'] === file.mimeType
-    && response.headers()['content-disposition']?.includes(file.name), 'EXACT_ATTACHMENT_HEADERS_REQUIRED')
+    && response.headers()['content-disposition'] === "attachment; filename*=UTF-8''" + encodeURIComponent(file.name)
+    && response.headers()['x-content-type-options'] === 'nosniff', 'EXACT_ATTACHMENT_HEADERS_REQUIRED')
   const download = await pending
   check(download?.suggestedFilename() === file.name, 'EXACT_ATTACHMENT_NAME_REQUIRED')
   const stream = await download.createReadStream()
@@ -373,7 +374,7 @@ async function main() {
     step = 'staff_document_panel'
     await refreshRoom(room.page, room.path)
     await section(room.page, 'Documents')
-    await text(documentRow(room.page), 'Version 2').waitFor()
+    await button(documentRow(room.page), 'Review version 2').waitFor()
     step = 'pdf_review'
     await approve(room.page, docs.first, docs.firstPath, participant.member.grant_id)
     step = 'png_review'
@@ -387,8 +388,9 @@ async function main() {
     await section(docs.page, 'Documents')
     await verifyBytes(docs.page, docs.firstPath, docs.pdf)
     step = 'withheld'
-    await text(documentRow(docs.page), 'Version 2').waitFor()
-    check(await button(documentRow(docs.page), 'Download version 2').count() === 0, 'WITHHELD_DOWNLOAD_CONTROL_VISIBLE')
+    const held = documentRow(docs.page).getByRole('listitem').filter({ has: text(docs.page, docs.image.name) })
+    await text(held, 'Version 2 · Approved').waitFor()
+    check(await button(held, 'Download version 2').count() === 0, 'WITHHELD_DOWNLOAD_CONTROL_VISIBLE')
     await request(buyer, docs.latestPath + '/download', { expected: 404 })
     await request(unassigned, room.path, { expected: 404 })
     await request(unassigned, docs.firstPath + '/download', { expected: 404 })
@@ -425,6 +427,7 @@ async function main() {
     const members = await section(room.page, 'Members')
     await button(rowFor(members, professionalName), 'Revoke professional access').click()
     const confirmation = dialog(room.page, 'Revoke professional access')
+    await text(confirmation, 'Remove this professional’s access to the room?').waitFor()
     await action(room.page, 'POST', room.path + '/members/' + participant.member.grant_id + '/revoke', 200,
       button(confirmation, 'Confirm access removal'))
     await confirmation.waitFor({ state: 'hidden' })

@@ -2,7 +2,7 @@ name: Isolated transaction room Dashboard rehearsal
 
 on:
   push:
-    branches: [codex-ci-transaction-room-browser-20261117]
+    branches: [codex-ci-transaction-room-browser-20261117-v2]
 
 permissions:
   contents: read
