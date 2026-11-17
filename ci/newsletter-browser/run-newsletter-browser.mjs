@@ -24,6 +24,7 @@ const copy = {
 }
 const checks = []
 let stage = 'fixture'
+let responseEvidence = null
 let browser
 const contexts = []
 const advance = name => { stage = name }
@@ -73,12 +74,25 @@ async function expectRow(context, lang, status, mailCount) {
 }
 
 async function safeResponse(response, expectedCode, expectedBody) {
-  assert.equal(response.status(), expectedCode)
+  const originalStage = stage
+  advance(originalStage + '_response_status')
   const headers = response.headers()
+  const policy = headers['referrer-policy']
+  responseEvidence = {
+    status: response.status(), cache: headers['cache-control'] === 'no-store' ? 'no-store' : 'other',
+    referrer: policy === undefined ? 'missing'
+      : ['no-referrer', 'strict-origin-when-cross-origin'].includes(policy) ? policy : 'other',
+  }
+  assert.equal(response.status(), expectedCode)
+  advance(originalStage + '_response_cache')
   assert.equal(headers['cache-control'], 'no-store')
+  advance(originalStage + '_response_referrer')
   assert.equal(headers['referrer-policy'], 'no-referrer')
+  advance(originalStage + '_response_cookie')
   assert.equal(headers['set-cookie'], undefined)
+  advance(originalStage + '_response_body')
   assert.deepEqual(await response.json(), expectedBody)
+  advance(originalStage)
 }
 
 async function mobileBox(page, locator, minimumHeight = 44) {
@@ -289,13 +303,16 @@ try {
   assert.equal(checks.length, 16)
   console.log('NEWSLETTER_BROWSER_ACCEPTANCE ' + JSON.stringify({
     checks, viewport: 390, locales: ['en', 'es'], mail_messages: 2, live_messages: 0,
-    application: '4c4d2a71f406a7d552cc2e00a38f346b180fcf45',
+    application: '7c0d04bdb5e2935f2dc7ddfd5fd3bfc75709d90b',
     frontend: '4d0a99e0bef524fe00eab5f2c0916d91768a4efb',
     authoritative_rows: 2, final_status: 'unsubscribed', action_external_requests: 0,
   }))
 } catch (error) {
   const kind = /^[A-Za-z][A-Za-z0-9_]{0,62}$/.test(error?.name ?? '') ? error.name : 'UnhandledError'
-  console.log('NEWSLETTER_BROWSER_FAILURE ' + JSON.stringify({ stage, error_type: kind }))
+  const match = /\/run-newsletter-browser\.mjs:([1-9][0-9]{0,3}):[1-9][0-9]{0,3}/.exec(error?.stack ?? '')
+  console.log('NEWSLETTER_BROWSER_FAILURE ' + JSON.stringify({
+    stage, error_type: kind, driver_line: match ? Number(match[1]) : null, response: responseEvidence,
+  }))
   process.exitCode = 1
 } finally {
   for (const context of contexts) await context.close().catch(() => {})

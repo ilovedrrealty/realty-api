@@ -2,7 +2,7 @@ name: Isolated mobile bilingual newsletter browser journey
 
 on:
   push:
-    branches: [codex-ci-newsletter-browser-20261117]
+    branches: [codex-ci-newsletter-browser-20261117-v2]
 
 permissions:
   contents: read
@@ -54,7 +54,7 @@ jobs:
       - name: Read exact newsletter backend
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 4c4d2a71f406a7d552cc2e00a38f346b180fcf45
+          ref: 7c0d04bdb5e2935f2dc7ddfd5fd3bfc75709d90b
           path: browser-backend
           persist-credentials: false
       - name: Read accepted Python dependency recipe

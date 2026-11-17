@@ -8,7 +8,7 @@ bounded() { timeout --kill-after=8s "$@"; }
 
 [[ $# == 6 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 &&
-   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-newsletter-browser-20261117 &&
+   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-newsletter-browser-20261117-v2 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die HOSTED_EXACT_EVENT_REQUIRED
 ops="$1"; frontend="$2"; live="$3"; relay="$4"; backend="$5"; migration="$6"
 [[ "$ops" == "$GITHUB_WORKSPACE/build-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-base" &&
@@ -21,12 +21,12 @@ for checkout in "$ops" "$frontend" "$live" "$relay" "$backend" "$migration"; do
     die CLEAN_CHECKOUT_REQUIRED
 done
 [[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" &&
-   $(git -C "$ops" rev-parse 'HEAD^') == dc6f985c4679145e815363a0cd915387c473fab9 ]] || die EXACT_OPERATIONS_REQUIRED
+   $(git -C "$ops" rev-parse 'HEAD^') == b2358107b96441b832fab16e8feb07ea79ec6bec ]] || die EXACT_OPERATIONS_REQUIRED
 delta=$(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) || die EXACT_DELTA_REQUIRED
 [[ "$delta" == $'.github/workflows/newsletter-browser.yml\nci/newsletter-browser/run-hosted-newsletter-browser.sh\nci/newsletter-browser/run-newsletter-browser.mjs\nci/newsletter-browser/serve_newsletter_fixture.py' ]] ||
   die EXACT_DELTA_REQUIRED
-backend_commit=4c4d2a71f406a7d552cc2e00a38f346b180fcf45
-backend_tree=c986f764dd3496a6da91175bc3d7f8231d1fe9b3
+backend_commit=7c0d04bdb5e2935f2dc7ddfd5fd3bfc75709d90b
+backend_tree=8604c75d9556276f06567dde5e8a5eef5d4d730f
 [[ $(git -C "$backend" rev-parse HEAD) == "$backend_commit" &&
    $(git -C "$backend" rev-parse 'HEAD^{tree}') == "$backend_tree" &&
    $(git -C "$migration" rev-parse HEAD) == c193a925ba57ea2d67ea48c44e5262817885c8a2 ]] ||
@@ -545,8 +545,15 @@ results = []
 for line in data.splitlines():
     if line.startswith(b'NEWSLETTER_BROWSER_FAILURE '):
         value = json.loads(line.split(b' ', 1)[1])
-        assert set(value) == {'stage', 'error_type'}
-        assert all(re.fullmatch(r'[A-Za-z][A-Za-z0-9_]{0,62}', text) for text in value.values())
+        assert set(value) == {'stage', 'error_type', 'driver_line', 'response'}
+        assert all(re.fullmatch(r'[A-Za-z][A-Za-z0-9_]{0,62}', value[key]) for key in ('stage', 'error_type'))
+        assert value['driver_line'] is None or type(value['driver_line']) is int and 1 <= value['driver_line'] <= 9999
+        response = value['response']
+        if response is not None:
+            assert set(response) == {'status', 'cache', 'referrer'}
+            assert type(response['status']) is int and 100 <= response['status'] <= 599
+            assert response['cache'] in {'no-store', 'other'}
+            assert response['referrer'] in {'missing', 'no-referrer', 'strict-origin-when-cross-origin', 'other'}
         print('NEWSLETTER_BROWSER_FAILURE ' + json.dumps(value))
         failures.append(value)
     if line.startswith(b'NEWSLETTER_BROWSER_ACCEPTANCE '):
@@ -561,7 +568,7 @@ expected = [f'mobile_{lang}_{check}' for lang in ('en', 'es') for check in (
 )]
 assert result == {
     'checks': expected, 'viewport': 390, 'locales': ['en', 'es'], 'mail_messages': 2,
-    'live_messages': 0, 'application': '4c4d2a71f406a7d552cc2e00a38f346b180fcf45',
+    'live_messages': 0, 'application': '7c0d04bdb5e2935f2dc7ddfd5fd3bfc75709d90b',
     'frontend': '4d0a99e0bef524fe00eab5f2c0916d91768a4efb', 'authoritative_rows': 2,
     'final_status': 'unsubscribed', 'action_external_requests': 0,
 }
