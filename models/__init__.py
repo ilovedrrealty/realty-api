@@ -18,7 +18,7 @@ from .bulk_import_job import BulkImportJob
 from .website_settings import WebsiteSettings, WebsiteSettingsRevision
 from .editorial import EditorialEvent, EditorialPage, EditorialRevision
 from .development_inventory import DevelopmentInventory, DevelopmentInventoryEvent, DevelopmentInventoryRevision
-from .seller_valuation import SellerValuationIntake
+from .seller_valuation import SellerValuationComparable, SellerValuationFollowUp, SellerValuationIntake, SellerValuationWorkspace
 from .professional_profile import ProfessionalProfile, ProfessionalProfileRevision
 from .research_workspace import ResearchWorkspace
 from .lead_delivery import LeadDeliveryJob, LeadDeliveryWorkerState

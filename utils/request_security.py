@@ -4,7 +4,7 @@ from fastapi import HTTPException, Request
 from config import settings
 
 
-def require_json_mutation(request: Request) -> None:
+def require_json_mutation(request: Request, *, bodyless_delete: bool = False) -> None:
     """Block simple cross-site POSTs, including JSON without a media type.
 
     CORS alone does not stop a browser from sending a credentialed simple
@@ -14,7 +14,7 @@ def require_json_mutation(request: Request) -> None:
     if request.method in {"GET", "HEAD", "OPTIONS"}:
         return
     media_type = request.headers.get("content-type", "").split(";", 1)[0].strip().lower()
-    if media_type != "application/json":
+    if media_type != "application/json" and not (bodyless_delete and request.method == "DELETE" and not media_type):
         raise HTTPException(415, "Send this request as application/json")
 
     origin = request.headers.get("origin")

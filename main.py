@@ -17,6 +17,7 @@ from routes import shortlists
 from routes import viewings
 from routes import editorial
 from routes import development_inventory
+from routes import seller_valuation
 from routes import property_network
 from routes import service_workflow
 from routes import analytics, lead_delivery as lead_delivery_routes, property_management, location_review, owner_leads
@@ -194,6 +195,7 @@ app.include_router(shortlists.router)
 app.include_router(viewings.router)
 app.include_router(editorial.router)
 app.include_router(development_inventory.router)
+app.include_router(seller_valuation.router)
 app.include_router(chat.router)
 app.include_router(webhooks.router)
 app.include_router(stats.router)
