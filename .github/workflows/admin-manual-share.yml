@@ -2,7 +2,7 @@ name: Isolated approved listing floor plan browser rehearsal
 
 on:
   push:
-    branches: [codex-listing-floor-plans-browser-ci-20261117-v4]
+    branches: [codex-listing-floor-plans-browser-ci-20261117-v5]
 
 permissions:
   contents: read

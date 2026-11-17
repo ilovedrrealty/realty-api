@@ -188,11 +188,23 @@ function approvedImageHeaders(headers, expected) {
   check(headers['x-content-type-options'] === 'nosniff', 'APPROVED_IMAGE_NOSNIFF_MISSING')
 }
 
-async function approvedBytes(response, expected) {
+async function approvedImageResponse(response, expected) {
   current(response)
   check(response.status() === 200, 'APPROVED_IMAGE_STATUS_MISMATCH', response.status())
   approvedImageHeaders(await transmittedHeaders(response, 'TRANSMITTED_RESPONSE_HEADERS_DEADLINE'), expected)
-  check(sha(await response.body()) === sha(expected.buffer), 'APPROVED_IMAGE_DIGEST_MISMATCH')
+}
+
+async function devtoolsComparison(response, expected) {
+  let deadline
+  try {
+    const comparison = await Promise.race([
+      response.body().then(bytes => sha(bytes) === sha(expected.buffer) ? 'exact' : 'different').catch(() => 'unavailable'),
+      new Promise(resolve => { deadline = setTimeout(() => resolve('unavailable'), 800) }),
+    ])
+    console.log('LISTING_FLOOR_PLAN_BROWSER_DEVTOOLS ' + stage + ' ' + comparison)
+  } finally {
+    clearTimeout(deadline)
+  }
 }
 
 async function publicWitness(context, path, expected) {
@@ -214,10 +226,19 @@ async function publicWitness(context, path, expected) {
 async function shownImage(region, label, expected) {
   const image = control(region, 'img', label)
   await image.waitFor()
-  check(await image.evaluate(async (element, [width, height]) => {
+  const actual = await image.evaluate(async (element, { width, height }) => {
+    if (!element.src.startsWith('blob:') || new URL(element.src).origin !== location.origin) return null
     await element.decode()
-    return element.src.startsWith('blob:') && element.naturalWidth === width && element.naturalHeight === height
-  }, [expected.width, expected.height]), 'EXACT_APPROVED_BLOB_IMAGE_REQUIRED')
+    if (element.naturalWidth !== width || element.naturalHeight !== height) return null
+    const response = await fetch(element.src, { credentials: 'omit', redirect: 'error' })
+    if (!response.ok) return null
+    const blob = await response.blob()
+    const hash = await crypto.subtle.digest('SHA-256', await blob.arrayBuffer())
+    const sha256 = Array.from(new Uint8Array(hash), byte => byte.toString(16).padStart(2, '0')).join('')
+    return { size: blob.size, type: blob.type, sha256 }
+  }, { width: expected.width, height: expected.height })
+  check(actual && actual.size === expected.buffer.length && actual.type === expected.mimeType
+    && actual.sha256 === sha(expected.buffer), 'RENDERED_IMAGE_DIGEST_MISMATCH')
 }
 
 async function transmittedHeaders(message, reason = 'TRANSMITTED_HEADERS_DEADLINE') {
@@ -260,8 +281,10 @@ async function viewVisitor(page, copy, published, expected) {
   ])
   const headers = await transmittedHeaders(content.request())
   check(!headers.cookie && !headers.authorization, 'APPROVED_IMAGE_REQUEST_MUST_BE_ANONYMOUS')
-  await approvedBytes(content, expected)
+  await approvedImageResponse(content, expected)
   await shownImage(region, copy.title, expected)
+  console.log('LISTING_FLOOR_PLAN_BROWSER_RENDERED ' + stage + ' sha256=exact mime=exact dimensions=exact')
+  await devtoolsComparison(content, expected)
   const dimensions = await page.evaluate(() => ({
     screen: document.documentElement.clientWidth, content: document.documentElement.scrollWidth, touch: navigator.maxTouchPoints,
   }))
@@ -313,7 +336,8 @@ async function run(browser, fixture) {
     page.waitForResponse(response => apiResponse(response, adminPath + '/draft' + firstContent)),
     button(editor, 'Preview draft').click(),
   ])
-  await approvedBytes(preview, fixture.original)
+  await approvedImageResponse(preview, fixture.original)
+  check(sha(await preview.body()) === sha(fixture.original.buffer), 'PRIVATE_IMAGE_DIGEST_MISMATCH')
   await shownImage(editor, 'Draft property floor plan', fixture.original)
   await button(editor, 'Close preview').click()
   checks.push('normal_admin_edit_stages_and_previews_exact_private_png')

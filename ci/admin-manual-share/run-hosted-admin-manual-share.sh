@@ -8,7 +8,7 @@ bounded() { timeout --kill-after=8s "$@"; }
 
 [[ $# == 5 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api ]] || die CI_REQUIRED
 [[ ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 && ${GITHUB_RUN_ATTEMPT:-} == 1 ]] || die STANDARD_LINUX_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-listing-floor-plans-browser-ci-20261117-v4 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
+[[ ${GITHUB_REF:-} == refs/heads/codex-listing-floor-plans-browser-ci-20261117-v5 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 
 ops="$1"; frontend="$2"; backend="$3"; migration="$4"; landing_relay="$5"
 [[ "$ops" == "$GITHUB_WORKSPACE/browser-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-base" &&
@@ -19,7 +19,7 @@ for checkout in "$ops" "$frontend" "$backend" "$migration" "$landing_relay"; do
   checkout_status=$(git -C "$checkout" status --porcelain=v1 --untracked-files=all) || die CLEAN_CHECKOUT_REQUIRED
   [[ $(realpath "$checkout") == "$checkout" && -z "$checkout_status" ]] || die CLEAN_CHECKOUT_REQUIRED
 done
-[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == 69057fd94c9268c9d0e939669bd49732f2dfaa77 ]] ||
+[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == e0a772753aea91e872631b32503fe760abd5c7e3 ]] ||
   die EXACT_OPERATIONS_PARENT_REQUIRED
 operations_delta=$(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) || die EXACT_OPERATIONS_DELTA_REQUIRED
 [[ "$operations_delta" == $'.github/workflows/admin-manual-share.yml\nci/admin-manual-share/run-hosted-admin-manual-share.sh\nci/admin-manual-share/run-listing-floor-plans.mjs' ]] ||
@@ -606,6 +606,18 @@ assert len(witnesses) <= 4
 for witness in witnesses:
     assert re.fullmatch(rb'(?:public_english|public_spanish|stage_replacement|publish_replacement) status=200 headers=exact sha256=exact', witness)
     print(witness_marker.decode('ascii') + witness.decode('ascii'))
+render_marker = b'LISTING_FLOOR_PLAN_BROWSER_RENDERED '
+renders = [line[len(render_marker):] for line in lines if line.startswith(render_marker)]
+assert len(renders) <= 4
+for render in renders:
+    assert re.fullmatch(rb'(?:public_english|public_spanish|stage_replacement|publish_replacement) sha256=exact mime=exact dimensions=exact', render)
+    print(render_marker.decode('ascii') + render.decode('ascii'))
+devtools_marker = b'LISTING_FLOOR_PLAN_BROWSER_DEVTOOLS '
+comparisons = [line[len(devtools_marker):] for line in lines if line.startswith(devtools_marker)]
+assert len(comparisons) <= 4
+for comparison in comparisons:
+    assert re.fullmatch(rb'(?:public_english|public_spanish|stage_replacement|publish_replacement) (?:exact|different|unavailable)', comparison)
+    print(devtools_marker.decode('ascii') + comparison.decode('ascii'))
 failure = b'LISTING_FLOOR_PLAN_BROWSER_FAILURE '
 failures = [line[len(failure):] for line in lines if line.startswith(failure)]
 assert len(failures) <= 1
@@ -621,7 +633,7 @@ assert len(matches) == 1 and len(matches[0]) <= 8192
 value = json.loads(matches[0])
 assert value == {'status': 'PASS', 'checks': sys.argv[3:]}
 assert set(stages) == {stage.encode('ascii') for stage in allowed_stages}
-assert len(geometries) == len(witnesses) == 4
+assert len(geometries) == len(witnesses) == len(renders) == 4
 print(prefix.decode('ascii') + json.dumps(value, separators=(',', ':')))
 PY
 [[ "$client_exit" == 0 && "$container_state" == '0 false false' ]] || die NATIVE_BROWSER_FAILED
