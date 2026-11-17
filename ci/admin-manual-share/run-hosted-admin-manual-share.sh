@@ -8,7 +8,7 @@ bounded() { timeout --kill-after=8s "$@"; }
 
 [[ $# == 4 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api ]] || die CI_REQUIRED
 [[ ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 && ${GITHUB_RUN_ATTEMPT:-} == 1 ]] || die STANDARD_LINUX_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-seller-valuation-browser-20261117 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
+[[ ${GITHUB_REF:-} == refs/heads/codex-ci-seller-valuation-browser-20261117-v2 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 
 ops="$1"; frontend="$2"; backend="$3"; migration="$4"
 [[ "$ops" == "$GITHUB_WORKSPACE/browser-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-base" &&
@@ -18,12 +18,12 @@ for checkout in "$ops" "$frontend" "$backend" "$migration"; do
   checkout_status=$(git -C "$checkout" status --porcelain=v1 --untracked-files=all) || die CLEAN_CHECKOUT_REQUIRED
   [[ $(realpath "$checkout") == "$checkout" && -z "$checkout_status" ]] || die CLEAN_CHECKOUT_REQUIRED
 done
-[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == ddaa99609b6eed3943eb143e6a7ebbefa7235e62 ]] ||
+[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == 50bc0e7194023cfb79914150ea36eda0fea8bce1 ]] ||
   die EXACT_OPERATIONS_PARENT_REQUIRED
 frontend_commit=35f6380f8a3046cd1b3e8768f4207e8b2c31be3c
 frontend_tree=c52b762985864e63931adc2b022fa14e3a427332
-backend_commit=8936bec9f42f2affed00cea7cf952f49535898bb
-backend_tree=ff89fa613e001bbc5564e8da9ea778ada69329c1
+backend_commit=8bae14c21fdeeeacaf97e7913d530e7cc0d81557
+backend_tree=f9542937093eebee1806fe8d9065c496dd4db30f
 migration_head=17d8b2c40aa6
 [[ $(git -C "$frontend" rev-parse HEAD) == "$frontend_commit" &&
    $(git -C "$frontend" rev-parse 'HEAD^{tree}') == "$frontend_tree" ]] || die EXACT_FRONTEND_REQUIRED
@@ -560,11 +560,12 @@ assert log.stat().st_size <= 131072
 reports=[line[len(prefix):] for line in log.read_bytes().splitlines() if line.startswith(prefix)]
 assert len(reports)<=1
 if reports:
-    value=json.loads(reports[0]); assert set(value)=={'stage','error_type','fixture_line'}
+    value=json.loads(reports[0]); assert set(value)=={'stage','error_type','fixture_line','sqlstate'}
     assert value['stage'] in {'checkout','claim_database','configure_application','load_application','bootstrap_database',
         'apply_alembic','seed_accounts','seed_lead','seed_valuation','write_fixture','serve_application'}
     assert re.fullmatch(r'[A-Za-z][A-Za-z0-9_]{0,62}',value['error_type'])
     assert value['fixture_line'] is None or type(value['fixture_line']) is int and 0<value['fixture_line']<=1000
+    assert value['sqlstate'] is None or value['stage']=='apply_alembic' and re.fullmatch(r'[0-9A-Z]{5}',value['sqlstate'])
     print(prefix.decode()+json.dumps(value,sort_keys=True,separators=(',',':')))
 PY
     fi

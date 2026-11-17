@@ -76,7 +76,10 @@ if __name__ == "__main__":
         kind = type(error).__name__
         if not re.fullmatch(r"[A-Za-z][A-Za-z0-9_]{0,62}", kind):
             kind = "UnhandledError"
+        sqlstate = getattr(getattr(error, "orig", None), "pgcode", None)
+        if fixture.stage != "apply_alembic" or not isinstance(sqlstate, str) or not re.fullmatch(r"[0-9A-Z]{5}", sqlstate):
+            sqlstate = None
         print("BROWSER_API_FIXTURE_FAILURE " + json.dumps({
-            "stage": fixture.stage, "error_type": kind, "fixture_line": None,
+            "stage": fixture.stage, "error_type": kind, "fixture_line": None, "sqlstate": sqlstate,
         }), flush=True)
         raise SystemExit(1) from None
