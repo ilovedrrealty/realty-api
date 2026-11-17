@@ -1,7 +1,7 @@
 import { lstat, readFile, readdir } from 'node:fs/promises'
 import { chromium } from 'playwright-core'
 
-const api = 'http://127.0.0.1:8000'
+const api = 'http://127.0.0.1:8918'
 const dashboard = 'http://127.0.0.1:4175'
 const landing = 'http://127.0.0.1:8917'
 const fixturePath = '/browser-fixtures/fixtures.json'

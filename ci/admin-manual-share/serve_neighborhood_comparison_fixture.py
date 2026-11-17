@@ -36,6 +36,7 @@ def migrate_and_bind():
 
 if __name__ == "__main__":
     try:
+        fixture.API_PORT = 8918
         fixture.APP_COMMIT = editorial.pin("ILDR_NEIGHBORHOOD_APP_COMMIT", 40)
         fixture.APP_TREE = editorial.pin("ILDR_NEIGHBORHOOD_APP_TREE", 40)
         fixture.MIGRATION_HEAD = editorial.pin("ILDR_NEIGHBORHOOD_MIGRATION", 12)

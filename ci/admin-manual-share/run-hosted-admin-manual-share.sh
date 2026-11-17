@@ -8,7 +8,7 @@ bounded() { timeout --kill-after=8s "$@"; }
 
 [[ $# == 5 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api ]] || die CI_REQUIRED
 [[ ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 && ${GITHUB_RUN_ATTEMPT:-} == 1 ]] || die STANDARD_LINUX_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-neighborhood-comparison-browser-20261117 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
+[[ ${GITHUB_REF:-} == refs/heads/codex-ci-neighborhood-comparison-browser-20261117-v2 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 
 ops="$1"; frontend="$2"; backend="$3"; migration="$4"; landing_relay="$5"
 [[ "$ops" == "$GITHUB_WORKSPACE/browser-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-base" &&
@@ -19,7 +19,7 @@ for checkout in "$ops" "$frontend" "$backend" "$migration" "$landing_relay"; do
   checkout_status=$(git -C "$checkout" status --porcelain=v1 --untracked-files=all) || die CLEAN_CHECKOUT_REQUIRED
   [[ $(realpath "$checkout") == "$checkout" && -z "$checkout_status" ]] || die CLEAN_CHECKOUT_REQUIRED
 done
-[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == 2122b7ecee3c7745e4b8539a6b5143fd4bfec00a ]] ||
+[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == 2ebce1a0d1ca72852641e7fa0c91e121a6cc5fbc ]] ||
   die EXACT_OPERATIONS_PARENT_REQUIRED
 operations_delta=$(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) || die EXACT_OPERATIONS_DELTA_REQUIRED
 [[ "$operations_delta" == $'.github/workflows/admin-manual-share.yml\nci/admin-manual-share/run-hosted-admin-manual-share.sh\nci/admin-manual-share/run-neighborhood-comparison.mjs\nci/admin-manual-share/serve_neighborhood_comparison_fixture.py' ]] ||
@@ -226,7 +226,7 @@ if ! bounded 360s docker run "${prepare[@]}" --network none --workdir /work \
   env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp CI=true NODE_OPTIONS=--max-old-space-size=1536 \
   npm_config_userconfig=/tmp/ildr-user.npmrc npm_config_globalconfig=/tmp/ildr-global.npmrc npm_config_cache=/tmp/npm \
   npm_config_update_notifier=false npm_config_audit=false npm_config_fund=false \
-  VITE_API_URL=http://127.0.0.1:8000 VITE_LANDING_URL=http://127.0.0.1:8917 \
+  VITE_API_URL=http://127.0.0.1:8918 VITE_LANDING_URL=http://127.0.0.1:8917 \
   VITE_GOOGLE_CLIENT_ID=synthetic-ci.apps.googleusercontent.com sh -c 'node --test --test-reporter=tap \
     tests/editorial-admin.test.cjs tests/public-editorial.test.cjs && npm run build --workspace=dashboard' \
     >"$state/dashboard-build.log" 2>&1; then
@@ -275,8 +275,8 @@ import sys
 source, copy = map(Path, sys.argv[1:])
 data = source.read_bytes()
 for before, after in (
-    (b"NEXT_PUBLIC_API_URL: 'http://127.0.0.1:8917'", b"NEXT_PUBLIC_API_URL: 'http://127.0.0.1:8000'"),
-    (b"await startFixture(8917)", b"await startFixture(8000)"),
+    (b"NEXT_PUBLIC_API_URL: 'http://127.0.0.1:8917'", b"NEXT_PUBLIC_API_URL: 'http://127.0.0.1:8918'"),
+    (b"await startFixture(8917)", b"await startFixture(8918)"),
 ):
     assert data.count(before) == 1
     data = data.replace(before, after, 1)
@@ -304,6 +304,13 @@ for phase in phases:
     assert phase["name"] in names and type(phase["native_exit"]) in (int, type(None))
     assert phase["native_exit"] is None or 0 <= phase["native_exit"] <= 255
     print(f'NEIGHBORHOOD_NEXT_PHASE stage={phase["name"]} native={phase["native_exit"]}')
+allowed = {b"FIXTURE_PORT_REFUSED", b"FIXTURE_LISTEN_REFUSED", b"FIXTURE_BINDING_REFUSED",
+           b"FIXTURE_CONTRACT_NOT_ACCEPTED", b"UNEXPECTED_GENERATED_TYPE_SOURCE_CHANGE",
+           b"ACTUAL_SYNTHETIC_REQUESTS_REQUIRED", b"NATIVE_PHASE_FAILED", b"SYNTHETIC_EXPORT_AND_METADATA_REQUIRED"}
+failure_prefix = b"CUMULATIVE_LANDING_FAILED "
+for line in lines:
+    if line.startswith(failure_prefix) and line[len(failure_prefix):] in allowed:
+        print("NEIGHBORHOOD_NEXT_FAILURE " + line[len(failure_prefix):].decode("ascii"))
 assert sys.argv[3] == "0"
 assert len(phases) == len(names) and {phase["name"] for phase in phases} == names
 assert all(phase["native_exit"] == 0 and phase["child_group_absent"] == True for phase in phases)
@@ -324,7 +331,7 @@ workspace, browser = map(Path, sys.argv[1:])
 dist = workspace/'apps/dashboard/dist'
 assert (dist/'index.html').is_file() and not (dist/'index.html').is_symlink()
 assets = [f.read_bytes() for f in (dist/'assets').glob('*.js') if f.is_file() and not f.is_symlink()]
-assert any(b'http://127.0.0.1:8000' in body for body in assets)
+assert any(b'http://127.0.0.1:8918' in body for body in assets)
 assert any(b'http://127.0.0.1:8917' in body for body in assets)
 url = 'https://registry.npmjs.org/playwright-core/-/playwright-core-1.64.1.tgz'
 with urllib.request.urlopen(url, timeout=30) as response:
@@ -399,7 +406,7 @@ owned "$landing" && bounded 25s docker start "$landing" >/dev/null || die LANDIN
 ready=0
 for ((attempt=0; attempt<90; attempt++)); do
   if [[ -s "$state/fixtures/fixtures.json" ]] && bounded 4s docker exec "$api" /usr/local/bin/python -I -B -c \
-    'from urllib.request import urlopen; assert all(urlopen(url,timeout=1).status==200 for url in ("http://127.0.0.1:8000/health","http://127.0.0.1:4175/","http://127.0.0.1:8917/local-guides/compare/"))' >/dev/null 2>&1; then ready=1; break; fi
+    'from urllib.request import urlopen; assert all(urlopen(url,timeout=1).status==200 for url in ("http://127.0.0.1:8918/health","http://127.0.0.1:4175/","http://127.0.0.1:8917/local-guides/compare/"))' >/dev/null 2>&1; then ready=1; break; fi
   if [[ $(bounded 5s docker inspect --format '{{.State.Running}}' "$api") != true ]]; then
     if bounded 5s docker logs --tail 120 "$api" >"$state/api-start.log" 2>&1; then
       python3 -I -B - "$state/api-start.log" <<'PY'
