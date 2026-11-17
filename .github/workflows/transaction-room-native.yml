@@ -1,8 +1,8 @@
-name: Isolated integrated application schema and restore rehearsal
+name: Isolated integrated migration with existing trade contacts
 
 on:
   push:
-    branches: [codex-ci-integrated-release-native-20261117-v6]
+    branches: [codex-ci-integrated-trade-directory-native-20261117]
 
 permissions:
   contents: read
@@ -34,14 +34,20 @@ jobs:
       - name: Read exact integrated application backend
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: eb0a47c7fe18feb5c0695608bc0ebd6d5c048298
+          ref: c5ac614398fae413d231c28a51e703bb297e0bb9
           path: transaction-backend
           persist-credentials: false
-      - name: Read exact prior application
+      - name: Read exact previous combined application
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: f10409cd12be49718505876125e429c0b0e4b62d
+          ref: eb0a47c7fe18feb5c0695608bc0ebd6d5c048298
           path: previous-backend
+          persist-credentials: false
+      - name: Read exact deployed trade directory application
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 1ae9c9f2ccf3bdd3ac36b11b0da76486d7889838
+          path: trade-backend
           persist-credentials: false
       - name: Read accepted Python dependency recipe
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -49,7 +55,7 @@ jobs:
           ref: c193a925ba57ea2d67ea48c44e5262817885c8a2
           path: migration-relay
           persist-credentials: false
-      - name: Rehearse full migration, private access and floorplan restore
+      - name: Rehearse both upgrade paths, private access and archive restore
         shell: bash
         run: |
           set -euo pipefail

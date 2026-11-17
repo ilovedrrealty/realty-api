@@ -14,8 +14,9 @@ from uuid import uuid4
 
 
 APP = Path("/application")
-BASELINE_HEAD = "21f2fe166874"
-RELEASE_HEAD = "86fc1b2e4a79"
+BASELINE_HEAD = "86fc1b2e4a79"
+TRADE_HEAD = "7aa51b40e2bd"
+RELEASE_HEAD = "a4e72d1c718b"
 BASELINE_SHAPE = "fda8d36f7d11fb0e0493d5a8557fb5c9159f8c4d2000d953f66aa998fe741108"
 CORE_TABLES = (
     "transaction_rooms", "transaction_room_events", "transaction_room_grants",
@@ -25,15 +26,18 @@ DOC_TABLES = ("transaction_documents", "transaction_document_versions")
 REFERRAL_TABLES = ("network_service_referrals", "network_service_referral_events")
 PRIVATE_TABLES = CORE_TABLES + DOC_TABLES + REFERRAL_TABLES
 FLOOR_PLAN_TABLE = "listing_floor_plans"
+TRADE_TABLES = ("trade_contact_sources", "trade_contacts")
 TRIGGERS = ("transaction_room_events_immutable", "transaction_room_lead_changed")
 EVIDENCE_COLUMNS = {"evidence_document_id", "evidence_version_id"}
 EVIDENCE_CONSTRAINTS = {"ck_transaction_task_evidence_pair", "fk_transaction_task_evidence_version"}
-MODES = {"baseline", "fresh", "upgrade", "core", "documents", "adapter", "floorplans", "restore"}
+MODES = {"baseline", "fresh", "upgrade", "live_baseline", "live_upgrade", "core", "documents", "adapter",
+         "floorplans", "trade", "restore"}
 TESTS = {
     "core": ("test_transaction_room.py", 9),
     "documents": ("test_transaction_documents.py", 5),
     "adapter": ("test_transaction_document_storage.py", 7),
     "floorplans": ("test_listing_floor_plans.py", 4),
+    "trade": ("test_admin_trade_contacts.py", 3),
 }
 TEST_DB = "ildr_platform_test_20261025"
 HOST = "127.0.0.1"
@@ -279,6 +283,74 @@ def sentinel(database, nonce, *, create=False, evidence=False):
             check(cursor.fetchall() == [(None, None)])
 
 
+def trade_catalog(database):
+    with closing(connect(database)) as conn, conn.cursor() as cursor:
+        cursor.execute("""SELECT rel.relname, rel.relrowsecurity,
+                EXISTS (SELECT 1 FROM pg_roles role
+                    WHERE role.rolname IN ('anon','authenticated','service_role')
+                    AND has_table_privilege(role.oid, rel.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')),
+                EXISTS (SELECT 1 FROM pg_policy WHERE polrelid=rel.oid)
+            FROM pg_class rel JOIN pg_namespace ns ON ns.oid=rel.relnamespace
+            WHERE ns.nspname='public' AND rel.relname::text=ANY(%s) AND rel.relkind='r' ORDER BY rel.relname""",
+                       (list(TRADE_TABLES),))
+        check(cursor.fetchall() == [(name, True, False, False) for name in TRADE_TABLES])
+        cursor.execute("""SELECT rel.relname, con.contype::text, pg_get_constraintdef(con.oid)
+            FROM pg_constraint con JOIN pg_class rel ON rel.oid=con.conrelid
+            JOIN pg_namespace ns ON ns.oid=rel.relnamespace WHERE ns.nspname='public'
+            AND rel.relname::text=ANY(%s) ORDER BY rel.relname,con.contype::text""", (list(TRADE_TABLES),))
+        check(cursor.fetchall() == [
+            ("trade_contact_sources", "f", "FOREIGN KEY (contact_id) REFERENCES trade_contacts(id) ON DELETE CASCADE"),
+            ("trade_contact_sources", "p", "PRIMARY KEY (id)"),
+            ("trade_contact_sources", "u", "UNIQUE (contact_id, source_key)"),
+            ("trade_contacts", "p", "PRIMARY KEY (id)"),
+            ("trade_contacts", "u", "UNIQUE (identity_key)"),
+        ])
+        cursor.execute("""SELECT indexname FROM pg_indexes WHERE schemaname='public' AND tablename='trade_contacts'
+            AND indexname='ix_trade_contacts_category_province_name'""")
+        check(cursor.fetchall() == [("ix_trade_contacts_category_province_name",)])
+
+
+def trade_fixture(database, *, seed=False):
+    from psycopg2.extras import Json
+
+    contacts, sources = [], []
+    for index in (1, 2):
+        contact_id = f"00000000-0000-4000-9000-{index:012d}"
+        details = {"phone": "+18095550100", "registration": f"synthetic-{index}"}
+        contacts.append((contact_id, sha256(f"contact-{index}".encode()).hexdigest(), f"Synthetic trade {index}",
+                         "Construction", "Puerto Plata", "Cabarete", details))
+        for observation in range(1, 4 - index):
+            source_id = f"00000000-0000-4001-9000-{index * 10 + observation:012d}"
+            evidence = {"origin": "https://example.invalid/source", "observation": observation}
+            sources.append((source_id, contact_id, sha256(f"source-{index}-{observation}".encode()).hexdigest(), evidence))
+
+    with closing(connect(database)) as conn, conn, conn.cursor() as cursor:
+        if seed:
+            cursor.executemany("""INSERT INTO public.trade_contacts (id,identity_key,name,category,province,locality,details,
+                created_at,updated_at) VALUES (%s,%s,%s,%s,%s,%s,%s,'2026-01-01T00:00:00Z','2026-01-02T00:00:00Z')""",
+                               [(*row[:-1], Json(row[-1])) for row in contacts])
+            cursor.executemany("""INSERT INTO public.trade_contact_sources (id,contact_id,source_key,evidence,
+                created_at,updated_at) VALUES (%s,%s,%s,%s,'2026-01-01T00:00:00Z','2026-01-02T00:00:00Z')""",
+                               [(*row[:-1], Json(row[-1])) for row in sources])
+        cursor.execute("""SELECT id::text,identity_key,name,category,province,locality,details,
+            created_at='2026-01-01T00:00:00Z',updated_at='2026-01-02T00:00:00Z' FROM public.trade_contacts ORDER BY id""")
+        check(cursor.fetchall() == [(*row, True, True) for row in contacts])
+        cursor.execute("""SELECT id::text,contact_id::text,source_key,evidence,
+            created_at='2026-01-01T00:00:00Z',updated_at='2026-01-02T00:00:00Z'
+            FROM public.trade_contact_sources ORDER BY id""")
+        check(cursor.fetchall() == [(*row, True, True) for row in sources])
+
+
+def release_schema_digest(database, selected_shape):
+    with closing(connect(database)) as conn, conn.cursor() as cursor:
+        cursor.execute("""SELECT rel.relname, rel.relrowsecurity, rel.relforcerowsecurity
+            FROM pg_class rel JOIN pg_namespace ns ON ns.oid=rel.relnamespace
+            WHERE ns.nspname='public' AND rel.relkind='r' ORDER BY rel.relname""")
+        tables = cursor.fetchall()
+    check(len(tables) == 92)
+    return sha256(json.dumps((selected_shape, tables), separators=(",", ":")).encode()).hexdigest()
+
+
 def migrate(mode, database, nonce):
     global stage
     from alembic import command
@@ -286,30 +358,55 @@ def migrate(mode, database, nonce):
     import bootstrap_db
 
     alembic_config = Config(str(APP / "alembic.ini"))
-    if mode in {"baseline", "fresh"}:
+    if mode in {"baseline", "live_baseline", "fresh"}:
         stage = "bootstrap"
         bootstrap_db.main()
     if mode == "baseline":
         stage = "migrate_baseline"
-        command.upgrade(alembic_config, BASELINE_HEAD)
+        command.upgrade(alembic_config, "head")
         stage = "catalog"
         check_database(database, nonce, BASELINE_HEAD)
-        shape = catalog(database, floorplans=False)
+        shape = catalog(database, floorplans=True)
         sentinel(database, nonce, create=True, evidence=True)
-        return BASELINE_HEAD, len(PRIVATE_TABLES), shape
+        seed_full_archive()
+        return BASELINE_HEAD, len(PRIVATE_TABLES) + 1, shape
+    if mode == "live_baseline":
+        stage = "migrate_baseline"
+        command.upgrade(alembic_config, "head")
+        stage = "trade_catalog"
+        check_database(database, nonce, TRADE_HEAD)
+        trade_catalog(database)
+        stage = "trade_fixture"
+        trade_fixture(database, seed=True)
+        return TRADE_HEAD, len(TRADE_TABLES), "none"
     if mode == "upgrade":
-        catalog(database, floorplans=False)
+        stage = "catalog"
+        catalog(database, floorplans=True)
         sentinel(database, nonce, evidence=True)
-    stage = "migrate_floorplans"
-    command.upgrade(alembic_config, RELEASE_HEAD)
+        prior_floor_media = floor_media(database)
+    if mode == "live_upgrade":
+        stage = "trade_catalog"
+        trade_catalog(database)
+        stage = "trade_fixture"
+        trade_fixture(database)
+    stage = "migrate_release"
+    command.upgrade(alembic_config, "head")
     stage = "catalog"
     check_database(database, nonce, RELEASE_HEAD)
     if mode == "upgrade":
         sentinel(database, nonce, evidence=True)
+        check(floor_media(database) == prior_floor_media)
     shape = catalog(database, floorplans=True)
+    shape = release_schema_digest(database, shape)
+    stage = "trade_catalog"
+    trade_catalog(database)
+    stage = "trade_fixture"
+    if mode == "live_upgrade":
+        trade_fixture(database)
     if mode == "fresh":
+        trade_fixture(database, seed=True)
         seed_full_archive()
-    return RELEASE_HEAD, len(PRIVATE_TABLES) + 1, shape
+    return RELEASE_HEAD, len(PRIVATE_TABLES) + 1 + len(TRADE_TABLES), shape
 
 
 def seed_full_archive():
@@ -345,6 +442,21 @@ def seed_full_archive():
                     draft_id=drafts[-1]["id"], expected_published_id=None, owner_permission_confirmed=True,
                 ))
         check(drafts[0]["sha256"] != drafts[1]["sha256"])
+
+
+def floor_media(database):
+    with closing(connect(database)) as conn, conn.cursor() as cursor:
+        cursor.execute("""SELECT stage, sha256, payload, byte_count, approved_at IS NOT NULL, id::text,
+            listing_id::text, staged_by_id::text, approved_by_id::text, content_type
+            FROM public.listing_floor_plans ORDER BY stage""")
+        rows = cursor.fetchall()
+    check([(row[0], row[4]) for row in rows] == [("draft", False), ("published", True)])
+    checked = []
+    for slot, checksum, payload, byte_count, approved, *identity in rows:
+        check(len(payload) == byte_count and sha256(payload).hexdigest() == checksum)
+        checked.append((slot, checksum, byte_count, approved, *identity))
+    check(checked[0][1] != checked[1][1])
+    return checked
 
 
 def full_archive_state(database):
@@ -386,21 +498,12 @@ def full_archive_state(database):
         for query in queries:
             cursor.execute(query)
             definitions.append(cursor.fetchall())
-        cursor.execute("""SELECT stage, sha256, payload, byte_count, approved_at IS NOT NULL
-            FROM public.listing_floor_plans ORDER BY stage""")
-        raw_files = cursor.fetchall()
-        check([(slot, approved) for slot, _, _, _, approved in raw_files] == [("draft", False), ("published", True)])
-        files = []
-        for slot, checksum, payload, byte_count, approved in raw_files:
-            check(len(payload) == byte_count and sha256(payload).hexdigest() == checksum)
-            files.append((slot, checksum, byte_count, approved))
-        check(files[0][1] != files[1][1])
     raw_constraints = [(entry[:3], entry[-2]) for entry in definitions[1]]
     constraints = [entry[:-2] + (entry[-1],) for entry in definitions[1]]
     return {
         "tables": tables, "counts": counts, "columns": definitions[0], "constraints": constraints,
         "indexes": definitions[2], "triggers": definitions[3], "views": definitions[4],
-        "grants": definitions[5], "media": files,
+        "grants": definitions[5], "media": floor_media(database),
     }, raw_constraints
 
 
@@ -441,10 +544,15 @@ def verify_full_restore(nonce):
     for database, label in ((before, "source"), (after, "target")):
         stage = f"restore_{label}_catalog"
         catalog(database, floorplans=True, require_raw_fingerprint=label == "source")
+        stage = "trade_catalog"
+        trade_catalog(database)
+        stage = "trade_fixture"
+        trade_fixture(database)
     tables = len(source["tables"])
+    check(tables == 92)
     shape = sha256(json.dumps(source, separators=(",", ":")).encode()).hexdigest()
     print(f"INTEGRATED_FULL_ARCHIVE_RESTORE tables={tables} schema_and_rows_sha256={shape} exact_floor_plans=2 "
-          f"exact_check_deparse_normalizations={len(rewritten)}")
+          f"exact_trade_contacts=2 exact_trade_sources=3 exact_check_deparse_normalizations={len(rewritten)}")
 
 
 def run(mode, nonce, commit, tree):
@@ -455,7 +563,7 @@ def run(mode, nonce, commit, tree):
     head, private_tables, shape, count = "none", 0, "none", 0
     if mode == "restore":
         verify_full_restore(nonce)
-        head, private_tables = RELEASE_HEAD, len(PRIVATE_TABLES) + 1
+        head, private_tables = RELEASE_HEAD, len(PRIVATE_TABLES) + 1 + len(TRADE_TABLES)
     elif mode == "adapter":
         configure()
         count = run_cases(mode)
@@ -463,14 +571,21 @@ def run(mode, nonce, commit, tree):
         database = {
             "baseline": f"ildr_integration_upgrade_{nonce}", "fresh": f"ildr_integration_fresh_{nonce}",
             "upgrade": f"ildr_integration_upgrade_{nonce}", "core": TEST_DB, "documents": TEST_DB,
-            "floorplans": TEST_DB,
+            "live_baseline": f"ildr_integration_live_{nonce}", "live_upgrade": f"ildr_integration_live_{nonce}",
+            "floorplans": TEST_DB, "trade": f"ildr_integration_fresh_{nonce}",
         }[mode]
         stage = "disposable_db"
-        check_database(database, nonce, BASELINE_HEAD if mode == "upgrade" else None)
+        start_head = {"upgrade": BASELINE_HEAD, "live_upgrade": TRADE_HEAD, "trade": RELEASE_HEAD}.get(mode)
+        check_database(database, nonce, start_head)
         configure(database)
+        if mode == "trade":
+            os.environ["TRADE_CONTACT_FIXTURE"] = "yes"
         if mode in TESTS:
             count = run_cases(mode)
-            check_test_schema_cleanup()
+            if mode == "trade":
+                head, private_tables = RELEASE_HEAD, len(TRADE_TABLES)
+            else:
+                check_test_schema_cleanup()
         else:
             head, private_tables, shape = migrate(mode, database, nonce)
     print(f"TRANSACTION_ROOM_NATIVE {mode} head={head} private_tables={private_tables} "

@@ -7,25 +7,28 @@ bounded() { timeout --kill-after=8s "$@"; }
 
 [[ ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 &&
-   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-integrated-release-native-20261117-v6 &&
+   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-integrated-trade-directory-native-20261117 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_HOSTED_EVENT_REQUIRED
 
 ops="$GITHUB_WORKSPACE/rehearsal-ops"
 backend="$GITHUB_WORKSPACE/transaction-backend"
 baseline="$GITHUB_WORKSPACE/previous-backend"
+live="$GITHUB_WORKSPACE/trade-backend"
 relay="$GITHUB_WORKSPACE/migration-relay"
-candidate_commit=eb0a47c7fe18feb5c0695608bc0ebd6d5c048298
-candidate_tree=0ab55d99df8804a1f16a487e8286180b2325d6b6
-baseline_commit=f10409cd12be49718505876125e429c0b0e4b62d
-baseline_tree=ff48d7d0283fd14ef8037ece7313c9f8299ee3d0
+candidate_commit=c5ac614398fae413d231c28a51e703bb297e0bb9
+candidate_tree=803196ebd0961373c1ce41fe1dfa971aecc5cc9c
+baseline_commit=eb0a47c7fe18feb5c0695608bc0ebd6d5c048298
+baseline_tree=0ab55d99df8804a1f16a487e8286180b2325d6b6
+live_commit=1ae9c9f2ccf3bdd3ac36b11b0da76486d7889838
+live_tree=e5dccb6ad520404dda262a0dff99ab3bf1082b9b
 
-for checkout in "$ops" "$backend" "$baseline" "$relay"; do
+for checkout in "$ops" "$backend" "$baseline" "$live" "$relay"; do
   working_status=$(git -C "$checkout" status --porcelain=v1 --untracked-files=all) || die CLEAN_CHECKOUT_REQUIRED
   [[ $(realpath "$checkout") == "$checkout" && -z "$working_status" &&
      ! -e "$checkout/.env" && ! -L "$checkout/.env" ]] || die CLEAN_CHECKOUT_REQUIRED
 done
 [[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" &&
-   $(git -C "$ops" rev-parse 'HEAD^') == b9c51ea1512c9fc49c5047ecab11fcf11cb92342 ]] || die EXACT_OPERATIONS_REQUIRED
+   $(git -C "$ops" rev-parse 'HEAD^') == 65b2f511dc2da433bf0006ec10f32dcdb059e75e ]] || die EXACT_OPERATIONS_REQUIRED
 operations_delta=$(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) || die EXACT_OPERATIONS_REQUIRED
 [[ "$operations_delta" == $'.github/workflows/transaction-room-native.yml\nci/transaction-room/rehearse.py\nci/transaction-room/run-hosted-native.sh' ]] ||
   die EXACT_OPERATIONS_REQUIRED
@@ -33,8 +36,11 @@ operations_delta=$(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ H
    $(git -C "$backend" rev-parse 'HEAD^{tree}') == "$candidate_tree" &&
    $(git -C "$baseline" rev-parse HEAD) == "$baseline_commit" &&
    $(git -C "$baseline" rev-parse 'HEAD^{tree}') == "$baseline_tree" &&
+   $(git -C "$live" rev-parse HEAD) == "$live_commit" &&
+   $(git -C "$live" rev-parse 'HEAD^{tree}') == "$live_tree" &&
    $(git -C "$relay" rev-parse HEAD) == c193a925ba57ea2d67ea48c44e5262817885c8a2 ]] || die EXACT_APPLICATION_REQUIRED
-cmp -s "$backend/requirements.txt" "$baseline/requirements.txt" || die BASELINE_REQUIREMENTS_MISMATCH
+cmp -s "$backend/requirements.txt" "$baseline/requirements.txt" &&
+  cmp -s "$backend/requirements.txt" "$live/requirements.txt" || die BASELINE_REQUIREMENTS_MISMATCH
 dockerfile="$relay/ci/migration/services163.Dockerfile"
 printf '%s  %s\n' e546d8c5668b87ef28e604107bbb330e6f4b3873cf0208b4d24ca378bd0851f9 "$dockerfile" |
   sha256sum --check --status || die HISTORICAL_TOOL_HASH_MISMATCH
@@ -134,7 +140,7 @@ psql=(docker exec "$pg" psql -X -h 127.0.0.1 -p 55449 -U postgres -v ON_ERROR_ST
 bounded 10s "${psql[@]}" -d postgres \
   -c 'CREATE ROLE anon NOLOGIN; CREATE ROLE authenticated NOLOGIN; CREATE ROLE service_role NOLOGIN' \
   >/dev/null || die SYNTHETIC_ROLES_REQUIRED
-for db in "ildr_integration_fresh_$nonce" "ildr_integration_upgrade_$nonce" ildr_platform_test_20261025; do
+for db in "ildr_integration_fresh_$nonce" "ildr_integration_upgrade_$nonce" "ildr_integration_live_$nonce" ildr_platform_test_20261025; do
   bounded 10s "${psql[@]}" -d postgres -c "CREATE DATABASE $db" \
     -c "COMMENT ON DATABASE $db IS 'ildr-integration-ci:$nonce'" >/dev/null || die DATABASE_IDENTITY_MARKER_FAILED
   bounded 10s "${psql[@]}" -d "$db" \
@@ -161,7 +167,7 @@ import re, sys
 path = Path(sys.argv[1])
 mode, native = sys.argv[2:]
 raw = path.read_bytes() if path.stat().st_size <= 131072 else b""
-stages = (rb"(?:checkout|disposable_db|bootstrap|migrate_baseline|migrate_floorplans|catalog|restore_seed|tests|test_cleanup"
+stages = (rb"(?:checkout|disposable_db|bootstrap|migrate_baseline|migrate_release|catalog|trade_catalog|trade_fixture|restore_seed|tests|test_cleanup"
           rb"|restore_(?:source|target)_(?:identity|catalog|state)|restore_(?:tables|counts|columns|constraints|constraint_deparse|indexes|triggers|views|grants|media))")
 pass_line = re.compile(rb"TRANSACTION_ROOM_NATIVE " + mode.encode() +
     rb" head=(?:[0-9a-f]{12}|none) private_tables=[0-9]{1,2} shape=(?:[0-9a-f]{64}|none) tests=[0-9]{1,2} pass=[0-9]{1,2}")
@@ -184,7 +190,7 @@ if mode == "restore" and native != "0":
                               rb"removed=[0-9]{1,5} added=[0-9]{1,5} object=[A-Za-z0-9_.]{1,140}")
     for line in [item for item in lines if archive_diff.fullmatch(item)][:9]:
         print(line.decode('ascii'))
-if mode in {"core", "documents", "floorplans"} and native != "0":
+if mode in {"core", "documents", "floorplans", "trade"} and native != "0":
     assertion = re.compile(rb"TASK_EVIDENCE_NATIVE_ASSERTION test=[a-z0-9_]{1,100} line=(?:[0-9]{1,4}|none)"
                            rb" actual=(?:[1-5][0-9]{2}|none) expected=(?:[1-5][0-9]{2}|none)")
     sqlstates = re.compile(rb"TASK_EVIDENCE_NATIVE_SQLSTATES codes=(?:[A-Z0-9]{5}(?:,[A-Z0-9]{5}){0,7}|none)")
@@ -194,8 +200,9 @@ if native != "0" or len(safe) != 1 or not pass_line.fullmatch(safe[0]):
     print(f"TRANSACTION_ROOM_NATIVE_PHASE_FAILURE mode={mode} native={native}")
     raise SystemExit(1)
 if mode == "restore":
-    restore_pass = re.compile(rb"INTEGRATED_FULL_ARCHIVE_RESTORE tables=[1-9][0-9]{1,3} "
+    restore_pass = re.compile(rb"INTEGRATED_FULL_ARCHIVE_RESTORE tables=92 "
                               rb"schema_and_rows_sha256=[a-f0-9]{64} exact_floor_plans=2 "
+                              rb"exact_trade_contacts=2 exact_trade_sources=3 "
                               rb"exact_check_deparse_normalizations=13")
     receipts = [line for line in lines if restore_pass.fullmatch(line)]
     assert len(receipts) == 1
@@ -208,17 +215,19 @@ phase core "$backend" "$candidate_commit" "$candidate_tree" "container:$pg" 100s
 phase documents "$backend" "$candidate_commit" "$candidate_tree" "container:$pg" 100s || die DOCUMENT_TESTS_REQUIRED
 phase floorplans "$backend" "$candidate_commit" "$candidate_tree" "container:$pg" 100s || die FLOOR_PLAN_TESTS_REQUIRED
 phase baseline "$baseline" "$baseline_commit" "$baseline_tree" "container:$pg" 100s || die BASELINE_MIGRATION_REQUIRED
+phase live_baseline "$live" "$live_commit" "$live_tree" "container:$pg" 100s || die LIVE_TRADE_BASELINE_REQUIRED
 phase fresh "$backend" "$candidate_commit" "$candidate_tree" "container:$pg" 100s || die FRESH_MIGRATION_REQUIRED
 phase upgrade "$backend" "$candidate_commit" "$candidate_tree" "container:$pg" 100s || die FORWARD_MIGRATION_REQUIRED
-python3 -I -B - "$state/fresh.log" "$state/upgrade.log" <<'PY' || die FRESH_UPGRADE_SCHEMA_DIVERGENCE
+phase live_upgrade "$backend" "$candidate_commit" "$candidate_tree" "container:$pg" 100s || die LIVE_TRADE_FORWARD_REQUIRED
+python3 -I -B - "$state/fresh.log" "$state/upgrade.log" "$state/live_upgrade.log" <<'PY' || die FRESH_UPGRADE_SCHEMA_DIVERGENCE
 from pathlib import Path
 import re, sys
 
 shapes = [
-    re.findall(rb"(?m)^TRANSACTION_ROOM_NATIVE (?:fresh|upgrade) head=86fc1b2e4a79 private_tables=10 shape=([0-9a-f]{64}) tests=0 pass=0$",
+    re.findall(rb"(?m)^TRANSACTION_ROOM_NATIVE (?:fresh|upgrade|live_upgrade) head=a4e72d1c718b private_tables=12 shape=([0-9a-f]{64}) tests=0 pass=0$",
                Path(name).read_bytes()) for name in sys.argv[1:]
 ]
-assert len(shapes[0]) == 1 and shapes[0] == shapes[1]
+assert len(shapes[0]) == 1 and all(shape == shapes[0] for shape in shapes[1:])
 PY
 
 source_db="ildr_integration_fresh_$nonce"
@@ -267,5 +276,6 @@ archive_stage restore "$state/full-archive-restore.log" bounded 90s docker exec 
   pg_restore -h 127.0.0.1 -p 55449 -U postgres --exit-on-error --single-transaction --clean --if-exists \
   --dbname="$restore_db" <"$archive" >/dev/null
 phase restore "$backend" "$candidate_commit" "$candidate_tree" "container:$pg" 100s || die FULL_RESTORE_VERIFICATION_FAILED
-printf 'INTEGRATED_RELEASE_NATIVE_PASS ops=%s run=%s backend=%s tree=%s postgres=17.6 core=9 documents=5 adapter=7 floorplans=4 head=86fc1b2e4a79 legacy_task=preserved storage=fake full_public_restore=verified\n' \
+phase trade "$backend" "$candidate_commit" "$candidate_tree" "container:$pg" 100s || die TRADE_DIRECTORY_TESTS_REQUIRED
+printf 'INTEGRATED_RELEASE_NATIVE_PASS ops=%s run=%s backend=%s tree=%s postgres=17.6 core=9 documents=5 adapter=7 floorplans=4 trade=3 head=a4e72d1c718b paths=fresh,live,combined legacy_task=preserved legacy_floorplans=preserved trade_contacts=preserved trade_sources=preserved storage=fake full_public_restore=verified\n' \
   "$GITHUB_SHA" "$GITHUB_RUN_ID" "$candidate_commit" "$candidate_tree"
