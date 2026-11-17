@@ -8,7 +8,7 @@ bounded() { timeout --kill-after=8s "$@"; }
 
 [[ $# == 5 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api ]] || die CI_REQUIRED
 [[ ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 && ${GITHUB_RUN_ATTEMPT:-} == 1 ]] || die STANDARD_LINUX_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-market-report-browser-20261117-v2 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
+[[ ${GITHUB_REF:-} == refs/heads/codex-ci-market-report-browser-20261117-v3 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 
 ops="$1"; frontend="$2"; backend="$3"; migration="$4"; landing_relay="$5"
 [[ "$ops" == "$GITHUB_WORKSPACE/browser-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-base" &&
@@ -19,13 +19,13 @@ for checkout in "$ops" "$frontend" "$backend" "$migration" "$landing_relay"; do
   checkout_status=$(git -C "$checkout" status --porcelain=v1 --untracked-files=all) || die CLEAN_CHECKOUT_REQUIRED
   [[ $(realpath "$checkout") == "$checkout" && -z "$checkout_status" ]] || die CLEAN_CHECKOUT_REQUIRED
 done
-[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == 6264a021c2f5a62743571a962ac9a444bf491314 ]] ||
+[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == 8393222f60c3209f60d0b12ea74b80082789f003 ]] ||
   die EXACT_OPERATIONS_PARENT_REQUIRED
 operations_delta=$(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) || die EXACT_OPERATIONS_DELTA_REQUIRED
 [[ "$operations_delta" == $'.github/workflows/admin-manual-share.yml\nci/admin-manual-share/run-hosted-admin-manual-share.sh' ]] ||
   die EXACT_OPERATIONS_DELTA_REQUIRED
-frontend_commit=919948242f0bf53bb993899cf6d2f08fff2d86c4
-frontend_tree=05de0ac1179f43fcb0ee23bcdb37a1c9ae9c284f
+frontend_commit=c10466897db28df2bcba9ef7405610b05377cea7
+frontend_tree=0abeaefa49d731197b87b3f229d4cd665ba957b7
 frontend_paths=548
 frontend_market_test_sha=7e9e463db3581a7123a7096c3240c560b3bb56c0164edcdbe19076e8f64fbd91
 frontend_public_test_sha=8affe09be9f007208ca5e44efc0d2e4a84abe9151fdc1c47cb76d24512b5c2a2
@@ -171,6 +171,8 @@ printf '%s  %s\n' \
   45893e6dfebaad4d2e73f7e7d6b26f176883bc1ba8c8dc025f188cc1b4d12344 "$state/frontend-work/apps/landing/package.json" \
   "$frontend_market_test_sha" "$state/frontend-work/tests/local-market-report.test.cjs" \
   "$frontend_public_test_sha" "$state/frontend-work/tests/public-editorial.test.cjs" \
+  265dd02c033c5783bfb04564986878bd4b863dfa5292be2b02a1bfa3867b615a "$state/frontend-work/tests/blog-articles.test.cjs" \
+  3e7e7005ea90dec134deb01ea8892b9409cbe7115d5f37eba17f0d76b9cf09d6 "$state/frontend-work/tests/listing-export.test.cjs" \
   | sha256sum --check --status || die EXACT_PACKAGE_AND_TEST_PINS_REQUIRED
 
 prepare=(--label "$label=$run_key" --user "$uids" --read-only --cap-drop ALL --security-opt no-new-privileges:true
@@ -284,6 +286,31 @@ print(f'MARKET_REPORT_FRONTEND_CONTRACTS native=0 tests={count} pass={count} typ
 PY
 verify_frontend_files || die FRONTEND_SOURCE_CHANGED
 
+# Name the two contract pretests in the real build separately for diagnosis. The
+# reviewed npm build still runs both again, as well as the actual Next export.
+pretest_exit=0
+bounded 80s docker run "${prepare[@]}" --network none --workdir /work \
+  --mount "type=bind,src=$state/frontend-work,dst=/work" "$node_image" \
+  env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp CI=true NODE_OPTIONS=--max-old-space-size=1536 \
+  node --test --test-concurrency=1 --test-reporter=tap tests/listing-export.test.cjs tests/blog-articles.test.cjs \
+  >"$state/landing-contract.log" 2>&1 || pretest_exit=$?
+python3 -I -B - "$state/landing-contract.log" "$pretest_exit" <<'PY' || die DECLARED_LANDING_PRETEST_REQUIRED
+from pathlib import Path
+import re, sys
+log = Path(sys.argv[1])
+assert log.stat().st_size <= 262144
+lines = log.read_bytes().splitlines()
+rows = {group[1]: int(group[2]) for row in lines if (group := re.fullmatch(rb"# (tests|pass|fail|skipped) ([0-9]{1,3})", row))}
+print(f"MARKET_REPORT_LANDING_PRETESTS native={int(sys.argv[2])} tests={rows.get(b'tests', 0)} "
+      f"pass={rows.get(b'pass', 0)} fail={rows.get(b'fail', 0)}")
+for row in lines:
+    if group := re.fullmatch(rb"not ok ([1-9][0-9]{0,2}) - [A-Za-z0-9 _.,:/-]{1,180}", row):
+        print("MARKET_REPORT_LANDING_PRETEST_FAILURE index=" + group[1].decode("ascii"))
+assert sys.argv[2] == "0"
+assert rows == {b"tests": 20, b"pass": 20, b"fail": 0, b"skipped": 0}
+PY
+verify_frontend_files || die LANDING_PRETEST_SOURCE_CHANGED
+
 landing_fixture="$landing_relay/ci/frontend"
 landing_script="$landing_relay/ci/cumulative-landing/landing.cjs"
 landing_server="$landing_relay/ci/browser/serve_landing_fixture.mjs"
@@ -318,7 +345,7 @@ bounded 690s docker run "${prepare[@]}" --network none --workdir /work \
   >"$state/landing.log" 2>&1 || landing_exit=$?
 python3 -I -B - "$state/landing.log" "$state/frontend-work/apps/landing/out" "$landing_exit" <<'PY' || die MARKET_REPORT_LANDING_EXPORT_REQUIRED
 from pathlib import Path
-import json, sys
+import json, re, sys
 log, output = map(Path, sys.argv[1:3])
 assert log.stat().st_size <= 8 * 1024 * 1024
 lines = log.read_bytes().splitlines()
@@ -329,7 +356,90 @@ phases = [json.loads(line[len(prefix):]) for line in lines if line.startswith(pr
 for phase in phases:
     assert phase["name"] in names and type(phase["native_exit"]) in (int, type(None))
     assert phase["native_exit"] is None or 0 <= phase["native_exit"] <= 255
-    print(f'MARKET_REPORT_NEXT_PHASE stage={phase["name"]} native={phase["native_exit"]}')
+    assert all(type(phase[key]) is int and 0 <= phase[key] <= 4194304 for key in ("stdout_bytes", "stderr_bytes"))
+    print(f'MARKET_REPORT_NEXT_PHASE stage={phase["name"]} native={phase["native_exit"]}'
+          f' stdout_bytes={phase["stdout_bytes"]} stderr_bytes={phase["stderr_bytes"]}')
+allowed = {b"FIXTURE_PORT_REFUSED", b"FIXTURE_LISTEN_REFUSED", b"FIXTURE_BINDING_REFUSED",
+           b"FIXTURE_CONTRACT_NOT_ACCEPTED", b"UNEXPECTED_GENERATED_TYPE_SOURCE_CHANGE",
+           b"ACTUAL_SYNTHETIC_REQUESTS_REQUIRED", b"NATIVE_PHASE_FAILED", b"SYNTHETIC_EXPORT_AND_METADATA_REQUIRED"}
+failure_prefix = b"CUMULATIVE_LANDING_FAILED "
+for line in lines:
+    if line.startswith(failure_prefix) and line[len(failure_prefix):] in allowed:
+        print("MARKET_REPORT_NEXT_FAILURE " + line[len(failure_prefix):].decode("ascii"))
+if sys.argv[3] != "0":
+    raw = b"\n".join(lines)
+    categories = (
+        (b"Type error:", "TYPE_ERROR"),
+        (b"Failed to compile", "COMPILE_FAILED"),
+        (b"Module not found", "MODULE_NOT_FOUND"),
+        (b"missing generateStaticParams", "STATIC_PARAMS_MISSING"),
+        (b"Error occurred prerendering page", "PRERENDER_FAILED"),
+        (b"useSearchParams() should be wrapped", "SEARCH_PARAMS_SUSPENSE_REQUIRED"),
+        (b"ECONNREFUSED", "FIXTURE_CONNECTION_REFUSED"),
+        (b"LISTING_EXPORT_", "LISTING_EXPORT_VALIDATION"),
+        (b"fetch failed", "SYNTHETIC_FETCH_FAILED"),
+        (b"NEXT_PUBLIC_API_URL", "API_URL_SETTING_REFERENCED"),
+        (b"npm error Lifecycle script", "NPM_LIFECYCLE"),
+    )
+    for token, tag in categories:
+        if token in raw:
+            print(f"MARKET_REPORT_NEXT_DETAIL code={tag}")
+    sources = re.findall(
+        rb"(?m)^(?:\./)?(src/[A-Za-z0-9_./\[\]-]+\.(?:tsx?|jsx?))(?::([0-9]{1,5}):([0-9]{1,5}))?\s*$",
+        raw,
+    )
+    for source, line, column in sorted(set(sources))[:10]:
+        print("MARKET_REPORT_NEXT_DETAIL file=" + source.decode("ascii")
+              + " line=" + (line or b"0").decode("ascii") + " column=" + (column or b"0").decode("ascii"))
+    known_routes = {b"/local-guides", b"/local-guides/market-report", b"/search", b"/listing/[id]"}
+    paths = re.findall(rb'(?m)(?:prerendering page|Page) "(/[A-Za-z0-9_/\[\]-]+)"', raw)
+    for route in sorted(set(paths) & known_routes):
+        print("MARKET_REPORT_NEXT_DETAIL route=" + route.decode("ascii"))
+    for count in re.findall(rb"(?m)^(?:#|\xe2\x84\xb9) fail ([1-9][0-9]{0,2})$", raw)[:3]:
+        print("MARKET_REPORT_NEXT_DETAIL unit_failures=" + count.decode("ascii"))
+    started = b"Creating an optimized production build" in raw or bool(re.search(rb"Next\.js [0-9]+\.[0-9]+\.[0-9]+", raw))
+    print(f"MARKET_REPORT_NEXT_DETAIL next_started={int(started)}")
+    for script, line, column in sorted(set(re.findall(
+            rb"(?m)^test at (?:/work/)?tests/(listing-export|blog-articles)\.test\.cjs:([0-9]{1,4}):([0-9]{1,4})",
+            raw,
+    )))[:8]:
+        print(f"MARKET_REPORT_NEXT_DETAIL test={script.decode()} line={line.decode()} column={column.decode()}")
+    codes = re.findall(rb"\b(?:ERR_[A-Z0-9_]{3,45}|EACCES|EEXIST|ENOENT|ENOSPC|ENOMEM|SIGKILL|SIGSEGV|EPIPE|MODULE_NOT_FOUND)\b", raw)
+    for code in sorted(set(codes))[:14]:
+        print("MARKET_REPORT_NEXT_DETAIL native_code=" + code.decode("ascii"))
+    headers = re.findall(
+        rb"(?m)^\s*(?:> )?((?:Error|TypeError|AssertionError|SyntaxError|RangeError|ReferenceError)(?: \[[A-Z0-9_]{3,45}\])?): ([^\r\n]{1,320})",
+        raw,
+    )
+    for kind, message in list(dict.fromkeys(headers))[:5]:
+        # Recompose only exception headers from the offline synthetic build,
+        # removing quoted values, paths, addresses and credential-shaped text.
+        cleaned = re.sub(rb"['\"][^'\"]*['\"]|https?://\S+|\S+@\S+|(?:/[A-Za-z0-9_.-]+){2,}|[A-Za-z0-9_=-]{20,}", b"[redacted]", message)
+        cleaned = re.sub(rb"[^A-Za-z0-9 .,:!?()_\[\]-]", b" ", cleaned)
+        cleaned = b" ".join(cleaned.split())[:192]
+        if cleaned:
+            print(f"MARKET_REPORT_NEXT_DETAIL exception={kind.decode('ascii')} summary={cleaned.decode('ascii')}")
+    segment = "none"
+    tails = {"stdout": [], "stderr": []}
+    label = b" landing_declared_full_build_synthetic_input"
+    for line in lines:
+        if line == b"CUMULATIVE_LANDING_STDOUT" + label:
+            segment = "stdout"
+        elif line == b"CUMULATIVE_LANDING_STDERR" + label:
+            segment = "stderr"
+        elif line.startswith((b"CUMULATIVE_LANDING_PHASE ", b"CUMULATIVE_LANDING_END ", b"CUMULATIVE_LANDING_FAILED ")):
+            segment = "none"
+        elif segment in tails and line.strip():
+            tails[segment].append(line)
+    for stream, records in tails.items():
+        for line in records[-18:]:
+            if re.search(rb"(?i)(?:secret|password|private_key|authorization|api.?key|access.?token|cookie|credentials)", line):
+                continue
+            line = re.sub(rb"['\"][^'\"]*['\"]|https?://\S+|\S+@\S+|(?:/[A-Za-z0-9_.-]+){2,}|[A-Za-z0-9_=-]{20,}", b"[redacted]", line)
+            line = re.sub(rb"[^A-Za-z0-9 .,:!?()_\[\]>+&=-]", b" ", line)
+            summary = b" ".join(line.split())[:168]
+            if summary:
+                print(f"MARKET_REPORT_NEXT_SYNTHETIC_TAIL stream={stream} summary={summary.decode('ascii')}")
 assert sys.argv[3] == "0"
 assert len(phases) == len(names) and {phase["name"] for phase in phases} == names
 assert all(phase["native_exit"] == 0 and phase["child_group_absent"] == True for phase in phases)

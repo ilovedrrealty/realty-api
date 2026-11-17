@@ -2,7 +2,7 @@ name: Isolated public market report browser rehearsal
 
 on:
   push:
-    branches: [codex-ci-market-report-browser-20261117-v2]
+    branches: [codex-ci-market-report-browser-20261117-v3]
 
 permissions:
   contents: read
@@ -35,7 +35,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: ilovedrrealty/iLoveDRRealty
-          ref: 919948242f0bf53bb993899cf6d2f08fff2d86c4
+          ref: c10466897db28df2bcba9ef7405610b05377cea7
           path: frontend-base
           persist-credentials: false
       - name: Read exact backend application
