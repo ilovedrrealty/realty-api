@@ -1,8 +1,8 @@
-name: Isolated reviewed service matching and cumulative PostgreSQL rehearsal
+name: Isolated private service referrals and cumulative PostgreSQL rehearsal
 
 on:
   push:
-    branches: [codex-ci-reviewed-service-matches-20261117]
+    branches: [codex-ci-private-service-referrals-20261117]
 
 permissions:
   contents: read
@@ -31,10 +31,10 @@ jobs:
           path: rehearsal-ops
           fetch-depth: 2
           persist-credentials: false
-      - name: Read exact reviewed service matching backend
+      - name: Read exact private service referrals backend
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: ae63b4a9d79877b77cdd78248b6a228738588a2f
+          ref: 8863b78437fe69be22725d44831c1da1b99223f0
           path: transaction-backend
           persist-credentials: false
       - name: Read exact prior application
@@ -49,7 +49,7 @@ jobs:
           ref: c193a925ba57ea2d67ea48c44e5262817885c8a2
           path: migration-relay
           persist-credentials: false
-      - name: Rehearse reviewed matching, service requests and inherited native contracts
+      - name: Rehearse private referrals and inherited PostgreSQL contracts
         shell: bash
         run: |
           set -euo pipefail

@@ -1,4 +1,4 @@
-"""Run service matching and inherited cases in nonce-bound PostgreSQL fixtures."""
+"""Run private referrals and inherited cases in nonce-bound PostgreSQL fixtures."""
 
 from contextlib import closing
 from hashlib import sha256
@@ -16,18 +16,23 @@ APP = Path("/application")
 BASELINE_HEAD = "5a4e7f921bc0"
 CORE_HEAD = "6c942ea8385d"
 DOC_HEAD = "de248ab5c9f3"
+REFERRAL_HEAD = "e12ac7d49f03"
+DOC_SHAPE = "43edab887dd816c5b2bedfbe95fed18fb2dec4a7e4c436242b134e849d34daba"
 CORE_TABLES = (
     "transaction_rooms", "transaction_room_events", "transaction_room_grants",
     "transaction_room_milestones", "transaction_room_tasks",
 )
 DOC_TABLES = ("transaction_documents", "transaction_document_versions")
+REFERRAL_TABLES = ("network_service_referrals", "network_service_referral_events")
+PRIVATE_TABLES = CORE_TABLES + DOC_TABLES + REFERRAL_TABLES
 TRIGGERS = ("transaction_room_events_immutable", "transaction_room_lead_changed")
-MODES = {"baseline", "fresh", "upgrade", "core", "documents", "adapter", "service"}
+MODES = {"baseline", "fresh", "upgrade", "core", "documents", "adapter", "service", "referrals"}
 TESTS = {
     "core": ("test_transaction_room.py", 9),
     "documents": ("test_transaction_documents.py", 3),
     "adapter": ("test_transaction_document_storage.py", 7),
     "service": ("test_service_workflow.py", 35),
+    "referrals": ("test_service_referrals.py", 5),
 }
 TEST_DB = "ildr_platform_test_20261025"
 HOST = "127.0.0.1"
@@ -206,11 +211,11 @@ def migrate(mode, database, nonce):
         command.upgrade(alembic_config, BASELINE_HEAD)
         stage = "catalog"
         check_database(database, nonce, BASELINE_HEAD)
-        catalog(database, CORE_TABLES + DOC_TABLES, present=False)
+        catalog(database, PRIVATE_TABLES, present=False)
         sentinel(database, nonce, create=True)
         return BASELINE_HEAD, 0, "none"
     if mode == "upgrade":
-        catalog(database, CORE_TABLES + DOC_TABLES, present=False)
+        catalog(database, PRIVATE_TABLES, present=False)
         sentinel(database, nonce)
     stage = "migrate_core"
     command.upgrade(alembic_config, CORE_HEAD)
@@ -218,11 +223,19 @@ def migrate(mode, database, nonce):
     catalog(database, CORE_TABLES, present=True)
     stage = "migrate_documents"
     command.upgrade(alembic_config, DOC_HEAD)
-    stage = "catalog"
     check_database(database, nonce, DOC_HEAD)
+    inherited_tables = CORE_TABLES + DOC_TABLES
+    check(catalog(database, inherited_tables, present=True) == DOC_SHAPE)
+    if mode == "upgrade":
+        catalog(database, REFERRAL_TABLES, present=False)
+    stage = "migrate_referrals"
+    command.upgrade(alembic_config, REFERRAL_HEAD)
+    stage = "catalog"
+    check_database(database, nonce, REFERRAL_HEAD)
+    check(catalog(database, inherited_tables, present=True) == DOC_SHAPE)
     if mode == "upgrade":
         sentinel(database, nonce)
-    return DOC_HEAD, len(CORE_TABLES + DOC_TABLES), catalog(database, CORE_TABLES + DOC_TABLES, present=True)
+    return REFERRAL_HEAD, len(PRIVATE_TABLES), catalog(database, PRIVATE_TABLES, present=True)
 
 
 def run(mode, nonce, commit, tree):
@@ -237,7 +250,8 @@ def run(mode, nonce, commit, tree):
     else:
         database = {
             "baseline": f"ildr_s03_upgrade_{nonce}", "fresh": f"ildr_s03_fresh_{nonce}",
-            "upgrade": f"ildr_s03_upgrade_{nonce}", "core": TEST_DB, "documents": TEST_DB, "service": TEST_DB,
+            "upgrade": f"ildr_s03_upgrade_{nonce}", "core": TEST_DB, "documents": TEST_DB,
+            "service": TEST_DB, "referrals": TEST_DB,
         }[mode]
         stage = "disposable_db"
         check_database(database, nonce, BASELINE_HEAD if mode == "upgrade" else None)
