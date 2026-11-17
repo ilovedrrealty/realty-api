@@ -111,6 +111,7 @@ class TransactionDocumentTests(room_fixture.TransactionRoomFixture):
         room, documents = self.start_documents()
         data = self.file()
         payload = self.reservation(data)
+        self.request("buyer", "POST", documents, 422, {**payload, "file_name": "Cierre.html"})
         reserved = self.request("buyer", "POST", documents, body=payload)
         version = self.upload_path(documents, reserved)
         self.assertEqual(reserved["status"], "reserved")

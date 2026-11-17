@@ -12,6 +12,11 @@ from utils.transaction_document_storage import MAX_DOCUMENT_BYTES
 
 MediaType = Literal["application/pdf", "image/jpeg", "image/png"]
 DocumentStatus = Literal["reserved", "submitted", "approved", "rejected"]
+FILE_EXTENSIONS = {
+    "application/pdf": {".pdf"},
+    "image/jpeg": {".jpg", ".jpeg"},
+    "image/png": {".png"},
+}
 
 
 class ReserveDocument(BaseModel):
@@ -38,6 +43,13 @@ class ReserveDocument(BaseModel):
         if value in {".", ".."} or any(char in value for char in '/\\:<>"|?*'):
             raise ValueError("Use a file name without a path or reserved characters")
         return value
+
+    @model_validator(mode="after")
+    def match_file_extension(self):
+        name, dot, extension = self.file_name.rpartition(".")
+        if not name or dot + extension.lower() not in FILE_EXTENSIONS[self.content_type]:
+            raise ValueError("The document extension must match its type")
+        return self
 
 
 class DocumentReceipt(BaseModel):
