@@ -1,13 +1,17 @@
 from uuid import uuid4
 
 from fastapi import HTTPException
+from pydantic import ValidationError
 from sqlalchemy import and_, func, select, true
 from sqlalchemy.dialects.postgresql import insert
 
 from models.editorial import EditorialEvent as Event, EditorialPage as Page, EditorialRevision as Revision
-from schemas.editorial import (EditorialDetail, EditorialDraft, EditorialList, EditorialSummary, PublicEditorialDetail,
-                              PublicEditorialList, PublicEditorialSummary, RESERVED_SLUGS, RevisionList,
-                              RevisionPreview, RevisionSummary)
+from schemas.editorial import (
+    EditorialDetail, EditorialDraft, EditorialList, EditorialSummary, PublicEditorialDetail,
+    PublicEditorialList, PublicEditorialSummary, PublicNeighborhoodDetail, PublicNeighborhoodList,
+    PublicNeighborhoodSummary, RESERVED_SLUGS, RevisionList, RevisionPreview, RevisionSummary,
+)
+from services.property_management import today_dr
 from services.property_network import now
 from services.service_workflow import lock_users
 
@@ -107,6 +111,7 @@ def create(db, user, body):
     actor = _editor(db, user)
     if body.slug in RESERVED_SLUGS:
         raise HTTPException(409, "This slug is reserved for existing website content")
+    _check_neighborhood_kind(body.kind, body)
     instant = now()
     created = db.execute(insert(Page).values(id=uuid4(), slug=body.slug, kind=body.kind, version=1,
                                             draft_revision=1, updated_at=instant)
@@ -138,7 +143,23 @@ def _next_draft(db, page, actor, snapshot, name, *, restored_from=None):
 
 def write_draft(db, user, identifier, body):
     actor, page = _checked_page(db, user, identifier, body.expected_version)
-    return _next_draft(db, page, actor, body, "draft")
+    _check_neighborhood_kind(page.kind, body)
+    snapshot = body
+    if page.kind == "neighborhood" and "neighborhood" not in body.content.model_fields_set:
+        previous = _payload(_revision(db, page.id, page.draft_revision)).content.neighborhood
+        if previous is not None:
+            input_data = body.model_dump(exclude={"expected_version"})
+            input_data["content"]["neighborhood"] = previous.model_dump()
+            try:
+                snapshot = EditorialDraft.model_validate(input_data)
+            except ValidationError:
+                raise HTTPException(422, "Keep the listed sources for existing neighborhood facts.") from None
+    return _next_draft(db, page, actor, snapshot, "draft")
+
+
+def _check_neighborhood_kind(kind, draft):
+    if kind != "neighborhood" and draft.content.neighborhood is not None:
+        raise HTTPException(422, "Comparison facts are available for neighborhood pages.")
 
 
 def restore(db, user, identifier, body):
@@ -153,6 +174,10 @@ def _reviewable(revision):
                    for locale in (snapshot.content.en, snapshot.content.es))
     if not complete or not snapshot.sources:
         raise HTTPException(422, "Complete English and Spanish content and add an HTTPS source before review")
+    if snapshot.content.neighborhood is not None and any(
+        fact.checked_on > today_dr() for fact in snapshot.content.neighborhood.facts
+    ):
+        raise HTTPException(422, "Neighborhood fact dates cannot be in the future.")
 
 
 def review(db, user, identifier, body):
@@ -223,3 +248,44 @@ def public_detail(db, slug, locale):
     content = row.content
     return PublicEditorialDetail(slug=row.slug, kind=row.kind, published_at=row.published_at,
                                  title=content["title"], summary=content["summary"], body=content["body"], sources=row.sources)
+
+
+def _published_neighborhoods(statement):
+    return _published(statement).where(
+        Page.kind == "neighborhood", func.jsonb_typeof(Revision.content["neighborhood"]) == "object",
+    )
+
+
+def public_neighborhood_list(db, locale, page, page_size):
+    localized = Revision.content[locale]
+    location = Revision.content["neighborhood"]["listing_location"].as_string().label("listing_location")
+    cards = _published_neighborhoods(select(
+        Page.slug, Page.published_at, localized["title"].as_string().label("title"),
+        localized["summary"].as_string().label("summary"), location,
+    )).order_by(Page.slug).offset((page - 1) * page_size).limit(page_size).subquery()
+    totals = _published_neighborhoods(select(func.count().label("total"))).subquery()
+    rows = db.execute(select(totals.c.total, cards).select_from(totals).outerjoin(cards, true()).order_by(cards.c.slug)).all()
+    return PublicNeighborhoodList(total=rows[0].total, items=[
+        PublicNeighborhoodSummary(slug=row.slug, title=row.title, summary=row.summary,
+                                  published_at=row.published_at, listing_location=row.listing_location)
+        for row in rows if row.slug is not None
+    ])
+
+
+def public_neighborhood_detail(db, slug, locale):
+    row = db.execute(_published_neighborhoods(select(
+        Page.slug, Page.published_at, Revision.content, Revision.sources,
+    )).where(Page.slug == slug)).one_or_none()
+    if row is None:
+        unavailable()
+    summary = row.content[locale]
+    neighborhood = row.content["neighborhood"]
+    sources = {}
+    for source in row.sources:
+        sources.setdefault(source["url"], source)
+    return PublicNeighborhoodDetail(
+        slug=row.slug, title=summary["title"], summary=summary["summary"], published_at=row.published_at,
+        listing_location=neighborhood["listing_location"],
+        facts=[dict(topic=fact["topic"], text=fact[locale], checked_on=fact["checked_on"],
+                    source=sources[fact["source_url"]]) for fact in neighborhood["facts"]],
+    )

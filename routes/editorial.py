@@ -11,8 +11,8 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from database import get_db
 from schemas.editorial import (EditorialChange, EditorialCreate, EditorialDetail, EditorialList, EditorialRevisionChange,
-                               EditorialWrite, Locale, PublicEditorialDetail, PublicEditorialList, RevisionList,
-                               RevisionPreview, Slug)
+                               EditorialWrite, Locale, PublicEditorialDetail, PublicEditorialList, PublicNeighborhoodDetail,
+                               PublicNeighborhoodList, RevisionList, RevisionPreview, Slug)
 from services import editorial as service
 from utils.permission import require_admin
 from utils.request_security import require_json_mutation
@@ -120,3 +120,14 @@ def public_list(locale: Locale = "en", page: int = Page, page_size: int = PageSi
 @router.get("/site/editorial/{slug}", response_model=PublicEditorialDetail)
 def public_detail(slug: Slug, locale: Locale = "en", db: Session = Depends(get_db)):
     return service.public_detail(db, slug, locale)
+
+
+@router.get("/site/neighborhoods", response_model=PublicNeighborhoodList)
+def public_neighborhood_list(locale: Locale = "en", page: int = Page, page_size: int = PageSize,
+                             db: Session = Depends(get_db)):
+    return service.public_neighborhood_list(db, locale, page, page_size)
+
+
+@router.get("/site/neighborhoods/{slug}", response_model=PublicNeighborhoodDetail)
+def public_neighborhood_detail(slug: Slug, locale: Locale = "en", db: Session = Depends(get_db)):
+    return service.public_neighborhood_detail(db, slug, locale)

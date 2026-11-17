@@ -32,6 +32,7 @@ from schemas.editorial import RESERVED_SLUGS
 
 ADMIN = "/admin/editorial"
 PUBLIC = "/site/editorial"
+NEIGHBORHOODS = "/site/neighborhoods"
 SOURCE = {"label": "Synthetic reference", "url": "https://example.org/resource"}
 PRIVATE_NOTE = "PRIVATE_EDITORIAL_EVIDENCE"
 
@@ -108,7 +109,7 @@ class EditorialTests(unittest.TestCase):
         self.assertEqual(result.headers["cache-control"], "no-store")
         self.assertEqual(result.headers["pragma"], "no-cache")
         self.assertEqual(result.headers["vary"], "Cookie, Authorization")
-        if path.startswith(PUBLIC) or expected >= 400:
+        if path.startswith((PUBLIC, NEIGHBORHOODS)) or expected >= 400:
             self.assertNotIn("PRIVATE_", result.text)
             self.assertNotIn("example.invalid", result.text)
         return result.json()
@@ -139,6 +140,78 @@ class EditorialTests(unittest.TestCase):
     def save(self, page, payload, *, actor="editor", expected=200):
         return self.request("PUT", f"{ADMIN}/{page['id']}/draft", expected, actor=actor,
                             data={"expected_version": page["version"], **payload})
+
+    def neighborhood_payload(self, **fact_changes):
+        payload = self.payload()
+        payload["content"]["neighborhood"] = {"listing_location": "Synthetic Coastal Area", "facts": [{
+            "topic": "transport", "en": "Synthetic transport fact.", "es": "Dato sintético de transporte.",
+            "checked_on": "2025-10-22", "source_url": SOURCE["url"], **fact_changes,
+        }]}
+        return payload
+
+    def test_neighborhood_comparison_projects_only_published_localized_facts_and_sources(self):
+        legacy = self.create("legacy-neighborhood", kind="neighborhood")
+        self.assertNotIn("neighborhood", legacy["content"])
+        self.change(self.change(legacy, "review"), "publish")
+        self.request("GET", NEIGHBORHOODS + "/legacy-neighborhood", 404, actor=None)
+        page = self.create("compare-synthetic-coast", kind="neighborhood", payload=self.neighborhood_payload())
+        detail = f"{NEIGHBORHOODS}/{page['slug']}"
+        self.request("GET", detail, 404, actor=None)
+        self.assertEqual(self.request("GET", NEIGHBORHOODS, 200, actor=None), {"items": [], "total": 0})
+        reviewed = self.change(page, "review")
+        self.request("GET", detail, 404, actor=None)
+        self.change(reviewed, "publish")
+
+        cards = self.request("GET", NEIGHBORHOODS + "?locale=es&page_size=1", 200, actor=None)
+        [card] = cards["items"]
+        self.assertEqual(cards["total"], 1)
+        self.assertEqual(set(card), {"slug", "title", "summary", "published_at", "listing_location"})
+        self.assertEqual(card["listing_location"], "Synthetic Coastal Area")
+        self.assertEqual(self.request("GET", NEIGHBORHOODS + "?page=2&page_size=1", 200, actor=None),
+                         {"items": [], "total": 1})
+        spanish = self.request("GET", detail + "?locale=es", 200, actor=None)
+        self.assertEqual(spanish, {**card, "facts": [{
+            "topic": "transport", "text": "Dato sintético de transporte.", "checked_on": "2025-10-22", "source": SOURCE,
+        }]})
+        english = self.request("GET", detail + "?locale=en", 200, actor=None)
+        self.assertEqual(english["facts"][0]["text"], "Synthetic transport fact.")
+        original = self.request("GET", f"{PUBLIC}/{page['slug']}?locale=es", 200, actor=None)
+        self.assertEqual(set(original), {"slug", "kind", "title", "summary", "body", "sources", "published_at"})
+
+    def test_legacy_prose_edit_preserves_comparison_and_withdrawal_requires_publication(self):
+        original = self.neighborhood_payload()
+        page = self.create("reviewed-synthetic-town", kind="neighborhood", payload=original)
+        published = self.change(self.change(page, "review"), "publish")
+        path = f"{NEIGHBORHOODS}/{page['slug']}"
+        self.save(published, self.payload(sources=[]), expected=422)
+        copy_edit = self.save(published, self.payload(suffix=" updated"))
+        self.assertEqual(copy_edit["content"]["neighborhood"], original["content"]["neighborhood"])
+        cleared = self.payload()
+        cleared["content"]["neighborhood"] = None
+        draft = self.save(copy_edit, cleared)
+        self.assertNotIn("neighborhood", draft["content"])
+        self.request("GET", path, 200, actor=None)
+        removed = self.change(self.change(draft, "review"), "publish")
+        self.request("GET", path, 404, actor=None)
+        restored = self.change(removed, "restore", revision=1)
+        self.assertEqual(restored["content"]["neighborhood"], original["content"]["neighborhood"])
+        self.change(self.change(restored, "review"), "publish")
+        self.request("GET", path, 200, actor=None)
+
+    def test_neighborhood_facts_validate_sources_topics_kind_and_as_of_date(self):
+        self.create("ordinary-guide", kind="guide", payload=self.neighborhood_payload(), expected=422)
+        self.create("wrong-source", kind="neighborhood", expected=422,
+                    payload=self.neighborhood_payload(source_url="https://example.org/undeclared"))
+        self.create("timestamp-fact", kind="neighborhood", expected=422,
+                    payload=self.neighborhood_payload(checked_on="2025-10-22T00:00:00Z"))
+        duplicate = self.neighborhood_payload()
+        facts = duplicate["content"]["neighborhood"]["facts"]
+        facts.append(dict(facts[0]))
+        self.create("duplicate-topic", kind="neighborhood", payload=duplicate, expected=422)
+        future = self.create("future-neighborhood", kind="neighborhood",
+                             payload=self.neighborhood_payload(checked_on="9999-10-22"))
+        self.change(future, "review", expected=422)
+        self.request("GET", NEIGHBORHOODS + "/future-neighborhood", 404, actor=None)
 
     def test_verified_admin_only_and_revision_preview_is_private(self):
         page = self.create()
