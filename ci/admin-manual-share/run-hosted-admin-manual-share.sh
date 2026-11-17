@@ -8,7 +8,7 @@ bounded() { timeout --kill-after=8s "$@"; }
 
 [[ $# == 4 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api ]] || die CI_REQUIRED
 [[ ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 && ${GITHUB_RUN_ATTEMPT:-} == 1 ]] || die STANDARD_LINUX_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-stay-arrival-browser-20261116 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
+[[ ${GITHUB_REF:-} == refs/heads/codex-ci-stay-arrival-browser-20261116-v2 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 
 ops="$1"; frontend="$2"; backend="$3"; migration="$4"
 [[ "$ops" == "$GITHUB_WORKSPACE/browser-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-base" &&
@@ -18,10 +18,10 @@ for checkout in "$ops" "$frontend" "$backend" "$migration"; do
   checkout_status=$(git -C "$checkout" status --porcelain=v1 --untracked-files=all) || die CLEAN_CHECKOUT_REQUIRED
   [[ $(realpath "$checkout") == "$checkout" && -z "$checkout_status" ]] || die CLEAN_CHECKOUT_REQUIRED
 done
-[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == 4037006e3329b06ff052def5d07657bdc349b0a6 ]] ||
+[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == 0d38718024deee0b0e1f0229a1c35849949c88e3 ]] ||
   die EXACT_OPERATIONS_PARENT_REQUIRED
-frontend_commit=9eeaa2f189094dacaf5ba69a0eba8f47896cccf5
-frontend_tree=c7f6e9f8e7d11f837b16ac5b6219f1ae47869b0c
+frontend_commit=84548f628880eb3b2fdae0027d2f2ddfedd52d2e
+frontend_tree=d07de0a4d2e209ce174edf3db21f605a25aa92b7
 backend_commit=170870dcfc844712ea2e5fcf5137d59939de8979
 backend_tree=c38e3c556ff330e5395a7a08b017193d19bc710f
 migration_head=87e9c4a1d620
@@ -456,7 +456,8 @@ from pathlib import Path
 import json,re,sys
 path=Path(sys.argv[1]); assert path.stat().st_size <= 131072
 prefix=b'STAY_ARRIVAL_BROWSER '
-matches=[line[len(prefix):] for line in path.read_bytes().splitlines() if line.startswith(prefix)]
+lines=path.read_bytes().splitlines()
+matches=[line[len(prefix):] for line in lines if line.startswith(prefix)]
 assert len(matches)==1 and len(matches[0])<=8192
 def safe(value):
     if isinstance(value,dict): return len(value)<=30 and all(re.fullmatch(r'[a-z_]+',key) and safe(item) for key,item in value.items())
@@ -465,10 +466,16 @@ def safe(value):
     return value is None or type(value) in (bool,int)
 data=json.loads(matches[0]); assert safe(data)
 print(prefix.decode()+json.dumps(data,sort_keys=True,separators=(',',':')))
+geo_prefix=b'STAY_ARRIVAL_GEOMETRY '
+for line in lines:
+    if line.startswith(geo_prefix):
+        geometry=json.loads(line[len(geo_prefix):]); assert safe(geometry)
+        assert set(geometry)=={'viewport','document','body','main','guide','filters'}
+        print(geo_prefix.decode()+json.dumps(geometry,sort_keys=True,separators=(',',':')))
 assert data['status']=='PASS'
 assert set(data)=={'status','checks'}
 assert data['checks']==['owner_bilingual_edit','role_dates_and_response_privacy',
-                        'spanish_mobile_guest_read_and_close','stale_write_denied_and_clear_revokes']
+                        'spanish_mobile_guest_read_close_and_expiry','stale_write_denied_and_clear_revokes']
 PY
 [[ "$client_exit" == 0 && "$container_state" == '0 false false' ]] || die NATIVE_BROWSER_FAILED
 

@@ -59,8 +59,8 @@ def seed_stays():
         cases = (
             ("inWindow", "confirmed", users["buyer"].id, 1),
             ("outsideWindow", "confirmed", users["buyer"].id, 12),
-            ("pending", "pending", users["buyer"].id, 3),
-            ("cancelled", "cancelled", users["buyer"].id, 5),
+            ("pending", "pending", users["buyer"].id, 0),
+            ("cancelled", "cancelled", users["buyer"].id, 2),
             ("unclaimed", "confirmed", None, -1),
         )
         stays = {}

@@ -77,6 +77,7 @@ async function createSession(browser, account = null, mobile = false) {
 
 async function openBookings(context, path, role) {
   const page = await context.newPage()
+  if (role === 'buyer') await page.clock.install()
   const identityPromise = page.waitForResponse(response => backendResponse(response, '/auth/me', 'GET'))
   await page.goto(dashboard + path, { waitUntil: 'domcontentloaded' })
   const identity = await identityPromise
@@ -88,6 +89,23 @@ function guideButton(page, booking, label) {
   return page.getByRole('button', { name: label, exact: true }).and(
     page.locator(`[aria-controls="arrival-guide-${booking}"]`),
   )
+}
+
+async function mobileGeometry(page, booking) {
+  return page.evaluate(id => {
+    const stats = element => {
+      if (!element) return null
+      const width = element.getBoundingClientRect()
+      return [Math.round(width.x), Math.round(width.right), element.clientWidth, element.scrollWidth]
+    }
+    const markedFilter = [...document.querySelectorAll('main button')].find(button => button.getAttribute('aria-pressed') === 'true'
+      && button.textContent?.trim().startsWith('Todas'))
+    return {
+      viewport: innerWidth, document: document.documentElement.scrollWidth, body: document.body.scrollWidth,
+      main: stats(document.querySelector('main')), guide: stats(document.getElementById('arrival-guide-' + id)),
+      filters: stats(markedFilter?.parentElement),
+    }
+  }, booking)
 }
 
 async function main() {
@@ -159,10 +177,20 @@ async function main() {
       && Date.parse(details.available_until) > Date.now(), 'GUEST_RESPONSE_MINIMAL_AND_TIME_BOUND')
     await page.getByText(spanish, { exact: true }).waitFor({ state: 'visible' })
     check(await page.getByText(english, { exact: true }).count() === 0, 'GUEST_LANGUAGE_SCOPE_MISMATCH')
-    check(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'MOBILE_HORIZONTAL_OVERFLOW')
+    const geometry = await mobileGeometry(page, fixture.stays.inWindow)
+    console.log('STAY_ARRIVAL_GEOMETRY ' + JSON.stringify(geometry))
+    check(geometry.document <= geometry.viewport + 1 && geometry.guide
+      && geometry.guide[1] <= geometry.viewport + 1 && geometry.guide[3] <= geometry.guide[2] + 1, 'MOBILE_HORIZONTAL_OVERFLOW')
     await guideButton(page, fixture.stays.inWindow, 'Cerrar guía de llegada').click()
     check(await page.getByText(spanish, { exact: true }).count() === 0, 'CLOSED_GUIDE_CONTENT_STILL_RENDERED')
-    checks.push('spanish_mobile_guest_read_and_close')
+    await available.click()
+    await page.getByText(spanish, { exact: true }).waitFor({ state: 'visible' })
+    const delta = Date.parse(details.available_until) - await page.evaluate(() => Date.now())
+    check(Number.isSafeInteger(delta) && delta > 0 && delta < 7 * 24 * 60 * 60 * 1000, 'CONTROLLED_STAY_EXPIRY_REQUIRED')
+    await page.clock.fastForward(delta + 1000)
+    await page.getByText(unavailable, { exact: true }).waitFor({ state: 'visible' })
+    check(await page.getByText(spanish, { exact: true }).count() === 0, 'EXPIRED_GUIDE_CONTENT_STILL_RENDERED')
+    checks.push('spanish_mobile_guest_read_close_and_expiry')
 
     stage = 'bounded_clear_and_conflict'
     const stale = await call(owner, ownerPath, 'PUT', { expected_version: 0, content: null })

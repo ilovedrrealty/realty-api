@@ -2,7 +2,7 @@ name: Isolated private stay arrival guide rehearsal
 
 on:
   push:
-    branches: [codex-ci-stay-arrival-browser-20261116]
+    branches: [codex-ci-stay-arrival-browser-20261116-v2]
 
 permissions:
   contents: read
@@ -35,7 +35,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: ilovedrrealty/iLoveDRRealty
-          ref: 9eeaa2f189094dacaf5ba69a0eba8f47896cccf5
+          ref: 84548f628880eb3b2fdae0027d2f2ddfedd52d2e
           path: frontend-base
           persist-credentials: false
       - name: Read exact backend application
