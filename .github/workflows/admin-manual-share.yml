@@ -1,8 +1,8 @@
-name: Isolated shortlist-to-viewing mobile rehearsal
+name: Isolated purchase cost worksheet mobile rehearsal
 
 on:
   push:
-    branches: [codex-ci-stay-explore-browser-20261117]
+    branches: [codex-purchase-cost-worksheet-browser-ci-20261117]
 
 permissions:
   contents: read
@@ -31,17 +31,17 @@ jobs:
           path: browser-ops
           fetch-depth: 2
           persist-credentials: false
-      - name: Read exact shortlist-to-viewing frontend
+      - name: Read exact purchase cost worksheet frontend
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: ilovedrrealty/iLoveDRRealty
-          ref: f9bbbf5efae6ecf2c9ea6a7e7fa96447f0e1dbb7
+          ref: 3726c2dc02c45dd87f719a3223a710320f187ecf
           path: frontend-base
           persist-credentials: false
       - name: Read exact backend application
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 7f8a3c4682fd0037383926051e96fe155ab77583
+          ref: d1a8e4f9ed5708e97bc3dcaa9f60f96543e60cbe
           path: browser-backend
           persist-credentials: false
       - name: Read accepted migration dependency recipe
@@ -50,7 +50,7 @@ jobs:
           ref: c193a925ba57ea2d67ea48c44e5262817885c8a2
           path: migration-relay
           persist-credentials: false
-      - name: Verify authorized shortlists, mobile viewing plans and revocation
+      - name: Verify private bilingual mobile worksheet and print summary
         shell: bash
         run: |
           set -euo pipefail
