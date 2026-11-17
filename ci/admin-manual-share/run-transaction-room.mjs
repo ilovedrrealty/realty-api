@@ -400,11 +400,16 @@ async function verifyEvidenceDenied(context, page, room, role, task, docs) {
 }
 
 async function verifyReceipt(row, reviewedAt) {
-  const receipt = row.locator('p').filter({ hasText: /^Reviewed by Browser Closing Professional\b/ })
-  await receipt.waitFor()
-  const time = receipt.locator('time[datetime]')
-  await time.waitFor()
-  check(await time.getAttribute('datetime') === reviewedAt, 'EXACT_REVIEW_TIMESTAMP_REQUIRED')
+  const time = row.locator('p > time[datetime]')
+  await time.waitFor({ state: 'visible' })
+  const receipt = await time.evaluate(node => ({
+    instant: node.getAttribute('datetime'),
+    reviewer: Array.from(node.parentElement.childNodes)
+      .filter(child => child.nodeType === Node.TEXT_NODE)
+      .map(child => child.textContent).join('').trim(),
+  }))
+  check(receipt.instant === reviewedAt, 'EXACT_REVIEW_TIMESTAMP_REQUIRED')
+  check(receipt.reviewer === 'Reviewed by ' + professionalName, 'EXACT_VISIBLE_REVIEWER_NAME_REQUIRED')
 }
 
 async function finishEvidence(professional, page, room, task, docs) {
