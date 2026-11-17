@@ -139,6 +139,12 @@ function dateInDominicanRepublic(date) {
 const label = (scope, name) => scope.getByLabel(name, { exact: true })
 const button = (scope, name) => scope.getByRole('button', { name, exact: true })
 
+function selectUnitOption(scope, value) {
+  // These native selects are inside their labels, where getByLabel includes
+  // option text. Match the actual option within the exact unit fieldset.
+  return scope.locator(`select:has(> option[value="${value}"])`).selectOption(value)
+}
+
 async function openFromListings(context, path, mobile) {
   const surface = mobile ? 'mobile' : 'desktop'
   step = surface + '_listings_navigation'
@@ -235,9 +241,9 @@ async function enterInventory(page, verified, cutoff) {
   await fill(unit, 'size', 'Size (m²)', '110.25')
   await fill(unit, 'price', 'Price', '199000.00')
   step = 'desktop_unit_one_currency'
-  await label(unit, 'Currency').selectOption('USD')
+  await selectUnitOption(unit, 'USD')
   step = 'desktop_unit_one_status'
-  await label(unit, 'Unit status').selectOption('available')
+  await selectUnitOption(unit, 'available')
   await fill(unit, 'unit_one_floor_plan', 'Floor plan URL', floorPlan)
   step = 'desktop_approve_floor_plan'
   await label(unit, 'Approved for public sharing').check()
@@ -248,7 +254,7 @@ async function enterInventory(page, verified, cutoff) {
   await second.waitFor({ state: 'visible' })
   await fill(second, 'unit_two_code', 'Unit code', 'A2')
   step = 'desktop_unit_two_status'
-  await label(second, 'Unit status').selectOption('reserved')
+  await selectUnitOption(second, 'reserved')
   await fill(second, 'unit_two_floor_plan', 'Floor plan URL', privateFloorPlan)
 }
 
