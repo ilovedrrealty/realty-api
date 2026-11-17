@@ -2,7 +2,7 @@ name: Isolated newsletter confirmation and unsubscribe
 
 on:
   push:
-    branches: [codex-ci-newsletter-native-20261117-v3]
+    branches: [codex-ci-newsletter-native-20261117-v4]
 
 permissions:
   contents: read
@@ -19,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 7c0d04bdb5e2935f2dc7ddfd5fd3bfc75709d90b
+          ref: 365eef9962ab5938a614348d3cb95d8aea3c0ba1
           path: app
           persist-credentials: false
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -32,8 +32,8 @@ jobs:
         run: |
           set -euo pipefail
           source="$GITHUB_WORKSPACE/app"
-          [[ $(git -C "$source" rev-parse HEAD) == 7c0d04bdb5e2935f2dc7ddfd5fd3bfc75709d90b ]]
-          [[ $(git -C "$source" rev-parse 'HEAD^{tree}') == 8604c75d9556276f06567dde5e8a5eef5d4d730f ]]
+          [[ $(git -C "$source" rev-parse HEAD) == 365eef9962ab5938a614348d3cb95d8aea3c0ba1 ]]
+          [[ $(git -C "$source" rev-parse 'HEAD^{tree}') == 943027cc48a99c2dce1f70ab860e1ea8ecbf81ca ]]
           [[ -z $(git -C "$source" status --porcelain) && ! -e "$source/.env" ]]
           state=$(mktemp -d "$RUNNER_TEMP/ildr-newsletter.XXXXXXXX")
           tag="ildr-newsletter:$GITHUB_RUN_ID"
@@ -74,5 +74,5 @@ jobs:
                 python -m unittest discover -s tests -p test_newsletter.py -v
               ' -- "$stage"
             [[ $("${p[@]}" -d "$db" -Atc 'SELECT version_num FROM alembic_version') == f92c8a74d31e ]]
-            printf 'NEWSLETTER_NATIVE_PASS stage=%s app=7c0d04bdb5e2935f2dc7ddfd5fd3bfc75709d90b\n' "$stage"
+            printf 'NEWSLETTER_NATIVE_PASS stage=%s app=365eef9962ab5938a614348d3cb95d8aea3c0ba1\n' "$stage"
           done
