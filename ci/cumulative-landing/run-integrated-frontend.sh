@@ -8,7 +8,7 @@ bounded() { timeout --kill-after=8s "$@"; }
 
 [[ $# == 4 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 &&
-   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-f08-newsletter-frontend-20261117 &&
+   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-f09-deletion-frontend-20261117 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die HOSTED_EXACT_EVENT_REQUIRED
 ops="$1"; frontend="$2"; live="$3"; relay="$4"
 [[ "$ops" == "$GITHUB_WORKSPACE/build-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-base" &&
@@ -20,9 +20,9 @@ for checkout in "$ops" "$frontend" "$live" "$relay"; do
     die CLEAN_CHECKOUT_REQUIRED
 done
 [[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" &&
-   $(git -C "$ops" rev-parse 'HEAD^') == 806746e617d2e70769fe521c3313ae88a2d97bb3 ]] || die EXACT_OPERATIONS_REQUIRED
+   $(git -C "$ops" rev-parse 'HEAD^') == dc6f985c4679145e815363a0cd915387c473fab9 ]] || die EXACT_OPERATIONS_REQUIRED
 delta=$(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) || die EXACT_DELTA_REQUIRED
-[[ "$delta" == $'.github/workflows/integrated-frontend-build.yml\nci/cumulative-landing/newsletter-frontend.commit\nci/cumulative-landing/newsletter-frontend.patch\nci/cumulative-landing/newsletter-token-format.commit\nci/cumulative-landing/newsletter-token-format.patch\nci/cumulative-landing/run-integrated-frontend.sh' ]] ||
+[[ "$delta" == $'.github/workflows/integrated-frontend-build.yml\nci/cumulative-landing/account-deletion-frontend.commit\nci/cumulative-landing/account-deletion-frontend.patch\nci/cumulative-landing/auth-fallback-fixture.commit\nci/cumulative-landing/auth-fallback-fixture.patch\nci/cumulative-landing/run-integrated-frontend.sh' ]] ||
   die EXACT_DELTA_REQUIRED
 frontend_base_commit=99bc8d4c0ee4f3f0b72cf174530971f6a35f0ab3
 frontend_base_tree=4053ae36068790f5f4562ad256dd8a0018fac6ae
@@ -32,9 +32,13 @@ frontend_combined_commit=12f5b00fc5aa4040cb91c8ecc483812999c0e33e
 frontend_combined_tree=9f1817d1f744d3c57c365f18435c79051219f0df
 frontend_newsletter_commit=5994fbe6d1c09b3f74000ca20261778f0c46887e
 frontend_newsletter_tree=d7d803a5b53f70e077ea4995ac1f1ba288a8d7da
-frontend_commit=4d0a99e0bef524fe00eab5f2c0916d91768a4efb
-frontend_tree=ca59517c57b8e06ffe5fd2840340ee739e29937b
-frontend_paths=569
+frontend_token_commit=4d0a99e0bef524fe00eab5f2c0916d91768a4efb
+frontend_token_tree=ca59517c57b8e06ffe5fd2840340ee739e29937b
+frontend_auth_fixture_commit=90b238ea2e81e2ec279cbc18546125478bffceb1
+frontend_auth_fixture_tree=0da98d76419ff0501b87b112d975037496b9583f
+frontend_commit=69d64e6bb7ba4d748267d22b7e215bd53089f325
+frontend_tree=2570e8ccc497bd03fbee402897d67cbd9ad9a294
+frontend_paths=575
 [[ $(git -C "$frontend" rev-parse HEAD) == "$frontend_base_commit" &&
    $(git -C "$frontend" rev-parse 'HEAD^{tree}') == "$frontend_base_tree" &&
    $(git -C "$live" rev-parse HEAD) == "$frontend_live_commit" &&
@@ -45,6 +49,10 @@ newsletter_patch="$ops/ci/cumulative-landing/newsletter-frontend.patch"
 newsletter_payload="$ops/ci/cumulative-landing/newsletter-frontend.commit"
 token_patch="$ops/ci/cumulative-landing/newsletter-token-format.patch"
 token_payload="$ops/ci/cumulative-landing/newsletter-token-format.commit"
+auth_fixture_patch="$ops/ci/cumulative-landing/auth-fallback-fixture.patch"
+auth_fixture_payload="$ops/ci/cumulative-landing/auth-fallback-fixture.commit"
+deletion_patch="$ops/ci/cumulative-landing/account-deletion-frontend.patch"
+deletion_payload="$ops/ci/cumulative-landing/account-deletion-frontend.commit"
 printf '%s  %s\n' \
   bab3d68fa5740ef914deb0b3d623feb7a9641aa160f0c502daf1078f23fcf7ae "$frontend_patch" \
   9f955c1533cbe0fde9965c7c6122f089b0bdfbd546ed2cb53557fd86d3fe1636 "$frontend_payload" \
@@ -52,6 +60,10 @@ printf '%s  %s\n' \
   a2d1178b3cd61d0e00a6172395cd9330ddac7decc2a3a46016d5666a13bfb040 "$newsletter_payload" \
   ef4f871d8719f7e2a45b7ca1ea4eb4065e52eb7b71b89ea5a75e6345827a5009 "$token_patch" \
   154685af21a73f4885ae20d266a4e67397f8124b58e9367cf8ede1327afa5404 "$token_payload" \
+  5b723caae48f8867102646f262a6540a116ef89dca4ed8a81a0298df1ee33c20 "$auth_fixture_patch" \
+  59ea851b47d3f6f012cd91109246c6a8acc65fd2bfc89dd03c71d6370da3f71a "$auth_fixture_payload" \
+  677f123321b22aece9f7fd5b396c3d4c76457723d588190ed5c5f6b911d093b8 "$deletion_patch" \
+  8bde73aa77efe883779189a40540272660b778478b07681e0704e45141132c6f "$deletion_payload" \
   | sha256sum --check --status || die EXACT_RECONSTRUCTION_INPUTS_REQUIRED
 [[ $(git -C "$relay" rev-parse HEAD) == d49acd7d48e92dac6d06b1678570bc137fb6a5ba ]] || die EXACT_RELAY_REQUIRED
 landing_fixture="$relay/ci/frontend"
@@ -130,16 +142,45 @@ git -C "$source_repo" apply --cached --check --unidiff-zero --whitespace=error-a
   die REVIEWED_TOKEN_FORMAT_CHECK_REQUIRED
 git -C "$source_repo" apply --cached --unidiff-zero --whitespace=error-all "$token_patch" ||
   die REVIEWED_TOKEN_FORMAT_REQUIRED
-[[ $(git -C "$source_repo" write-tree) == "$frontend_tree" &&
-   $(git -C "$source_repo" hash-object -t commit -w "$token_payload") == "$frontend_commit" &&
-   $(git -C "$source_repo" rev-parse "$frontend_commit^") == "$frontend_newsletter_commit" ]] ||
+[[ $(git -C "$source_repo" write-tree) == "$frontend_token_tree" &&
+   $(git -C "$source_repo" hash-object -t commit -w "$token_payload") == "$frontend_token_commit" &&
+   $(git -C "$source_repo" rev-parse "$frontend_token_commit^") == "$frontend_newsletter_commit" ]] ||
   die EXACT_TOKEN_FORMAT_COMMIT_REQUIRED
-[[ $(git -C "$source_repo" diff-tree --no-commit-id --name-only -r "$frontend_newsletter_commit" "$frontend_commit") == \
+[[ $(git -C "$source_repo" diff-tree --no-commit-id --name-only -r "$frontend_newsletter_commit" "$frontend_token_commit") == \
    $'apps/landing/src/api/newsletter.ts\ntests/newsletter.test.cjs' ]] || die EXACT_TOKEN_FORMAT_SCOPE_REQUIRED
-git -C "$source_repo" diff --quiet "$frontend_combined_commit" "$frontend_commit" -- apps/dashboard ||
+git -C "$source_repo" diff --quiet "$frontend_combined_commit" "$frontend_token_commit" -- apps/dashboard ||
   die DASHBOARD_SCOPE_CHANGED
 printf 'NEWSLETTER_FRONTEND_RECONSTRUCTION commit=%s tree=%s parent=%s delta=13\n' \
-  "$frontend_commit" "$frontend_tree" "$frontend_combined_commit"
+  "$frontend_token_commit" "$frontend_token_tree" "$frontend_combined_commit"
+git -C "$source_repo" apply --cached --check --unidiff-zero --whitespace=error-all "$auth_fixture_patch" ||
+  die REVIEWED_AUTH_FIXTURE_CHECK_REQUIRED
+git -C "$source_repo" apply --cached --unidiff-zero --whitespace=error-all "$auth_fixture_patch" ||
+  die REVIEWED_AUTH_FIXTURE_REQUIRED
+[[ $(git -C "$source_repo" write-tree) == "$frontend_auth_fixture_tree" &&
+   $(git -C "$source_repo" hash-object -t commit -w "$auth_fixture_payload") == "$frontend_auth_fixture_commit" &&
+   $(git -C "$source_repo" rev-parse "$frontend_auth_fixture_commit^") == "$frontend_token_commit" ]] ||
+  die EXACT_AUTH_FIXTURE_COMMIT_REQUIRED
+[[ $(git -C "$source_repo" diff-tree --no-commit-id --name-only -r "$frontend_token_commit" "$frontend_auth_fixture_commit") == \
+   tests/google-auth-fallback.test.cjs ]] || die EXACT_AUTH_FIXTURE_SCOPE_REQUIRED
+printf 'AUTH_FALLBACK_FIXTURE_RECONSTRUCTION commit=%s tree=%s parent=%s delta=1\n' \
+  "$frontend_auth_fixture_commit" "$frontend_auth_fixture_tree" "$frontend_token_commit"
+
+git -C "$source_repo" apply --cached --check --unidiff-zero --whitespace=error-all "$deletion_patch" ||
+  die REVIEWED_ACCOUNT_DELETION_PATCH_CHECK_REQUIRED
+git -C "$source_repo" apply --cached --unidiff-zero --whitespace=error-all "$deletion_patch" ||
+  die REVIEWED_ACCOUNT_DELETION_PATCH_REQUIRED
+[[ $(git -C "$source_repo" write-tree) == "$frontend_tree" &&
+   $(git -C "$source_repo" hash-object -t commit -w "$deletion_payload") == "$frontend_commit" &&
+   $(git -C "$source_repo" rev-parse "$frontend_commit^") == "$frontend_auth_fixture_commit" ]] ||
+  die EXACT_ACCOUNT_DELETION_COMMIT_REQUIRED
+deletion_delta=$(git -C "$source_repo" diff-tree --no-commit-id --name-only -r \
+  "$frontend_auth_fixture_commit" "$frontend_commit") || die EXACT_ACCOUNT_DELETION_SCOPE_REQUIRED
+[[ "$deletion_delta" == $'apps/dashboard/src/api/accountDeletion.ts\napps/dashboard/src/api/auth.ts\napps/dashboard/src/components/AccountDeletionRequest.tsx\napps/dashboard/src/i18n.ts\napps/dashboard/src/layouts/DashLayout.tsx\napps/dashboard/src/locale/en/account_deletion.json\napps/dashboard/src/locale/en/nav.json\napps/dashboard/src/locale/en/settings.json\napps/dashboard/src/locale/es/account_deletion.json\napps/dashboard/src/locale/es/nav.json\napps/dashboard/src/locale/es/settings.json\napps/dashboard/src/pages/AdminDash.tsx\napps/dashboard/src/pages/Settings.tsx\napps/dashboard/src/pages/admin/AccountDeletion.tsx\napps/dashboard/src/pages/admin/Settings.tsx\ntests/account-deletion.test.cjs' ]] || die EXACT_ACCOUNT_DELETION_SCOPE_REQUIRED
+git -C "$source_repo" diff --quiet "$frontend_token_commit" "$frontend_commit" -- apps/landing ||
+  die NEWSLETTER_PRODUCT_SOURCE_CHANGED
+printf 'ACCOUNT_DELETION_FRONTEND_RECONSTRUCTION commit=%s tree=%s parent=%s delta=16\n' \
+  "$frontend_commit" "$frontend_tree" "$frontend_auth_fixture_commit"
+
 git -C "$source_repo" archive --format=tar "$frontend_commit" | tar -xf - -C "$state/frontend-work" || die ARCHIVE_REQUIRED
 verify_source() {
   python3 -I -B - "$source_repo" "$state/frontend-work" "$frontend_commit" "$frontend_paths" <<'PY'
@@ -220,7 +261,8 @@ tests=(tests/blog-articles.test.cjs tests/editorial-admin.test.cjs tests/listing
        tests/professionals-admin-entry.test.cjs tests/property-viewings.test.cjs
        tests/public-editorial.test.cjs tests/purchase-cost-worksheet.test.cjs tests/shared-shortlists.test.cjs
        tests/transaction-documents.test.cjs tests/transaction-rooms.test.cjs
-       tests/newsletter.test.cjs tests/lead-tracking.test.cjs)
+       tests/newsletter.test.cjs tests/lead-tracking.test.cjs
+       tests/google-auth-fallback.test.cjs tests/account-deletion.test.cjs)
 native=0
 bounded 300s docker run "${prepare[@]}" --network none \
   --mount "type=bind,src=$state/frontend-work,dst=/work" "$node_image" \
@@ -238,7 +280,7 @@ print("INTEGRATED_FRONTEND_CONTRACTS native=" + str(int(sys.argv[2])) + " " +
       " ".join(f"{key.decode()}={rows.get(key, 0)}" for key in (b"tests", b"pass", b"fail", b"skipped")))
 for index in re.findall(rb"(?m)^not ok ([1-9][0-9]{0,2}) - ", data)[:12]:
     print("INTEGRATED_CONTRACT_FAILURE index=" + index.decode("ascii"))
-assert sys.argv[2] == "0" and rows == {b"tests": 126, b"pass": 126, b"fail": 0, b"skipped": 0}
+assert sys.argv[2] == "0" and rows == {b"tests": 146, b"pass": 146, b"fail": 0, b"skipped": 0}
 PY
 verify_source || die CONTRACTS_ALTERED_SOURCE
 
@@ -362,5 +404,5 @@ print("NEWSLETTER_STATIC_EXPORT page=verified robots=noindex,nofollow referrer=n
 print(f'INTEGRATED_NEXT_EXPORT native=0 typecheck=success static=success fixture_closed=true inventory={counts["inventory"]} detail={counts["detail"]}')
 PY
 verify_source || die STATIC_EXPORT_ALTERED_SOURCE
-printf 'INTEGRATED_FRONTEND_ACCEPTANCE operations=%s frontend=%s frontend_tree=%s paths=%s tests=126 run=%s attempt=1\n' \
+printf 'INTEGRATED_FRONTEND_ACCEPTANCE operations=%s frontend=%s frontend_tree=%s paths=%s tests=146 run=%s attempt=1\n' \
   "$GITHUB_SHA" "$frontend_commit" "$frontend_tree" "$frontend_paths" "$GITHUB_RUN_ID"

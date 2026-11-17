@@ -1,0 +1,6 @@
+diff --git a/tests/google-auth-fallback.test.cjs b/tests/google-auth-fallback.test.cjs
+index c44569717fe3686d8f542613b5c2b2a618207192..dc672350dfa0fb013f059a92acd7c48973158f22 100644
+--- a/tests/google-auth-fallback.test.cjs
++++ b/tests/google-auth-fallback.test.cjs
+@@ -41,0 +42 @@ function harness(clientId, language = 'en') {
++    '../lib/authLocale': load('apps/landing/src/lib/authLocale.ts'),

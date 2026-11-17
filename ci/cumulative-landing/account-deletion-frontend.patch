@@ -1,0 +1,1244 @@
+diff --git a/apps/dashboard/src/api/accountDeletion.ts b/apps/dashboard/src/api/accountDeletion.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..8cc907005698b9022d19554b20c673c081cd1cad
+--- /dev/null
++++ b/apps/dashboard/src/api/accountDeletion.ts
+@@ -0,0 +1,218 @@
++import client from './axios'
++
++export const DELETION_STATUSES = [
++  'pending_review', 'reviewed', 'retention_hold', 'cancelled',
++] as const
++export type DeletionStatus = typeof DELETION_STATUSES[number]
++export interface DeletionRequest {
++  request_id: string | null
++  status: DeletionStatus | 'none'
++  requested_at: string | null
++  review_after: null
++  version: number
++  reviewed_at: string | null
++  review_reason: string | null
++}
++export interface AdminDeletionRequest extends DeletionRequest {
++  user_id: string
++  email: string
++  display_name: string
++}
++export interface DeletionPage {
++  items: AdminDeletionRequest[]
++  total: number
++}
++type Failure = 'invalid' | 'stale' | 'forbidden' | 'unavailable' | 'unconfirmed'
++export class AccountDeletionError extends Error {
++  constructor(public code: Failure) {
++    super(code)
++    this.name = 'AccountDeletionError'
++  }
++}
++const uuid = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i
++const validVersion = (value: unknown): value is number =>
++  Number.isSafeInteger(value) && (value as number) >= 0
++const dateOrNull = (value: unknown): value is string | null =>
++  value === null || (typeof value === 'string' && Number.isFinite(Date.parse(value)))
++
++function record(value: unknown): Record<string, unknown> {
++  if (!value || typeof value !== 'object' || Array.isArray(value)) {
++    throw new Error('Invalid deletion state')
++  }
++  return value as Record<string, unknown>
++}
++
++function parseRequest(value: unknown): DeletionRequest {
++  const row = record(value)
++  if (
++    !(row.status === 'none' || DELETION_STATUSES.includes(row.status as DeletionStatus)) ||
++    !validVersion(row.version) || row.review_after !== null ||
++    !dateOrNull(row.requested_at) || !dateOrNull(row.reviewed_at) ||
++    !(row.review_reason === null || (
++      typeof row.review_reason === 'string' && row.review_reason.length <= 1000
++    ))
++  ) {
++    throw new Error('Invalid deletion state')
++  }
++  if (row.status === 'none') {
++    if (
++      row.request_id !== null || row.version !== 0 || row.requested_at !== null ||
++      row.reviewed_at !== null || row.review_reason !== null
++    ) {
++      throw new Error('Invalid deletion state')
++    }
++  } else if (
++    typeof row.request_id !== 'string' || !uuid.test(row.request_id) ||
++    row.version < 1 || row.requested_at === null
++  ) {
++    throw new Error('Invalid deletion state')
++  }
++  return {
++    request_id: row.request_id as string | null,
++    status: row.status as DeletionRequest['status'],
++    version: row.version,
++    requested_at: row.requested_at,
++    review_after: null,
++    reviewed_at: row.reviewed_at,
++    review_reason: row.review_reason as string | null,
++  }
++}
++
++function failure(error: unknown, mutation: boolean): AccountDeletionError {
++  if (error instanceof AccountDeletionError) return error
++  const status = (error as { response?: { status?: number } })?.response?.status
++  if (status === 409 || status === 404) return new AccountDeletionError('stale')
++  if (status === 403) return new AccountDeletionError('forbidden')
++  if (status === 422 || status === 400) return new AccountDeletionError('invalid')
++  return new AccountDeletionError(mutation ? 'unconfirmed' : 'unavailable')
++}
++
++function requireVersion(id: string, version: number) {
++  if (!uuid.test(id) || !validVersion(version) || version < 1) {
++    throw new AccountDeletionError('invalid')
++  }
++}
++
++export async function getAccountDeletionRequest(signal?: AbortSignal): Promise<DeletionRequest> {
++  try {
++    return parseRequest((await client.get('/auth/me/delete-request', { signal })).data)
++  } catch (error) {
++    throw failure(error, false)
++  }
++}
++
++export async function requestAccountDeletion(email: string): Promise<DeletionRequest> {
++  if (!email.trim() || email.trim().length > 320) {
++    throw new AccountDeletionError('invalid')
++  }
++  try {
++    const response = await client.post('/auth/me/delete-request', {
++      confirm_email: email.trim(),
++      confirm_request: true,
++    })
++    const state = parseRequest(response.data)
++    if (state.status === 'none' || state.status === 'cancelled') {
++      throw new Error('Request not confirmed')
++    }
++    return state
++  } catch (error) {
++    throw failure(error, true)
++  }
++}
++
++export async function cancelAccountDeletion(id: string, version: number): Promise<DeletionRequest> {
++  requireVersion(id, version)
++  try {
++    const response = await client.post('/auth/me/delete-request/cancel', {
++      request_id: id,
++      expected_version: version,
++    })
++    const state = parseRequest(response.data)
++    if (state.request_id !== id || state.status !== 'cancelled' || state.version < version) {
++      throw new Error('Cancellation not confirmed')
++    }
++    return state
++  } catch (error) {
++    throw failure(error, true)
++  }
++}
++
++export async function getAccountDeletionQueue(
++  status: DeletionStatus | undefined,
++  offset = 0,
++  signal?: AbortSignal,
++): Promise<DeletionPage> {
++  if (
++    (status !== undefined && !DELETION_STATUSES.includes(status)) ||
++    !Number.isSafeInteger(offset) || offset < 0
++  ) {
++    throw new AccountDeletionError('invalid')
++  }
++  try {
++    const response = await client.get('/admin/account-deletion-requests', {
++      params: { ...(status ? { status } : {}), limit: 50, offset },
++      signal,
++    })
++    const row = record(response.data)
++    if (
++      !Array.isArray(row.items) || row.items.length > 50 ||
++      !Number.isSafeInteger(row.total) || (row.total as number) < row.items.length
++    ) {
++      throw new Error('Invalid deletion queue')
++    }
++    const items = row.items.map(value => {
++      const item = record(value)
++      const state = parseRequest(item)
++      if (
++        state.status === 'none' || typeof item.user_id !== 'string' ||
++        !uuid.test(item.user_id) || typeof item.email !== 'string' ||
++        !item.email || typeof item.display_name !== 'string'
++      ) {
++        throw new Error('Invalid deletion queue')
++      }
++      return {
++        ...state, user_id: item.user_id, email: item.email, display_name: item.display_name,
++      }
++    })
++    if (new Set(items.map(item => item.request_id)).size !== items.length) {
++      throw new Error('Duplicate deletion request')
++    }
++    return { items, total: row.total as number }
++  } catch (error) {
++    throw failure(error, false)
++  }
++}
++
++export async function reviewAccountDeletion(
++  id: string,
++  version: number,
++  status: 'reviewed' | 'retention_hold',
++  reason: string,
++): Promise<DeletionRequest> {
++  requireVersion(id, version)
++  const cleanReason = reason.trim()
++  if (
++    !['reviewed', 'retention_hold'].includes(status) ||
++    !cleanReason || cleanReason.length > 1000
++  ) {
++    throw new AccountDeletionError('invalid')
++  }
++  try {
++    const response = await client.post(
++      `/admin/account-deletion-requests/${encodeURIComponent(id)}/review`,
++      { expected_version: version, status, reason: cleanReason },
++    )
++    const state = parseRequest(response.data)
++    // Matching same-Admin replays return the persisted version unchanged.
++    if (
++      state.request_id !== id || state.status !== status ||
++      state.review_reason !== cleanReason || state.reviewed_at === null ||
++      state.version < version
++    ) {
++      throw new Error('Review not confirmed')
++    }
++    return state
++  } catch (error) {
++    throw failure(error, true)
++  }
++}
+diff --git a/apps/dashboard/src/api/auth.ts b/apps/dashboard/src/api/auth.ts
+index 1858c4186fb2506d12acea937cccfcde77ff61aa..7309fb5d7ba3b8f1ca26f816e19cf2aa0c8796e1 100644
+--- a/apps/dashboard/src/api/auth.ts
++++ b/apps/dashboard/src/api/auth.ts
+@@ -42,4 +41,0 @@ export async function deactivateAccount(): Promise<void> {
+-export async function requestAccountDeletion(): Promise<void> {
+-  await client.post('/auth/me/delete-request')
+-}
+-
+diff --git a/apps/dashboard/src/components/AccountDeletionRequest.tsx b/apps/dashboard/src/components/AccountDeletionRequest.tsx
+new file mode 100644
+index 0000000000000000000000000000000000000000..591b8199edc3b606d3cb86b54f17e86de8226217
+--- /dev/null
++++ b/apps/dashboard/src/components/AccountDeletionRequest.tsx
+@@ -0,0 +1,192 @@
++import { useEffect, useId, useRef, useState } from 'react'
++import { useTranslation } from 'react-i18next'
++import {
++  AccountDeletionError,
++  cancelAccountDeletion,
++  getAccountDeletionRequest,
++  requestAccountDeletion,
++  type DeletionRequest,
++} from '../api/accountDeletion'
++
++const button = 'rounded-lg border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-700 disabled:cursor-not-allowed disabled:opacity-50'
++
++export function AccountDeletionRequest({ accountEmail }: { accountEmail: string }) {
++  const { t, i18n } = useTranslation('account_deletion')
++  const id = useId()
++  const [state, setState] = useState<DeletionRequest | null>(null)
++  const [loading, setLoading] = useState(true)
++  const [refresh, setRefresh] = useState(0)
++  const [error, setError] = useState('')
++  const [email, setEmail] = useState('')
++  const [confirmed, setConfirmed] = useState(false)
++  const [busy, setBusy] = useState(false)
++  const [mustReload, setMustReload] = useState(false)
++  const mutation = useRef(false)
++
++  useEffect(() => {
++    const controller = new AbortController()
++    setLoading(true)
++    setError('')
++    setState(null)
++    setConfirmed(false)
++    setEmail('')
++    getAccountDeletionRequest(controller.signal)
++      .then(next => {
++        if (!controller.signal.aborted) {
++          setState(next)
++          setMustReload(false)
++        }
++      })
++      .catch(() => {
++        if (!controller.signal.aborted) setError('load_error')
++      })
++      .finally(() => {
++        if (!controller.signal.aborted) setLoading(false)
++      })
++    return () => controller.abort()
++  }, [accountEmail, refresh])
++
++  const active = state !== null && state.status !== 'none' && state.status !== 'cancelled'
++  const matchesEmail = email.trim().toLowerCase() === accountEmail.trim().toLowerCase()
++
++  async function submit(action: 'request' | 'cancel') {
++    if (mutation.current || loading || mustReload || !state) return
++    if (action === 'request' && (active || !matchesEmail || !confirmed)) return
++    if (action === 'cancel' && (!active || !state.request_id)) return
++
++    mutation.current = true
++    setBusy(true)
++    setError('')
++    try {
++      let next: DeletionRequest
++      if (action === 'request') {
++        next = await requestAccountDeletion(email)
++      } else {
++        next = await cancelAccountDeletion(state.request_id!, state.version)
++      }
++      setState(next)
++      setEmail('')
++      setConfirmed(false)
++    } catch (failure) {
++      const code = failure instanceof AccountDeletionError ? failure.code : 'unconfirmed'
++      if (code === 'invalid') setError('invalid')
++      else if (code === 'stale') setError('stale')
++      else setError('unconfirmed')
++      setMustReload(true)
++    } finally {
++      mutation.current = false
++      setBusy(false)
++    }
++  }
++
++  const date = (value: string) => new Date(value).toLocaleString(
++    i18n.language.startsWith('es') ? 'es-DO' : 'en-US',
++  )
++
++  return (
++    <section
++      aria-labelledby={`${id}-title`}
++      className="min-w-0 rounded-xl border border-red-200 bg-red-50/50 p-4"
++    >
++      <h3 id={`${id}-title`} className="text-sm font-bold text-red-800">
++        {t('own.title')}
++      </h3>
++      <p className="mt-2 text-sm leading-relaxed text-ink2">{t('own.intro')}</p>
++      {loading ? (
++        <p role="status" className="mt-3 text-sm">{t('loading')}</p>
++      ) : null}
++      {error ? (
++        <p role="alert" className="mt-3 text-sm font-semibold text-red-800">{t(error)}</p>
++      ) : null}
++      {state && !loading ? (
++        <div className="mt-4 space-y-3" aria-live="polite">
++          <p className="text-sm font-semibold">
++            {t('status_label')}: {t(`statuses.${state.status}`)}
++          </p>
++          {state.requested_at ? (
++            <p className="text-xs text-ink2">
++              {t('requested_at')}: {date(state.requested_at)}
++            </p>
++          ) : null}
++          {state.reviewed_at ? (
++            <p className="text-xs text-ink2">
++              {t('reviewed_at')}: {date(state.reviewed_at)}
++            </p>
++          ) : null}
++          {state.review_reason ? (
++            <div className="break-words rounded-lg border border-line bg-white p-3 text-sm">
++              <p className="font-semibold">{t('review_reason')}</p>
++              <p className="mt-1 whitespace-pre-wrap">{state.review_reason}</p>
++            </div>
++          ) : null}
++          {active ? (
++            <div className="space-y-3">
++              <p className="text-sm text-ink2">{t('own.pending')}</p>
++              <button
++                type="button"
++                className={button}
++                disabled={busy || mustReload}
++                onClick={() => void submit('cancel')}
++              >
++                {busy ? t('saving') : t('own.cancel')}
++              </button>
++            </div>
++          ) : (
++            <form
++              className="space-y-3"
++              onSubmit={event => {
++                event.preventDefault()
++                void submit('request')
++              }}
++            >
++              <label className="block text-sm font-semibold" htmlFor={`${id}-email`}>
++                {t('own.email_label')}
++              </label>
++              <input
++                id={`${id}-email`}
++                type="email"
++                autoComplete="email"
++                required
++                maxLength={320}
++                value={email}
++                disabled={busy || mustReload}
++                onChange={event => setEmail(event.target.value)}
++                className="w-full min-w-0 rounded-lg border border-red-200 bg-white px-3 py-2 text-sm"
++              />
++              <label
++                className="flex items-start gap-2 text-sm leading-relaxed"
++                htmlFor={`${id}-confirm`}
++              >
++                <input
++                  id={`${id}-confirm`}
++                  type="checkbox"
++                  required
++                  checked={confirmed}
++                  disabled={busy || mustReload}
++                  onChange={event => setConfirmed(event.target.checked)}
++                  className="mt-1 shrink-0"
++                />
++                <span>{t('own.confirm')}</span>
++              </label>
++              <button
++                type="submit"
++                className={button}
++                disabled={busy || mustReload || !matchesEmail || !confirmed}
++              >
++                {busy ? t('saving') : t('own.request')}
++              </button>
++            </form>
++          )}
++        </div>
++      ) : null}
++      <button
++        type="button"
++        className="mt-4 text-sm font-semibold text-red-800 underline disabled:opacity-50"
++        disabled={loading || busy}
++        onClick={() => setRefresh(value => value + 1)}
++      >
++        {t('refresh')}
++      </button>
++    </section>
++  )
++}
+diff --git a/apps/dashboard/src/i18n.ts b/apps/dashboard/src/i18n.ts
+index 12247c60e8c7a294eeea1a75c8991b74f193130f..20d439a2cc601f99d238b3d158019c61c6b65e8e 100644
+--- a/apps/dashboard/src/i18n.ts
++++ b/apps/dashboard/src/i18n.ts
+@@ -50,0 +51,2 @@ import esCommunications from './locale/es/communications.json'
++import enAccountDeletion from './locale/en/account_deletion.json'
++import esAccountDeletion from './locale/es/account_deletion.json'
+@@ -79,0 +82 @@ i18n.use(initReactI18next).init({
++      account_deletion: enAccountDeletion,
+@@ -104,0 +108 @@ i18n.use(initReactI18next).init({
++      account_deletion: esAccountDeletion,
+@@ -109 +113 @@ i18n.use(initReactI18next).init({
+-  ns: ['nav', 'common', 'admin', 'buyer', 'owner', 'realtor', 'settings', 'website_editor', 'editorial', 'development_inventory', 'seller_valuation', 'listing_performance', 'transactions', 'research_tools', 'professionals', 'tool_hubs', 'lead_delivery', 'location_review', 'management', 'inquiry_feeds', 'contact_share', 'property_network', 'communications'],
++  ns: ['nav', 'common', 'admin', 'buyer', 'owner', 'realtor', 'settings', 'website_editor', 'editorial', 'development_inventory', 'seller_valuation', 'listing_performance', 'transactions', 'research_tools', 'professionals', 'tool_hubs', 'lead_delivery', 'location_review', 'management', 'inquiry_feeds', 'contact_share', 'property_network', 'communications', 'account_deletion'],
+diff --git a/apps/dashboard/src/layouts/DashLayout.tsx b/apps/dashboard/src/layouts/DashLayout.tsx
+index b042ee36c19eece0c53a185deaf4e74f6d8ef644..1ad3b6c175ff289a55e285a0360fe1fcda905542 100644
+--- a/apps/dashboard/src/layouts/DashLayout.tsx
++++ b/apps/dashboard/src/layouts/DashLayout.tsx
+@@ -75,0 +76 @@ const ADMIN_NAV: { Icon: LucideIcon; view: string }[] = [
++  { Icon: Shield,          view: 'account-deletion' },
+diff --git a/apps/dashboard/src/locale/en/account_deletion.json b/apps/dashboard/src/locale/en/account_deletion.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..625a058e5b35234bcb7fb3f700d4ab2452157a88
+--- /dev/null
++++ b/apps/dashboard/src/locale/en/account_deletion.json
+@@ -0,0 +1,46 @@
++{
++  "loading": "Loading saved requests…",
++  "saving": "Saving…",
++  "refresh": "Refresh saved status",
++  "status_label": "Request status",
++  "requested_at": "Requested",
++  "reviewed_at": "Last reviewed",
++  "review_reason": "Review note",
++  "load_error": "Saved requests could not be loaded. Refresh before taking action.",
++  "invalid": "The request could not be accepted. Refresh the saved status and check your entries.",
++  "stale": "This request changed. Refresh the saved status before taking another action.",
++  "unconfirmed": "We could not confirm the result. Refresh the saved status before trying again.",
++  "statuses": {
++    "none": "No deletion request",
++    "pending_review": "Awaiting review",
++    "reviewed": "Review recorded",
++    "retention_hold": "On hold — see the review note",
++    "cancelled": "Cancelled"
++  },
++  "own": {
++    "title": "Request account deletion review",
++    "intro": "Ask our team to review deletion of your account and associated information. Track the review status and manage your request here.",
++    "email_label": "Type your account email to confirm this request",
++    "confirm": "I want the team to review deletion of my account and associated information. I understand I can cancel this request here.",
++    "request": "Submit deletion review request",
++    "pending": "Your request is saved for team review. You can cancel it here.",
++    "cancel": "Cancel my deletion request"
++  },
++  "admin": {
++    "title": "Account deletion review queue",
++    "intro": "Review saved account deletion requests. Record a review or retention hold with a reason the account holder can read in Settings.",
++    "denied": "Only an Admin can access account deletion reviews.",
++    "filter": "Request status",
++    "active": "All active requests",
++    "total": "{{count}} matching requests",
++    "empty": "No requests match this status.",
++    "review": "Review request",
++    "reason_visible": "The account holder can read this reason in Settings. Use an explanation appropriate to share with them.",
++    "decision": "Review status",
++    "reason": "Reason for this review or hold (required)",
++    "save": "Save review status and reason",
++    "close": "Close without saving",
++    "previous": "Previous 50",
++    "next": "Next 50"
++  }
++}
+diff --git a/apps/dashboard/src/locale/en/nav.json b/apps/dashboard/src/locale/en/nav.json
+index 8b0f6d092032bdef8e47c97c116d18184b4c2775..f3ce9177f76d00fb27be826fa78e4b1b71fa49f2 100644
+--- a/apps/dashboard/src/locale/en/nav.json
++++ b/apps/dashboard/src/locale/en/nav.json
+@@ -3,0 +4 @@
++  "account-deletion": "Account deletion review",
+diff --git a/apps/dashboard/src/locale/en/settings.json b/apps/dashboard/src/locale/en/settings.json
+index 40d1753aa70710a11bc803df21e9c0eb0edf0bb2..f68f97a0fa37622d8430868f8179b5d8d2c9f63b 100644
+--- a/apps/dashboard/src/locale/en/settings.json
++++ b/apps/dashboard/src/locale/en/settings.json
+@@ -82 +82 @@
+-      "delete_sub": "Permanently delete your account and all associated data. Type your email address below to enable this action.",
++      "delete_sub": "Request a review of account deletion. Type your account email to confirm the request.",
+@@ -86 +86 @@
+-      "delete_modal_desc": "Your account will be scheduled for permanent deletion in 30 days. Listings and leads may be anonymized or removed.",
++      "delete_modal_desc": "This submits a deletion review request. It does not delete or deactivate your account or set a deletion date.",
+@@ -89 +89 @@
+-      "delete_done": "Deletion requested — you have 30 days to cancel by contacting support.",
++      "delete_done": "Deletion review requested. You can view its saved status or cancel it in Settings.",
+diff --git a/apps/dashboard/src/locale/es/account_deletion.json b/apps/dashboard/src/locale/es/account_deletion.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..4f09ee7f9d50f7e2c01b354531630720929abb5a
+--- /dev/null
++++ b/apps/dashboard/src/locale/es/account_deletion.json
+@@ -0,0 +1,46 @@
++{
++  "loading": "Cargando solicitudes guardadas…",
++  "saving": "Guardando…",
++  "refresh": "Actualizar estado guardado",
++  "status_label": "Estado de la solicitud",
++  "requested_at": "Fecha de solicitud",
++  "reviewed_at": "Última revisión",
++  "review_reason": "Nota de revisión",
++  "load_error": "No se pudieron cargar las solicitudes guardadas. Actualiza antes de realizar una acción.",
++  "invalid": "No se pudo aceptar la solicitud. Actualiza el estado guardado y revisa los datos.",
++  "stale": "La solicitud cambió. Actualiza el estado guardado antes de realizar otra acción.",
++  "unconfirmed": "No pudimos confirmar el resultado. Actualiza el estado guardado antes de volver a intentarlo.",
++  "statuses": {
++    "none": "Sin solicitud de eliminación",
++    "pending_review": "Pendiente de revisión",
++    "reviewed": "Revisión registrada",
++    "retention_hold": "En espera — consulta la nota de revisión",
++    "cancelled": "Cancelada"
++  },
++  "own": {
++    "title": "Solicitar revisión de eliminación de cuenta",
++    "intro": "Pide a nuestro equipo que revise la eliminación de tu cuenta y la información asociada. Consulta el estado de la revisión y gestiona tu solicitud aquí.",
++    "email_label": "Escribe el correo de tu cuenta para confirmar la solicitud",
++    "confirm": "Quiero que el equipo revise la eliminación de mi cuenta y la información asociada. Entiendo que puedo cancelar esta solicitud aquí.",
++    "request": "Enviar solicitud de revisión de eliminación",
++    "pending": "Tu solicitud está guardada para que la revise el equipo. Puedes cancelarla aquí.",
++    "cancel": "Cancelar mi solicitud de eliminación"
++  },
++  "admin": {
++    "title": "Solicitudes de eliminación de cuentas",
++    "intro": "Revisa las solicitudes guardadas de eliminación de cuentas. Registra una revisión o una retención con un motivo que el titular podrá leer en Configuración.",
++    "denied": "Solo un administrador puede acceder a la revisión de eliminación de cuentas.",
++    "filter": "Estado de la solicitud",
++    "active": "Todas las solicitudes activas",
++    "total": "{{count}} solicitudes coincidentes",
++    "empty": "No hay solicitudes con este estado.",
++    "review": "Revisar solicitud",
++    "reason_visible": "El titular de la cuenta podrá leer este motivo en Configuración. Usa una explicación adecuada para compartir con esa persona.",
++    "decision": "Estado de revisión",
++    "reason": "Motivo de la revisión o la espera (obligatorio)",
++    "save": "Guardar estado y motivo de revisión",
++    "close": "Cerrar sin guardar",
++    "previous": "50 anteriores",
++    "next": "50 siguientes"
++  }
++}
+diff --git a/apps/dashboard/src/locale/es/nav.json b/apps/dashboard/src/locale/es/nav.json
+index c517e8baa3684d6bb04b9c4819de0a012089e71e..5cd54a46fbe61f4c014d6919607efccbd28a3ae6 100644
+--- a/apps/dashboard/src/locale/es/nav.json
++++ b/apps/dashboard/src/locale/es/nav.json
+@@ -3,0 +4 @@
++  "account-deletion": "Revisión de eliminación de cuentas",
+diff --git a/apps/dashboard/src/locale/es/settings.json b/apps/dashboard/src/locale/es/settings.json
+index aafddff190f63e2ba23d6d03b536091aa9ba9aa3..0731fe1bc6b0c9cd9e412ce6e03614b2f0b7c748 100644
+--- a/apps/dashboard/src/locale/es/settings.json
++++ b/apps/dashboard/src/locale/es/settings.json
+@@ -82 +82 @@
+-      "delete_sub": "Elimina permanentemente tu cuenta y todos los datos asociados. Escribe tu correo abajo para habilitar esta acción.",
++      "delete_sub": "Solicita una revisión de eliminación de cuenta. Escribe el correo de tu cuenta para confirmar la solicitud.",
+@@ -86 +86 @@
+-      "delete_modal_desc": "Tu cuenta será programada para eliminación permanente en 30 días. Las propiedades y leads pueden ser anonimizados o eliminados.",
++      "delete_modal_desc": "Esto envía una solicitud de revisión de eliminación. No elimina ni desactiva tu cuenta ni fija una fecha de eliminación.",
+@@ -89 +89 @@
+-      "delete_done": "Eliminación solicitada — tienes 30 días para cancelar contactando a soporte.",
++      "delete_done": "Revisión de eliminación solicitada. Puedes consultar su estado guardado o cancelarla en Configuración.",
+diff --git a/apps/dashboard/src/pages/AdminDash.tsx b/apps/dashboard/src/pages/AdminDash.tsx
+index fb680c49ec969145de3b7cf3f0ceeea2ff13dd74..7fb912112a54c52722f358f3de2a79999ab8afac 100644
+--- a/apps/dashboard/src/pages/AdminDash.tsx
++++ b/apps/dashboard/src/pages/AdminDash.tsx
+@@ -21,0 +22 @@ import { AdminTradeContacts } from './admin/TradeContacts'
++import { AdminAccountDeletion } from './admin/AccountDeletion'
+@@ -38 +39 @@ export default function AdminDash({ go, view = 'home', user, onUserUpdate }: { g
+-  const sharedTitle = ['resources', 'research', 'professional-directory', 'buyer-tools', 'owner-tools', 'realtor-tools', 'calculator', 'lead-delivery', 'communications', 'location-review', 'property-management', 'property-network', 'viewings', 'editorial'].includes(view)
++  const sharedTitle = ['resources', 'research', 'professional-directory', 'buyer-tools', 'owner-tools', 'realtor-tools', 'calculator', 'lead-delivery', 'communications', 'location-review', 'property-management', 'property-network', 'viewings', 'editorial', 'account-deletion'].includes(view)
+@@ -71,0 +73 @@ export default function AdminDash({ go, view = 'home', user, onUserUpdate }: { g
++      case 'account-deletion': return <AdminAccountDeletion userRole={user.role} />
+diff --git a/apps/dashboard/src/pages/Settings.tsx b/apps/dashboard/src/pages/Settings.tsx
+index fc91f42cdbc98f659377bbdfea2464d89fe42ef6..f9f6a8f3a79f0d672b9a195bb1b4017722fb66e9 100644
+--- a/apps/dashboard/src/pages/Settings.tsx
++++ b/apps/dashboard/src/pages/Settings.tsx
+@@ -2 +2 @@ import { useRef, useState } from 'react'
+-import { Shield, Bell, Eye, EyeOff, Mail, Unlink, Link2, AlertTriangle, Camera, Save, Trash2, LogOut, CalendarDays, Plug } from 'lucide-react'
++import { Shield, Bell, Eye, EyeOff, Mail, Unlink, Link2, AlertTriangle, Camera, Save, LogOut, CalendarDays, Plug } from 'lucide-react'
+@@ -11 +11,2 @@ import type { Role } from '../App'
+-import { changePassword, deactivateAccount, linkGoogle, requestAccountDeletion, setPassword, unlinkGoogle, updateProfile, uploadAvatar } from '../api/auth'
++import { changePassword, deactivateAccount, linkGoogle, setPassword, unlinkGoogle, updateProfile, uploadAvatar } from '../api/auth'
++import { AccountDeletionRequest } from '../components/AccountDeletionRequest'
+@@ -195,4 +195,0 @@ export function UserSettings({ user, role, tone, onUserUpdate, initialTab }: { u
+-  const [deleteOpen,      setDeleteOpen]      = useState(false)
+-  const [deleting,        setDeleting]        = useState(false)
+-  const [deleteEmail,     setDeleteEmail]     = useState('')
+-  const [deleteDone,      setDeleteDone]      = useState(false)
+@@ -304,13 +300,0 @@ export function UserSettings({ user, role, tone, onUserUpdate, initialTab }: { u
+-  async function handleDeleteRequest() {
+-    setDeleting(true)
+-    try {
+-      await requestAccountDeletion()
+-      setDeleteOpen(false)
+-      setDeleteDone(true)
+-    } catch (err: unknown) {
+-      toast.error(err instanceof Error ? err.message : t('security.danger_zone.err_delete'))
+-    } finally {
+-      setDeleting(false)
+-    }
+-  }
+-
+@@ -680,32 +664 @@ export function UserSettings({ user, role, tone, onUserUpdate, initialTab }: { u
+-                {/* Delete */}
+-                <div className="flex items-start justify-between gap-4 py-3 px-4 rounded-xl border border-red-200 bg-red-50/60">
+-                  <div className="min-w-0">
+-                    <div className="text-[13.5px] font-semibold text-red-700">{t('security.danger_zone.delete_label')}</div>
+-                    <div className="text-[11.5px] text-dim mt-0.5">{t('security.danger_zone.delete_sub')}</div>
+-                    {deleteDone && (
+-                      <div className="mt-2 text-[12px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5">
+-                        {t('security.danger_zone.delete_done')}
+-                      </div>
+-                    )}
+-                  </div>
+-                  {!deleteDone && (
+-                    <div className="shrink-0 flex flex-col gap-2 min-w-40">
+-                      <input
+-                        type="email"
+-                        value={deleteEmail}
+-                        onChange={e => setDeleteEmail(e.target.value)}
+-                        placeholder={t('security.danger_zone.delete_email_ph')}
+-                        className="w-full px-3 py-1.5 rounded-lg border border-red-200 bg-white text-[12px] text-ink outline-none focus:border-red-400"
+-                      />
+-                      <button
+-                        type="button"
+-                        onClick={() => setDeleteOpen(true)}
+-                        disabled={deleteEmail.trim().toLowerCase() !== user.email.toLowerCase()}
+-                        className="flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-lg border border-red-300 bg-red-600 text-[12.5px] font-bold text-white cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed hover:bg-red-700 transition-colors"
+-                      >
+-                        <Trash2 size={12} />
+-                        {t('security.danger_zone.delete_btn')}
+-                      </button>
+-                    </div>
+-                  )}
+-                </div>
++                <AccountDeletionRequest key={user.email} accountEmail={user.email} />
+@@ -731,12 +683,0 @@ export function UserSettings({ user, role, tone, onUserUpdate, initialTab }: { u
+-        {/* Delete ConfirmModal */}
+-        {deleteOpen && (
+-          <ConfirmModal
+-            title={t('security.danger_zone.delete_modal_title')}
+-            description={t('security.danger_zone.delete_modal_desc')}
+-            confirmLabel={deleting ? t('security.danger_zone.deleting') : t('security.danger_zone.delete_modal_btn')}
+-            variant="danger"
+-            loading={deleting}
+-            onConfirm={handleDeleteRequest}
+-            onCancel={() => setDeleteOpen(false)}
+-          />
+-        )}
+diff --git a/apps/dashboard/src/pages/admin/AccountDeletion.tsx b/apps/dashboard/src/pages/admin/AccountDeletion.tsx
+new file mode 100644
+index 0000000000000000000000000000000000000000..26ae85db5b2f06952c89284185ffbb59a3cc7865
+--- /dev/null
++++ b/apps/dashboard/src/pages/admin/AccountDeletion.tsx
+@@ -0,0 +1,273 @@
++import { useEffect, useId, useRef, useState } from 'react'
++import { useTranslation } from 'react-i18next'
++import {
++  AccountDeletionError,
++  DELETION_STATUSES,
++  getAccountDeletionQueue,
++  reviewAccountDeletion,
++  type AdminDeletionRequest,
++  type DeletionPage,
++  type DeletionStatus,
++} from '../../api/accountDeletion'
++
++const input = 'w-full min-w-0 rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink disabled:opacity-50'
++const button = 'rounded-lg border border-line bg-white px-4 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50'
++
++export function AdminAccountDeletion({ userRole }: { userRole: string }) {
++  const { t } = useTranslation('account_deletion')
++  if (userRole !== 'admin') return <p role="alert">{t('admin.denied')}</p>
++  return <ReviewQueue />
++}
++
++function ReviewQueue() {
++  const { t, i18n } = useTranslation('account_deletion')
++  const id = useId()
++  const [filter, setFilter] = useState<DeletionStatus | 'active'>('pending_review')
++  const [offset, setOffset] = useState(0)
++  const [refresh, setRefresh] = useState(0)
++  const [page, setPage] = useState<DeletionPage | null>(null)
++  const [loading, setLoading] = useState(true)
++  const [error, setError] = useState('')
++  const [selected, setSelected] = useState<AdminDeletionRequest | null>(null)
++  const [status, setStatus] = useState<'reviewed' | 'retention_hold'>('reviewed')
++  const [reason, setReason] = useState('')
++  const [busy, setBusy] = useState(false)
++  const [mustReload, setMustReload] = useState(false)
++  const mutation = useRef(false)
++  const reviewHeading = useRef<HTMLHeadingElement>(null)
++
++  useEffect(() => {
++    if (selected) reviewHeading.current?.focus()
++  }, [selected?.request_id])
++
++  useEffect(() => {
++    const controller = new AbortController()
++    setLoading(true)
++    setPage(null)
++    setError('')
++    setSelected(null)
++    setReason('')
++    getAccountDeletionQueue(filter === 'active' ? undefined : filter, offset, controller.signal)
++      .then(next => {
++        if (!controller.signal.aborted) {
++          setPage(next)
++          setMustReload(false)
++        }
++      })
++      .catch(failure => {
++        if (!controller.signal.aborted) {
++          const denied = failure instanceof AccountDeletionError && failure.code === 'forbidden'
++          setError(denied ? 'admin.denied' : 'load_error')
++        }
++      })
++      .finally(() => {
++        if (!controller.signal.aborted) setLoading(false)
++      })
++    return () => controller.abort()
++  }, [filter, offset, refresh])
++
++  function choose(row: AdminDeletionRequest) {
++    setSelected(row)
++    setReason('')
++    setStatus('reviewed')
++    setError('')
++  }
++
++  async function save() {
++    if (!selected?.request_id || selected.status === 'cancelled') return
++    if (!reason.trim() || reason.trim().length > 1000) return
++    if (mutation.current || loading || mustReload) return
++
++    mutation.current = true
++    setBusy(true)
++    setError('')
++    try {
++      await reviewAccountDeletion(selected.request_id, selected.version, status, reason)
++      setSelected(null)
++      setReason('')
++      setRefresh(value => value + 1)
++    } catch (failure) {
++      const code = failure instanceof AccountDeletionError ? failure.code : 'unconfirmed'
++      if (code === 'invalid') setError('invalid')
++      else if (code === 'stale') setError('stale')
++      else if (code === 'forbidden') setError('admin.denied')
++      else setError('unconfirmed')
++      setMustReload(true)
++    } finally {
++      mutation.current = false
++      setBusy(false)
++    }
++  }
++
++  function date(value: string | null) {
++    if (!value) return '—'
++    return new Date(value).toLocaleString(
++      i18n.language.startsWith('es') ? 'es-DO' : 'en-US',
++    )
++  }
++
++  return (
++    <section className="min-w-0 space-y-5" aria-labelledby={`${id}-title`}>
++      <div>
++        <h2 id={`${id}-title`} className="text-xl font-bold text-ink">{t('admin.title')}</h2>
++        <p className="mt-2 max-w-3xl text-sm leading-relaxed text-ink2">{t('admin.intro')}</p>
++      </div>
++      <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-end">
++        <div className="w-full min-w-0 sm:w-auto sm:max-w-md">
++          <label htmlFor={`${id}-filter`} className="mb-1 block text-sm font-semibold">
++            {t('admin.filter')}
++          </label>
++          <select
++            id={`${id}-filter`}
++            className={input}
++            value={filter}
++            disabled={busy}
++            onChange={event => {
++              setFilter(event.target.value as typeof filter)
++              setOffset(0)
++            }}
++          >
++            <option value="active">{t('admin.active')}</option>
++            {DELETION_STATUSES.map(value => (
++              <option key={value} value={value}>{t(`statuses.${value}`)}</option>
++            ))}
++          </select>
++        </div>
++        <button
++          type="button"
++          className={button}
++          disabled={loading || busy}
++          onClick={() => setRefresh(value => value + 1)}
++        >
++          {t('refresh')}
++        </button>
++      </div>
++      {loading ? <p role="status">{t('loading')}</p> : null}
++      {error ? (
++        <p role="alert" className="text-sm font-semibold text-red-800">{t(error)}</p>
++      ) : null}
++      {!loading && page ? (
++        <>
++          <p className="text-sm text-ink2">{t('admin.total', { count: page.total })}</p>
++          {page.items.length === 0 ? (
++            <p>{t('admin.empty')}</p>
++          ) : (
++            <ul className="space-y-3">
++              {page.items.map(row => (
++                <li key={row.request_id} className="min-w-0 rounded-xl border border-line bg-white p-4">
++                  <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
++                    <div className="min-w-0 text-sm">
++                      <p className="break-words font-semibold">{row.display_name || row.email}</p>
++                      <p className="break-all text-ink2">{row.email}</p>
++                      <p className="mt-2 font-semibold">{t(`statuses.${row.status}`)}</p>
++                      <p className="mt-1 text-xs">
++                        {t('requested_at')}: {date(row.requested_at)}
++                      </p>
++                      {row.reviewed_at ? (
++                        <p className="mt-1 text-xs">
++                          {t('reviewed_at')}: {date(row.reviewed_at)}
++                        </p>
++                      ) : null}
++                      {row.review_reason ? (
++                        <p className="mt-2 whitespace-pre-wrap break-words">
++                          <span className="font-semibold">{t('review_reason')}: </span>
++                          {row.review_reason}
++                        </p>
++                      ) : null}
++                    </div>
++                    {row.status !== 'cancelled' ? (
++                      <button
++                        type="button"
++                        className={button + ' shrink-0'}
++                        disabled={busy || mustReload}
++                        onClick={() => choose(row)}
++                      >
++                        {t('admin.review')}
++                      </button>
++                    ) : null}
++                  </div>
++                </li>
++              ))}
++            </ul>
++          )}
++          <div className="flex flex-wrap gap-3">
++            <button
++              type="button"
++              className={button}
++              disabled={busy || offset === 0}
++              onClick={() => setOffset(value => Math.max(0, value - 50))}
++            >
++              {t('admin.previous')}
++            </button>
++            <button
++              type="button"
++              className={button}
++              disabled={busy || offset + 50 >= page.total}
++              onClick={() => setOffset(value => value + 50)}
++            >
++              {t('admin.next')}
++            </button>
++          </div>
++        </>
++      ) : null}
++      {selected ? (
++        <form
++          className="min-w-0 space-y-3 rounded-xl border border-amber-200 bg-amber-50 p-4"
++          aria-label={t('admin.review')}
++          onSubmit={event => {
++            event.preventDefault()
++            void save()
++          }}
++        >
++          <h3 ref={reviewHeading} tabIndex={-1} className="break-all font-bold">
++            {t('admin.review')}: {selected.email}
++          </h3>
++          <p className="text-sm">{t('admin.reason_visible')}</p>
++          <label htmlFor={`${id}-status`} className="block text-sm font-semibold">
++            {t('admin.decision')}
++          </label>
++          <select
++            id={`${id}-status`}
++            className={input}
++            value={status}
++            disabled={busy || mustReload}
++            onChange={event => setStatus(event.target.value as typeof status)}
++          >
++            <option value="reviewed">{t('statuses.reviewed')}</option>
++            <option value="retention_hold">{t('statuses.retention_hold')}</option>
++          </select>
++          <label htmlFor={`${id}-reason`} className="block text-sm font-semibold">
++            {t('admin.reason')}
++          </label>
++          <textarea
++            id={`${id}-reason`}
++            className={input}
++            rows={4}
++            required
++            maxLength={1000}
++            value={reason}
++            disabled={busy || mustReload}
++            onChange={event => setReason(event.target.value)}
++          />
++          <div className="flex flex-wrap gap-3">
++            <button
++              type="submit"
++              className={button}
++              disabled={busy || mustReload || !reason.trim() || reason.trim().length > 1000}
++            >
++              {busy ? t('saving') : t('admin.save')}
++            </button>
++            <button
++              type="button"
++              className={button}
++              disabled={busy}
++              onClick={() => setSelected(null)}
++            >
++              {t('admin.close')}
++            </button>
++          </div>
++        </form>
++      ) : null}
++    </section>
++  )
++}
+diff --git a/apps/dashboard/src/pages/admin/Settings.tsx b/apps/dashboard/src/pages/admin/Settings.tsx
+index f4cc64288b3124df29b44d3ef1422f9718005393..1947d4d1cb5e30ac0b287a8abcb312c933eaaa0c 100644
+--- a/apps/dashboard/src/pages/admin/Settings.tsx
++++ b/apps/dashboard/src/pages/admin/Settings.tsx
+@@ -11,0 +12 @@ import { TONE } from './shared'
++import { AccountDeletionRequest } from '../../components/AccountDeletionRequest'
+@@ -553,0 +555 @@ export function AdminSettings({ user, onUserUpdate }: { user: UserInfo; onUserUp
++            <div className="pt-5 mt-5"><AccountDeletionRequest key={user.email} accountEmail={user.email} /></div>
+diff --git a/tests/account-deletion.test.cjs b/tests/account-deletion.test.cjs
+new file mode 100644
+index 0000000000000000000000000000000000000000..70d1b0e898eaeb9056d3f20fb54a74399541cf24
+--- /dev/null
++++ b/tests/account-deletion.test.cjs
+@@ -0,0 +1,270 @@
++// Actual TS/TSX with synthetic API/hooks only. No accounts, production data,
++// messages, deletion, network, dependency installation, or local app build.
++const { test } = require('node:test')
++const assert = require('node:assert/strict')
++const fs = require('node:fs')
++const path = require('node:path')
++const vm = require('node:vm')
++const ts = require('typescript')
++const React = require('react')
++const runtime = require('react/jsx-runtime')
++const { renderToStaticMarkup } = require('react-dom/server')
++const root = path.resolve(__dirname, '../apps/dashboard/src')
++const clone = value => JSON.parse(JSON.stringify(value))
++const ID = '10000000-0000-4000-8000-000000000001'
++const USER = '20000000-0000-4000-8000-000000000002'
++const EMAIL = 'synthetic@example.invalid'
++const TIME = '2026-11-17T12:00:00Z'
++const state = changes => ({ request_id: ID, status: 'pending_review', requested_at: TIME, review_after: null, version: 1, reviewed_at: null, review_reason: null, ...changes })
++const none = () => state({ request_id: null, status: 'none', requested_at: null, version: 0 })
++const row = changes => ({ ...state(), user_id: USER, display_name: 'Synthetic member', email: EMAIL, ...changes })
++function compiled(file) {
++  const result = ts.transpileModule(fs.readFileSync(path.join(root, file), 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true }, reportDiagnostics: true })
++  assert.deepEqual(result.diagnostics, [])
++  return result.outputText
++}
++function apiFixture(response, error) {
++  const calls = [], module = { exports: {} }
++  const client = Object.fromEntries(['get', 'post'].map(method => [method, async (...args) => { calls.push({ method, args }); if (error) throw error; return { data: typeof response === 'function' ? response(method, ...args) : response } }]))
++  vm.runInNewContext(compiled('api/accountDeletion.ts'), { module, exports: module.exports, require: name => { assert.equal(name, './axios'); return { __esModule: true, default: client } } })
++  return { ...module.exports, calls }
++}
++
++test('own API reads persisted state and sends explicit confirmation and versioned cancellation only', async () => {
++  const api = apiFixture((method, url) => method === 'post' && url.endsWith('/cancel') ? state({ status: 'cancelled', version: 2 }) : state())
++  const signal = new AbortController().signal
++  assert.equal((await api.getAccountDeletionRequest(signal)).status, 'pending_review')
++  assert.equal(api.calls[0].args[1].signal, signal)
++  await api.requestAccountDeletion(' ' + EMAIL + ' ')
++  await api.cancelAccountDeletion(ID, 1)
++  assert.deepEqual(clone(api.calls), [
++    { method: 'get', args: ['/auth/me/delete-request', { signal: {} }] },
++    { method: 'post', args: ['/auth/me/delete-request', { confirm_email: EMAIL, confirm_request: true }] },
++    { method: 'post', args: ['/auth/me/delete-request/cancel', { request_id: ID, expected_version: 1 }] },
++  ])
++})
++
++test('Admin API uses bounded status pages and trimmed user-visible versioned review reasons', async () => {
++  const api = apiFixture((method) => method === 'get' ? { items: [row()], total: 70 } : state({ status: 'retention_hold', version: 2, reviewed_at: TIME, review_reason: 'Synthetic explanation' }))
++  const signal = new AbortController().signal
++  assert.equal((await api.getAccountDeletionQueue('pending_review', 50, signal)).total, 70)
++  assert.equal(api.calls[0].args[1].signal, signal)
++  assert.deepEqual(clone(api.calls[0].args[1].params), { status: 'pending_review', limit: 50, offset: 50 })
++  await api.getAccountDeletionQueue(undefined)
++  assert.deepEqual(clone(api.calls[1].args[1].params), { limit: 50, offset: 0 })
++  await api.reviewAccountDeletion(ID, 1, 'retention_hold', '  Synthetic explanation  ')
++  assert.deepEqual(clone(api.calls[2]), { method: 'post', args: [`/admin/account-deletion-requests/${ID}/review`, { expected_version: 1, status: 'retention_hold', reason: 'Synthetic explanation' }] })
++})
++
++test('invalid actions and malformed persisted states never become a fake successful or empty state', async () => {
++  const api = apiFixture()
++  for (const callback of [() => api.requestAccountDeletion(''), () => api.cancelAccountDeletion('invalid', 1), () => api.cancelAccountDeletion(ID, 0), () => api.reviewAccountDeletion(ID, 1, 'reviewed', '  '), () => api.reviewAccountDeletion(ID, 1, 'deleted', 'Reason'), () => api.getAccountDeletionQueue('none'), () => api.getAccountDeletionQueue(undefined, -1)]) await assert.rejects(callback(), value => value.code === 'invalid')
++  assert.equal(api.calls.length, 0)
++  for (const result of [{}, state({ status: 'deleted' }), state({ review_after: TIME }), state({ version: 0 }), state({ requested_at: 'invalid date' })]) await assert.rejects(apiFixture(result).getAccountDeletionRequest(), value => value.code === 'unavailable')
++  for (const report of [{ items: [row(), row()], total: 2 }, { items: [row({ status: 'none' })], total: 1 }, { items: [row()], total: 0 }]) await assert.rejects(apiFixture(report).getAccountDeletionQueue(), value => value.code === 'unavailable')
++  await assert.rejects(apiFixture(none()).requestAccountDeletion(EMAIL), value => value.code === 'unconfirmed')
++  await assert.rejects(apiFixture(state()).cancelAccountDeletion(ID, 1), value => value.code === 'unconfirmed')
++  await assert.rejects(apiFixture(state({ status: 'reviewed', version: 1 })).reviewAccountDeletion(ID, 1, 'reviewed', 'Reason'), value => value.code === 'unconfirmed')
++})
++
++test('stale, denied and transport failures are classified without automatic mutation retries', async () => {
++  for (const [error, code] of [[{ response: { status: 409 } }, 'stale'], [{ response: { status: 404 } }, 'stale'], [{ response: { status: 403 } }, 'forbidden'], [Error('Synthetic lost response'), 'unconfirmed']]) {
++    const api = apiFixture(null, error)
++    await assert.rejects(api.cancelAccountDeletion(ID, 1), value => value.code === code)
++    assert.equal(api.calls.length, 1)
++  }
++  // A matching replay may return the already-cancelled current version.
++  assert.equal((await apiFixture(state({ status: 'cancelled', version: 2 })).cancelAccountDeletion(ID, 2)).status, 'cancelled')
++})
++
++test('Admin matching idempotent review replay accepts the current saved version and exact reason', async () => {
++  const current = state({ status: 'retention_hold', version: 5, review_reason: 'Synthetic reason', reviewed_at: TIME })
++  assert.equal((await apiFixture(current).reviewAccountDeletion(ID, 5, 'retention_hold', 'Synthetic reason')).version, 5)
++  assert.equal((await apiFixture(current).reviewAccountDeletion(ID, 1, 'retention_hold', 'Synthetic reason')).version, 5)
++  for (const changes of [{ review_reason: 'Different reason' }, { reviewed_at: null }, { version: 4 }]) await assert.rejects(apiFixture({ ...current, ...changes }).reviewAccountDeletion(ID, 5, 'retention_hold', 'Synthetic reason'), value => value.code === 'unconfirmed')
++})
++
++function ui(file, exportName, responses, language = 'en', props = { accountEmail: EMAIL }) {
++  const translations = JSON.parse(fs.readFileSync(path.join(root, `locale/${language}/account_deletion.json`), 'utf8'))
++  const calls = [], frames = new Map(), wrappers = new WeakMap(), effects = []
++  let current, tree, html = '', dirty = false, sequence = 0
++  const t = (key, values = {}) => { const value = key.split('.').reduce((part, item) => part?.[item], translations); assert.equal(typeof value, 'string', `Missing ${language} ${key}`); return value.replace(/\{\{(\w+)\}\}/g, (_, name) => String(values[name] ?? '')) }
++  function slot(kind) { const n = current.cursor++; if (!current.slots[n]) current.slots[n] = { kind }; assert.equal(current.slots[n].kind, kind); return current.slots[n] }
++  const hooks = { ...React,
++    useId() { const value = slot('id'); return value.value ??= 'deletion-fixture-' + sequence++ },
++    useState(initial) { const state = slot('state'); if (!Object.hasOwn(state, 'value')) state.value = typeof initial === 'function' ? initial() : initial; return [state.value, next => { state.value = typeof next === 'function' ? next(state.value) : next; dirty = true }] },
++    useRef(initial) { const state = slot('ref'); return state.value ??= { current: initial } },
++    useEffect(callback, dependencies) { const state = slot('effect'); if (!state.dependencies || dependencies.some((value, index) => !Object.is(value, state.dependencies[index]))) { state.dependencies = dependencies; effects.push({ state, callback }) } },
++  }
++  function wrap(type) { if (!wrappers.has(type)) { const key = sequence++; const wrapped = received => { const previous = current; let frame = frames.get(key); if (!frame) frames.set(key, frame = { cursor: 0, slots: [] }); current = frame; frame.cursor = 0; frame.tree = type(received); current = previous; return frame.tree }; wrapped.frameId = key; wrappers.set(type, wrapped) } return wrappers.get(type) }
++  const jsx = (type, received, key) => runtime.jsx(typeof type === 'function' ? wrap(type) : type, received, key)
++  const jsxs = (type, received, key) => runtime.jsxs(typeof type === 'function' ? wrap(type) : type, received, key)
++  class AccountDeletionError extends Error { constructor(code) { super(code); this.code = code } }
++  const api = { DELETION_STATUSES: ['pending_review', 'reviewed', 'retention_hold', 'cancelled'], AccountDeletionError }
++  for (const name of ['getAccountDeletionRequest', 'requestAccountDeletion', 'cancelAccountDeletion', 'getAccountDeletionQueue', 'reviewAccountDeletion']) api[name] = (...args) => { calls.push({ name, args }); assert.equal(typeof responses[name], 'function', `Unexpected ${name}`); return responses[name](...args) }
++  const module = { exports: {} }
++  vm.runInNewContext(compiled(file), { module, exports: module.exports, Date, Intl, AbortController, require(name) {
++    if (name === 'react') return hooks
++    if (name === 'react/jsx-runtime') return { ...runtime, jsx, jsxs }
++    if (name === 'react-i18next') return { useTranslation: () => ({ t, i18n: { language } }) }
++    assert.ok(name.endsWith('/api/accountDeletion')); return api
++  } })
++  function render() { dirty = false; tree = jsx(module.exports[exportName], props); html = renderToStaticMarkup(tree); return html }
++  async function settle() { for (let n = 0; n < 15; n++) { render(); for (const entry of effects.splice(0)) { entry.state.cleanup?.(); entry.state.cleanup = entry.callback() } for (let tick = 0; tick < 6; tick++) await Promise.resolve(); if (!dirty && !effects.length) return html } assert.fail('Component did not settle') }
++  function nodes() { const found = []; function visit(value) { if (Array.isArray(value)) return value.forEach(visit); if (!React.isValidElement(value)) return; if (value.type.frameId !== undefined) return visit(frames.get(value.type.frameId)?.tree); found.push(value); visit(value.props.children) } visit(tree); return found }
++  function text(value) { return Array.isArray(value) ? value.map(text).join('') : React.isValidElement(value) ? value.type.frameId !== undefined ? text(frames.get(value.type.frameId)?.tree) : text(value.props.children) : value == null ? '' : String(value) }
++  function find(type, label) { const found = nodes().find(node => node.type === type && (typeof label === 'function' ? label(node) : text(node) === label)); assert.ok(found, `Missing ${type}: ${label}`); return found }
++  return { calls, t, settle, render, find, nodes, get html() { return html }, text: () => text(tree), AccountDeletionError,
++    unmount() { for (const frame of frames.values()) for (const value of frame.slots) value.cleanup?.() } }
++}
++const ownUi = (responses, language) => ui('components/AccountDeletionRequest.tsx', 'AccountDeletionRequest', responses, language)
++const adminUi = (responses, language, userRole = 'admin') => ui('pages/admin/AccountDeletion.tsx', 'AdminAccountDeletion', responses, language, { userRole })
++const submit = harness => harness.find('form', () => true).props.onSubmit({ preventDefault() {} })
++
++test('actual EN/ES own screens load persisted review state and escape owner-visible reasons without posting', async () => {
++  for (const language of ['en', 'es']) {
++    const h = ownUi({ getAccountDeletionRequest: async () => state({ status: 'retention_hold', reviewed_at: TIME, review_reason: '<script>Synthetic</script>' }) }, language)
++    await h.settle()
++    assert.ok(h.text().includes(h.t('statuses.retention_hold')))
++    assert.ok(h.text().includes(h.t('own.pending')))
++    assert.ok(h.html.includes('&lt;script&gt;Synthetic&lt;/script&gt;'))
++    assert.ok(!h.html.includes('<script>'))
++    assert.equal(h.calls.length, 1); assert.equal(h.calls[0].name, 'getAccountDeletionRequest')
++    assert.equal(h.find('button', h.t('own.cancel')).props.disabled, false)
++    assert.ok(!/30 days|30 días/.test(h.text()))
++  }
++})
++
++test('actual own form requires matching account email and separate explicit consent; success survives remount', async () => {
++  let persisted = none()
++  const h = ownUi({ getAccountDeletionRequest: async () => persisted, requestAccountDeletion: async email => { assert.equal(email, EMAIL); return persisted = state() } })
++  await h.settle(); submit(h); await h.settle(); assert.equal(h.calls.length, 1)
++  h.find('input', node => node.props.type === 'email').props.onChange({ target: { value: 'other@example.invalid' } })
++  h.find('input', node => node.props.type === 'checkbox').props.onChange({ target: { checked: true } })
++  await h.settle(); submit(h); await h.settle(); assert.equal(h.calls.length, 1)
++  h.find('input', node => node.props.type === 'email').props.onChange({ target: { value: EMAIL } })
++  await h.settle(); assert.equal(h.find('button', h.t('own.request')).props.disabled, false)
++  submit(h); submit(h); await h.settle()
++  assert.equal(h.calls.filter(call => call.name === 'requestAccountDeletion').length, 1)
++  assert.ok(h.text().includes(h.t('statuses.pending_review')))
++  h.unmount()
++  const next = ownUi({ getAccountDeletionRequest: async () => persisted }); await next.settle()
++  assert.ok(next.text().includes(next.t('statuses.pending_review')))
++  assert.equal(next.nodes().filter(node => node.type === 'input').length, 0)
++})
++
++test('actual own cancellation posts current id/version once and requires a fresh GET after a conflict or uncertain result', async () => {
++  for (const code of ['stale', 'unconfirmed']) {
++    let persisted = state()
++    const h = ownUi({ getAccountDeletionRequest: async () => persisted, cancelAccountDeletion: async (id, version) => { assert.equal(id, ID); assert.equal(version, 1); persisted = state({ status: 'cancelled', version: 2 }); throw new h.AccountDeletionError(code) } })
++    await h.settle()
++    const click = h.find('button', h.t('own.cancel')).props.onClick
++    click(); click(); await h.settle()
++    assert.equal(h.calls.filter(call => call.name === 'cancelAccountDeletion').length, 1)
++    assert.ok(h.text().includes(h.t(code)))
++    assert.equal(h.find('button', h.t('own.cancel')).props.disabled, true)
++    h.find('button', h.t('refresh')).props.onClick(); await h.settle()
++    assert.ok(h.text().includes(h.t('statuses.cancelled')))
++    assert.equal(h.calls.filter(call => call.name === 'getAccountDeletionRequest').length, 2)
++  }
++})
++
++test('actual own failed load never enables request actions and aborts pending reads on unmount', async () => {
++  const failed = ownUi({ getAccountDeletionRequest: async () => { throw Error('Synthetic unavailable') } }); await failed.settle()
++  assert.ok(failed.text().includes(failed.t('load_error')))
++  assert.equal(failed.nodes().filter(node => node.type === 'input' || node.type === 'form').length, 0)
++  let signal
++  const slow = ownUi({ getAccountDeletionRequest: requestSignal => { signal = requestSignal; return new Promise(() => {}) } }); await slow.settle(); slow.unmount()
++  assert.equal(signal.aborted, true)
++})
++
++test('actual own confirmed cancellation immediately shows persisted cancelled state and allows a fresh explicit request', async () => {
++  let persisted = state()
++  const h = ownUi({ getAccountDeletionRequest: async () => persisted, cancelAccountDeletion: async (id, version) => { assert.equal(id, ID); assert.equal(version, 1); return persisted = state({ status: 'cancelled', version: 2 }) } })
++  await h.settle(); h.find('button', h.t('own.cancel')).props.onClick(); await h.settle()
++  assert.ok(h.text().includes(h.t('statuses.cancelled')))
++  assert.equal(h.find('input', node => node.props.type === 'checkbox').props.checked, false)
++  assert.equal(h.find('button', h.t('own.request')).props.disabled, true)
++  h.unmount()
++  const next = ownUi({ getAccountDeletionRequest: async () => persisted }); await next.settle()
++  assert.ok(next.text().includes(next.t('statuses.cancelled')))
++})
++
++test('actual Admin queue denies non-Admins without fetching and renders bounded EN/ES persisted pages', async () => {
++  for (const role of ['buyer', 'owner', 'realtor', 'Admin']) {
++    const denied = adminUi({}, 'en', role); await denied.settle(); assert.equal(denied.calls.length, 0); assert.ok(denied.text().includes(denied.t('admin.denied')))
++  }
++  for (const language of ['en', 'es']) {
++    const h = adminUi({ getAccountDeletionQueue: async (status, offset) => { assert.ok(status === 'pending_review' || status === undefined); assert.ok(offset === 0 || offset === 50); return { items: [row()], total: 70 } } }, language)
++    await h.settle(); assert.ok(h.text().includes(h.t('admin.reason_visible')) === false)
++    h.find('button', h.t('admin.next')).props.onClick(); await h.settle()
++    assert.equal(h.calls[1].args[1], 50)
++    h.find('button', h.t('admin.previous')).props.onClick(); await h.settle(); assert.equal(h.calls[2].args[1], 0)
++    h.find('select', () => true).props.onChange({ target: { value: 'active' } }); await h.settle()
++    assert.equal(h.calls[3].args[0], undefined)
++    assert.ok(!h.text().includes(h.t('load_error')))
++  }
++})
++
++test('actual Admin save requires a visible reason, closes without mutation, and submits only selected current version', async () => {
++  let requested = 0
++  const h = adminUi({ getAccountDeletionQueue: async () => ({ items: [row()], total: 1 }), reviewAccountDeletion: async (...args) => { requested++; assert.deepEqual(args, [ID, 1, 'retention_hold', 'Synthetic reason']); return state({ status: 'retention_hold', version: 2, reviewed_at: TIME, review_reason: 'Synthetic reason' }) } })
++  await h.settle(); h.find('button', h.t('admin.review')).props.onClick(); await h.settle()
++  assert.ok(h.text().includes(h.t('admin.reason_visible')))
++  submit(h); await h.settle(); assert.equal(requested, 0)
++  h.find('button', h.t('admin.close')).props.onClick(); await h.settle(); assert.equal(requested, 0)
++  h.find('button', h.t('admin.review')).props.onClick(); await h.settle()
++  h.find('select', node => node.props.id.endsWith('-status')).props.onChange({ target: { value: 'retention_hold' } })
++  h.find('textarea', () => true).props.onChange({ target: { value: 'Synthetic reason' } }); await h.settle()
++  submit(h); submit(h); await h.settle(); assert.equal(requested, 1)
++  assert.equal(h.calls.filter(call => call.name === 'getAccountDeletionQueue').length, 2)
++})
++
++test('actual Admin concurrent cancellation and transport failures freeze saves until explicit queue refresh', async () => {
++  for (const code of ['stale', 'unconfirmed']) {
++    let persisted = row()
++    const h = adminUi({ getAccountDeletionQueue: async () => ({ items: [persisted], total: 1 }), reviewAccountDeletion: async () => { persisted = row({ status: 'cancelled', version: 2 }); throw new h.AccountDeletionError(code) } })
++    await h.settle(); h.find('button', h.t('admin.review')).props.onClick(); await h.settle()
++    h.find('textarea', () => true).props.onChange({ target: { value: 'Synthetic reason' } }); await h.settle(); submit(h); await h.settle()
++    assert.ok(h.text().includes(h.t(code)))
++    assert.equal(h.find('button', h.t('admin.save')).props.disabled, true)
++    submit(h); await h.settle(); assert.equal(h.calls.filter(call => call.name === 'reviewAccountDeletion').length, 1)
++    h.find('button', h.t('refresh')).props.onClick(); await h.settle()
++    assert.ok(h.text().includes(h.t('statuses.cancelled')))
++    assert.ok(!h.nodes().some(node => node.type === 'button' && h.t('admin.review') === node.props.children))
++  }
++})
++
++test('Admin failed or cancelled reads never become an empty saved queue or authorize reviews', async () => {
++  const h = adminUi({ getAccountDeletionQueue: async () => { throw Error('Synthetic unavailable') } }); await h.settle()
++  assert.ok(h.text().includes(h.t('load_error')))
++  assert.ok(!h.text().includes(h.t('admin.empty')))
++  assert.equal(h.nodes().filter(node => node.type === 'form').length, 0)
++  let signal
++  const slow = adminUi({ getAccountDeletionQueue: (_status, _offset, requestSignal) => { signal = requestSignal; return new Promise(() => {}) } }); await slow.settle(); slow.unmount()
++  assert.equal(signal.aborted, true)
++})
++
++test('Settings integration, Admin-only navigation and EN/ES copy preserve actual review-only behavior', () => {
++  const read = file => fs.readFileSync(path.join(root, file), 'utf8')
++  assert.match(read('pages/Settings.tsx'), /<AccountDeletionRequest key=\{user.email\} accountEmail=\{user.email\}/)
++  assert.match(read('pages/admin/Settings.tsx'), /<AccountDeletionRequest key=\{user.email\} accountEmail=\{user.email\}/)
++  assert.ok(!read('pages/Settings.tsx').includes('deleteDone'))
++  assert.match(read('pages/AdminDash.tsx'), /case 'account-deletion': return <AdminAccountDeletion userRole=\{user.role\}/)
++  const navigation = read('layouts/DashLayout.tsx')
++  const [beforeAdmin, adminAndAfter] = navigation.split('const ADMIN_NAV:')
++  assert.ok(!beforeAdmin.includes("view: 'account-deletion'"))
++  assert.ok(adminAndAfter.split('interface Props')[0].includes("view: 'account-deletion'"))
++  function flatten(value, prefix = '') { return Object.entries(value).flatMap(([key, item]) => typeof item === 'string' ? [[prefix + key, item]] : flatten(item, prefix + key + '.')) }
++  const en = flatten(JSON.parse(read('locale/en/account_deletion.json'))), es = flatten(JSON.parse(read('locale/es/account_deletion.json')))
++  assert.deepEqual(en.map(([key]) => key), es.map(([key]) => key))
++  for (const [key, value] of [...en, ...es]) { assert.ok(value); assert.ok(!/30 days|30 días|30-day/.test(value), key) }
++  for (const language of ['en', 'es']) {
++    assert.ok(!/30 days|30 días/.test(JSON.stringify(JSON.parse(read(`locale/${language}/settings.json`)).security.danger_zone)))
++    assert.ok(JSON.parse(read(`locale/${language}/nav.json`))['account-deletion'])
++  }
++  const config = read('i18n.ts')
++  assert.match(config, /account_deletion: enAccountDeletion/)
++  assert.match(config, /account_deletion: esAccountDeletion/)
++  assert.match(config, /ns: \[[^\n]*'professionals'[^\n]*'account_deletion'/)
++})

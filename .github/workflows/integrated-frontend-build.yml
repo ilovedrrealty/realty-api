@@ -1,8 +1,8 @@
-name: Isolated bilingual newsletter frontend build
+name: Isolated account deletion review frontend build
 
 on:
   push:
-    branches: [codex-ci-f08-newsletter-frontend-20261117]
+    branches: [codex-ci-f09-deletion-frontend-20261117]
 
 permissions:
   contents: read
@@ -51,7 +51,7 @@ jobs:
           ref: d49acd7d48e92dac6d06b1678570bc137fb6a5ba
           path: landing-relay
           persist-credentials: false
-      - name: Reconstruct the exact source and verify 126 contracts, Dashboard and static export
+      - name: Reconstruct the exact source and verify 146 contracts, Dashboard and static export
         shell: bash
         run: |
           set -euo pipefail

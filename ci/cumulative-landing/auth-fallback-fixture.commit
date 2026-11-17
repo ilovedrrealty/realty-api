@@ -1,0 +1,6 @@
+tree 0da98d76419ff0501b87b112d975037496b9583f
+parent 4d0a99e0bef524fe00eab5f2c0916d91768a4efb
+author Codex <codex@localhost> 1794954808 -0400
+committer Codex <codex@localhost> 1794954808 -0400
+
+Load the actual auth locale helper in fallback rendering tests
