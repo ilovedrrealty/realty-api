@@ -1,8 +1,8 @@
-"""Run review-task document evidence cases in nonce-bound PostgreSQL fixtures."""
+"""Rehearse the cumulative application schema and full public archive restore."""
 
 from contextlib import closing
 from hashlib import sha256
-from io import StringIO
+from io import BytesIO, StringIO
 from pathlib import Path
 import json
 import os
@@ -10,12 +10,13 @@ import re
 import subprocess
 import sys
 import unittest
+from uuid import uuid4
 
 
 APP = Path("/application")
-BASELINE_HEAD = "e12ac7d49f03"
-EVIDENCE_HEAD = "21f2fe166874"
-BASELINE_SHAPE = "76eafd85ceb2e126f02efe903cc553297e0ee14622d6f1a4bab6ef70213675cf"
+BASELINE_HEAD = "21f2fe166874"
+RELEASE_HEAD = "86fc1b2e4a79"
+BASELINE_SHAPE = "fda8d36f7d11fb0e0493d5a8557fb5c9159f8c4d2000d953f66aa998fe741108"
 CORE_TABLES = (
     "transaction_rooms", "transaction_room_events", "transaction_room_grants",
     "transaction_room_milestones", "transaction_room_tasks",
@@ -23,14 +24,16 @@ CORE_TABLES = (
 DOC_TABLES = ("transaction_documents", "transaction_document_versions")
 REFERRAL_TABLES = ("network_service_referrals", "network_service_referral_events")
 PRIVATE_TABLES = CORE_TABLES + DOC_TABLES + REFERRAL_TABLES
+FLOOR_PLAN_TABLE = "listing_floor_plans"
 TRIGGERS = ("transaction_room_events_immutable", "transaction_room_lead_changed")
 EVIDENCE_COLUMNS = {"evidence_document_id", "evidence_version_id"}
 EVIDENCE_CONSTRAINTS = {"ck_transaction_task_evidence_pair", "fk_transaction_task_evidence_version"}
-MODES = {"baseline", "fresh", "upgrade", "core", "documents", "adapter"}
+MODES = {"baseline", "fresh", "upgrade", "core", "documents", "adapter", "floorplans", "restore"}
 TESTS = {
     "core": ("test_transaction_room.py", 9),
     "documents": ("test_transaction_documents.py", 5),
     "adapter": ("test_transaction_document_storage.py", 7),
+    "floorplans": ("test_listing_floor_plans.py", 4),
 }
 TEST_DB = "ildr_platform_test_20261025"
 HOST = "127.0.0.1"
@@ -82,7 +85,8 @@ def check_database(database, nonce, head):
                    to_regclass('public.alembic_version') IS NOT NULL
             FROM pg_database WHERE datname = current_database()
         """)
-        check(cursor.fetchone() == (database, "postgres", HOST, PORT, 170006, f"ildr-d04-ci:{nonce}", head is not None))
+        check(cursor.fetchone() == (database, "postgres", HOST, PORT, 170006,
+                                    f"ildr-integration-ci:{nonce}", head is not None))
         if head is None:
             cursor.execute("""
                 SELECT count(*) FROM pg_class rel JOIN pg_namespace ns ON ns.oid = rel.relnamespace
@@ -159,12 +163,14 @@ def check_test_schema_cleanup():
     global stage
     stage = "test_cleanup"
     with closing(connect(TEST_DB)) as conn, conn.cursor() as cursor:
-        cursor.execute("SELECT count(*) FROM pg_namespace WHERE nspname ~ '^transaction_room_test_'")
+        cursor.execute("SELECT count(*) FROM pg_namespace WHERE nspname ~ '^(transaction_room_test_|floor_plan_test_)'")
         check(cursor.fetchone() == (0,))
 
 
-def catalog(database, *, evidence):
+def catalog(database, *, floorplans):
     selected = list(PRIVATE_TABLES)
+    if floorplans:
+        selected.append(FLOOR_PLAN_TABLE)
     with closing(connect(database)) as conn, conn.cursor() as cursor:
         cursor.execute("""
             SELECT rel.relname, rel.relrowsecurity, EXISTS (
@@ -205,15 +211,20 @@ def catalog(database, *, evidence):
               and [(name, enabled) for name, enabled, _ in triggers] == [(name, "O") for name in TRIGGERS])
     task_columns = [row for row in columns if row[0] == "transaction_room_tasks" and row[1] in EVIDENCE_COLUMNS]
     task_constraints = [row for row in checks if row[0] == "transaction_room_tasks" and row[1] in EVIDENCE_CONSTRAINTS]
-    if evidence:
-        check([(row[1], *row[2:]) for row in task_columns] == [
-            ("evidence_document_id", "uuid", "YES", None), ("evidence_version_id", "uuid", "YES", None),
-        ])
-        check({row[1] for row in task_constraints} == EVIDENCE_CONSTRAINTS)
+    check([(row[1], *row[2:]) for row in task_columns] == [
+        ("evidence_document_id", "uuid", "YES", None), ("evidence_version_id", "uuid", "YES", None),
+    ] and {row[1] for row in task_constraints} == EVIDENCE_CONSTRAINTS)
+    if floorplans:
+        check((FLOOR_PLAN_TABLE, "payload", "bytea", "NO", None) in columns)
+        check({row[1] for row in checks if row[0] == FLOOR_PLAN_TABLE} >= {
+            "uq_listing_floor_plan_slot", "ck_listing_floor_plan_file", "ck_listing_floor_plan_stage",
+        })
     else:
-        check(not task_columns and not task_constraints)
-    inherited = ([row for row in columns if row not in task_columns],
-                 [row for row in checks if row not in task_constraints], indexes, triggers)
+        with closing(connect(database)) as conn, conn.cursor() as cursor:
+            cursor.execute("SELECT to_regclass('public.listing_floor_plans')")
+            check(cursor.fetchone() == (None,))
+    inherited = tuple([row for row in block if row[0] != FLOOR_PLAN_TABLE]
+                      for block in (columns, checks, indexes)) + (triggers,)
     check(sha256(json.dumps(inherited, separators=(",", ":")).encode()).hexdigest() == BASELINE_SHAPE)
     return sha256(json.dumps((columns, checks, indexes, triggers), separators=(",", ":")).encode()).hexdigest()
 
@@ -273,19 +284,118 @@ def migrate(mode, database, nonce):
         command.upgrade(alembic_config, BASELINE_HEAD)
         stage = "catalog"
         check_database(database, nonce, BASELINE_HEAD)
-        shape = catalog(database, evidence=False)
-        sentinel(database, nonce, create=True)
+        shape = catalog(database, floorplans=False)
+        sentinel(database, nonce, create=True, evidence=True)
         return BASELINE_HEAD, len(PRIVATE_TABLES), shape
     if mode == "upgrade":
-        catalog(database, evidence=False)
-        sentinel(database, nonce)
-    stage = "migrate_evidence"
-    command.upgrade(alembic_config, EVIDENCE_HEAD)
+        catalog(database, floorplans=False)
+        sentinel(database, nonce, evidence=True)
+    stage = "migrate_floorplans"
+    command.upgrade(alembic_config, RELEASE_HEAD)
     stage = "catalog"
-    check_database(database, nonce, EVIDENCE_HEAD)
+    check_database(database, nonce, RELEASE_HEAD)
     if mode == "upgrade":
         sentinel(database, nonce, evidence=True)
-    return EVIDENCE_HEAD, len(PRIVATE_TABLES), catalog(database, evidence=True)
+    shape = catalog(database, floorplans=True)
+    if mode == "fresh":
+        seed_full_archive()
+    return RELEASE_HEAD, len(PRIVATE_TABLES) + 1, shape
+
+
+def seed_full_archive():
+    global stage
+    stage = "restore_seed"
+    from PIL import Image
+    from database import SessionLocal
+    from models.listing import Listing
+    from models.user import User
+    from schemas.listing_floor_plan import PublishFloorPlan
+    from services import listing_floor_plans as plans
+    from utils.transaction_document_storage import prepare_document
+
+    with SessionLocal() as db:
+        actor = User(id=uuid4(), role="admin", email="synthetic-backup@example.invalid", status="active",
+                     email_verified=True, display_name="Synthetic backup custodian")
+        listing = Listing(id=uuid4(), title="Synthetic archive media", type="villa", transaction="sale",
+                          price=150, location="Cabarete", status="active", submitted_by=actor.id)
+        actor_id, listing_id = actor.id, listing.id
+        db.add(actor)
+        db.flush()
+        db.add(listing)
+        db.commit()
+        drafts = []
+        for color in ("white", "black"):
+            output = BytesIO()
+            Image.new("RGB", (15, 8), color).save(output, format="PNG")
+            payload = output.getvalue()
+            staged = plans.stage(db, listing_id, actor_id, None, payload, prepare_document(payload, "image/png"))
+            drafts.append(staged["draft"])
+            if color == "white":
+                plans.publish(db, listing_id, actor_id, PublishFloorPlan(
+                    draft_id=drafts[-1]["id"], expected_published_id=None, owner_permission_confirmed=True,
+                ))
+        check(drafts[0]["sha256"] != drafts[1]["sha256"])
+
+
+def full_archive_state(database):
+    from psycopg2 import sql
+
+    with closing(connect(database)) as conn, conn.cursor() as cursor:
+        cursor.execute("""SELECT relname, relrowsecurity, relforcerowsecurity FROM pg_class rel
+            JOIN pg_namespace ns ON ns.oid=rel.relnamespace WHERE ns.nspname='public' AND relkind='r'
+            ORDER BY relname""")
+        tables = cursor.fetchall()
+        check(len(tables) > 10)
+        counts = []
+        for table, _, _ in tables:
+            cursor.execute(sql.SQL("SELECT count(*) FROM public.{}").format(sql.Identifier(table)))
+            counts.append((table, cursor.fetchone()[0]))
+        queries = (
+            """SELECT table_name, ordinal_position, column_name, data_type, udt_name,
+                      is_nullable, column_default FROM information_schema.columns
+               WHERE table_schema='public' ORDER BY table_name,ordinal_position""",
+            """SELECT rel.relname, con.conname, pg_get_constraintdef(con.oid)
+               FROM pg_constraint con JOIN pg_class rel ON rel.oid=con.conrelid
+               JOIN pg_namespace ns ON ns.oid=rel.relnamespace WHERE ns.nspname='public'
+               ORDER BY rel.relname,con.conname""",
+            """SELECT tablename,indexname,indexdef FROM pg_indexes WHERE schemaname='public'
+               ORDER BY tablename,indexname""",
+            """SELECT t.tgname, t.tgenabled, pg_get_triggerdef(t.oid)
+               FROM pg_trigger t JOIN pg_class rel ON rel.oid=t.tgrelid
+               JOIN pg_namespace ns ON ns.oid=rel.relnamespace WHERE ns.nspname='public'
+               AND NOT t.tgisinternal ORDER BY t.tgname,rel.relname""",
+            """SELECT viewname,definition FROM pg_views WHERE schemaname='public' ORDER BY viewname""",
+            """SELECT table_name,grantee,privilege_type,is_grantable
+               FROM information_schema.table_privileges WHERE table_schema='public'
+               ORDER BY table_name,grantee,privilege_type,is_grantable""",
+        )
+        definitions = []
+        for query in queries:
+            cursor.execute(query)
+            definitions.append(cursor.fetchall())
+        cursor.execute("""SELECT stage, sha256, payload, byte_count, approved_at IS NOT NULL
+            FROM public.listing_floor_plans ORDER BY stage""")
+        raw_files = cursor.fetchall()
+        check([(slot, approved) for slot, _, _, _, approved in raw_files] == [("draft", False), ("published", True)])
+        files = []
+        for slot, checksum, payload, byte_count, approved in raw_files:
+            check(len(payload) == byte_count and sha256(payload).hexdigest() == checksum)
+            files.append((slot, checksum, byte_count, approved))
+        check(files[0][1] != files[1][1])
+    shape = sha256(json.dumps((tables, definitions, counts, files), separators=(",", ":")).encode()).hexdigest()
+    return len(tables), shape, files
+
+
+def verify_full_restore(nonce):
+    global stage
+    stage = "catalog"
+    before, after = f"ildr_integration_fresh_{nonce}", f"ildr_integration_restore_{nonce}"
+    for database in (before, after):
+        check_database(database, nonce, RELEASE_HEAD)
+        catalog(database, floorplans=True)
+    tables, shape, original_files = full_archive_state(before)
+    check((tables, shape, original_files) == full_archive_state(after))
+    print(f"INTEGRATED_FULL_ARCHIVE_RESTORE tables={tables} schema_and_rows_sha256={shape} exact_floor_plans=2")
 
 
 def run(mode, nonce, commit, tree):
@@ -294,13 +404,17 @@ def run(mode, nonce, commit, tree):
           and all(re.fullmatch(r"[a-f0-9]{40}", value) for value in (commit, tree)))
     verify_runtime(commit, tree)
     head, private_tables, shape, count = "none", 0, "none", 0
-    if mode == "adapter":
+    if mode == "restore":
+        verify_full_restore(nonce)
+        head, private_tables = RELEASE_HEAD, len(PRIVATE_TABLES) + 1
+    elif mode == "adapter":
         configure()
         count = run_cases(mode)
     else:
         database = {
-            "baseline": f"ildr_d04_upgrade_{nonce}", "fresh": f"ildr_d04_fresh_{nonce}",
-            "upgrade": f"ildr_d04_upgrade_{nonce}", "core": TEST_DB, "documents": TEST_DB,
+            "baseline": f"ildr_integration_upgrade_{nonce}", "fresh": f"ildr_integration_fresh_{nonce}",
+            "upgrade": f"ildr_integration_upgrade_{nonce}", "core": TEST_DB, "documents": TEST_DB,
+            "floorplans": TEST_DB,
         }[mode]
         stage = "disposable_db"
         check_database(database, nonce, BASELINE_HEAD if mode == "upgrade" else None)
