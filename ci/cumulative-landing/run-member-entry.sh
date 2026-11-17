@@ -7,19 +7,19 @@ bounded() { timeout --kill-after=8s "$@"; }
 [[ $# == 4 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 &&
    ${GITHUB_RUN_ATTEMPT:-} == 1 ]] || die HOST_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-seller-valuation-landing-20261117 &&
+[[ ${GITHUB_REF:-} == refs/heads/codex-ci-seller-valuation-landing-20261117-v2 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 
 ops="$1"; fixture="$2"; frontend="$3"; backend="$4"
-parent=cca546e94da5b36e164cadf9093374fd62c4960a
+parent=a9cd9fc7458106ad0362a35dc1616c4a0ecbcab2
 g06_regression_ops=36ea3f1a58905453030454077edb27bf8922937f
 fixture_commit=441efdc288c3a38b8607c816c684abec080d83ad
 fixture_tree=6c01c7577e343d5e2542d4f8a84cbc0f103e4b5d
 frontend_commit=35f6380f8a3046cd1b3e8768f4207e8b2c31be3c
 frontend_tree=c52b762985864e63931adc2b022fa14e3a427332
 frontend_files=520
-backend_commit=8936bec9f42f2affed00cea7cf952f49535898bb
-backend_tree=ff89fa613e001bbc5564e8da9ea778ada69329c1
+backend_commit=8bae14c21fdeeeacaf97e7913d530e7cc0d81557
+backend_tree=f9542937093eebee1806fe8d9065c496dd4db30f
 [[ "$frontend_commit" =~ ^[a-f0-9]{40}$ && "$frontend_tree" =~ ^[a-f0-9]{40}$ &&
    "$backend_commit" =~ ^[a-f0-9]{40}$ && "$backend_tree" =~ ^[a-f0-9]{40}$ &&
    "$frontend_files" =~ ^[1-9][0-9]{0,3}$ ]] || die S01_EXACT_PAIR_NOT_PINNED
@@ -36,7 +36,7 @@ done
    $(git -C "$frontend" rev-parse 'HEAD^{tree}') == "$frontend_tree" &&
    $(git -C "$backend" rev-parse HEAD) == "$backend_commit" &&
    $(git -C "$backend" rev-parse 'HEAD^{tree}') == "$backend_tree" ]] || die EXACT_CHECKOUTS_REQUIRED
-expected=$'.github/workflows/network-member-entry-landing.yml\nci/cumulative-landing/run-member-entry.sh\nci/cumulative-landing/run-shortlist-login.mjs\nci/cumulative-landing/seller-valuation-browser.mjs'
+expected=$'.github/workflows/network-member-entry-landing.yml\nci/cumulative-landing/run-member-entry.sh'
 [[ $(git -C "$ops" diff --name-only "$parent" "$GITHUB_SHA") == "$expected" ]] || die EXACT_OPERATIONS_DELTA_REQUIRED
 tools="$ops/ci/cumulative-landing"
 fixture_tools="$fixture/ci/frontend"

@@ -2,7 +2,7 @@ name: Exact seller valuation mobile intake rehearsal
 
 on:
   push:
-    branches: [codex-ci-seller-valuation-landing-20261117]
+    branches: [codex-ci-seller-valuation-landing-20261117-v2]
 
 permissions:
   contents: read
@@ -43,7 +43,7 @@ jobs:
       - name: Read the exact candidate backend source for pair identity
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 8936bec9f42f2affed00cea7cf952f49535898bb
+          ref: 8bae14c21fdeeeacaf97e7913d530e7cc0d81557
           path: member-landing-backend
           persist-credentials: false
       - name: Verify mobile seller valuation intake and prior landing journeys in Chromium
