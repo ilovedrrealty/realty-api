@@ -2,7 +2,7 @@ name: Exact property viewing landing login browser rehearsal
 
 on:
   push:
-    branches: [codex-ci-property-viewings-landing-login-20261117]
+    branches: [codex-ci-property-viewings-landing-login-20261117-v2]
 
 permissions:
   contents: read
@@ -37,7 +37,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: ilovedrrealty/iLoveDRRealty
-          ref: 99aa4b305991d7017f478e02e0926397ace9a445
+          ref: 904db1e7d146e7211ab3c69fada163750d47f325
           path: member-landing-source
           persist-credentials: false
       - name: Read the exact candidate backend source for pair identity

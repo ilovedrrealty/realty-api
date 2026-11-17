@@ -7,15 +7,16 @@ bounded() { timeout --kill-after=8s "$@"; }
 [[ $# == 4 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 &&
    ${GITHUB_RUN_ATTEMPT:-} == 1 ]] || die HOST_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-property-viewings-landing-login-20261117 &&
+[[ ${GITHUB_REF:-} == refs/heads/codex-ci-property-viewings-landing-login-20261117-v2 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 
 ops="$1"; fixture="$2"; frontend="$3"; backend="$4"
-parent=36ea3f1a58905453030454077edb27bf8922937f
+parent=a843472423e0a43b423b50bc9be69fa1a3c24293
+g06_regression_ops=36ea3f1a58905453030454077edb27bf8922937f
 fixture_commit=441efdc288c3a38b8607c816c684abec080d83ad
 fixture_tree=6c01c7577e343d5e2542d4f8a84cbc0f103e4b5d
-frontend_commit=99aa4b305991d7017f478e02e0926397ace9a445
-frontend_tree=5abbf0115243af45176ed746b6e1e67686fce8e2
+frontend_commit=904db1e7d146e7211ab3c69fada163750d47f325
+frontend_tree=4405d3e2c592e7752d918ce3ead9b52cd7f4f54a
 frontend_files=484
 backend_commit=703158f0df31ed2abfae762688f2d8c15c46e274
 backend_tree=2e811241e9fe80c6a53d140225cec134bf8d94ca
@@ -35,7 +36,7 @@ done
    $(git -C "$frontend" rev-parse 'HEAD^{tree}') == "$frontend_tree" &&
    $(git -C "$backend" rev-parse HEAD) == "$backend_commit" &&
    $(git -C "$backend" rev-parse 'HEAD^{tree}') == "$backend_tree" ]] || die EXACT_CHECKOUTS_REQUIRED
-expected=$'.github/workflows/network-member-entry-landing.yml\nci/cumulative-landing/run-member-entry.sh\nci/cumulative-landing/run-shortlist-login.mjs'
+expected=$'.github/workflows/network-member-entry-landing.yml\nci/cumulative-landing/run-member-entry.sh'
 [[ $(git -C "$ops" diff --name-only "$parent" "$GITHUB_SHA") == "$expected" ]] || die EXACT_OPERATIONS_DELTA_REQUIRED
 tools="$ops/ci/cumulative-landing"
 fixture_tools="$fixture/ci/frontend"
@@ -300,6 +301,6 @@ else:
 PY
 [[ "$browser_exit" == 0 ]] || die LANDING_LOGIN_BROWSER_FAILED
 printf 'MEMBER_LANDING_LOGIN_PAIR frontend=%s frontend_tree=%s backend=%s backend_tree=%s g06_regression_ops=%s\n' \
-  "$frontend_commit" "$frontend_tree" "$backend_commit" "$backend_tree" "$parent"
+  "$frontend_commit" "$frontend_tree" "$backend_commit" "$backend_tree" "$g06_regression_ops"
 printf 'MEMBER_LANDING_ACCEPTANCE operations=%s frontend=%s tree=%s fixture=%s run=%s attempt=1\n' \
   "$GITHUB_SHA" "$frontend_commit" "$frontend_tree" "$fixture_commit" "$GITHUB_RUN_ID"
