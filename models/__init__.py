@@ -5,6 +5,7 @@ from .upgrade_request import UpgradeRequest
 from .inquiry import Inquiry, AnonymousLead
 from .listing_edit import ListingEdit
 from .saved_home import SavedHome
+from .shortlist import ClientShortlist, ClientShortlistGrant, ClientShortlistItem
 from .booking import Booking
 from .arrival_guide import ListingArrivalGuide
 from .activity_log import ActivityLog

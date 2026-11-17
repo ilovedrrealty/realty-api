@@ -13,6 +13,7 @@ from database import SessionLocal
 from utils.limiter import limiter
 from routes import research_workspaces
 from routes import arrival_guide
+from routes import shortlists
 from routes import property_network
 from routes import service_workflow
 from routes import analytics, lead_delivery as lead_delivery_routes, property_management, location_review, owner_leads
@@ -186,6 +187,7 @@ app.include_router(inquiries.router)
 app.include_router(saved_homes.router)
 app.include_router(bookings.router)
 app.include_router(arrival_guide.router)
+app.include_router(shortlists.router)
 app.include_router(chat.router)
 app.include_router(webhooks.router)
 app.include_router(stats.router)
