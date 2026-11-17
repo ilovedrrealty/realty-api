@@ -105,9 +105,21 @@ class AccountDeletionTest(unittest.TestCase):
             user = db.get(User, self.ids["buyer"])
             self.assertEqual(user.status, "active")
             self.assertIsNone(user.deletion_requested_at)
-        later = self.request().json()
+        # An active request must win over historical rows regardless of dates.
+        earlier = datetime.fromisoformat(saved["requested_at"]) - timedelta(days=1)
+        with patch("services.account_deletion._now", return_value=earlier):
+            later = self.request().json()
         self.assertNotEqual(later["request_id"], saved["request_id"])
         self.assertEqual(later["status"], "pending_review")
+        self.assertEqual(self.status(), later)
+        self.assertEqual(self.call("/auth/me/delete-request/cancel", cancellation).json(), cancelled)
+        self.assertEqual(self.status(), later)
+        with SessionLocal() as db:
+            user = db.get(User, self.ids["buyer"])
+            self.assertEqual(user.deletion_requested_at, earlier)
+            active = db.scalars(select(AccountDeletionRequest).where(
+                AccountDeletionRequest.user_id == user.id, AccountDeletionRequest.status != "cancelled")).all()
+            self.assertEqual([row.id for row in active], [UUID(later["request_id"])])
 
     def test_legacy_timestamp_is_visible_and_adopted_without_reset(self):
         self.as_role("owner")

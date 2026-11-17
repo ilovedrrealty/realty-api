@@ -59,11 +59,16 @@ def _adopt_legacy(db, user):
 
 
 def own_state(db, user):
-    row = db.scalar(select(AccountDeletionRequest).where(AccountDeletionRequest.user_id == user.id)
-                     .order_by(AccountDeletionRequest.requested_at.desc(), AccountDeletionRequest.id.desc()).limit(1))
-    if user.deletion_requested_at is not None and (row is None or row.status == "cancelled"):
+    # The active request is authoritative even when its preserved legacy date
+    # precedes a historical cancellation or the server clock was corrected.
+    row = _active(db, user.id)
+    if row is not None:
+        return _state(row)
+    if user.deletion_requested_at is not None:
         return dict(request_id=_legacy_id(user), status="pending_review", requested_at=user.deletion_requested_at,
                     review_after=None, version=1, reviewed_at=None, review_reason=None)
+    row = db.scalar(select(AccountDeletionRequest).where(AccountDeletionRequest.user_id == user.id)
+                     .order_by(AccountDeletionRequest.cancelled_at.desc(), AccountDeletionRequest.id.desc()).limit(1))
     return _state(row)
 
 
