@@ -4,6 +4,7 @@ import { inflateSync } from 'node:zlib'
 import { chromium } from 'playwright-core'
 
 const require = createRequire(import.meta.url)
+const pdfParser = '/package-source/node_modules/pdf-lib'
 const landing = 'http://127.0.0.1:8917'
 const api = 'http://127.0.0.1:8918'
 const id = '10000000-0000-0000-0000-000000000001'
@@ -29,7 +30,7 @@ async function verifyFixture() {
   check(stat.isFile() && (stat.mode & 0o777) === 0o600 && stat.size <= 512, 'PRIVATE_FIXTURE_REQUIRED')
   const value = JSON.parse(await readFile(fixtureFile, 'utf8'))
   check(value.listing_id === id && value.photo_path === expectedPhoto, 'EXACT_STATIC_LISTING_ID_REQUIRED')
-  check(require('/package-source/pdf-lib/package.json').version === '1.17.1', 'EXACT_PDF_PARSER_VERSION_REQUIRED')
+  check(require(pdfParser + '/package.json').version === '1.17.1', 'EXACT_PDF_PARSER_VERSION_REQUIRED')
 }
 
 function isDetail(response) {
@@ -90,7 +91,7 @@ async function exterior(page, locale) {
 
 async function readPdf(download, locale) {
   stage = locale + '_pdf_file'
-  const { PDFArray, PDFDict, PDFDocument, PDFName, PDFString } = require('/package-source/pdf-lib')
+  const { PDFArray, PDFDict, PDFDocument, PDFName, PDFString } = require(pdfParser)
   check(download.suggestedFilename() === 'ilovedrrealty-' + id + '-' + locale + '.pdf',
     'EXACT_PDF_FILENAME_REQUIRED')
   check(await download.failure() === null, 'NATIVE_ATTACHMENT_MUST_COMPLETE')

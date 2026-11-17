@@ -2,7 +2,7 @@ name: Isolated public listing brochure download rehearsal
 
 on:
   push:
-    branches: [codex-ci-listing-brochures-browser-20261117-v4]
+    branches: [codex-ci-listing-brochures-browser-20261117-v5]
 
 permissions:
   contents: read
