@@ -21,6 +21,22 @@ function check(condition, reason) {
   if (!condition) throw new CheckFailure(reason)
 }
 
+function safeFailure(error) {
+  if (error instanceof CheckFailure) return error.message
+  const message = typeof error?.message === 'string' ? error.message : ''
+  if (message.includes('intercepts pointer events')) return 'POINTER_INTERCEPTED'
+  if (message.includes('strict mode violation')) return 'LOCATOR_AMBIGUOUS'
+  if (message.includes('element is not enabled')) return 'ELEMENT_DISABLED'
+  if (message.includes('element is not visible')) return 'ELEMENT_HIDDEN'
+  if (message.includes('element is not stable')) return 'ELEMENT_UNSTABLE'
+  if (message.includes('waiting for event "response"')) return 'API_RESPONSE_NOT_OBSERVED'
+  if (/\bnet::ERR_[A-Z_]+\b/.test(message)) return 'BROWSER_NETWORK_ERROR'
+  if (error?.name === 'TimeoutError' && message.includes('waiting for locator') && !message.includes('locator resolved')) {
+    return 'LOCATOR_NOT_FOUND'
+  }
+  return error?.name === 'TimeoutError' ? 'TIMED_OUT' : 'BROWSER_OPERATION_FAILED'
+}
+
 async function readFixture() {
   check(process.platform === 'linux' && process.env.GITHUB_ACTIONS === 'true'
     && process.env.GITHUB_REPOSITORY === 'ilovedrrealty/realty-api'
@@ -53,6 +69,10 @@ function listingReadName(response, inventoryPath) {
   const url = new URL(response.url())
   if (url.origin !== api || response.request().method() !== 'GET') return null
   if (url.pathname === inventoryPath) return 'admin_inventory'
+  const revisionPrefix = inventoryPath + '/revisions/'
+  if (url.pathname.startsWith(revisionPrefix) && /^[1-9][0-9]{0,9}$/.test(url.pathname.slice(revisionPrefix.length))) {
+    return 'admin_inventory_preview'
+  }
   if (url.pathname !== '/admin/listings') return listingsReads[url.pathname] ?? null
   if (url.searchParams.get('status') === 'pending_approval') return 'admin_listings_pending'
   if (url.searchParams.get('is_deal') === 'true') return 'admin_listings_deals'
@@ -200,12 +220,21 @@ async function save(page, path, surface) {
 }
 
 async function act(page, path, operation, control, confirmation) {
+  step = operation + '_open_confirmation'
+  await page.bringToFront()
   await button(page, control).click()
+  step = operation + '_confirmation_dialog'
+  const dialog = page.getByRole('dialog', { name: control, exact: true })
+  await dialog.waitFor({ state: 'visible' })
+  step = operation + '_confirm_click'
   const waiting = waitForResponse(page, response => fromApi(response, path + '/' + operation, 'POST'))
-  await button(page, confirmation).click()
+  await button(dialog, confirmation).click()
+  step = operation + '_confirm_api_response'
   const response = await requireResponse(waiting)
   check(response.status() === 200, 'CONFIRMED_INVENTORY_ACTION_REQUIRED')
   noCache(response)
+  step = operation + '_confirmation_closed'
+  await dialog.waitFor({ state: 'hidden' })
   return response.json()
 }
 
@@ -303,64 +332,95 @@ async function main() {
     const mobileAdmin = await session(browser, narrow, fixture.accounts.admin)
     const mobile = await openFromListings(mobileAdmin, path, true)
     const previewPath = path + '/revisions/' + initial.draft_revision
-    step = 'mobile_saved_preview'
+    step = 'mobile_preview_click'
     const previewResult = waitForResponse(mobile, response => fromApi(response, previewPath))
     await button(mobile, 'Preview saved revision').click()
+    step = 'mobile_preview_api_response'
     const savedResult = await requireResponse(previewResult)
     check(savedResult.status() === 200, 'ADMIN_PREVIEW_REQUIRED')
     noCache(savedResult)
+    step = 'mobile_preview_dialog'
     const dialog = mobile.getByRole('dialog', { name: 'Saved inventory revision 1', exact: true })
     await dialog.waitFor({ state: 'visible' })
-    check(await label(dialog, 'Project name (Spanish)').inputValue() === spanishName
-      && await label(dialog, 'Developer source reference').inputValue() === source,
-      'SOURCE_EVIDENCE_PRIVATE_MOBILE_PREVIEW_REQUIRED')
+    step = 'mobile_preview_spanish_field'
+    const spanish = label(dialog, 'Project name (Spanish)')
+    check(await spanish.inputValue() === spanishName, 'SPANISH_MOBILE_PREVIEW_REQUIRED')
+    step = 'mobile_preview_source_field'
+    const sourceField = label(dialog, 'Developer source reference')
+    check(await sourceField.inputValue() === source, 'PRIVATE_SOURCE_MOBILE_PREVIEW_REQUIRED')
+    step = 'mobile_preview_read_only'
+    check(await spanish.isDisabled() && await sourceField.isDisabled(), 'READ_ONLY_MOBILE_PREVIEW_REQUIRED')
+    step = 'mobile_preview_layout'
     check(await mobile.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'MOBILE_HORIZONTAL_OVERFLOW')
+    step = 'mobile_preview_buyer_denied'
     await apiResult(buyer, previewPath, 403)
+    step = 'mobile_preview_close_click'
     await button(dialog, 'Close').click()
+    step = 'mobile_preview_close_hidden'
+    await dialog.waitFor({ state: 'hidden' })
     checks.push('mobile_listing_action_and_read_only_saved_preview')
 
     step = 'verified_publication'
     const reviewed = await act(page, path, 'review', 'Review revision', 'Confirm review')
+    step = 'review_exact_private_revision'
     check(reviewed.reviewed_revision === initial.draft_revision && reviewed.published_revision === null,
       'ADMIN_REVIEW_MUST_NOT_PUBLISH')
+    step = 'review_public_still_unavailable'
     await apiResult(anonymous, publicPath, 404)
     const published = await act(page, path, 'publish', 'Publish revision', 'Confirm publication')
+    step = 'publication_anonymous_read'
     const live = await apiResult(anonymous, publicPath)
+    step = 'publication_buyer_read'
     const buyerView = await apiResult(buyer, publicPath)
     const [available, reserved] = live.project.phases[0].units
+    step = 'publication_exact_bilingual_revision'
     check(published.published_revision === initial.draft_revision && live.revision === initial.draft_revision
-      && live.project.name_en === englishName && live.project.name_es === spanishName
-      && live.project.target_delivery === '2032-Q3' && live.verified_on === today
-      && live.availability_valid_through === cutoff && live.availability_current === true
-      && available.floor === 'Ground floor' && available.status === 'available' && available.currency === 'USD'
-      && Number(available.price) === 199000 && Number(available.area_m2) === 110.25
-      && available.floor_plan_url === floorPlan && reserved.status === 'reserved' && reserved.floor_plan_url === null
-      && !JSON.stringify(live).includes('PRIVATE_SYNTHETIC') && !('evidence' in live)
+      && live.project.name_en === englishName && live.project.name_es === spanishName,
+      'EXACT_PUBLIC_BILINGUAL_REVISION_REQUIRED')
+    step = 'publication_delivery_and_availability'
+    check(live.project.target_delivery === '2032-Q3' && live.verified_on === today
+      && live.availability_valid_through === cutoff && live.availability_current === true,
+      'REVIEWED_DATES_REQUIRED')
+    step = 'publication_unit_facts_and_approved_floor_plan'
+    check(available.floor === 'Ground floor' && available.status === 'available' && available.currency === 'USD'
+      && Number(available.price) === 199000 && Number(available.area_m2) === 110.25 && available.floor_plan_url === floorPlan
+      && reserved.status === 'reserved' && reserved.floor_plan_url === null,
+      'REVIEWED_UNIT_FACTS_REQUIRED')
+    step = 'publication_private_evidence_excluded'
+    check(!JSON.stringify(live).includes('PRIVATE_SYNTHETIC') && !('evidence' in live)
       && !('floor_plan_approved' in available) && JSON.stringify(live) === JSON.stringify(buyerView),
-      'EXACT_APPROVED_PUBLIC_PROJECTION_REQUIRED')
+      'PUBLIC_PROJECTION_PRIVACY_REQUIRED')
     checks.push('confirmed_review_and_publication_expose_only_approved_data')
 
-    step = 'later_draft_preserves_publication'
+    step = 'mobile_reload_after_publication'
     await mobile.reload({ waitUntil: 'domcontentloaded' })
+    step = 'mobile_reopen_development_after_publication'
     await button(mobile, 'Development inventory').click()
+    step = 'mobile_edit_name_after_publication'
     await label(mobile, 'Project name (English)').fill(updatedName)
     const revised = await save(mobile, path, 'mobile')
     step = 'mobile_saved_draft_verification'
     check(revised.draft_revision === 2 && revised.reviewed_revision === null && revised.published_revision === 1
       && revised.published.project.name_en === englishName && revised.draft.project.name_en === updatedName,
       'DRAFT_MUST_NOT_REPLACE_PUBLISHED_REVISION')
+    step = 'mobile_draft_public_read_unchanged'
     const stillLive = await apiResult(anonymous, publicPath)
     check(stillLive.revision === initial.draft_revision && stillLive.project.name_en === englishName,
       'PUBLISHED_REVISION_MUST_STAY_VISIBLE')
+    step = 'mobile_draft_stale_withdraw_denied'
     await apiResult(admin, path + '/withdraw', 409, 'POST', { expected_version: initial.version })
     checks.push('later_private_draft_keeps_original_public_revision_and_rejects_stale_write')
 
     step = 'confirmed_withdrawal'
     const removed = await act(mobile, path, 'withdraw', 'Withdraw inventory', 'Confirm withdrawal')
+    step = 'withdraw_keeps_private_draft'
     check(removed.published_revision === null && removed.published === null && removed.draft_revision === 2,
       'WITHDRAWAL_MUST_KEEP_PRIVATE_DRAFT')
+    step = 'withdraw_anonymous_public_read_denied'
     await apiResult(anonymous, publicPath, 404)
+    step = 'withdraw_buyer_public_read_denied'
     await apiResult(buyer, publicPath, 404)
+    step = 'withdraw_admin_history_kept'
     const history = await apiResult(admin, previewPath)
     check(history.project.name_en === englishName && history.evidence.source_reference === source && history.revision === 1,
       'HISTORIC_PRIVATE_EVIDENCE_REQUIRED')
@@ -374,8 +434,6 @@ async function main() {
 try {
   await main()
 } catch (error) {
-  const reason = error instanceof CheckFailure ? error.message
-    : error?.name === 'TimeoutError' ? 'TIMED_OUT' : 'BROWSER_OPERATION_FAILED'
-  console.log('DEVELOPMENT_INVENTORY_BROWSER ' + JSON.stringify({ status: 'FAIL', step, reason, checks, statuses }))
+  console.log('DEVELOPMENT_INVENTORY_BROWSER ' + JSON.stringify({ status: 'FAIL', step, reason: safeFailure(error), checks, statuses }))
   process.exitCode = 1
 }

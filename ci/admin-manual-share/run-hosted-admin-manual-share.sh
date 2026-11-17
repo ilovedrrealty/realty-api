@@ -8,7 +8,7 @@ bounded() { timeout --kill-after=8s "$@"; }
 
 [[ $# == 4 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api ]] || die CI_REQUIRED
 [[ ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 && ${GITHUB_RUN_ATTEMPT:-} == 1 ]] || die STANDARD_LINUX_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-development-browser-20261117-v3 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
+[[ ${GITHUB_REF:-} == refs/heads/codex-ci-development-browser-20261117-v4 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 
 ops="$1"; frontend="$2"; backend="$3"; migration="$4"
 [[ "$ops" == "$GITHUB_WORKSPACE/browser-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-base" &&
@@ -18,7 +18,7 @@ for checkout in "$ops" "$frontend" "$backend" "$migration"; do
   checkout_status=$(git -C "$checkout" status --porcelain=v1 --untracked-files=all) || die CLEAN_CHECKOUT_REQUIRED
   [[ $(realpath "$checkout") == "$checkout" && -z "$checkout_status" ]] || die CLEAN_CHECKOUT_REQUIRED
 done
-[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == e43eee0ae707af3cd5ae0a0e91e846f11986a4de ]] ||
+[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == 1fc3a05e8fa0d70d7fbe0dcd13d673e962e04a93 ]] ||
   die EXACT_OPERATIONS_PARENT_REQUIRED
 frontend_commit=954b79f7c01e85a57230165eae82d741d88e3e73
 frontend_tree=7767d3072952015f87e0d405a9c2290c133c6342
