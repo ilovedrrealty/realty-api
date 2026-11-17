@@ -5,6 +5,7 @@ from urllib.parse import urlsplit
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 ChecklistItem = Literal["reference", "certificate", "review", "survey", "permits", "balances", "rules", "followup"]
+PurchaseCostCategory = Literal["transfer_tax", "legal", "notary_registry", "survey", "inspection", "financing", "other"]
 
 
 class ResearchLink(BaseModel):
@@ -26,6 +27,15 @@ class ResearchLink(BaseModel):
         return value
 
 
+class PurchaseCost(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    category: PurchaseCostCategory
+    currency: Literal["USD", "DOP"]
+    basis: Literal["estimate", "quote", "paid"]
+    amount_minor: int = Field(strict=True, ge=0, le=9_999_999_999_999)
+    label: str = Field(default="", max_length=80)
+
+
 class ResearchData(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
     title: str = Field(min_length=1, max_length=160)
@@ -34,6 +44,7 @@ class ResearchData(BaseModel):
     checks: dict[ChecklistItem, bool] = Field(default_factory=dict, max_length=8)
     item_notes: dict[ChecklistItem, str] = Field(default_factory=dict, max_length=8)
     links: list[ResearchLink] = Field(default_factory=list, max_length=10)
+    purchase_costs: list[PurchaseCost] = Field(default_factory=list, max_length=20)
 
     @field_validator("item_notes")
     @classmethod
