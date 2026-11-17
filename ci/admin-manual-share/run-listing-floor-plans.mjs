@@ -19,9 +19,14 @@ let stage = 'fixture'
 let deadline
 let failed = false
 
-class CheckFailure extends Error {}
-function check(pass, code) {
-  if (!pass) throw new CheckFailure(code)
+class CheckFailure extends Error {
+  constructor(code, status) {
+    super(code)
+    this.status = status
+  }
+}
+function check(pass, code, status) {
+  if (!pass) throw new CheckFailure(code, status)
 }
 
 function failureCode(error) {
@@ -30,11 +35,12 @@ function failureCode(error) {
   return error?.name === 'TimeoutError' ? 'LOCATOR_OR_EVENT_NOT_FOUND' : 'BROWSER_OPERATION_FAILED'
 }
 
-function reportFailure(reason) {
+function reportFailure(reason, status) {
   if (failed) return
   failed = true
   process.exitCode = 1
-  console.log('LISTING_FLOOR_PLAN_BROWSER_FAILURE ' + stage + ' ' + reason)
+  const detail = Number.isInteger(status) && status >= 100 && status <= 599 ? ' status=' + status : ''
+  console.log('LISTING_FLOOR_PLAN_BROWSER_FAILURE ' + stage + ' ' + reason + detail)
 }
 
 function progress(next, limit = 32000) {
@@ -175,14 +181,34 @@ async function stagePlan(page, editor, upload, expectedPublished) {
   return state.draft
 }
 
+function approvedImageHeaders(headers, expected) {
+  const ext = expected.mimeType === 'image/png' ? 'png' : 'jpg'
+  check(headers['content-type'] === expected.mimeType, 'APPROVED_IMAGE_CONTENT_TYPE_MISMATCH')
+  check(headers['content-disposition'] === 'inline; filename="floor-plan.' + ext + '"', 'APPROVED_IMAGE_DISPOSITION_MISMATCH')
+  check(headers['x-content-type-options'] === 'nosniff', 'APPROVED_IMAGE_NOSNIFF_MISSING')
+}
+
 async function approvedBytes(response, expected) {
   current(response)
-  const headers = response.headers()
-  const ext = expected.mimeType === 'image/png' ? 'png' : 'jpg'
-  check(response.status() === 200 && headers['content-type'] === expected.mimeType
-    && headers['content-disposition'] === 'inline; filename="floor-plan.' + ext + '"'
-    && headers['x-content-type-options'] === 'nosniff'
-    && sha(await response.body()) === sha(expected.buffer), 'EXACT_VERIFIED_IMAGE_REQUIRED')
+  check(response.status() === 200, 'APPROVED_IMAGE_STATUS_MISMATCH', response.status())
+  approvedImageHeaders(await transmittedHeaders(response, 'TRANSMITTED_RESPONSE_HEADERS_DEADLINE'), expected)
+  check(sha(await response.body()) === sha(expected.buffer), 'APPROVED_IMAGE_DIGEST_MISMATCH')
+}
+
+async function publicWitness(context, path, expected) {
+  check((await context.cookies(api)).length === 0, 'APPROVED_IMAGE_WITNESS_REQUIRES_ANONYMITY')
+  const result = await context.request.get(api + path, {
+    headers: { Origin: landing }, maxRedirects: 0, timeout: 6000,
+  })
+  try {
+    current(result)
+    check(result.status() === 200, 'APPROVED_IMAGE_WITNESS_STATUS_MISMATCH', result.status())
+    approvedImageHeaders(result.headers(), expected)
+    check(sha(await result.body()) === sha(expected.buffer), 'APPROVED_IMAGE_WITNESS_DIGEST_MISMATCH')
+    console.log('LISTING_FLOOR_PLAN_BROWSER_WITNESS ' + stage + ' status=200 headers=exact sha256=exact')
+  } finally {
+    await result.dispose()
+  }
 }
 
 async function shownImage(region, label, expected) {
@@ -194,13 +220,13 @@ async function shownImage(region, label, expected) {
   }, [expected.width, expected.height]), 'EXACT_APPROVED_BLOB_IMAGE_REQUIRED')
 }
 
-async function transmittedHeaders(request) {
+async function transmittedHeaders(message, reason = 'TRANSMITTED_HEADERS_DEADLINE') {
   let timer
   try {
     return await Promise.race([
-      request.allHeaders(),
+      message.allHeaders(),
       new Promise((_, reject) => {
-        timer = setTimeout(() => reject(new CheckFailure('TRANSMITTED_HEADERS_DEADLINE')), 6000)
+        timer = setTimeout(() => reject(new CheckFailure(reason)), 6000)
       }),
     ])
   } finally {
@@ -224,12 +250,16 @@ async function openVisitor(page, statusCode) {
 async function viewVisitor(page, copy, published, expected) {
   const meta = await openVisitor(page, 200)
   check(meta.id === published.id && covers(meta, expected), 'CURRENT_PUBLIC_REVISION_REQUIRED')
+  const contentPath = publicPath + '/' + published.id + '/content'
+  await publicWitness(page.context(), contentPath, expected)
   const region = control(page, 'region', copy.title)
   const open = button(region, copy.view)
   const [content] = await Promise.all([
-    page.waitForResponse(response => apiResponse(response, publicPath + '/' + published.id + '/content')),
+    page.waitForResponse(response => apiResponse(response, contentPath)),
     open.click(),
   ])
+  const headers = await transmittedHeaders(content.request())
+  check(!headers.cookie && !headers.authorization, 'APPROVED_IMAGE_REQUEST_MUST_BE_ANONYMOUS')
   await approvedBytes(content, expected)
   await shownImage(region, copy.title, expected)
   const dimensions = await page.evaluate(() => ({
@@ -363,7 +393,7 @@ try {
   browser = await chromium.launch({ headless: true, timeout: 20_000, args: ['--no-sandbox', '--disable-dev-shm-usage'] })
   await run(browser, fixture)
 } catch (error) {
-  reportFailure(failureCode(error))
+  reportFailure(failureCode(error), error instanceof CheckFailure ? error.status : undefined)
 } finally {
   if (browser) {
     progress('browser_teardown', 8000)
