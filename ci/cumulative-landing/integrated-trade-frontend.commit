@@ -1,0 +1,7 @@
+tree 9f1817d1f744d3c57c365f18435c79051219f0df
+parent b5df6a9321365e827c01df556c09b8808151e59a
+parent 99bc8d4c0ee4f3f0b72cf174530971f6a35f0ab3
+author Codex <codex@localhost> 1794899048 -0400
+committer Codex <codex@localhost> 1794899048 -0400
+
+Integrate pending Realty frontend with live Admin trade directory

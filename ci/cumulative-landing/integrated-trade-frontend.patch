@@ -1,0 +1,627 @@
+diff --git a/apps/dashboard/src/api/tradeContacts.ts b/apps/dashboard/src/api/tradeContacts.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..4aee947e86bf065c8d6d82bac09524eec448e512
+--- /dev/null
++++ b/apps/dashboard/src/api/tradeContacts.ts
+@@ -0,0 +1,113 @@
++import client from './axios'
++
++export const TRADE_CONTACT_BATCH_LIMIT = 250
++export const TRADE_CONTACT_FILE_LIMIT = 512 * 1024
++export const TRADE_CONTACT_PAGE_SIZE = 50
++export const tradeVerificationStatuses = ['owner_source', 'public_source', 'official_registry'] as const
++export type TradeVerificationStatus = typeof tradeVerificationStatuses[number]
++
++export const requiredTradeContactFields = ['name', 'category', 'source_authority', 'source_url', 'verified_on'] as const
++export const optionalTradeContactFields = [
++  'subtype', 'province', 'locality', 'service_area', 'contact_name', 'contact_title',
++  'phone', 'email', 'website', 'address', 'postal_code', 'external_id',
++] as const
++
++type RequiredTradeContactField = typeof requiredTradeContactFields[number]
++type OptionalTradeContactField = typeof optionalTradeContactFields[number]
++
++export type TradeContactEntry = Record<RequiredTradeContactField, string>
++  & Partial<Record<OptionalTradeContactField, string | null>>
++  & { verification_status: TradeVerificationStatus; source_details?: Record<string, string> | null }
++
++export type TradeContact = TradeContactEntry & { id: string; source_count?: number }
++export type TradeContactPage = { items: TradeContact[]; total: number }
++export type TradeContactImport = { inserted: number; updated: number; unchanged: number }
++export type TradeContactFilters = { q: string; category: string; province: string }
++
++const inputFields = new Set<string>([
++  ...requiredTradeContactFields, ...optionalTradeContactFields, 'verification_status', 'source_details',
++])
++
++export function httpsTradeContactLink(value: string | null | undefined) {
++  if (!value) return undefined
++  try {
++    const url = new URL(value)
++    if (url.protocol === 'https:' && !url.username && !url.password) return url.href
++  } catch {
++    return undefined
++  }
++  return undefined
++}
++
++function isRecord(value: unknown): value is Record<string, unknown> {
++  return typeof value === 'object' && value !== null && !Array.isArray(value)
++}
++
++function isVerificationStatus(value: unknown): value is TradeVerificationStatus {
++  return tradeVerificationStatuses.some(status => status === value)
++}
++
++export function readTradeContact(value: unknown): TradeContactEntry | null {
++  if (!isRecord(value) || Object.keys(value).some(key => !inputFields.has(key))) return null
++  const { name, category, source_authority, source_url, verified_on, verification_status, source_details } = value
++  if (typeof name !== 'string' || !name.trim() || typeof category !== 'string' || !category.trim()
++    || typeof source_authority !== 'string' || !source_authority.trim()
++    || typeof source_url !== 'string' || !httpsTradeContactLink(source_url.trim())
++    || typeof verified_on !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(verified_on)
++    || !isVerificationStatus(verification_status)) return null
++
++  const entry: TradeContactEntry = {
++    name: name.trim(), category: category.trim(), source_authority: source_authority.trim(),
++    source_url: source_url.trim(), verified_on, verification_status,
++  }
++  for (const field of optionalTradeContactFields) {
++    const raw = value[field]
++    if (raw == null) continue
++    if (typeof raw !== 'string') return null
++    if (raw.trim()) entry[field] = raw.trim()
++  }
++  if (source_details != null) {
++    if (!isRecord(source_details)) return null
++    const details = Object.entries(source_details)
++    if (details.some(([, detail]) => typeof detail !== 'string')) return null
++    entry.source_details = Object.fromEntries(details) as Record<string, string>
++  }
++  return entry
++}
++
++type TradeContactFile = { entries: TradeContactEntry[] } | { error: 'invalid_file' | 'too_many_rows' | 'invalid_row'; row?: number }
++
++export function readTradeContactFile(text: string): TradeContactFile {
++  let parsed: unknown
++  try {
++    parsed = JSON.parse(text.replace(/^\uFEFF/, ''))
++  } catch {
++    return { error: 'invalid_file' }
++  }
++  const rows = isRecord(parsed) ? parsed.entries : parsed
++  if (!Array.isArray(rows) || !rows.length) return { error: 'invalid_file' }
++  if (rows.length > TRADE_CONTACT_BATCH_LIMIT) return { error: 'too_many_rows' }
++  const entries: TradeContactEntry[] = []
++  for (const [index, row] of rows.entries()) {
++    const entry = readTradeContact(row)
++    if (!entry) return { error: 'invalid_row', row: index + 1 }
++    entries.push(entry)
++  }
++  return { entries }
++}
++
++export async function listTradeContacts(filters: TradeContactFilters, offset: number, signal?: AbortSignal) {
++  const { data } = await client.get<TradeContactPage>('/admin/trade-contacts', {
++    params: {
++      q: filters.q || undefined, category: filters.category || undefined, province: filters.province || undefined,
++      limit: TRADE_CONTACT_PAGE_SIZE, offset,
++    },
++    signal,
++  })
++  return data
++}
++
++export async function importTradeContacts(entries: TradeContactEntry[], dryRun: boolean) {
++  const { data } = await client.post<TradeContactImport>('/admin/trade-contacts/import', { dry_run: dryRun, entries })
++  return data
++}
+diff --git a/apps/dashboard/src/layouts/DashLayout.tsx b/apps/dashboard/src/layouts/DashLayout.tsx
+index 3e57092083ea70b8fc3b8c8e9c3797ede4c83d85..b042ee36c19eece0c53a185deaf4e74f6d8ef644 100644
+--- a/apps/dashboard/src/layouts/DashLayout.tsx
++++ b/apps/dashboard/src/layouts/DashLayout.tsx
+@@ -2,7 +2,7 @@ import React, { useState } from 'react'
+ import {
+   LayoutDashboard, Heart, Search, MessageCircle, CalendarDays, Calculator,
+   BookOpen, ClipboardList, Home, Bell, DollarSign,
+-  Building2, GitBranch, Users, Settings, Inbox,
++  Building2, GitBranch, Users, Settings, Inbox, Contact,
+   Key, Shield, LogOut, Menu, X, Lock, ChevronRight, Globe, Upload, type LucideIcon,
+ } from 'lucide-react'
+ import { useTranslation } from 'react-i18next'
+@@ -74,6 +74,7 @@ const ADMIN_NAV: { Icon: LucideIcon; view: string }[] = [
+   { Icon: LayoutDashboard, view: 'home'      },
+   { Icon: Users,           view: 'users'     },
+   { Icon: Users,           view: 'professionals' },
++  { Icon: Contact,         view: 'trade-contacts' },
+   { Icon: Users,           view: 'professional-profile' },
+   { Icon: Building2,       view: 'listings'  },
+   { Icon: Search,          view: 'location-review' },
+diff --git a/apps/dashboard/src/locale/en/admin.json b/apps/dashboard/src/locale/en/admin.json
+index d1651053577fca172328bed4f12484d6abfaeef1..c49602e25558a4ed4a9ce5f36a9013cdb55ad4ce 100644
+--- a/apps/dashboard/src/locale/en/admin.json
++++ b/apps/dashboard/src/locale/en/admin.json
+@@ -144,6 +144,10 @@
+     "assign": "Assign"
+   },
+   "pages": {
++    "trade-contacts": {
++      "title": "Trade contacts",
++      "sub": "Private Dominican Republic business and professional directory"
++    },
+     "professionals": {
+       "title": "Professionals review",
+       "sub": "Review applications and manage the public DR Professionals directory"
+@@ -193,6 +197,60 @@
+       "sub": "Manage website content, images, resources and gallery choices"
+     }
+   },
++  "trade_contacts_page": {
++    "add": "Add contact",
++    "import": "Import contacts",
++    "search": "Search",
++    "loading": "Loading contacts…",
++    "list_error": "Could not load the contacts.",
++    "retry": "Try again",
++    "results_one": "{{count}} contact",
++    "results_other": "{{count}} contacts",
++    "empty": "No contacts match these filters.",
++    "details": "Contact and source details",
++    "source_details": "Source notes",
++    "source_count": "Sources on file",
++    "pages": "Contact pages",
++    "page_range": "{{from}}–{{to}} of {{total}}",
++    "previous": "Previous",
++    "next": "Next",
++    "close": "Close",
++    "preview": "Review changes",
++    "save": "Save contact",
++    "confirm_import": "Import these contacts",
++    "back": "Back",
++    "file_help": "Choose a JSON file with up to {{limit}} contacts. Larger lists can be divided into separate files.",
++    "json_example": "Show a JSON example",
++    "json_optional": "Optional fields include",
++    "select_file": "Choose JSON file",
++    "selected_file_one": "{{filename}} · {{count}} contact",
++    "selected_file_other": "{{filename}} · {{count}} contacts",
++    "reading": "Reading the file…",
++    "previewing": "Checking for existing contacts…",
++    "saving": "Saving contacts…",
++    "planned": "{{inserted}} new · {{updated}} to update · {{unchanged}} already current",
++    "saved": "{{inserted}} added · {{updated}} updated · {{unchanged}} already current",
++    "review_note": "These are the proposed changes. The directory will check for matches again when you save.",
++    "manual_invalid": "Enter the required fields and use an HTTPS source link.",
++    "filters": { "q": "Name or contact", "category": "Trade or category", "province": "Province" },
++    "statuses": { "owner_source": "Owner-provided source", "public_source": "Public business source", "official_registry": "Official registry" },
++    "fields": {
++      "name": "Business or professional name", "category": "Trade or category", "subtype": "Specialty",
++      "province": "Province", "locality": "Municipality or locality", "service_area": "Service area",
++      "contact_name": "Contact name", "contact_title": "Contact role", "phone": "Phone", "email": "Email",
++      "website": "Business website", "address": "Business address", "postal_code": "Postal code",
++      "external_id": "Registry or source identifier", "source_authority": "Source name", "source_url": "Source link",
++      "verified_on": "Date checked", "verification_status": "Source type"
++    },
++    "errors": {
++      "file_size": "This file exceeds 512 KB. Divide it into smaller files.",
++      "invalid_file": "Use a JSON array of contacts or an object with an entries array.",
++      "invalid_row": "Check entry {{row}} against the example. Use the listed fields and a valid HTTPS source link.",
++      "too_many_rows": "Divide this file into batches of up to {{limit}} contacts.",
++      "preview_failed": "Could not review this batch. Check the required fields and try again.",
++      "save_failed": "Could not confirm the import. You can retry this reviewed batch."
++    }
++  },
+   "home_page": {
+     "approval_queue": "Approval queue",
+     "all_clear": "All caught up — no pending items",
+diff --git a/apps/dashboard/src/locale/en/nav.json b/apps/dashboard/src/locale/en/nav.json
+index 7df7d6aa5fcbe1165ded33c7b0e6a12479118c1e..8b0f6d092032bdef8e47c97c116d18184b4c2775 100644
+--- a/apps/dashboard/src/locale/en/nav.json
++++ b/apps/dashboard/src/locale/en/nav.json
+@@ -6,6 +6,7 @@
+   "management_navigation_note": "Navigation connection only. Separate sign-in may be required; accounts and data remain separate.",
+   "professional-profile": "My professional profile",
+   "professionals": "Professionals review",
++  "trade-contacts": "Trade contacts",
+   "logout": "Log out",
+   "home": "Dashboard",
+   "settings": "Settings",
+diff --git a/apps/dashboard/src/locale/es/admin.json b/apps/dashboard/src/locale/es/admin.json
+index 094c18ac7d2f9be94bcaa79527524d665fec24a7..d90216d851ebe9346cdd19e754449c98e6443249 100644
+--- a/apps/dashboard/src/locale/es/admin.json
++++ b/apps/dashboard/src/locale/es/admin.json
+@@ -144,6 +144,10 @@
+     "assign": "Asignar"
+   },
+   "pages": {
++    "trade-contacts": {
++      "title": "Contactos de oficios",
++      "sub": "Directorio privado de empresas y profesionales de la República Dominicana"
++    },
+     "professionals": {
+       "title": "Revisión de profesionales",
+       "sub": "Revisa solicitudes y administra el directorio público de Profesionales de RD"
+@@ -193,6 +197,60 @@
+       "sub": "Administra textos, imágenes, recursos y propiedades de la galería"
+     }
+   },
++  "trade_contacts_page": {
++    "add": "Añadir contacto",
++    "import": "Importar contactos",
++    "search": "Buscar",
++    "loading": "Cargando contactos…",
++    "list_error": "No se pudieron cargar los contactos.",
++    "retry": "Volver a intentar",
++    "results_one": "{{count}} contacto",
++    "results_other": "{{count}} contactos",
++    "empty": "No hay contactos que coincidan con los filtros.",
++    "details": "Datos del contacto y la fuente",
++    "source_details": "Notas de la fuente",
++    "source_count": "Fuentes registradas",
++    "pages": "Páginas de contactos",
++    "page_range": "{{from}}–{{to}} de {{total}}",
++    "previous": "Anterior",
++    "next": "Siguiente",
++    "close": "Cerrar",
++    "preview": "Revisar cambios",
++    "save": "Guardar contacto",
++    "confirm_import": "Importar estos contactos",
++    "back": "Volver",
++    "file_help": "Elige un archivo JSON con hasta {{limit}} contactos. Puedes dividir las listas más extensas en varios archivos.",
++    "json_example": "Mostrar un ejemplo en JSON",
++    "json_optional": "Entre los campos opcionales están",
++    "select_file": "Elegir archivo JSON",
++    "selected_file_one": "{{filename}} · {{count}} contacto",
++    "selected_file_other": "{{filename}} · {{count}} contactos",
++    "reading": "Leyendo el archivo…",
++    "previewing": "Buscando contactos existentes…",
++    "saving": "Guardando contactos…",
++    "planned": "{{inserted}} nuevos · {{updated}} por actualizar · {{unchanged}} al día",
++    "saved": "{{inserted}} añadidos · {{updated}} actualizados · {{unchanged}} al día",
++    "review_note": "Estos son los cambios propuestos. El directorio verificará las coincidencias de nuevo al guardar.",
++    "manual_invalid": "Completa los campos requeridos y usa un enlace HTTPS para la fuente.",
++    "filters": { "q": "Nombre o contacto", "category": "Oficio o categoría", "province": "Provincia" },
++    "statuses": { "owner_source": "Fuente aportada por el propietario", "public_source": "Fuente empresarial pública", "official_registry": "Registro oficial" },
++    "fields": {
++      "name": "Nombre de la empresa o profesional", "category": "Oficio o categoría", "subtype": "Especialidad",
++      "province": "Provincia", "locality": "Municipio o localidad", "service_area": "Zona de servicio",
++      "contact_name": "Nombre del contacto", "contact_title": "Cargo del contacto", "phone": "Teléfono", "email": "Correo electrónico",
++      "website": "Sitio web comercial", "address": "Dirección comercial", "postal_code": "Código postal",
++      "external_id": "Identificador del registro o fuente", "source_authority": "Nombre de la fuente",
++      "source_url": "Enlace de la fuente", "verified_on": "Fecha de revisión", "verification_status": "Tipo de fuente"
++    },
++    "errors": {
++      "file_size": "Este archivo supera los 512 KB. Divídelo en archivos más pequeños.",
++      "invalid_file": "Usa una lista JSON de contactos o un objeto con una lista entries.",
++      "invalid_row": "Revisa la entrada {{row}} según el ejemplo. Usa los campos indicados y un enlace HTTPS válido para la fuente.",
++      "too_many_rows": "Divide el archivo en lotes de hasta {{limit}} contactos.",
++      "preview_failed": "No se pudo revisar el lote. Revisa los campos requeridos e inténtalo de nuevo.",
++      "save_failed": "No se pudo confirmar la importación. Puedes volver a intentar con este lote revisado."
++    }
++  },
+   "home_page": {
+     "approval_queue": "Cola de aprobación",
+     "all_clear": "Todo al día — sin elementos pendientes",
+diff --git a/apps/dashboard/src/locale/es/nav.json b/apps/dashboard/src/locale/es/nav.json
+index ceb7560db961183b77f03b160267763cc0eb7b20..c517e8baa3684d6bb04b9c4819de0a012089e71e 100644
+--- a/apps/dashboard/src/locale/es/nav.json
++++ b/apps/dashboard/src/locale/es/nav.json
+@@ -5,6 +5,7 @@
+   "management_portal": "Portal de administración de Kaoba",
+   "management_navigation_note": "Solo un enlace de navegación. Puede requerir otro inicio de sesión; las cuentas y los datos siguen separados.",
+   "professional-profile": "Mi perfil profesional",
++  "trade-contacts": "Contactos de oficios",
+   "professionals": "Revisión de profesionales",
+   "logout": "Cerrar sesión",
+   "home": "Panel principal",
+diff --git a/apps/dashboard/src/pages/AdminDash.tsx b/apps/dashboard/src/pages/AdminDash.tsx
+index e270b3845dbbcd627385050ba2679b6b0f03beb3..fb680c49ec969145de3b7cf3f0ceeea2ff13dd74 100644
+--- a/apps/dashboard/src/pages/AdminDash.tsx
++++ b/apps/dashboard/src/pages/AdminDash.tsx
+@@ -18,6 +18,7 @@ import { ResearchTools } from './shared/ResearchTools'
+ import { WebsiteEditor } from './admin/WebsiteEditor'
+ import { Editorial } from './admin/Editorial'
+ import { AdminProfessionals } from './admin/Professionals'
++import { AdminTradeContacts } from './admin/TradeContacts'
+ import { ProfessionalProfile } from './shared/ProfessionalProfile'
+ import { Viewings } from './shared/Viewings'
+ import { TransactionRooms } from './shared/TransactionRooms'
+@@ -33,7 +34,7 @@ export default function AdminDash({ go, view = 'home', user, onUserUpdate }: { g
+   const { t: tNav } = useTranslation('nav')
+   const [searchParams] = useSearchParams()
+ 
+-  const pageKey = ['home', 'users', 'listings', 'leads', 'bookings', 'analytics', 'settings', 'bulk-import', 'research', 'website-editor', 'professionals', 'professional-profile'].includes(view) ? view : 'home'
++  const pageKey = ['home', 'users', 'listings', 'leads', 'bookings', 'analytics', 'settings', 'bulk-import', 'research', 'website-editor', 'professionals', 'trade-contacts', 'professional-profile'].includes(view) ? view : 'home'
+   const sharedTitle = ['resources', 'research', 'professional-directory', 'buyer-tools', 'owner-tools', 'realtor-tools', 'calculator', 'lead-delivery', 'communications', 'location-review', 'property-management', 'property-network', 'viewings', 'editorial'].includes(view)
+   const transactionView = view === 'transactions' || view === 'transaction-lead'
+   const title = transactionView ? tNav('transactions') : sharedTitle ? tNav(view) : t(`pages.${pageKey}.title`)
+@@ -67,6 +68,7 @@ export default function AdminDash({ go, view = 'home', user, onUserUpdate }: { g
+       case 'website-editor': return <WebsiteEditor userId={user.id} />
+       case 'editorial': return user.role === 'admin' ? <Editorial /> : null
+       case 'professionals': return <AdminProfessionals />
++      case 'trade-contacts': return <AdminTradeContacts />
+       case 'professional-profile': return <ProfessionalProfile />
+       case 'professional-directory': return <ProfessionalDirectory />
+       default:         return <AdminHome go={go} />
+diff --git a/apps/dashboard/src/pages/admin/TradeContacts.tsx b/apps/dashboard/src/pages/admin/TradeContacts.tsx
+new file mode 100644
+index 0000000000000000000000000000000000000000..f85a0bb320d6502b70ba01f86e211b9833803e6b
+--- /dev/null
++++ b/apps/dashboard/src/pages/admin/TradeContacts.tsx
+@@ -0,0 +1,276 @@
++import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react'
++import { useTranslation } from 'react-i18next'
++import {
++  httpsTradeContactLink, importTradeContacts, listTradeContacts, optionalTradeContactFields,
++  readTradeContact, readTradeContactFile, requiredTradeContactFields, TRADE_CONTACT_BATCH_LIMIT, TRADE_CONTACT_FILE_LIMIT,
++  TRADE_CONTACT_PAGE_SIZE, tradeVerificationStatuses, type TradeContact, type TradeContactEntry,
++  type TradeContactFilters, type TradeContactImport, type TradeContactPage,
++} from '../../api/tradeContacts'
++import { ProfessionalDialog } from '../../components/shared/ProfessionalDialog'
++import { professionalButton, professionalInput, professionalPrimary } from '../../components/shared/ProfessionalFields'
++
++const emptyFilters: TradeContactFilters = { q: '', category: '', province: '' }
++const emptyPage: TradeContactPage = { items: [], total: 0 }
++const panel = 'min-w-0 rounded-2xl border border-line bg-white p-4 sm:p-5'
++const entryFields = [...optionalTradeContactFields, 'source_authority', 'source_url', 'verified_on'] as const
++const inputTypes: Record<string, string> = { email: 'email', source_url: 'url', verified_on: 'date', phone: 'tel' }
++const example = [{
++  name: 'Example business', category: 'Plomería', province: 'Puerto Plata',
++  source_authority: 'Example business website', source_url: 'https://example.org/contact',
++  verified_on: '2026-11-17', verification_status: 'public_source',
++}]
++
++type ImportMessage = {
++  code: 'file_size' | 'invalid_file' | 'invalid_row' | 'too_many_rows' | 'preview_failed' | 'save_failed'
++  row?: number
++}
++type ReviewedBatch = { entries: TradeContactEntry[]; result: TradeContactImport }
++
++function ContactRecord({ entry }: { entry: TradeContact }) {
++  const { t } = useTranslation('admin', { keyPrefix: 'trade_contacts_page' })
++  const location = [entry.locality, entry.province].filter(Boolean).join(', ')
++  return <article className="min-w-0 rounded-xl border border-line bg-white p-4 sm:p-5">
++    <h2 className="text-base font-bold text-ink [overflow-wrap:anywhere]">{entry.name}</h2>
++    <p className="mt-1 text-sm text-ink2 [overflow-wrap:anywhere]">
++      {[entry.category, entry.subtype, location].filter(Boolean).join(' · ')}
++    </p>
++    <details className="mt-3 border-t border-line pt-3">
++      <summary className="min-h-9 cursor-pointer text-sm font-semibold text-ink focus-visible:outline-2 focus-visible:outline-coral">
++        {t('details')}
++      </summary>
++      <dl className="grid gap-x-5 gap-y-3 pt-1 text-sm sm:grid-cols-2">
++        {entryFields.map(field => {
++          const value = entry[field]
++          if (!value) return null
++          const link = field === 'source_url' || field === 'website' ? httpsTradeContactLink(value) : undefined
++          return <div key={field} className="min-w-0 [overflow-wrap:anywhere]">
++            <dt className="font-semibold text-ink">{t(`fields.${field}`)}</dt>
++            <dd className="m-0 text-ink2">
++              {link ? <a href={link} target="_blank" rel="noopener noreferrer" className="underline">{value}</a> : value}
++            </dd>
++          </div>
++        })}
++        <div>
++          <dt className="font-semibold text-ink">{t('fields.verification_status')}</dt>
++          <dd className="m-0 text-ink2">{t(`statuses.${entry.verification_status}`)}</dd>
++        </div>
++        {entry.source_count != null && <div>
++          <dt className="font-semibold text-ink">{t('source_count')}</dt><dd className="m-0 text-ink2">{entry.source_count}</dd>
++        </div>}
++      </dl>
++      {entry.source_details && Object.keys(entry.source_details).length > 0 && <div className="mt-4 border-t border-line pt-3">
++        <h3 className="text-sm font-semibold text-ink">{t('source_details')}</h3>
++        <dl className="mt-2 grid gap-x-5 gap-y-3 text-sm sm:grid-cols-2">
++          {Object.entries(entry.source_details).map(([key, value]) => <div key={key} className="min-w-0 [overflow-wrap:anywhere]">
++            <dt className="font-semibold text-ink">{key}</dt><dd className="m-0 text-ink2">{value}</dd>
++          </div>)}
++        </dl>
++      </div>}
++    </details>
++  </article>
++}
++
++function ContactEntryForm({ disabled, onPreview }: { disabled: boolean; onPreview: (entry: TradeContactEntry) => void }) {
++  const { t } = useTranslation('admin', { keyPrefix: 'trade_contacts_page' })
++  const [invalid, setInvalid] = useState(false)
++  function submit(event: FormEvent<HTMLFormElement>) {
++    event.preventDefault()
++    const entry = readTradeContact(Object.fromEntries(new FormData(event.currentTarget)))
++    setInvalid(!entry)
++    if (entry) onPreview(entry)
++  }
++  return <form className="space-y-4" onSubmit={submit} onChange={() => setInvalid(false)}>
++    <fieldset disabled={disabled} className="grid min-w-0 gap-4 sm:grid-cols-2">
++      {[...requiredTradeContactFields, ...optionalTradeContactFields].map(field => <label key={field} className="min-w-0 text-sm font-semibold text-ink">
++        <span className="mb-1.5 block">{t(`fields.${field}`)}</span>
++        <input name={field} className={professionalInput} type={inputTypes[field] ?? 'text'}
++          required={requiredTradeContactFields.some(required => required === field)} />
++      </label>)}
++      <label className="min-w-0 text-sm font-semibold text-ink">
++        <span className="mb-1.5 block">{t('fields.verification_status')}</span>
++        <select name="verification_status" className={professionalInput} defaultValue="public_source" required>
++          {tradeVerificationStatuses.map(status => <option key={status} value={status}>{t(`statuses.${status}`)}</option>)}
++        </select>
++      </label>
++    </fieldset>
++    {invalid && <p role="alert" className="text-sm text-red-800">{t('manual_invalid')}</p>}
++    <button type="submit" className={professionalButton} disabled={disabled}>{t('preview')}</button>
++  </form>
++}
++
++export function AdminTradeContacts() {
++  const { t } = useTranslation('admin', { keyPrefix: 'trade_contacts_page' })
++  const [inputs, setInputs] = useState(emptyFilters)
++  const [filters, setFilters] = useState(emptyFilters)
++  const [offset, setOffset] = useState(0)
++  const [page, setPage] = useState(emptyPage)
++  const [loading, setLoading] = useState(true)
++  const [listError, setListError] = useState(false)
++  const [revision, setRevision] = useState(0)
++  const [editor, setEditor] = useState<'manual' | 'file' | null>(null)
++  const [selection, setSelection] = useState<{ filename: string; entries: TradeContactEntry[] } | null>(null)
++  const [review, setReview] = useState<ReviewedBatch | null>(null)
++  const [receipt, setReceipt] = useState<TradeContactImport | null>(null)
++  const [importError, setImportError] = useState<ImportMessage | null>(null)
++  const [busy, setBusy] = useState<'read' | 'preview' | 'save' | null>(null)
++  const reviewHeading = useRef<HTMLHeadingElement>(null)
++
++  useEffect(() => {
++    const controller = new AbortController()
++    setLoading(true)
++    setListError(false)
++    listTradeContacts(filters, offset, controller.signal)
++      .then(next => { if (!controller.signal.aborted) setPage(next) })
++      .catch(() => { if (!controller.signal.aborted) setListError(true) })
++      .finally(() => { if (!controller.signal.aborted) setLoading(false) })
++    return () => controller.abort()
++  }, [filters, offset, revision])
++  useEffect(() => {
++    if (review) reviewHeading.current?.focus()
++  }, [review])
++
++  function search(event: FormEvent<HTMLFormElement>) {
++    event.preventDefault()
++    setOffset(0)
++    setFilters({ q: inputs.q.trim(), category: inputs.category.trim(), province: inputs.province.trim() })
++  }
++
++  function resetEditor(next: typeof editor) {
++    if (busy) return
++    setEditor(next)
++    setImportError(null)
++    setSelection(null)
++    setReview(null)
++    if (next) setReceipt(null)
++  }
++
++  async function chooseFile(event: ChangeEvent<HTMLInputElement>) {
++    const file = event.currentTarget.files?.[0]
++    event.currentTarget.value = ''
++    if (!file || busy) return
++    setSelection(null)
++    setReview(null)
++    setImportError(null)
++    if (file.size > TRADE_CONTACT_FILE_LIMIT) {
++      setImportError({ code: 'file_size' })
++      return
++    }
++    setBusy('read')
++    try {
++      const parsed = readTradeContactFile(await file.text())
++      if ('error' in parsed) setImportError({ code: parsed.error, row: parsed.row })
++      else setSelection({ filename: file.name, entries: parsed.entries })
++    } catch {
++      setImportError({ code: 'invalid_file' })
++    } finally {
++      setBusy(null)
++    }
++  }
++
++  async function preview(entries: TradeContactEntry[]) {
++    if (busy) return
++    setBusy('preview')
++    setImportError(null)
++    setReview(null)
++    try {
++      const result = await importTradeContacts(entries, true)
++      setReview({ entries, result })
++    } catch {
++      setImportError({ code: 'preview_failed' })
++    } finally {
++      setBusy(null)
++    }
++  }
++
++  async function save() {
++    if (!review || busy) return
++    setBusy('save')
++    setImportError(null)
++    try {
++      const result = await importTradeContacts(review.entries, false)
++      setReceipt(result)
++      setReview(null)
++      setSelection(null)
++      setEditor(null)
++      setOffset(0)
++      setRevision(value => value + 1)
++    } catch {
++      setImportError({ code: 'save_failed' })
++    } finally {
++      setBusy(null)
++    }
++  }
++
++  return <div className="min-w-0 space-y-5">
++    <div className="flex flex-wrap gap-2">
++      <button type="button" className={professionalPrimary} onClick={() => resetEditor('manual')}>{t('add')}</button>
++      <button type="button" className={professionalButton} onClick={() => resetEditor('file')}>{t('import')}</button>
++    </div>
++    {receipt && <p role="status" className="rounded-xl border border-green-200 bg-green-50 p-3 text-sm text-green-900">
++      {t('saved', receipt)}
++    </p>}
++    <form className={`${panel} grid items-end gap-3 sm:grid-cols-2 xl:grid-cols-[1fr_1fr_1fr_auto]`} onSubmit={search}>
++      {(['q', 'category', 'province'] as const).map(key => <label key={key} className="min-w-0 text-sm font-semibold text-ink">
++        <span className="mb-1.5 block">{t(`filters.${key}`)}</span>
++        <input className={professionalInput} type={key === 'q' ? 'search' : 'text'} value={inputs[key]} maxLength={120}
++          onChange={event => setInputs(previous => ({ ...previous, [key]: event.target.value }))} />
++      </label>)}
++      <button type="submit" className={professionalButton}>{t('search')}</button>
++    </form>
++    {loading ? <p role="status" className="text-sm text-ink2">{t('loading')}</p> : listError ?
++      <div className={`${panel} space-y-3`}><p role="alert" className="text-sm text-red-800">{t('list_error')}</p>
++        <button type="button" className={professionalButton} onClick={() => setRevision(value => value + 1)}>{t('retry')}</button>
++      </div> : <>
++        <p role="status" className="text-sm text-ink2">{t('results', { count: page.total })}</p>
++        {!page.items.length && <p className={`${panel} text-sm text-ink2`}>{t('empty')}</p>}
++        <div className="grid min-w-0 gap-3 lg:grid-cols-2">
++          {page.items.map(entry => <ContactRecord key={entry.id} entry={entry} />)}
++        </div>
++        {page.total > TRADE_CONTACT_PAGE_SIZE && <nav aria-label={t('pages')} className="flex flex-wrap items-center gap-3">
++          <button type="button" className={professionalButton} disabled={offset === 0}
++            onClick={() => setOffset(value => Math.max(0, value - TRADE_CONTACT_PAGE_SIZE))}>{t('previous')}</button>
++          <span className="text-sm text-ink2">{t('page_range', { from: offset + 1, to: Math.min(offset + TRADE_CONTACT_PAGE_SIZE, page.total), total: page.total })}</span>
++          <button type="button" className={professionalButton} disabled={offset + TRADE_CONTACT_PAGE_SIZE >= page.total}
++            onClick={() => setOffset(value => value + TRADE_CONTACT_PAGE_SIZE)}>{t('next')}</button>
++        </nav>}
++      </>}
++    {editor && <ProfessionalDialog title={t(editor === 'manual' ? 'add' : 'import')} closeLabel={t('close')} onClose={() => resetEditor(null)}>
++      <div className="min-w-0 space-y-4">
++        {editor === 'manual' ? <div hidden={!!review}><ContactEntryForm disabled={!!busy || !!review} onPreview={entry => void preview([entry])} /></div> :
++          !review && <div className="space-y-4">
++            <p className="text-sm text-ink2">{t('file_help', { limit: TRADE_CONTACT_BATCH_LIMIT })}</p>
++            <details className="rounded-xl border border-line bg-white p-3 text-sm">
++              <summary className="cursor-pointer font-semibold text-ink">{t('json_example')}</summary>
++              <pre className="max-w-full overflow-x-auto whitespace-pre-wrap [overflow-wrap:anywhere]">{JSON.stringify(example, null, 2)}</pre>
++              <p className="text-xs text-ink2 [overflow-wrap:anywhere]">{t('json_optional')} {optionalTradeContactFields.join(', ')}, source_details</p>
++            </details>
++            <label className="block text-sm font-semibold text-ink">
++              <span className="mb-1.5 block">{t('select_file')}</span>
++              <input type="file" className={professionalInput} accept=".json,application/json" disabled={!!busy} onChange={event => void chooseFile(event)} />
++            </label>
++            {selection && <p className="text-sm text-ink2 [overflow-wrap:anywhere]">
++              {t('selected_file', { filename: selection.filename, count: selection.entries.length })}
++            </p>}
++            <button type="button" className={professionalButton} disabled={!selection || !!busy}
++              onClick={() => { if (selection) void preview(selection.entries) }}>{t('preview')}</button>
++          </div>}
++        {busy && <p role="status" className="text-sm text-ink2">{t(busy === 'read' ? 'reading' : busy === 'preview' ? 'previewing' : 'saving')}</p>}
++        {importError && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-900">
++          {t(`errors.${importError.code}`, { row: importError.row, limit: TRADE_CONTACT_BATCH_LIMIT })}
++        </p>}
++        {review && <section className={`${panel} space-y-4`} aria-label={t('preview')}>
++          <h3 ref={reviewHeading} tabIndex={-1} className="font-bold text-ink">{t('preview')}</h3>
++          {review.entries.length === 1 && <p className="font-semibold text-ink [overflow-wrap:anywhere]">{review.entries[0].name}</p>}
++          <p role="status" className="text-sm text-ink2">{t('planned', review.result)}</p>
++          <p className="text-sm text-ink2">{t('review_note')}</p>
++          <div className="flex flex-wrap gap-2">
++            <button type="button" className={professionalPrimary} disabled={!!busy}
++              onClick={() => void save()}>{t(editor === 'manual' ? 'save' : 'confirm_import')}</button>
++            <button type="button" className={professionalButton} disabled={!!busy}
++              onClick={() => { setReview(null); setImportError(null) }}>{t('back')}</button>
++          </div>
++        </section>}
++      </div>
++    </ProfessionalDialog>}
++  </div>
++}

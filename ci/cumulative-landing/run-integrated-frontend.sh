@@ -6,26 +6,41 @@ umask 077
 die() { printf 'INTEGRATED_FRONTEND_REFUSED %s\n' "$1" >&2; exit 1; }
 bounded() { timeout --kill-after=8s "$@"; }
 
-[[ $# == 3 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
+[[ $# == 4 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 &&
-   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-integrated-frontend-build-20261117 &&
+   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-integrated-frontend-trade-directory-20261117 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die HOSTED_EXACT_EVENT_REQUIRED
-ops="$1"; frontend="$2"; relay="$3"
+ops="$1"; frontend="$2"; live="$3"; relay="$4"
 [[ "$ops" == "$GITHUB_WORKSPACE/build-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-base" &&
+   "$live" == "$GITHUB_WORKSPACE/frontend-live" &&
    "$relay" == "$GITHUB_WORKSPACE/landing-relay" ]] || die EXACT_CHECKOUT_PATHS_REQUIRED
-for checkout in "$ops" "$frontend" "$relay"; do
+for checkout in "$ops" "$frontend" "$live" "$relay"; do
   current=$(git -C "$checkout" status --porcelain=v1 --untracked-files=all) || die CLEAN_CHECKOUT_REQUIRED
-  [[ $(realpath "$checkout") == "$checkout" && -z "$current" ]] || die CLEAN_CHECKOUT_REQUIRED
+  [[ $(realpath "$checkout") == "$checkout" && -z "$current" && ! -e "$checkout/.env" && ! -L "$checkout/.env" ]] ||
+    die CLEAN_CHECKOUT_REQUIRED
 done
 [[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" &&
-   $(git -C "$ops" rev-parse 'HEAD^') == 7264d777d42520f00e79fe16051a647a0e965d6a ]] || die EXACT_OPERATIONS_REQUIRED
+   $(git -C "$ops" rev-parse 'HEAD^') == da31f9144fee290ab042222c0539652b65f1efeb ]] || die EXACT_OPERATIONS_REQUIRED
 delta=$(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) || die EXACT_DELTA_REQUIRED
-[[ "$delta" == $'.github/workflows/integrated-frontend-build.yml\nci/cumulative-landing/run-integrated-frontend.sh' ]] || die EXACT_DELTA_REQUIRED
-frontend_commit=99bc8d4c0ee4f3f0b72cf174530971f6a35f0ab3
-frontend_tree=4053ae36068790f5f4562ad256dd8a0018fac6ae
-frontend_paths=561
-[[ $(git -C "$frontend" rev-parse HEAD) == "$frontend_commit" &&
-   $(git -C "$frontend" rev-parse 'HEAD^{tree}') == "$frontend_tree" ]] || die EXACT_FRONTEND_REQUIRED
+[[ "$delta" == $'.github/workflows/integrated-frontend-build.yml\nci/cumulative-landing/integrated-trade-frontend.commit\nci/cumulative-landing/integrated-trade-frontend.patch\nci/cumulative-landing/run-integrated-frontend.sh' ]] ||
+  die EXACT_DELTA_REQUIRED
+frontend_base_commit=99bc8d4c0ee4f3f0b72cf174530971f6a35f0ab3
+frontend_base_tree=4053ae36068790f5f4562ad256dd8a0018fac6ae
+frontend_live_commit=b5df6a9321365e827c01df556c09b8808151e59a
+frontend_live_tree=27f08141cd78943e4c32fe4212d871e5153022ae
+frontend_commit=12f5b00fc5aa4040cb91c8ecc483812999c0e33e
+frontend_tree=9f1817d1f744d3c57c365f18435c79051219f0df
+frontend_paths=563
+[[ $(git -C "$frontend" rev-parse HEAD) == "$frontend_base_commit" &&
+   $(git -C "$frontend" rev-parse 'HEAD^{tree}') == "$frontend_base_tree" &&
+   $(git -C "$live" rev-parse HEAD) == "$frontend_live_commit" &&
+   $(git -C "$live" rev-parse 'HEAD^{tree}') == "$frontend_live_tree" ]] || die EXACT_FRONTEND_PARENTS_REQUIRED
+frontend_patch="$ops/ci/cumulative-landing/integrated-trade-frontend.patch"
+frontend_payload="$ops/ci/cumulative-landing/integrated-trade-frontend.commit"
+printf '%s  %s\n' \
+  bab3d68fa5740ef914deb0b3d623feb7a9641aa160f0c502daf1078f23fcf7ae "$frontend_patch" \
+  9f955c1533cbe0fde9965c7c6122f089b0bdfbd546ed2cb53557fd86d3fe1636 "$frontend_payload" \
+  | sha256sum --check --status || die EXACT_RECONSTRUCTION_INPUTS_REQUIRED
 [[ $(git -C "$relay" rev-parse HEAD) == d49acd7d48e92dac6d06b1678570bc137fb6a5ba ]] || die EXACT_RELAY_REQUIRED
 landing_fixture="$relay/ci/frontend"
 landing_script="$relay/ci/cumulative-landing/landing.cjs"
@@ -65,10 +80,31 @@ cleanup() {
 }
 trap cleanup EXIT
 mkdir "$state/frontend-work" "$state/npm-cache" "$state/landing-run"
-
-git -C "$frontend" archive --format=tar "$frontend_commit" | tar -xf - -C "$state/frontend-work" || die ARCHIVE_REQUIRED
+source_repo="$state/frontend-objects"
+git init --quiet --object-format=sha1 "$source_repo" || die SCRATCH_OBJECT_DATABASE_REQUIRED
+printf '%s\n' "$frontend/.git/objects" "$live/.git/objects" >"$source_repo/.git/objects/info/alternates"
+git -C "$source_repo" read-tree "$frontend_base_commit" || die READ_FRONTEND_BASE_REQUIRED
+git -C "$source_repo" apply --cached --check --whitespace=error-all "$frontend_patch" ||
+  die REVIEWED_PATCH_CHECK_REQUIRED
+git -C "$source_repo" apply --cached --whitespace=error-all "$frontend_patch" || die REVIEWED_PATCH_REQUIRED
+[[ $(git -C "$source_repo" write-tree) == "$frontend_tree" ]] || die EXACT_RECONSTRUCTED_TREE_REQUIRED
+[[ $(git -C "$source_repo" hash-object -t commit -w "$frontend_payload") == "$frontend_commit" &&
+   $(git -C "$source_repo" rev-parse "$frontend_commit^{tree}") == "$frontend_tree" &&
+   $(git -C "$source_repo" rev-parse "$frontend_commit^1") == "$frontend_live_commit" &&
+   $(git -C "$source_repo" rev-parse "$frontend_commit^2") == "$frontend_base_commit" ]] ||
+  die EXACT_RECONSTRUCTED_MERGE_REQUIRED
+frontend_delta=$(git -C "$source_repo" diff-tree --no-commit-id --name-only -r \
+  "$frontend_base_commit" "$frontend_commit") || die EXACT_FRONTEND_DELTA_REQUIRED
+[[ "$frontend_delta" == $'apps/dashboard/src/api/tradeContacts.ts\napps/dashboard/src/layouts/DashLayout.tsx\napps/dashboard/src/locale/en/admin.json\napps/dashboard/src/locale/en/nav.json\napps/dashboard/src/locale/es/admin.json\napps/dashboard/src/locale/es/nav.json\napps/dashboard/src/pages/AdminDash.tsx\napps/dashboard/src/pages/admin/TradeContacts.tsx' ]] ||
+  die EXACT_FRONTEND_DELTA_REQUIRED
+git -C "$source_repo" diff --quiet "$frontend_live_commit" "$frontend_commit" -- \
+  apps/dashboard/src/api/tradeContacts.ts apps/dashboard/src/pages/admin/TradeContacts.tsx ||
+  die EXACT_LIVE_TRADE_COMPONENTS_REQUIRED
+printf 'INTEGRATED_FRONTEND_RECONSTRUCTION commit=%s tree=%s live_parent=%s integrated_parent=%s delta=8\n' \
+  "$frontend_commit" "$frontend_tree" "$frontend_live_commit" "$frontend_base_commit"
+git -C "$source_repo" archive --format=tar "$frontend_commit" | tar -xf - -C "$state/frontend-work" || die ARCHIVE_REQUIRED
 verify_source() {
-  python3 -I -B - "$frontend" "$state/frontend-work" "$frontend_commit" "$frontend_paths" <<'PY'
+  python3 -I -B - "$source_repo" "$state/frontend-work" "$frontend_commit" "$frontend_paths" <<'PY'
 from hashlib import sha1
 from pathlib import Path
 import subprocess, sys
@@ -142,7 +178,8 @@ printf 'INTEGRATED_FRONTEND_SWC native=0 version=15.5.18 platform=linux-x64-gnu\
 
 tests=(tests/blog-articles.test.cjs tests/editorial-admin.test.cjs tests/listing-brochure.test.cjs
        tests/listing-export.test.cjs tests/listing-floor-plans.test.cjs tests/listing-room-tour.test.cjs
-       tests/local-market-report.test.cjs tests/location-review.test.cjs tests/property-viewings.test.cjs
+       tests/local-market-report.test.cjs tests/location-review.test.cjs tests/management-navigation.test.cjs
+       tests/professionals-admin-entry.test.cjs tests/property-viewings.test.cjs
        tests/public-editorial.test.cjs tests/purchase-cost-worksheet.test.cjs tests/shared-shortlists.test.cjs
        tests/transaction-documents.test.cjs tests/transaction-rooms.test.cjs)
 native=0
@@ -162,7 +199,7 @@ print("INTEGRATED_FRONTEND_CONTRACTS native=" + str(int(sys.argv[2])) + " " +
       " ".join(f"{key.decode()}={rows.get(key, 0)}" for key in (b"tests", b"pass", b"fail", b"skipped")))
 for index in re.findall(rb"(?m)^not ok ([1-9][0-9]{0,2}) - ", data)[:12]:
     print("INTEGRATED_CONTRACT_FAILURE index=" + index.decode("ascii"))
-assert sys.argv[2] == "0" and rows == {b"tests": 95, b"pass": 95, b"fail": 0, b"skipped": 0}
+assert sys.argv[2] == "0" and rows == {b"tests": 109, b"pass": 109, b"fail": 0, b"skipped": 0}
 PY
 verify_source || die CONTRACTS_ALTERED_SOURCE
 
@@ -255,5 +292,5 @@ for route in ("index.html", "login/index.html", "blog/index.html", "professional
 print(f'INTEGRATED_NEXT_EXPORT native=0 typecheck=success static=success fixture_closed=true inventory={counts["inventory"]} detail={counts["detail"]}')
 PY
 verify_source || die STATIC_EXPORT_ALTERED_SOURCE
-printf 'INTEGRATED_FRONTEND_ACCEPTANCE operations=%s frontend=%s frontend_tree=%s paths=%s tests=95 run=%s attempt=1\n' \
+printf 'INTEGRATED_FRONTEND_ACCEPTANCE operations=%s frontend=%s frontend_tree=%s paths=%s tests=109 run=%s attempt=1\n' \
   "$GITHUB_SHA" "$frontend_commit" "$frontend_tree" "$frontend_paths" "$GITHUB_RUN_ID"
