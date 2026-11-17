@@ -39,7 +39,7 @@ MIGRATION = Path(__file__).resolve().parents[1] / "alembic/versions/6c942ea8385d
 
 
 @unittest.skipUnless(os.environ.get("SEARCH_FILTER_TEST_DATABASE_URL"), "Requires owned loopback PostgreSQL")
-class TransactionRoomTests(unittest.TestCase):
+class TransactionRoomFixture(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.url = make_url(os.environ["SEARCH_FILTER_TEST_DATABASE_URL"])
@@ -161,6 +161,8 @@ class TransactionRoomTests(unittest.TestCase):
                      if member["state"] == "pending" and member["member_code"] == self.codes[recipient])
         return result, grant
 
+
+class TransactionRoomTests(TransactionRoomFixture):
     def test_create_from_exact_scoped_lead_and_room_listing(self):
         lead = f"/leads/{self.leads['sale']}"
         self.assertEqual(self.request("realtor", "GET", lead), {"room": None})
