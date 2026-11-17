@@ -441,13 +441,6 @@ def deactivate_account(response: Response, user: User = Depends(get_current_user
     )
 
 
-@router.post("/me/delete-request", status_code=204)
-def request_account_deletion(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    user.deletion_requested_at = datetime.now(timezone.utc)
-    db.commit()
-    logger.info("Deletion requested for user %s", user.id)
-
-
 @router.post("/forgot-password", status_code=200)
 @limiter.limit("3/minute")
 def forgot_password(request: Request, body: ForgotPasswordRequest, db: Session = Depends(get_db)):
