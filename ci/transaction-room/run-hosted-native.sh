@@ -7,15 +7,15 @@ bounded() { timeout --kill-after=8s "$@"; }
 
 [[ ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 &&
-   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-transaction-room-native-20261117 &&
+   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-reviewed-service-matches-20261117 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_HOSTED_EVENT_REQUIRED
 
 ops="$GITHUB_WORKSPACE/rehearsal-ops"
 backend="$GITHUB_WORKSPACE/transaction-backend"
 baseline="$GITHUB_WORKSPACE/previous-backend"
 relay="$GITHUB_WORKSPACE/migration-relay"
-candidate_commit=939723e88c224be89dbb1705cfc282de2ac1a6ef
-candidate_tree=65c0ef2f19ee459745fb55fafa444b9f04e832cc
+candidate_commit=ae63b4a9d79877b77cdd78248b6a228738588a2f
+candidate_tree=4dd47c73bf001841a855328136a628b74610f587
 baseline_commit=630f05b80384428bb1191d3475a765877def80a9
 baseline_tree=7d491000a969029df024b908f85a857fd9b88b89
 
@@ -25,7 +25,7 @@ for checkout in "$ops" "$backend" "$baseline" "$relay"; do
      ! -e "$checkout/.env" && ! -L "$checkout/.env" ]] || die CLEAN_CHECKOUT_REQUIRED
 done
 [[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" &&
-   $(git -C "$ops" rev-parse 'HEAD^') == 8bd40ffd15340fc60cf9da9e4984927b1a7b21dd ]] || die EXACT_OPERATIONS_REQUIRED
+   $(git -C "$ops" rev-parse 'HEAD^') == 5d41ad82013e8a1e55fcfe49ee7f7f72524e3a79 ]] || die EXACT_OPERATIONS_REQUIRED
 operations_delta=$(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) || die EXACT_OPERATIONS_REQUIRED
 [[ "$operations_delta" == $'.github/workflows/transaction-room-native.yml\nci/transaction-room/rehearse.py\nci/transaction-room/run-hosted-native.sh' ]] ||
   die EXACT_OPERATIONS_REQUIRED
@@ -163,7 +163,7 @@ mode, native = sys.argv[2:]
 raw = path.read_bytes() if path.stat().st_size <= 131072 else b""
 stages = rb"(?:checkout|disposable_db|bootstrap|migrate_core|migrate_documents|catalog|tests|test_cleanup)"
 pass_line = re.compile(rb"TRANSACTION_ROOM_NATIVE " + mode.encode() +
-    rb" head=(?:[0-9a-f]{12}|none) private_tables=[0-7] shape=(?:[0-9a-f]{64}|none) tests=(?:0|3|7|9) pass=(?:0|3|7|9)")
+    rb" head=(?:[0-9a-f]{12}|none) private_tables=[0-7] shape=(?:[0-9a-f]{64}|none) tests=(?:0|3|7|9|35) pass=(?:0|3|7|9|35)")
 error_line = re.compile(rb"TRANSACTION_ROOM_NATIVE_FAILURE " + mode.encode() + rb" stage=" + stages +
     rb" class=[A-Za-z_][A-Za-z0-9_]{0,62} sqlstate=(?:[A-Z0-9]{5}|none) methods=(?:[a-z0-9_,]{1,768}|none)")
 safe = [line for line in raw.splitlines() if pass_line.fullmatch(line) or error_line.fullmatch(line)]
@@ -178,6 +178,7 @@ PY
 phase adapter "$backend" "$candidate_commit" "$candidate_tree" none 60s || die FAKE_ADAPTER_REQUIRED
 phase core "$backend" "$candidate_commit" "$candidate_tree" "container:$pg" 100s || die CORE_TESTS_REQUIRED
 phase documents "$backend" "$candidate_commit" "$candidate_tree" "container:$pg" 100s || die DOCUMENT_TESTS_REQUIRED
+phase service "$backend" "$candidate_commit" "$candidate_tree" "container:$pg" 130s || die SERVICE_MATCHES_TESTS_REQUIRED
 phase baseline "$baseline" "$baseline_commit" "$baseline_tree" "container:$pg" 100s || die BASELINE_MIGRATION_REQUIRED
 phase fresh "$backend" "$candidate_commit" "$candidate_tree" "container:$pg" 100s || die FRESH_MIGRATION_REQUIRED
 phase upgrade "$backend" "$candidate_commit" "$candidate_tree" "container:$pg" 100s || die FORWARD_MIGRATION_REQUIRED
@@ -191,5 +192,5 @@ shapes = [
 ]
 assert len(shapes[0]) == 1 and shapes[0] == shapes[1]
 PY
-printf 'TRANSACTION_ROOM_NATIVE_PASS ops=%s run=%s backend=%s tree=%s postgres=17.6 core=9 documents=3 adapter=7 head=de248ab5c9f3 storage=fake\n' \
+printf 'REVIEWED_SERVICE_MATCHES_NATIVE_PASS ops=%s run=%s backend=%s tree=%s postgres=17.6 service=35 core=9 documents=3 adapter=7 head=de248ab5c9f3 storage=fake\n' \
   "$GITHUB_SHA" "$GITHUB_RUN_ID" "$candidate_commit" "$candidate_tree"

@@ -1,8 +1,8 @@
-name: Isolated transaction-room PostgreSQL and document rehearsal
+name: Isolated reviewed service matching and cumulative PostgreSQL rehearsal
 
 on:
   push:
-    branches: [codex-ci-transaction-room-native-20261117]
+    branches: [codex-ci-reviewed-service-matches-20261117]
 
 permissions:
   contents: read
@@ -31,10 +31,10 @@ jobs:
           path: rehearsal-ops
           fetch-depth: 2
           persist-credentials: false
-      - name: Read exact transaction-room backend
+      - name: Read exact reviewed service matching backend
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 939723e88c224be89dbb1705cfc282de2ac1a6ef
+          ref: ae63b4a9d79877b77cdd78248b6a228738588a2f
           path: transaction-backend
           persist-credentials: false
       - name: Read exact prior application
@@ -49,7 +49,7 @@ jobs:
           ref: c193a925ba57ea2d67ea48c44e5262817885c8a2
           path: migration-relay
           persist-credentials: false
-      - name: Rehearse migrations, private routes and fake storage
+      - name: Rehearse reviewed matching, service requests and inherited native contracts
         shell: bash
         run: |
           set -euo pipefail

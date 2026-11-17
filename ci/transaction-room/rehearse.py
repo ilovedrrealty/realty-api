@@ -1,4 +1,4 @@
-"""Run S03 on an exact checked-out application and nonce-bound PostgreSQL fixture."""
+"""Run service matching and inherited cases in nonce-bound PostgreSQL fixtures."""
 
 from contextlib import closing
 from hashlib import sha256
@@ -22,11 +22,12 @@ CORE_TABLES = (
 )
 DOC_TABLES = ("transaction_documents", "transaction_document_versions")
 TRIGGERS = ("transaction_room_events_immutable", "transaction_room_lead_changed")
-MODES = {"baseline", "fresh", "upgrade", "core", "documents", "adapter"}
+MODES = {"baseline", "fresh", "upgrade", "core", "documents", "adapter", "service"}
 TESTS = {
     "core": ("test_transaction_room.py", 9),
     "documents": ("test_transaction_documents.py", 3),
     "adapter": ("test_transaction_document_storage.py", 7),
+    "service": ("test_service_workflow.py", 35),
 }
 TEST_DB = "ildr_platform_test_20261025"
 HOST = "127.0.0.1"
@@ -127,7 +128,7 @@ def check_test_schema_cleanup():
     global stage
     stage = "test_cleanup"
     with closing(connect(TEST_DB)) as conn, conn.cursor() as cursor:
-        cursor.execute("SELECT count(*) FROM pg_namespace WHERE nspname ~ '^transaction_room_test_'")
+        cursor.execute("SELECT count(*) FROM pg_namespace WHERE nspname ~ '^(transaction_room_test_|service_test_)'")
         check(cursor.fetchone() == (0,))
 
 
@@ -236,7 +237,7 @@ def run(mode, nonce, commit, tree):
     else:
         database = {
             "baseline": f"ildr_s03_upgrade_{nonce}", "fresh": f"ildr_s03_fresh_{nonce}",
-            "upgrade": f"ildr_s03_upgrade_{nonce}", "core": TEST_DB, "documents": TEST_DB,
+            "upgrade": f"ildr_s03_upgrade_{nonce}", "core": TEST_DB, "documents": TEST_DB, "service": TEST_DB,
         }[mode]
         stage = "disposable_db"
         check_database(database, nonce, BASELINE_HEAD if mode == "upgrade" else None)
