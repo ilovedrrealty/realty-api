@@ -8,7 +8,7 @@ bounded() { timeout --kill-after=8s "$@"; }
 
 [[ $# == 5 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api ]] || die CI_REQUIRED
 [[ ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 && ${GITHUB_RUN_ATTEMPT:-} == 1 ]] || die STANDARD_LINUX_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-listing-brochures-browser-20261117 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
+[[ ${GITHUB_REF:-} == refs/heads/codex-ci-listing-brochures-browser-20261117-v2 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 
 ops="$1"; frontend="$2"; backend="$3"; migration="$4"; landing_relay="$5"
 [[ "$ops" == "$GITHUB_WORKSPACE/browser-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-base" &&
@@ -19,10 +19,10 @@ for checkout in "$ops" "$frontend" "$backend" "$migration" "$landing_relay"; do
   checkout_status=$(git -C "$checkout" status --porcelain=v1 --untracked-files=all) || die CLEAN_CHECKOUT_REQUIRED
   [[ $(realpath "$checkout") == "$checkout" && -z "$checkout_status" ]] || die CLEAN_CHECKOUT_REQUIRED
 done
-[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == 7264d777d42520f00e79fe16051a647a0e965d6a ]] ||
+[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == ffb817d50e33b572b5cb3c41a2b90bd8a7c661a2 ]] ||
   die EXACT_OPERATIONS_PARENT_REQUIRED
 operations_delta=$(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) || die EXACT_OPERATIONS_DELTA_REQUIRED
-[[ "$operations_delta" == $'.github/workflows/admin-manual-share.yml\nci/admin-manual-share/run-hosted-admin-manual-share.sh\nci/admin-manual-share/run-listing-brochures.mjs\nci/admin-manual-share/serve_listing_brochures_fixture.py' ]] ||
+[[ "$operations_delta" == $'.github/workflows/admin-manual-share.yml\nci/admin-manual-share/run-hosted-admin-manual-share.sh' ]] ||
   die EXACT_OPERATIONS_DELTA_REQUIRED
 frontend_commit=2d070cb965fe2f921822fdb8436ecab72a4099f0
 frontend_tree=8d6b533d9967d6a5fd335c7557e80bc321af8a0b
@@ -416,16 +416,21 @@ print("LISTING_BROCHURE_NEXT_EXPORT native=0 listing=static search=static typech
 PY
 verify_frontend_files || die LANDING_BUILD_SOURCE_CHANGED
 
-python3 -I -B - "$state/frontend-work" "$state/browser-run" <<'PY'
+python3 -I -B - "$state/frontend-work" "$state/browser-run" <<'PY' || die LANDING_BROWSER_RUNTIME_INPUT_REQUIRED
 import base64, hashlib, io, json, tarfile, urllib.request
 from pathlib import Path, PurePosixPath
 import sys
 workspace, browser = map(Path, sys.argv[1:])
-dist = workspace/'apps/dashboard/dist'
-assert (dist/'index.html').is_file() and not (dist/'index.html').is_symlink()
-assets = [f.read_bytes() for f in (dist/'assets').glob('*.js') if f.is_file() and not f.is_symlink()]
-assert any(b'http://127.0.0.1:8918' in body for body in assets)
-assert any(b'http://127.0.0.1:8917' in body for body in assets)
+dist = workspace/'apps/landing/out'
+detail = dist/'listing/10000000-0000-0000-0000-000000000001/index.html'
+assert detail.is_file() and not detail.is_symlink() and 0 < detail.stat().st_size <= 1024 * 1024
+assets = list((dist/'_next/static/chunks').rglob('*.js'))
+assert 0 < len(assets) <= 250
+assert all(f.is_file() and not f.is_symlink() and f.stat().st_size <= 16 * 1024 * 1024 for f in assets)
+assert any(b'http://127.0.0.1:8918' in file.read_bytes() for file in assets)
+manifest = workspace/'node_modules/pdf-lib/package.json'
+assert manifest.is_file() and not manifest.is_symlink() and manifest.stat().st_size <= 16384
+assert json.loads(manifest.read_bytes())['version'] == '1.17.1'
 url = 'https://registry.npmjs.org/playwright-core/-/playwright-core-1.64.1.tgz'
 with urllib.request.urlopen(url, timeout=30) as response:
     assert response.geturl() == url
@@ -448,6 +453,7 @@ with tarfile.open(fileobj=io.BytesIO(raw), mode='r:gz') as archive:
             with path.open('xb') as out:
                 out.write(archive.extractfile(member).read())
 assert json.loads((target/'package.json').read_bytes())['version'] == '1.64.1'
+print('LISTING_BROCHURE_RUNTIME_INPUT landing=static pdf_lib=1.17.1 playwright=1.64.1')
 PY
 
 # The database owns an isolated network namespace containing only loopback.
