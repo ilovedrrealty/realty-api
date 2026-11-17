@@ -1,0 +1,78 @@
+name: Isolated newsletter confirmation and unsubscribe
+
+on:
+  push:
+    branches: [codex-ci-newsletter-native-20261117]
+
+permissions:
+  contents: read
+
+jobs:
+  newsletter:
+    if: >-
+      github.repository == 'ilovedrrealty/realty-api' &&
+      github.event.created == true && github.event.forced == false &&
+      github.event.before == '0000000000000000000000000000000000000000' &&
+      github.run_attempt == 1
+    runs-on: ubuntu-24.04
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 6369c089adb2c53af85968d972eb4896edbcaf71
+          path: app
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: c193a925ba57ea2d67ea48c44e5262817885c8a2
+          path: dependency-recipe
+          persist-credentials: false
+      - name: Rehearse newsletter consent with fake mail and real isolated PostgreSQL
+        shell: bash
+        run: |
+          set -euo pipefail
+          source="$GITHUB_WORKSPACE/app"
+          [[ $(git -C "$source" rev-parse HEAD) == 6369c089adb2c53af85968d972eb4896edbcaf71 ]]
+          [[ $(git -C "$source" rev-parse 'HEAD^{tree}') == 6cf2bbc4f0f2861cf8c1e1bc6b17ab4a533a82c9 ]]
+          [[ -z $(git -C "$source" status --porcelain) && ! -e "$source/.env" ]]
+          state=$(mktemp -d "$RUNNER_TEMP/ildr-newsletter.XXXXXXXX")
+          tag="ildr-newsletter:$GITHUB_RUN_ID"
+          pg=
+          trap 'if [[ -n "$pg" ]]; then docker rm -f -v "$pg" >/dev/null; fi; rm -rf -- "$state"' EXIT
+          cp "$source/requirements.txt" "$state/requirements.txt"
+          recipe="$GITHUB_WORKSPACE/dependency-recipe/ci/migration/services163.Dockerfile"
+          printf '%s  %s\n' e546d8c5668b87ef28e604107bbb330e6f4b3873cf0208b4d24ca378bd0851f9 "$recipe" | sha256sum -c --status
+          timeout --kill-after=8s 600s docker build \
+            --build-arg PYTHON_DIGEST=sha256:673719e071ecf27434fd2635bbd8d00f49f4fdd81f243143438a42ced8bedf60 \
+            -f "$recipe" -t "$tag" "$state" >"$state/dependencies.log" 2>&1 ||
+            { echo NEWSLETTER_DEPENDENCY_PREPARATION_FAILED; exit 1; }
+          pg=$(docker run -d --network none --memory 768m --memory-swap 768m --pids-limit 96 \
+            --tmpfs /var/lib/postgresql/data:rw,size=384m -e POSTGRES_HOST_AUTH_METHOD=trust \
+            docker.io/library/postgres:17.6@sha256:b86568d3e0fe1dfaeff52714f9da36f206a30e4c49131b82bf96982d78627409 \
+            postgres -h 127.0.0.1 -p 55449)
+          for step in {1..45}; do
+            if docker exec "$pg" pg_isready -h 127.0.0.1 -p 55449 -U postgres; then break; fi
+            sleep 1
+          done
+          [[ $(docker exec "$pg" ls /sys/class/net) == lo ]]
+          p=(docker exec "$pg" psql -X -v ON_ERROR_STOP=1 -h 127.0.0.1 -p 55449 -U postgres)
+          "${p[@]}" -d postgres -c 'CREATE ROLE anon NOLOGIN; CREATE ROLE authenticated NOLOGIN; CREATE ROLE service_role NOLOGIN'
+          for stage in fresh forward; do
+            db="ildr_newsletter_${stage}_ci"
+            "${p[@]}" -d postgres -c "CREATE DATABASE $db"
+            "${p[@]}" -d "$db" -c 'ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authenticated, service_role'
+            timeout --kill-after=8s 150s docker run --rm --network "container:$pg" --read-only \
+              --memory 1g --memory-swap 1g --pids-limit 128 --tmpfs /tmp:rw \
+              -v "$source:/app:ro" -w /app "$tag" \
+              env -i PATH=/usr/local/bin:/usr/bin:/bin PYTHONDONTWRITEBYTECODE=1 NEWSLETTER_FIXTURE=yes \
+              DATABASE_URL="postgresql+psycopg2://postgres@127.0.0.1:55449/$db" JWT_SECRET=synthetic-ci-only \
+              bash -euo pipefail -c '
+                test "$(ls /sys/class/net)" = lo
+                python bootstrap_db.py
+                if [[ "$1" == forward ]]; then alembic upgrade a4e72d1c718b; fi
+                alembic upgrade head
+                python -m unittest discover -s tests -p test_newsletter.py -v
+              ' -- "$stage"
+            [[ $("${p[@]}" -d "$db" -Atc 'SELECT version_num FROM alembic_version') == f92c8a74d31e ]]
+            printf 'NEWSLETTER_NATIVE_PASS stage=%s app=6369c089adb2c53af85968d972eb4896edbcaf71\n' "$stage"
+          done
