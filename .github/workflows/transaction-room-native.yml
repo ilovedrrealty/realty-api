@@ -1,8 +1,8 @@
-name: Isolated editorial and cumulative PostgreSQL rehearsal
+name: Isolated transaction-task evidence PostgreSQL rehearsal
 
 on:
   push:
-    branches: [codex-ci-editorial-admin-native-20261117]
+    branches: [codex-ci-transaction-task-evidence-native-20261117]
 
 permissions:
   contents: read
@@ -31,16 +31,16 @@ jobs:
           path: rehearsal-ops
           fetch-depth: 2
           persist-credentials: false
-      - name: Read exact editorial backend
+      - name: Read exact transaction-task evidence backend
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: e03c968bed233362de4ec69c76c4432af184d341
+          ref: f10409cd12be49718505876125e429c0b0e4b62d
           path: transaction-backend
           persist-credentials: false
       - name: Read exact prior application
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 630f05b80384428bb1191d3475a765877def80a9
+          ref: d1a8e4f9ed5708e97bc3dcaa9f60f96543e60cbe
           path: previous-backend
           persist-credentials: false
       - name: Read accepted Python dependency recipe
@@ -49,7 +49,7 @@ jobs:
           ref: c193a925ba57ea2d67ea48c44e5262817885c8a2
           path: migration-relay
           persist-credentials: false
-      - name: Rehearse editorial and inherited PostgreSQL contracts
+      - name: Rehearse exact task evidence, private document access and migration parity
         shell: bash
         run: |
           set -euo pipefail

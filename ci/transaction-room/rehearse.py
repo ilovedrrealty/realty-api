@@ -1,4 +1,4 @@
-"""Run editorial and inherited cases in nonce-bound PostgreSQL fixtures."""
+"""Run review-task document evidence cases in nonce-bound PostgreSQL fixtures."""
 
 from contextlib import closing
 from hashlib import sha256
@@ -13,12 +13,9 @@ import unittest
 
 
 APP = Path("/application")
-BASELINE_HEAD = "5a4e7f921bc0"
-CORE_HEAD = "6c942ea8385d"
-DOC_HEAD = "de248ab5c9f3"
-REFERRAL_HEAD = "e12ac7d49f03"
-DOC_SHAPE = "43edab887dd816c5b2bedfbe95fed18fb2dec4a7e4c436242b134e849d34daba"
-REFERRAL_SHAPE = "76eafd85ceb2e126f02efe903cc553297e0ee14622d6f1a4bab6ef70213675cf"
+BASELINE_HEAD = "e12ac7d49f03"
+EVIDENCE_HEAD = "21f2fe166874"
+BASELINE_SHAPE = "76eafd85ceb2e126f02efe903cc553297e0ee14622d6f1a4bab6ef70213675cf"
 CORE_TABLES = (
     "transaction_rooms", "transaction_room_events", "transaction_room_grants",
     "transaction_room_milestones", "transaction_room_tasks",
@@ -27,14 +24,13 @@ DOC_TABLES = ("transaction_documents", "transaction_document_versions")
 REFERRAL_TABLES = ("network_service_referrals", "network_service_referral_events")
 PRIVATE_TABLES = CORE_TABLES + DOC_TABLES + REFERRAL_TABLES
 TRIGGERS = ("transaction_room_events_immutable", "transaction_room_lead_changed")
-MODES = {"baseline", "fresh", "upgrade", "core", "documents", "adapter", "service", "referrals", "editorial"}
+EVIDENCE_COLUMNS = {"evidence_document_id", "evidence_version_id"}
+EVIDENCE_CONSTRAINTS = {"ck_transaction_task_evidence_pair", "fk_transaction_task_evidence_version"}
+MODES = {"baseline", "fresh", "upgrade", "core", "documents", "adapter"}
 TESTS = {
     "core": ("test_transaction_room.py", 9),
-    "documents": ("test_transaction_documents.py", 3),
+    "documents": ("test_transaction_documents.py", 5),
     "adapter": ("test_transaction_document_storage.py", 7),
-    "service": ("test_service_workflow.py", 35),
-    "referrals": ("test_service_referrals.py", 5),
-    "editorial": ("test_editorial.py", 10),
 }
 TEST_DB = "ildr_platform_test_20261025"
 HOST = "127.0.0.1"
@@ -86,7 +82,7 @@ def check_database(database, nonce, head):
                    to_regclass('public.alembic_version') IS NOT NULL
             FROM pg_database WHERE datname = current_database()
         """)
-        check(cursor.fetchone() == (database, "postgres", HOST, PORT, 170006, f"ildr-s03-ci:{nonce}", head is not None))
+        check(cursor.fetchone() == (database, "postgres", HOST, PORT, 170006, f"ildr-d04-ci:{nonce}", head is not None))
         if head is None:
             cursor.execute("""
                 SELECT count(*) FROM pg_class rel JOIN pg_namespace ns ON ns.oid = rel.relnamespace
@@ -122,7 +118,8 @@ def run_cases(mode):
     # also resolves the documents suite's shared room fixture import.
     suite = unittest.defaultTestLoader.discover("tests", pattern=pattern)
     sqlstates = set()
-    if mode == "referrals":
+    postgres_mode = mode != "adapter"
+    if postgres_mode:
         from sqlalchemy import event
         from sqlalchemy.engine import Engine
 
@@ -135,24 +132,24 @@ def run_cases(mode):
     try:
         result = unittest.TextTestRunner(stream=StringIO()).run(suite)
     finally:
-        if mode == "referrals":
+        if postgres_mode:
             event.remove(Engine, "handle_error", note_sqlstate)
 
     for case, trace in result.failures + result.errors:
         name = getattr(case, "_testMethodName", "setup_or_teardown")
         if re.fullmatch(r"[a-z0-9_]{1,100}", name):
             failed_methods.append(name)
-            if mode == "referrals":
+            if postgres_mode:
                 frame = re.search(
-                    rf'(?m)^  File "/application/tests/test_service_referrals\.py", line ([1-9][0-9]{{0,3}}), in {name}$',
+                    rf'(?m)^  File "/application/tests/{re.escape(pattern)}", line ([1-9][0-9]{{0,3}}), in {name}$',
                     trace,
                 )
                 statuses = re.search(r"(?m)^AssertionError: ([1-5][0-9]{2}) != ([1-5][0-9]{2})(?= :|$)", trace)
                 line = frame.group(1) if frame else "none"
                 actual, expected = statuses.groups() if statuses else ("none", "none")
-                print(f"REFERRAL_NATIVE_ASSERTION test={name} line={line} actual={actual} expected={expected}")
-    if mode == "referrals" and not result.wasSuccessful():
-        print("REFERRAL_NATIVE_SQLSTATES codes=" + (",".join(sorted(sqlstates)[:8]) or "none"))
+                print(f"TASK_EVIDENCE_NATIVE_ASSERTION test={name} line={line} actual={actual} expected={expected}")
+    if postgres_mode and not result.wasSuccessful():
+        print("TASK_EVIDENCE_NATIVE_SQLSTATES codes=" + (",".join(sorted(sqlstates)[:8]) or "none"))
     check(result.testsRun == count and result.wasSuccessful() and not result.skipped
           and not result.expectedFailures and not result.unexpectedSuccesses)
     return count
@@ -162,13 +159,12 @@ def check_test_schema_cleanup():
     global stage
     stage = "test_cleanup"
     with closing(connect(TEST_DB)) as conn, conn.cursor() as cursor:
-        cursor.execute("""
-            SELECT count(*) FROM pg_namespace WHERE nspname ~ '^(transaction_room_test_|service_test_|editorial_test_)'
-        """)
+        cursor.execute("SELECT count(*) FROM pg_namespace WHERE nspname ~ '^transaction_room_test_'")
         check(cursor.fetchone() == (0,))
 
 
-def catalog(database, selected, *, present):
+def catalog(database, *, evidence):
+    selected = list(PRIVATE_TABLES)
     with closing(connect(database)) as conn, conn.cursor() as cursor:
         cursor.execute("""
             SELECT rel.relname, rel.relrowsecurity, EXISTS (
@@ -178,28 +174,25 @@ def catalog(database, selected, *, present):
             FROM pg_class rel JOIN pg_namespace ns ON ns.oid=rel.relnamespace
             WHERE ns.nspname='public' AND rel.relname::text=ANY(%s) AND rel.relkind='r'
             ORDER BY rel.relname
-        """, (list(selected),))
-        if not present:
-            check(cursor.fetchall() == [])
-            return "none"
+        """, (selected,))
         check(cursor.fetchall() == [(name, True, False) for name in sorted(selected)])
         cursor.execute("""
             SELECT table_name, column_name, data_type, is_nullable, column_default
             FROM information_schema.columns
             WHERE table_schema='public' AND table_name::text=ANY(%s) ORDER BY table_name,ordinal_position
-        """, (list(selected),))
+        """, (selected,))
         columns = cursor.fetchall()
         cursor.execute("""
             SELECT rel.relname, con.conname, pg_get_constraintdef(con.oid)
             FROM pg_constraint con JOIN pg_class rel ON rel.oid=con.conrelid
             JOIN pg_namespace ns ON ns.oid=rel.relnamespace
             WHERE ns.nspname='public' AND rel.relname::text=ANY(%s) ORDER BY rel.relname,con.conname
-        """, (list(selected),))
+        """, (selected,))
         checks = cursor.fetchall()
         cursor.execute("""
             SELECT tablename,indexname,indexdef FROM pg_indexes
             WHERE schemaname='public' AND tablename::text=ANY(%s) ORDER BY tablename,indexname
-        """, (list(selected),))
+        """, (selected,))
         indexes = cursor.fetchall()
         cursor.execute("""
             SELECT t.tgname, t.tgenabled, pg_get_triggerdef(t.oid)
@@ -210,21 +203,59 @@ def catalog(database, selected, *, present):
         triggers = cursor.fetchall()
         check(len(columns) > 0 and len(checks) > 0 and len(indexes) > 0
               and [(name, enabled) for name, enabled, _ in triggers] == [(name, "O") for name in TRIGGERS])
+    task_columns = [row for row in columns if row[0] == "transaction_room_tasks" and row[1] in EVIDENCE_COLUMNS]
+    task_constraints = [row for row in checks if row[0] == "transaction_room_tasks" and row[1] in EVIDENCE_CONSTRAINTS]
+    if evidence:
+        check([(row[1], *row[2:]) for row in task_columns] == [
+            ("evidence_document_id", "uuid", "YES", None), ("evidence_version_id", "uuid", "YES", None),
+        ])
+        check({row[1] for row in task_constraints} == EVIDENCE_CONSTRAINTS)
+    else:
+        check(not task_columns and not task_constraints)
+    inherited = ([row for row in columns if row not in task_columns],
+                 [row for row in checks if row not in task_constraints], indexes, triggers)
+    check(sha256(json.dumps(inherited, separators=(",", ":")).encode()).hexdigest() == BASELINE_SHAPE)
     return sha256(json.dumps((columns, checks, indexes, triggers), separators=(",", ":")).encode()).hexdigest()
 
 
-def sentinel(database, nonce, *, create=False):
+def sentinel(database, nonce, *, create=False, evidence=False):
     with closing(connect(database)) as conn, conn, conn.cursor() as cursor:
         if create:
             cursor.execute("""
                 INSERT INTO users (id, email, display_name, role, status, email_verified)
-                VALUES (%s::uuid, 's03-fixture@example.invalid', 'Synthetic migration sentinel', 'buyer', 'active', true)
+                VALUES (%s::uuid, 'd04-fixture@example.invalid', 'Synthetic migration sentinel', 'buyer', 'active', true)
             """, (nonce,))
+            cursor.execute("""
+                INSERT INTO listings (id, title, type, "transaction", price, location, submitted_by, status)
+                VALUES (%s::uuid, 'Synthetic migration listing', 'villa', 'sale', 1000, 'Synthetic area', %s::uuid, 'active')
+            """, (nonce, nonce))
+            cursor.execute("""
+                INSERT INTO leads (id, type, name, property_id, from_user_id)
+                VALUES (%s::uuid, 'property_inquiry', 'Synthetic migration lead', %s::uuid, %s::uuid)
+            """, (nonce, nonce, nonce))
+            cursor.execute("""
+                INSERT INTO transaction_rooms (id, lead_id, listing_id, buyer_id, title, status, version, created_at)
+                VALUES (%s::uuid, %s::uuid, %s::uuid, %s::uuid, 'Synthetic migration room', 'open', 1, now())
+            """, (nonce, nonce, nonce, nonce))
+            cursor.execute("""
+                INSERT INTO transaction_room_tasks (id, room_id, title, assignee_user_id, status, version)
+                VALUES (%s::uuid, %s::uuid, 'Synthetic original review task', %s::uuid, 'open', 1)
+            """, (nonce, nonce, nonce))
         cursor.execute("""
             SELECT display_name, role::text, status::text, email_verified, user_code IS NOT NULL
             FROM users WHERE id=%s::uuid
         """, (nonce,))
         check(cursor.fetchall() == [("Synthetic migration sentinel", "buyer", "active", True, True)])
+        cursor.execute("""
+            SELECT title, status, version, room_id = %s::uuid, assignee_user_id = %s::uuid
+            FROM transaction_room_tasks WHERE id = %s::uuid
+        """, (nonce, nonce, nonce))
+        check(cursor.fetchall() == [("Synthetic original review task", "open", 1, True, True)])
+        if evidence:
+            cursor.execute("""
+                SELECT evidence_document_id, evidence_version_id FROM transaction_room_tasks WHERE id=%s::uuid
+            """, (nonce,))
+            check(cursor.fetchall() == [(None, None)])
 
 
 def migrate(mode, database, nonce):
@@ -238,37 +269,23 @@ def migrate(mode, database, nonce):
         stage = "bootstrap"
         bootstrap_db.main()
     if mode == "baseline":
-        stage = "migrate_core"
+        stage = "migrate_baseline"
         command.upgrade(alembic_config, BASELINE_HEAD)
         stage = "catalog"
         check_database(database, nonce, BASELINE_HEAD)
-        catalog(database, PRIVATE_TABLES, present=False)
+        shape = catalog(database, evidence=False)
         sentinel(database, nonce, create=True)
-        return BASELINE_HEAD, 0, "none"
+        return BASELINE_HEAD, len(PRIVATE_TABLES), shape
     if mode == "upgrade":
-        catalog(database, PRIVATE_TABLES, present=False)
+        catalog(database, evidence=False)
         sentinel(database, nonce)
-    stage = "migrate_core"
-    command.upgrade(alembic_config, CORE_HEAD)
-    check_database(database, nonce, CORE_HEAD)
-    catalog(database, CORE_TABLES, present=True)
-    stage = "migrate_documents"
-    command.upgrade(alembic_config, DOC_HEAD)
-    check_database(database, nonce, DOC_HEAD)
-    inherited_tables = CORE_TABLES + DOC_TABLES
-    check(catalog(database, inherited_tables, present=True) == DOC_SHAPE)
-    if mode == "upgrade":
-        catalog(database, REFERRAL_TABLES, present=False)
-    stage = "migrate_referrals"
-    command.upgrade(alembic_config, REFERRAL_HEAD)
+    stage = "migrate_evidence"
+    command.upgrade(alembic_config, EVIDENCE_HEAD)
     stage = "catalog"
-    check_database(database, nonce, REFERRAL_HEAD)
-    check(catalog(database, inherited_tables, present=True) == DOC_SHAPE)
+    check_database(database, nonce, EVIDENCE_HEAD)
     if mode == "upgrade":
-        sentinel(database, nonce)
-    shape = catalog(database, PRIVATE_TABLES, present=True)
-    check(shape == REFERRAL_SHAPE)
-    return REFERRAL_HEAD, len(PRIVATE_TABLES), shape
+        sentinel(database, nonce, evidence=True)
+    return EVIDENCE_HEAD, len(PRIVATE_TABLES), catalog(database, evidence=True)
 
 
 def run(mode, nonce, commit, tree):
@@ -282,9 +299,8 @@ def run(mode, nonce, commit, tree):
         count = run_cases(mode)
     else:
         database = {
-            "baseline": f"ildr_s03_upgrade_{nonce}", "fresh": f"ildr_s03_fresh_{nonce}",
-            "upgrade": f"ildr_s03_upgrade_{nonce}", "core": TEST_DB, "documents": TEST_DB,
-            "service": TEST_DB, "referrals": TEST_DB, "editorial": TEST_DB,
+            "baseline": f"ildr_d04_upgrade_{nonce}", "fresh": f"ildr_d04_fresh_{nonce}",
+            "upgrade": f"ildr_d04_upgrade_{nonce}", "core": TEST_DB, "documents": TEST_DB,
         }[mode]
         stage = "disposable_db"
         check_database(database, nonce, BASELINE_HEAD if mode == "upgrade" else None)

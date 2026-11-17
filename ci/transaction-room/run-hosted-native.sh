@@ -7,17 +7,17 @@ bounded() { timeout --kill-after=8s "$@"; }
 
 [[ ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 &&
-   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-editorial-admin-native-20261117 &&
+   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-transaction-task-evidence-native-20261117 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_HOSTED_EVENT_REQUIRED
 
 ops="$GITHUB_WORKSPACE/rehearsal-ops"
 backend="$GITHUB_WORKSPACE/transaction-backend"
 baseline="$GITHUB_WORKSPACE/previous-backend"
 relay="$GITHUB_WORKSPACE/migration-relay"
-candidate_commit=e03c968bed233362de4ec69c76c4432af184d341
-candidate_tree=f5e7ba61c17de994f1204b26f307fefe2afc7e10
-baseline_commit=630f05b80384428bb1191d3475a765877def80a9
-baseline_tree=7d491000a969029df024b908f85a857fd9b88b89
+candidate_commit=f10409cd12be49718505876125e429c0b0e4b62d
+candidate_tree=ff48d7d0283fd14ef8037ece7313c9f8299ee3d0
+baseline_commit=d1a8e4f9ed5708e97bc3dcaa9f60f96543e60cbe
+baseline_tree=752efbde336a7f6fa8ec72b6108464e918caa22f
 
 for checkout in "$ops" "$backend" "$baseline" "$relay"; do
   working_status=$(git -C "$checkout" status --porcelain=v1 --untracked-files=all) || die CLEAN_CHECKOUT_REQUIRED
@@ -25,7 +25,7 @@ for checkout in "$ops" "$backend" "$baseline" "$relay"; do
      ! -e "$checkout/.env" && ! -L "$checkout/.env" ]] || die CLEAN_CHECKOUT_REQUIRED
 done
 [[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" &&
-   $(git -C "$ops" rev-parse 'HEAD^') == 183110e2219534fd967e7e172fa48c74b0631a0a ]] || die EXACT_OPERATIONS_REQUIRED
+   $(git -C "$ops" rev-parse 'HEAD^') == 58299ae6ea6629b05c4c5e0b4f4dc37c7e1ae11e ]] || die EXACT_OPERATIONS_REQUIRED
 operations_delta=$(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) || die EXACT_OPERATIONS_REQUIRED
 [[ "$operations_delta" == $'.github/workflows/transaction-room-native.yml\nci/transaction-room/rehearse.py\nci/transaction-room/run-hosted-native.sh' ]] ||
   die EXACT_OPERATIONS_REQUIRED
@@ -134,9 +134,9 @@ psql=(docker exec "$pg" psql -X -h 127.0.0.1 -p 55449 -U postgres -v ON_ERROR_ST
 bounded 10s "${psql[@]}" -d postgres \
   -c 'CREATE ROLE anon NOLOGIN; CREATE ROLE authenticated NOLOGIN; CREATE ROLE service_role NOLOGIN' \
   >/dev/null || die SYNTHETIC_ROLES_REQUIRED
-for db in "ildr_s03_fresh_$nonce" "ildr_s03_upgrade_$nonce" ildr_platform_test_20261025; do
+for db in "ildr_d04_fresh_$nonce" "ildr_d04_upgrade_$nonce" ildr_platform_test_20261025; do
   bounded 10s "${psql[@]}" -d postgres -c "CREATE DATABASE $db" \
-    -c "COMMENT ON DATABASE $db IS 'ildr-s03-ci:$nonce'" >/dev/null || die DATABASE_IDENTITY_MARKER_FAILED
+    -c "COMMENT ON DATABASE $db IS 'ildr-d04-ci:$nonce'" >/dev/null || die DATABASE_IDENTITY_MARKER_FAILED
   bounded 10s "${psql[@]}" -d "$db" \
     -c 'ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO anon, authenticated, service_role' \
     >/dev/null || die SYNTHETIC_DEFAULT_ACL_REQUIRED
@@ -161,7 +161,7 @@ import re, sys
 path = Path(sys.argv[1])
 mode, native = sys.argv[2:]
 raw = path.read_bytes() if path.stat().st_size <= 131072 else b""
-stages = rb"(?:checkout|disposable_db|bootstrap|migrate_core|migrate_documents|migrate_referrals|catalog|tests|test_cleanup)"
+stages = rb"(?:checkout|disposable_db|bootstrap|migrate_baseline|migrate_evidence|catalog|tests|test_cleanup)"
 pass_line = re.compile(rb"TRANSACTION_ROOM_NATIVE " + mode.encode() +
     rb" head=(?:[0-9a-f]{12}|none) private_tables=[0-9] shape=(?:[0-9a-f]{64}|none) tests=[0-9]{1,2} pass=[0-9]{1,2}")
 error_line = re.compile(rb"TRANSACTION_ROOM_NATIVE_FAILURE " + mode.encode() + rb" stage=" + stages +
@@ -170,11 +170,11 @@ lines = raw.splitlines()
 safe = [line for line in lines if pass_line.fullmatch(line) or error_line.fullmatch(line)]
 if len(safe) == 1:
     print(safe[0].decode('ascii'))
-if mode == "referrals" and native != "0":
-    assertion = re.compile(rb"REFERRAL_NATIVE_ASSERTION test=[a-z0-9_]{1,100} line=(?:[0-9]{1,4}|none)"
+if mode in {"core", "documents"} and native != "0":
+    assertion = re.compile(rb"TASK_EVIDENCE_NATIVE_ASSERTION test=[a-z0-9_]{1,100} line=(?:[0-9]{1,4}|none)"
                            rb" actual=(?:[1-5][0-9]{2}|none) expected=(?:[1-5][0-9]{2}|none)")
-    sqlstates = re.compile(rb"REFERRAL_NATIVE_SQLSTATES codes=(?:[A-Z0-9]{5}(?:,[A-Z0-9]{5}){0,7}|none)")
-    for line in [item for item in lines if assertion.fullmatch(item) or sqlstates.fullmatch(item)][:6]:
+    sqlstates = re.compile(rb"TASK_EVIDENCE_NATIVE_SQLSTATES codes=(?:[A-Z0-9]{5}(?:,[A-Z0-9]{5}){0,7}|none)")
+    for line in [item for item in lines if assertion.fullmatch(item) or sqlstates.fullmatch(item)][:10]:
         print(line.decode('ascii'))
 if native != "0" or len(safe) != 1 or not pass_line.fullmatch(safe[0]):
     print(f"TRANSACTION_ROOM_NATIVE_PHASE_FAILURE mode={mode} native={native}")
@@ -185,9 +185,6 @@ PY
 phase adapter "$backend" "$candidate_commit" "$candidate_tree" none 60s || die FAKE_ADAPTER_REQUIRED
 phase core "$backend" "$candidate_commit" "$candidate_tree" "container:$pg" 100s || die CORE_TESTS_REQUIRED
 phase documents "$backend" "$candidate_commit" "$candidate_tree" "container:$pg" 100s || die DOCUMENT_TESTS_REQUIRED
-phase service "$backend" "$candidate_commit" "$candidate_tree" "container:$pg" 130s || die SERVICE_MATCHES_TESTS_REQUIRED
-phase referrals "$backend" "$candidate_commit" "$candidate_tree" "container:$pg" 110s || die PRIVATE_REFERRAL_TESTS_REQUIRED
-phase editorial "$backend" "$candidate_commit" "$candidate_tree" "container:$pg" 100s || die EDITORIAL_TESTS_REQUIRED
 phase baseline "$baseline" "$baseline_commit" "$baseline_tree" "container:$pg" 100s || die BASELINE_MIGRATION_REQUIRED
 phase fresh "$backend" "$candidate_commit" "$candidate_tree" "container:$pg" 100s || die FRESH_MIGRATION_REQUIRED
 phase upgrade "$backend" "$candidate_commit" "$candidate_tree" "container:$pg" 100s || die FORWARD_MIGRATION_REQUIRED
@@ -196,10 +193,10 @@ from pathlib import Path
 import re, sys
 
 shapes = [
-    re.findall(rb"(?m)^TRANSACTION_ROOM_NATIVE (?:fresh|upgrade) head=e12ac7d49f03 private_tables=9 shape=([0-9a-f]{64}) tests=0 pass=0$",
+    re.findall(rb"(?m)^TRANSACTION_ROOM_NATIVE (?:fresh|upgrade) head=21f2fe166874 private_tables=9 shape=([0-9a-f]{64}) tests=0 pass=0$",
                Path(name).read_bytes()) for name in sys.argv[1:]
 ]
 assert len(shapes[0]) == 1 and shapes[0] == shapes[1]
 PY
-printf 'EDITORIAL_NATIVE_PASS ops=%s run=%s backend=%s tree=%s postgres=17.6 editorial=10 referrals=5 service=35 core=9 documents=3 adapter=7 head=e12ac7d49f03 storage=fake\n' \
+printf 'TRANSACTION_TASK_EVIDENCE_NATIVE_PASS ops=%s run=%s backend=%s tree=%s postgres=17.6 core=9 documents=5 adapter=7 head=21f2fe166874 legacy_task=preserved storage=fake\n' \
   "$GITHUB_SHA" "$GITHUB_RUN_ID" "$candidate_commit" "$candidate_tree"
