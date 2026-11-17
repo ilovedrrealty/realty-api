@@ -22,7 +22,7 @@ class AccountDeletionRequest(Base):
     user_id = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
     requested_at = mapped_column(DateTime(timezone=True), nullable=False)
     status = mapped_column(Text, nullable=False)
-    version = mapped_column(Integer, nullable=False, default=1)
+    version = mapped_column(Integer, nullable=False, default=1, server_default=text("1"))
     reviewed_at = mapped_column(DateTime(timezone=True))
     reviewed_by_id = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"))
     review_reason = mapped_column(Text)
