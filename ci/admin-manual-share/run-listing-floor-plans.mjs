@@ -16,6 +16,8 @@ const english = { title: 'Property floor plan', view: 'View floor plan', close: 
 const spanish = { title: 'Plano de la propiedad', view: 'Ver plano', close: 'Cerrar plano' }
 const checks = []
 let stage = 'fixture'
+let deadline
+let failed = false
 
 class CheckFailure extends Error {}
 function check(pass, code) {
@@ -26,6 +28,23 @@ function failureCode(error) {
   if (error instanceof CheckFailure) return error.message
   if (String(error?.message).includes('strict mode violation')) return 'LOCATOR_AMBIGUOUS'
   return error?.name === 'TimeoutError' ? 'LOCATOR_OR_EVENT_NOT_FOUND' : 'BROWSER_OPERATION_FAILED'
+}
+
+function reportFailure(reason) {
+  if (failed) return
+  failed = true
+  process.exitCode = 1
+  console.log('LISTING_FLOOR_PLAN_BROWSER_FAILURE ' + stage + ' ' + reason)
+}
+
+function progress(next, limit = 32000) {
+  clearTimeout(deadline)
+  stage = next
+  console.log('LISTING_FLOOR_PLAN_BROWSER_STAGE ' + stage)
+  deadline = setTimeout(() => {
+    reportFailure('STAGE_WATCHDOG_DEADLINE')
+    setTimeout(() => process.exit(1), 250)
+  }, limit)
 }
 
 function sha(bytes) { return createHash('sha256').update(bytes).digest('hex') }
@@ -86,6 +105,7 @@ async function session(browser, { account, locale = 'en', mobile = false } = {})
     hasTouch: mobile, isMobile: mobile, serviceWorkers: 'block',
   })
   context.setDefaultTimeout(12_000)
+  context.setDefaultNavigationTimeout(12_000)
   await context.route('**/*', route => {
     const url = new URL(route.request().url())
     return [api, dashboard, landing].includes(url.origin) ? route.continue() : route.abort('blockedbyclient')
@@ -116,11 +136,13 @@ async function openAdmin(context) {
     page.goto(dashboard + '/listings?workspace=admin', { waitUntil: 'domcontentloaded' }),
   ])
   check(identity.status() === 200 && (await identity.json()).role === 'admin', 'EXACT_ADMIN_IDENTITY_REQUIRED')
+  progress('admin_find_listing')
   const row = page.locator('div[class~="sm:grid"]').filter({ has: page.getByText(listingTitle, { exact: true }) })
     .filter({ has: button(page, 'Listing actions') })
   await button(row, 'Listing actions').click()
   await button(row, 'Edit listing').click()
   await control(page, 'heading', 'Edit Listing').waitFor()
+  progress('admin_open_floor_plan')
   const editor = control(page, 'region', 'Listing floor plan')
   const [initial] = await Promise.all([
     page.waitForResponse(response => apiResponse(response, adminPath)),
@@ -225,7 +247,7 @@ async function publish(page, editor, asset, previous) {
 }
 
 async function run(browser, fixture) {
-  stage = 'auth'
+  progress('auth')
   const admin = await session(browser, { account: fixture.admin })
   const owner = await session(browser, { account: fixture.owner })
   const publicEn = await session(browser, { mobile: true })
@@ -233,13 +255,15 @@ async function run(browser, fixture) {
   const enPage = await publicEn.newPage()
   const esPage = await publicEs.newPage()
 
-  stage = 'admin_entry'
+  progress('admin_entry')
   const { page, editor } = await openAdmin(admin)
+  progress('admin_role_denials')
   await status(owner, adminPath, 403)
   await status(publicEn, adminPath, 401)
 
-  stage = 'stage_preview'
+  progress('stage_original')
   const first = await stagePlan(page, editor, fixture.original, null)
+  progress('preview_original')
   const firstContent = '/' + first.id + '/content'
   const [preview] = await Promise.all([
     page.waitForResponse(response => apiResponse(response, adminPath + '/draft' + firstContent)),
@@ -250,7 +274,7 @@ async function run(browser, fixture) {
   await button(editor, 'Close preview').click()
   checks.push('normal_admin_edit_stages_and_previews_exact_private_png')
 
-  stage = 'deny_before_approval'
+  progress('deny_before_approval')
   check(await button(editor, 'Publish floor plan').isDisabled(), 'OWNER_PERMISSION_REQUIRED_IN_EDITOR')
   await status(admin, adminPath + '/publish', 422, 'POST', { draft_id: first.id, expected_published_id: null })
   await status(admin, adminPath + '/publish', 422, 'POST', {
@@ -263,17 +287,18 @@ async function run(browser, fixture) {
   await status(owner, adminPath + '/draft' + firstContent, 403)
   checks.push('draft_hidden_from_visitor_and_owner_permission_enforced')
 
-  stage = 'publish_first'
+  progress('publish_first')
   await page.bringToFront()
   await publish(page, editor, first, null)
   checks.push('attestation_publishes_same_approved_asset_revision')
 
-  stage = 'public_bilingual'
+  progress('public_english')
   await viewVisitor(enPage, english, first, fixture.original)
+  progress('public_spanish')
   await viewVisitor(esPage, spanish, first, fixture.original)
   checks.push('english_and_spanish_public_mobile_load_only_approved_bytes')
 
-  stage = 'stage_replacement'
+  progress('stage_replacement')
   await page.bringToFront()
   const replacement = await stagePlan(page, editor, fixture.replacement, first.id)
   const replacementContent = '/' + replacement.id + '/content'
@@ -283,7 +308,7 @@ async function run(browser, fixture) {
   await status(publicEn, publicPath + replacementContent, 404)
   checks.push('staging_replacement_keeps_prior_public_and_replacement_private')
 
-  stage = 'withdraw'
+  progress('withdraw')
   await page.bringToFront()
   await button(editor, 'Withdraw published floor plan').click()
   const [withdrawn] = await Promise.all([
@@ -301,25 +326,29 @@ async function run(browser, fixture) {
   await status(publicEs, publicPath + replacementContent, 404)
   checks.push('withdraw_revokes_old_public_url_and_preserves_private_draft')
 
-  stage = 'publish_replacement'
+  progress('publish_replacement')
   await page.bringToFront()
   await publish(page, editor, replacement, null)
   await viewVisitor(esPage, spanish, replacement, fixture.replacement)
   await status(publicEn, publicPath + firstContent, 404)
   check((await publicEn.cookies(api)).length === 0 && (await publicEs.cookies(api)).length === 0, 'ANONYMOUS_BROWSERS_REQUIRED')
   checks.push('replacement_publication_never_restores_withdrawn_old_url')
-  for (const context of [admin, owner, publicEn, publicEs]) await context.close()
 }
 
 let browser
 try {
+  progress('fixture', 5000)
   const fixture = await readFixture()
-  browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--disable-dev-shm-usage'] })
+  progress('browser_launch', 25000)
+  browser = await chromium.launch({ headless: true, timeout: 20_000, args: ['--no-sandbox', '--disable-dev-shm-usage'] })
   await run(browser, fixture)
-  console.log('LISTING_FLOOR_PLAN_BROWSER ' + JSON.stringify({ status: 'PASS', checks }))
 } catch (error) {
-  console.log('LISTING_FLOOR_PLAN_BROWSER_FAILURE ' + stage + ' ' + failureCode(error))
-  process.exitCode = 1
+  reportFailure(failureCode(error))
 } finally {
-  await browser?.close()
+  if (browser) {
+    progress('browser_teardown', 8000)
+    try { await browser.close() } catch { reportFailure('BROWSER_TEARDOWN_FAILED') }
+  }
+  clearTimeout(deadline)
 }
+if (!failed) console.log('LISTING_FLOOR_PLAN_BROWSER ' + JSON.stringify({ status: 'PASS', checks }))

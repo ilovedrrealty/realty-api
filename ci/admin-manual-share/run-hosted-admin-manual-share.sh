@@ -8,7 +8,7 @@ bounded() { timeout --kill-after=8s "$@"; }
 
 [[ $# == 5 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api ]] || die CI_REQUIRED
 [[ ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 && ${GITHUB_RUN_ATTEMPT:-} == 1 ]] || die STANDARD_LINUX_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-listing-floor-plans-browser-ci-20261117 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
+[[ ${GITHUB_REF:-} == refs/heads/codex-listing-floor-plans-browser-ci-20261117-v2 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 
 ops="$1"; frontend="$2"; backend="$3"; migration="$4"; landing_relay="$5"
 [[ "$ops" == "$GITHUB_WORKSPACE/browser-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-base" &&
@@ -19,10 +19,10 @@ for checkout in "$ops" "$frontend" "$backend" "$migration" "$landing_relay"; do
   checkout_status=$(git -C "$checkout" status --porcelain=v1 --untracked-files=all) || die CLEAN_CHECKOUT_REQUIRED
   [[ $(realpath "$checkout") == "$checkout" && -z "$checkout_status" ]] || die CLEAN_CHECKOUT_REQUIRED
 done
-[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == 7264d777d42520f00e79fe16051a647a0e965d6a ]] ||
+[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == 5c94ac6f53f1ef4358a19745e60f4f89f71080a6 ]] ||
   die EXACT_OPERATIONS_PARENT_REQUIRED
 operations_delta=$(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) || die EXACT_OPERATIONS_DELTA_REQUIRED
-[[ "$operations_delta" == $'.github/workflows/admin-manual-share.yml\nci/admin-manual-share/run-hosted-admin-manual-share.sh\nci/admin-manual-share/run-listing-floor-plans.mjs\nci/admin-manual-share/serve_listing_floor_plans_fixture.py' ]] ||
+[[ "$operations_delta" == $'.github/workflows/admin-manual-share.yml\nci/admin-manual-share/run-hosted-admin-manual-share.sh\nci/admin-manual-share/run-listing-floor-plans.mjs' ]] ||
   die EXACT_OPERATIONS_DELTA_REQUIRED
 frontend_commit=74e81bd8680565dc68b532a6b7871fe9b5db2e82
 frontend_tree=29f7e6721a4faf23bfe2c58435a80aef3a770c84
@@ -31,7 +31,7 @@ frontend_test_count=26
 backend_commit=eb0a47c7fe18feb5c0695608bc0ebd6d5c048298
 backend_tree=0ab55d99df8804a1f16a487e8286180b2325d6b6
 migration_head=86fc1b2e4a79
-browser_failure_stages='fixture,auth,admin_entry,stage_preview,deny_before_approval,publish_first,public_bilingual,stage_replacement,withdraw,publish_replacement'
+browser_failure_stages='fixture,browser_launch,auth,admin_entry,admin_find_listing,admin_open_floor_plan,admin_role_denials,stage_original,preview_original,deny_before_approval,publish_first,public_english,public_spanish,stage_replacement,withdraw,publish_replacement,browser_teardown'
 browser_checks=(
   normal_admin_edit_stages_and_previews_exact_private_png
   draft_hidden_from_visitor_and_owner_permission_enforced
@@ -573,7 +573,7 @@ browser=$(bounded 25s docker create "${runtime[@]}" --memory 2g --memory-swap 2g
   "$browser_image" node /rehearsal/run-listing-floor-plans.mjs) || die BROWSER_CREATE_FAILED
 owned "$browser" || die OWNED_BROWSER_REQUIRED
 client_exit=0
-bounded 300s docker start --attach "$browser" >"$state/browser.log" 2>&1 || client_exit=$?
+bounded 160s docker start --attach "$browser" >"$state/browser.log" 2>&1 || client_exit=$?
 container_state=$(bounded 15s docker inspect --format '{{.State.ExitCode}} {{.State.Running}} {{.State.OOMKilled}}' "$browser")
 [[ "$container_state" =~ ^[0-9]+\ (true|false)\ (true|false)$ ]] || die BROWSER_NATIVE_STATE_REQUIRED
 printf 'BROWSER_REHEARSAL_NATIVE client=%s state=%s\n' "$client_exit" "$container_state"
@@ -588,6 +588,12 @@ path = Path(sys.argv[1])
 assert path.stat().st_size <= 131072
 lines = path.read_bytes().splitlines()
 allowed_stages = set(sys.argv[2].split(','))
+stage_marker = b'LISTING_FLOOR_PLAN_BROWSER_STAGE '
+stages = [line[len(stage_marker):] for line in lines if line.startswith(stage_marker)]
+assert len(stages) <= len(allowed_stages) and len(stages) == len(set(stages))
+for stage in stages:
+    assert re.fullmatch(rb'[a-z_]{1,40}', stage) and stage.decode('ascii') in allowed_stages
+    print(stage_marker.decode('ascii') + stage.decode('ascii'))
 failure = b'LISTING_FLOOR_PLAN_BROWSER_FAILURE '
 failures = [line[len(failure):] for line in lines if line.startswith(failure)]
 assert len(failures) <= 1
@@ -602,6 +608,7 @@ matches = [line[len(prefix):] for line in lines if line.startswith(prefix)]
 assert len(matches) == 1 and len(matches[0]) <= 8192
 value = json.loads(matches[0])
 assert value == {'status': 'PASS', 'checks': sys.argv[3:]}
+assert set(stages) == {stage.encode('ascii') for stage in allowed_stages}
 print(prefix.decode('ascii') + json.dumps(value, separators=(',', ':')))
 PY
 [[ "$client_exit" == 0 && "$container_state" == '0 false false' ]] || die NATIVE_BROWSER_FAILED
