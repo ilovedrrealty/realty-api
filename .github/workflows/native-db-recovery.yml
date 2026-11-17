@@ -2,7 +2,7 @@ name: Isolated native database backup and restore rehearsal
 
 on:
   push:
-    branches: [codex-ci-native-db-recovery-20261116-v2]
+    branches: [codex-ci-native-db-recovery-20261117-trades]
 
 permissions:
   contents: read

@@ -8,11 +8,12 @@ from pathlib import Path
 import re
 
 
-CAPTURE_SOURCE = 'a7a221dd971589b2a6fb1cd7fc9e34f663132202f56ce428c69b1290571761db'
+CAPTURE_SOURCE = 'b09d92baa7cf2b06b0c8724c46087d6ff5aa92ac6d4fe1669cf22e9335af71ec'
 FORMAT_SOURCE = 'd5a01eaf052ca03062f7de698936ce8e65726c2f30a85c5b3c0d3e45a94368aa'
 CATALOG_SOURCE = '06b8e6c46068e10845b4e17122906c336cbc704804bb1809f1e2f4b71910920d'
 CAPTURE_NODES = (
-    'TABLES', 'UNSUPPORTED', 'MAX_DUMP', 'MAX_TOC', 'MAX_RECORDS_PER_TABLE', 'PROFILE_COUNTS',
+    'TABLES', 'UNSUPPORTED', 'MAX_DUMP', 'MAX_TOC', 'MAX_RECORDS_PER_TABLE', 'MIN_STRICTLY_PRIVATE_PROFILES',
+    'PROFILE_COUNTS',
     'Stop', 'require', 'pg_environment', 'private_process', 'checked_catalog', 'snapshot_plan',
     'validate_toc', 'pg_dump_credentials', 'capture',
 )

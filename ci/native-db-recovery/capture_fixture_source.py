@@ -19,7 +19,7 @@ import warnings
 TABLES = tuple('activity_log alembic_version anonymous_leads bookings bulk_import_jobs deal_requests '
                'inquiries leads listing_edits listing_events listings pending_users '
                'professional_profile_revisions professional_profiles research_workspaces saved_homes '
-               'settings upgrade_requests users website_settings website_settings_revisions'.split())
+               'settings trade_contact_sources trade_contacts upgrade_requests users website_settings website_settings_revisions'.split())
 
 
 UNSUPPORTED = ('materialized_views', 'foreign_tables', 'partitioned_or_partition_tables')
@@ -32,6 +32,9 @@ MAX_TOC = 1024 * 1024
 
 
 MAX_RECORDS_PER_TABLE = 1_000_000
+
+
+MIN_STRICTLY_PRIVATE_PROFILES = 46
 
 
 PROFILE_COUNTS = """
@@ -152,7 +155,8 @@ def snapshot_plan(cur, sql, catalog_source):
         require(0 <= counts[table] <= MAX_RECORDS_PER_TABLE, 'PUBLIC_ROW_LIMIT')
     cur.execute(PROFILE_COUNTS)
     profiles, profiles_outside_scope = cur.fetchone()
-    require(profiles == counts['professional_profiles'] and profiles_outside_scope == 0, 'PROFILE_PRIVACY_DRIFT')
+    require(profiles == counts['professional_profiles'] and profiles >= MIN_STRICTLY_PRIVATE_PROFILES
+            and profiles_outside_scope == 0, 'PROFILE_PRIVACY_DRIFT')
     return snapshot, {
         'captured_at_utc': captured_at.astimezone(timezone.utc).isoformat(),
         'server_version_num': server, 'alembic_head': HEAD, 'public_catalog_definition_sha256': CATALOG_SHA,

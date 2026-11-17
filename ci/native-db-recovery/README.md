@@ -4,4 +4,6 @@ The fixture runs with PostgreSQL 17.6 in a container with only the loopback inte
 
 The fixture verifies the exact snapshot and its public-table coverage after a second connection commits a row. It exercises TLS and the authenticated password pipe, confirms that an empty table appears in the archive, reads the full archive, and restores the bytes recovered with a synthetic key. It checks restored counts, foreign key enforcement, and row visibility under the restored role and policy. Profile and schema drift must both stop the capture.
 
+This fixture uses the updated 23-table contractual scope. It restores 46 synthetic private profiles and verifies the linked synthetic trade source evidence and both trade tables' privacy controls after restore.
+
 The workflow prints aggregate results and cleanup markers. The POSIX fixture does not exercise the Windows terminal, local Windows permissions, the owner’s encryption key, Google Drive, or production recovery. Those results require separate evidence.

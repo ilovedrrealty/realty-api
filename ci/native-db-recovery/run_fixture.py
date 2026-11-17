@@ -48,7 +48,7 @@ def make_fixture(config, tables, password):
             cursor.execute('CREATE DATABASE fixture_restore')
             cursor.execute('CREATE ROLE fixture_owner LOGIN SUPERUSER PASSWORD %s', (password,))
             cursor.execute('CREATE ROLE fixture_reader NOLOGIN')
-    special = {'users', 'leads', 'alembic_version', 'professional_profiles'}
+    special = {'users', 'leads', 'alembic_version', 'professional_profiles', 'trade_contacts', 'trade_contact_sources'}
     with closing(psycopg2.connect(**config)) as source, source, source.cursor() as cursor:
         for table in sorted(set(tables) - special):
             identifier = sql.Identifier(table)
@@ -73,6 +73,28 @@ def make_fixture(config, tables, password):
             );
             INSERT INTO public.professional_profiles VALUES
               (1, NULL, 'draft', 'hidden', NULL, NULL, '{"public_contact_consent":false}'::jsonb);
+            INSERT INTO public.professional_profiles
+              SELECT id, NULL, 'draft', 'hidden', NULL, NULL, '{"public_contact_consent":false}'::jsonb
+              FROM generate_series(2, 46) AS profiles(id);
+            CREATE TABLE public.trade_contacts (
+              id uuid PRIMARY KEY, identity_key char(64) NOT NULL UNIQUE, name text NOT NULL,
+              category text NOT NULL, province text, locality text, details jsonb NOT NULL,
+              created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now()
+            );
+            CREATE TABLE public.trade_contact_sources (
+              id uuid PRIMARY KEY, contact_id uuid NOT NULL REFERENCES public.trade_contacts(id) ON DELETE CASCADE,
+              source_key char(64) NOT NULL, evidence jsonb NOT NULL,
+              created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now(),
+              CONSTRAINT uq_trade_contact_source UNIQUE (contact_id, source_key)
+            );
+            ALTER TABLE public.trade_contacts ENABLE ROW LEVEL SECURITY;
+            ALTER TABLE public.trade_contact_sources ENABLE ROW LEVEL SECURITY;
+            INSERT INTO public.trade_contacts (id, identity_key, name, category, details) VALUES
+              ('00000000-0000-4000-8000-000000000001', repeat('a', 64), 'Synthetic fixture company', 'Fixture',
+               '{"status":"test"}'::jsonb);
+            INSERT INTO public.trade_contact_sources (id,contact_id,source_key,evidence) VALUES
+              ('00000000-0000-4000-8000-000000000002','00000000-0000-4000-8000-000000000001',
+               repeat('b', 64), '{"source":"synthetic"}'::jsonb);
         ''')
 
 
@@ -104,6 +126,13 @@ def verify_restored(config, tables, expected):
         require(actual == expected and actual[EMPTY_TABLE] == 0, 'RESTORED_TABLE_COUNTS')
         cursor.execute('SELECT id FROM public.leads ORDER BY id')
         require(cursor.fetchall() == [(1,)], 'NEW_COMMIT_APPEARED_IN_RESTORE')
+        cursor.execute('''SELECT c.details, s.evidence
+            FROM public.trade_contacts c JOIN public.trade_contact_sources s ON s.contact_id=c.id''')
+        require(cursor.fetchall() == [({'status': 'test'}, {'source': 'synthetic'})], 'RESTORED_TRADE_EVIDENCE_MISMATCH')
+        cursor.execute("""SELECT count(*) FROM pg_class relation JOIN pg_namespace schema ON schema.oid=relation.relnamespace
+            WHERE schema.nspname='public' AND relation.relname IN ('trade_contacts', 'trade_contact_sources')
+              AND relation.relrowsecurity AND NOT has_table_privilege('fixture_reader', relation.oid, 'SELECT')""")
+        require(cursor.fetchone() == (2,), 'RESTORED_TRADE_PRIVACY_MISMATCH')
         cursor.execute('SET LOCAL ROLE fixture_reader')
         for reader, expected_visible in (('1', 1), ('2', 0)):
             cursor.execute("SELECT set_config('fixture.reader_id', %s, true)", (reader,))
@@ -177,8 +206,10 @@ def main():
     require(observed == {'concurrent_commit', 'password_pipe', 'empty_table_toc', 'full_decode_discarded'},
             'CAPTURE_BOUNDARY_INCOMPLETE')
     counts = report['public_table_record_counts']
-    require(len(counts) == 21 and counts == {table: int(table != EMPTY_TABLE) for table in helper.TABLES}
-            and report['strictly_private_profile_count'] == 1 and report['verified_tls'] is True,
+    expected = {table: int(table != EMPTY_TABLE) for table in helper.TABLES}
+    expected['professional_profiles'] = 46
+    require(len(counts) == 23 and counts == expected
+            and report['strictly_private_profile_count'] == 46 and report['verified_tls'] is True,
             'SYNTHETIC_CAPTURE_METADATA_MISMATCH')
     key = rsa.generate_private_key(public_exponent=65537, key_size=3072)
     ciphertext = archive_format.seal(dump, key.public_key())
@@ -209,7 +240,8 @@ def main():
               'same_snapshot_excludes_second_session_commit': True, 'authenticated_loopback_tls': True,
               'password_through_unnamed_local_pipe': True, 'empty_table_in_toc': True, 'all_data_parsed': True,
               'synthetic_key_recovered_exact_archive': True, 'tampered_ciphertext_rejected': True,
-              'restored_counts_fk_and_role_rls': True, 'profile_guard_failed_closed': True,
+              'restored_counts_fk_and_role_rls': True, 'restored_private_trade_evidence': True,
+              'restored_private_profiles_count': counts['professional_profiles'], 'profile_guard_failed_closed': True,
               'catalog_guard_failed_closed': True, 'windows_owner_console_or_acl_exercised': False}
     print('NATIVE_DB_RECOVERY_SYNTHETIC ' + json.dumps(result, sort_keys=True, separators=(',', ':')))
 
