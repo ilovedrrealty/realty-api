@@ -1,4 +1,4 @@
-"""Run private referrals and inherited cases in nonce-bound PostgreSQL fixtures."""
+"""Run editorial and inherited cases in nonce-bound PostgreSQL fixtures."""
 
 from contextlib import closing
 from hashlib import sha256
@@ -18,6 +18,7 @@ CORE_HEAD = "6c942ea8385d"
 DOC_HEAD = "de248ab5c9f3"
 REFERRAL_HEAD = "e12ac7d49f03"
 DOC_SHAPE = "43edab887dd816c5b2bedfbe95fed18fb2dec4a7e4c436242b134e849d34daba"
+REFERRAL_SHAPE = "76eafd85ceb2e126f02efe903cc553297e0ee14622d6f1a4bab6ef70213675cf"
 CORE_TABLES = (
     "transaction_rooms", "transaction_room_events", "transaction_room_grants",
     "transaction_room_milestones", "transaction_room_tasks",
@@ -26,13 +27,14 @@ DOC_TABLES = ("transaction_documents", "transaction_document_versions")
 REFERRAL_TABLES = ("network_service_referrals", "network_service_referral_events")
 PRIVATE_TABLES = CORE_TABLES + DOC_TABLES + REFERRAL_TABLES
 TRIGGERS = ("transaction_room_events_immutable", "transaction_room_lead_changed")
-MODES = {"baseline", "fresh", "upgrade", "core", "documents", "adapter", "service", "referrals"}
+MODES = {"baseline", "fresh", "upgrade", "core", "documents", "adapter", "service", "referrals", "editorial"}
 TESTS = {
     "core": ("test_transaction_room.py", 9),
     "documents": ("test_transaction_documents.py", 3),
     "adapter": ("test_transaction_document_storage.py", 7),
     "service": ("test_service_workflow.py", 35),
     "referrals": ("test_service_referrals.py", 5),
+    "editorial": ("test_editorial.py", 10),
 }
 TEST_DB = "ildr_platform_test_20261025"
 HOST = "127.0.0.1"
@@ -160,7 +162,9 @@ def check_test_schema_cleanup():
     global stage
     stage = "test_cleanup"
     with closing(connect(TEST_DB)) as conn, conn.cursor() as cursor:
-        cursor.execute("SELECT count(*) FROM pg_namespace WHERE nspname ~ '^(transaction_room_test_|service_test_)'")
+        cursor.execute("""
+            SELECT count(*) FROM pg_namespace WHERE nspname ~ '^(transaction_room_test_|service_test_|editorial_test_)'
+        """)
         check(cursor.fetchone() == (0,))
 
 
@@ -262,7 +266,9 @@ def migrate(mode, database, nonce):
     check(catalog(database, inherited_tables, present=True) == DOC_SHAPE)
     if mode == "upgrade":
         sentinel(database, nonce)
-    return REFERRAL_HEAD, len(PRIVATE_TABLES), catalog(database, PRIVATE_TABLES, present=True)
+    shape = catalog(database, PRIVATE_TABLES, present=True)
+    check(shape == REFERRAL_SHAPE)
+    return REFERRAL_HEAD, len(PRIVATE_TABLES), shape
 
 
 def run(mode, nonce, commit, tree):
@@ -278,7 +284,7 @@ def run(mode, nonce, commit, tree):
         database = {
             "baseline": f"ildr_s03_upgrade_{nonce}", "fresh": f"ildr_s03_fresh_{nonce}",
             "upgrade": f"ildr_s03_upgrade_{nonce}", "core": TEST_DB, "documents": TEST_DB,
-            "service": TEST_DB, "referrals": TEST_DB,
+            "service": TEST_DB, "referrals": TEST_DB, "editorial": TEST_DB,
         }[mode]
         stage = "disposable_db"
         check_database(database, nonce, BASELINE_HEAD if mode == "upgrade" else None)
