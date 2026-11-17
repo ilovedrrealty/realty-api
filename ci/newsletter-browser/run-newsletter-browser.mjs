@@ -1,0 +1,303 @@
+import assert from 'node:assert/strict'
+import { readFile, readdir, stat } from 'node:fs/promises'
+import { chromium } from 'playwright-core'
+
+const ORIGIN = 'http://127.0.0.1:8917'
+const API = 'http://127.0.0.1:8918'
+const TOKEN = /[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}\.[0-9a-f]{64}/
+const emails = { en: 'newsletter-browser-en@example.com', es: 'newsletter-browser-es@example.com' }
+const copy = {
+  en: {
+    email: 'Email address', consent: 'I agree to receive property updates and guides by email from I Love DR Realty. I can unsubscribe at any time.',
+    submit: 'Request a free subscription', accepted: 'Request received. If your address needs confirmation, look for our email in your inbox or spam folder. Open the link and confirm to finish.',
+    heading: 'Newsletter preferences', confirm: 'Confirm subscription', unsubscribe: 'Unsubscribe',
+    subscribed: 'Your newsletter subscription is confirmed.', unsubscribed: 'You’re unsubscribed from the newsletter.',
+    invalid: 'This link is invalid or has expired. Use the link from your most recent newsletter email.',
+  },
+  es: {
+    email: 'Correo electrónico', consent: 'Acepto recibir por correo electrónico novedades inmobiliarias y guías de I Love DR Realty. Puedo cancelar mi suscripción en cualquier momento.',
+    submit: 'Solicitar una suscripción gratuita', accepted: 'Recibimos tu solicitud. Si tu dirección requiere confirmación, busca nuestro correo en tu bandeja de entrada o en correo no deseado. Abre el enlace y confirma para completar la suscripción.',
+    heading: 'Preferencias del boletín', confirm: 'Confirmar suscripción', unsubscribe: 'Cancelar suscripción',
+    subscribed: 'Confirmamos tu suscripción al boletín.', unsubscribed: 'Cancelamos tu suscripción al boletín.',
+    invalid: 'Este enlace no es válido o ha vencido. Usa el enlace de tu correo más reciente del boletín.',
+  },
+}
+const checks = []
+let stage = 'fixture'
+let browser
+const contexts = []
+const advance = name => { stage = name }
+
+async function links() {
+  const path = '/browser-fixtures/mail-links.json'
+  const info = await stat(path)
+  assert.equal(info.mode & 0o777, 0o600)
+  assert.ok(info.isFile() && info.size <= 4096)
+  const parsed = JSON.parse(await readFile(path, 'utf8'))
+  assert.deepEqual(Object.keys(parsed), ['deliveries'])
+  for (const [lang, delivery] of Object.entries(parsed.deliveries)) {
+    assert.ok(lang in emails)
+    assert.deepEqual(Object.keys(delivery).sort(), ['confirm', 'unsubscribe'])
+    for (const [action, value] of Object.entries(delivery)) {
+      const url = new URL(value)
+      assert.equal(url.origin, ORIGIN)
+      assert.equal(url.pathname, '/newsletter/')
+      assert.equal(url.search, '')
+      assert.ok(new RegExp(`^#${action}=`).test(url.hash))
+      const token = url.hash.split('=')[1]
+      assert.equal(token.length, 101)
+      assert.ok(new RegExp(`^${TOKEN.source}$`).test(token))
+    }
+  }
+  return parsed.deliveries
+}
+
+async function db(context) {
+  const result = await context.request.get(API + '/__newsletter_fixture__/state')
+  assert.equal(result.status(), 200)
+  const value = await result.json()
+  assert.deepEqual(Object.keys(value).sort(), ['customer_accounts', 'inquiries', 'leads', 'mail_count', 'rows'])
+  assert.equal(value.customer_accounts, 0)
+  assert.equal(value.leads, 0)
+  assert.equal(value.inquiries, 0)
+  return value
+}
+
+async function expectRow(context, lang, status, mailCount) {
+  const current = await db(context)
+  assert.equal(current.mail_count, mailCount)
+  assert.deepEqual(current.rows[lang], {
+    status, consent: true, confirmed: status !== 'pending', left: status === 'unsubscribed',
+    provider_accepted: status !== 'unsubscribed',
+  })
+}
+
+async function safeResponse(response, expectedCode, expectedBody) {
+  assert.equal(response.status(), expectedCode)
+  const headers = response.headers()
+  assert.equal(headers['cache-control'], 'no-store')
+  assert.equal(headers['referrer-policy'], 'no-referrer')
+  assert.equal(headers['set-cookie'], undefined)
+  assert.deepEqual(await response.json(), expectedBody)
+}
+
+async function mobileBox(page, locator, minimumHeight = 44) {
+  const box = await locator.boundingBox()
+  assert.ok(box && box.width >= 35 && box.height >= minimumHeight && box.x >= 0 && box.x + box.width <= 391)
+  assert.ok(await page.evaluate(() => window.innerWidth === 390 && navigator.maxTouchPoints > 0
+    && document.documentElement.scrollWidth <= 391))
+}
+
+async function newMobile(lang, actionPage) {
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 }, screen: { width: 390, height: 844 },
+    isMobile: true, hasTouch: true, deviceScaleFactor: 1, locale: lang === 'es' ? 'es-DO' : 'en-US',
+    serviceWorkers: 'block', acceptDownloads: false,
+  })
+  contexts.push(context)
+  await context.addInitScript(locale => { localStorage.setItem('ildr_lang', locale) }, lang)
+  const events = { posts: [], external: 0, localRefused: 0, errors: 0 }
+  await context.route('**/*', async route => {
+    const request = route.request()
+    const url = new URL(request.url())
+    assert.ok(!TOKEN.test(request.url()))
+    const headers = await request.allHeaders()
+    assert.ok(!TOKEN.test(headers.referer ?? ''))
+    assert.equal(headers.cookie, undefined)
+    assert.equal(headers.authorization, undefined)
+    if (url.origin !== ORIGIN && url.origin !== API) {
+      events.external += 1
+      return route.abort('blockedbyclient')
+    }
+    if (url.origin === API && !['GET', 'HEAD', 'OPTIONS'].includes(request.method())) {
+      if (!/^\/newsletter\/(subscribe|confirm|unsubscribe)$/.test(url.pathname)) {
+        events.localRefused += 1
+        return route.abort('blockedbyclient')
+      }
+      assert.equal(url.search, '')
+      assert.equal(headers.referer, undefined)
+      assert.equal(headers['content-type'], 'application/json')
+      events.posts.push({ path: url.pathname, body: request.postDataJSON() })
+    }
+    return route.continue()
+  })
+  const page = await context.newPage()
+  page.setDefaultTimeout(10000)
+  page.on('pageerror', () => { events.errors += 1 })
+  return { context, page, events, actionPage }
+}
+
+async function openAction(test, lang, url, action, status, mailCount) {
+  const { page, context, events } = test
+  const before = events.posts.length
+  // A fresh document matters: same-document fragment navigation intentionally
+  // does not reinitialize the component's one-use in-memory action token.
+  await page.goto('about:blank')
+  const response = await page.goto(url, { waitUntil: 'networkidle' })
+  assert.equal(response.status(), 200)
+  await page.getByRole('heading', { name: copy[lang].heading, exact: true }).waitFor()
+  const button = page.getByRole('button', { name: copy[lang][action], exact: true })
+  await button.waitFor()
+  assert.ok(await button.isEnabled())
+  assert.equal(page.url(), ORIGIN + '/newsletter/')
+  assert.equal(events.posts.length, before)
+  assert.equal(events.external, 0)
+  assert.equal(events.localRefused, 0)
+  assert.equal(events.errors, 0)
+  assert.deepEqual(await context.cookies(), [])
+  const storage = await page.evaluate(() => ({
+    local: Object.fromEntries(Object.keys(localStorage).map(key => [key, localStorage.getItem(key)])),
+    session: Object.fromEntries(Object.keys(sessionStorage).map(key => [key, sessionStorage.getItem(key)])),
+  }))
+  assert.deepEqual(storage, { local: { ildr_lang: lang }, session: {} })
+  await mobileBox(page, button, 48)
+  await mobileBox(page, page.getByRole('button', { name: 'English', exact: true }))
+  await mobileBox(page, page.getByRole('button', { name: 'Español', exact: true }))
+  await expectRow(context, lang, status, mailCount)
+  return button
+}
+
+async function clickAction(test, lang, button, action, status, mailCount) {
+  const before = test.events.posts.length
+  const [response] = await Promise.all([
+    test.page.waitForResponse(value => value.url() === API + '/newsletter/' + action
+      && value.request().method() === 'POST'),
+    button.click(),
+  ])
+  await safeResponse(response, 200, { status })
+  await test.page.getByRole('status').filter({ hasText: copy[lang][status] }).waitFor()
+  assert.equal(test.events.posts.length, before + 1)
+  assert.deepEqual(Object.keys(test.events.posts.at(-1).body), ['token'])
+  assert.ok(TOKEN.test(test.events.posts.at(-1).body.token))
+  assert.equal(test.page.url(), ORIGIN + '/newsletter/')
+  await expectRow(test.context, lang, status, mailCount)
+}
+
+try {
+  assert.equal(process.platform, 'linux')
+  assert.equal(process.env.GITHUB_ACTIONS, 'true')
+  assert.equal(process.env.GITHUB_REPOSITORY, 'ilovedrrealty/realty-api')
+  assert.deepEqual(await readdir('/sys/class/net'), ['lo'])
+  assert.deepEqual(await links(), {})
+  advance('browser_launch')
+  browser = await chromium.launch({ headless: true, timeout: 20000,
+    args: ['--no-sandbox', '--disable-dev-shm-usage'] })
+
+  for (const [index, lang] of ['en', 'es'].entries()) {
+    const mailCount = index + 1
+    advance('signup_' + lang)
+    const signup = await newMobile(lang, false)
+    const { context, page, events } = signup
+    const before = await db(context)
+    assert.equal(before.mail_count, index)
+    assert.equal(before.rows[lang], undefined)
+    await page.goto(ORIGIN + '/blog/', { waitUntil: 'networkidle' })
+    const input = page.getByRole('textbox', { name: copy[lang].email, exact: true })
+    await input.fill(emails[lang])
+    const form = input.locator('xpath=ancestor::form')
+    const submit = form.getByRole('button', { name: copy[lang].submit, exact: true })
+    const consent = form.getByRole('checkbox', { name: copy[lang].consent, exact: true })
+    assert.equal(await consent.isChecked(), false)
+    assert.equal(await submit.isDisabled(), true)
+    await input.press('Enter')
+    await page.waitForTimeout(180)
+    assert.equal(events.posts.length, 0)
+    assert.deepEqual(await db(context), before)
+    const missing = await context.request.post(API + '/newsletter/subscribe', {
+      data: { email: emails[lang], language: lang }, headers: { Origin: ORIGIN },
+    })
+    await safeResponse(missing, 400, { detail: 'Check your newsletter request' })
+    assert.deepEqual(await db(context), before)
+    await consent.check()
+    assert.equal(await submit.isEnabled(), true)
+    await submit.scrollIntoViewIfNeeded()
+    await mobileBox(page, submit, 48)
+    await mobileBox(page, input, 48)
+    const [accepted] = await Promise.all([
+      page.waitForResponse(value => value.url() === API + '/newsletter/subscribe'
+        && value.request().method() === 'POST'),
+      submit.click(),
+    ])
+    await safeResponse(accepted, 202, { status: 'accepted' })
+    await form.getByRole('status').filter({ hasText: copy[lang].accepted }).waitFor()
+    assert.deepEqual(events.posts, [{ path: '/newsletter/subscribe', body: { email: emails[lang], consent: true, language: lang } }])
+    assert.equal(await input.inputValue(), '')
+    assert.equal(await consent.isChecked(), false)
+    await expectRow(context, lang, 'pending', mailCount)
+    const repeated = await context.request.post(API + '/newsletter/subscribe', {
+      data: { email: emails[lang], language: lang, consent: true }, headers: { Origin: ORIGIN },
+    })
+    await safeResponse(repeated, 202, { status: 'accepted' })
+    await expectRow(context, lang, 'pending', mailCount)
+    const delivery = (await links())[lang]
+    assert.ok(delivery)
+    checks.push('mobile_' + lang + '_explicit_consent_and_pending_state')
+    checks.push('mobile_' + lang + '_same_request_no_duplicate_email')
+    await context.close()
+
+    const action = await newMobile(lang, true)
+    advance('confirm_' + lang)
+    const noActionGet = await action.context.request.get(API + '/newsletter/confirm')
+    assert.equal(noActionGet.status(), 405)
+    await expectRow(action.context, lang, 'pending', mailCount)
+    const confirm = await openAction(action, lang, delivery.confirm, 'confirm', 'pending', mailCount)
+    await clickAction(action, lang, confirm, 'confirm', 'subscribed', mailCount)
+    const confirmAgain = await openAction(action, lang, delivery.confirm, 'confirm', 'subscribed', mailCount)
+    await clickAction(action, lang, confirmAgain, 'confirm', 'subscribed', mailCount)
+    checks.push('mobile_' + lang + '_real_email_link_requires_human_confirmation')
+    checks.push('mobile_' + lang + '_confirmation_repeat_is_idempotent')
+
+    advance('unsubscribe_' + lang)
+    const unsubscribeGet = await action.context.request.get(API + '/newsletter/unsubscribe')
+    assert.equal(unsubscribeGet.status(), 405)
+    await expectRow(action.context, lang, 'subscribed', mailCount)
+    const unsubscribe = await openAction(action, lang, delivery.unsubscribe, 'unsubscribe', 'subscribed', mailCount)
+    await clickAction(action, lang, unsubscribe, 'unsubscribe', 'unsubscribed', mailCount)
+    const unsubscribeAgain = await openAction(action, lang, delivery.unsubscribe, 'unsubscribe', 'unsubscribed', mailCount)
+    await clickAction(action, lang, unsubscribeAgain, 'unsubscribe', 'unsubscribed', mailCount)
+    checks.push('mobile_' + lang + '_unsubscribe_get_no_effect_explicit_action_required')
+    checks.push('mobile_' + lang + '_unsubscribe_repeat_is_idempotent')
+
+    advance('privacy_' + lang)
+    const invalidated = await openAction(action, lang, delivery.confirm, 'confirm', 'unsubscribed', mailCount)
+    const [refused] = await Promise.all([
+      action.page.waitForResponse(value => value.url() === API + '/newsletter/confirm'
+        && value.request().method() === 'POST'), invalidated.click(),
+    ])
+    await safeResponse(refused, 400, { detail: 'The newsletter link is invalid or has expired' })
+    await action.page.getByRole('alert').filter({ hasText: copy[lang].invalid }).waitFor()
+    await expectRow(action.context, lang, 'unsubscribed', mailCount)
+    assert.equal(action.events.posts.length, 5)
+    assert.equal(action.events.external, 0)
+    assert.equal(action.events.localRefused, 0)
+    assert.equal(action.events.errors, 0)
+    assert.deepEqual(await action.context.cookies(), [])
+    checks.push('mobile_' + lang + '_tokens_scrubbed_no_tracking_no_accounts')
+    checks.push('mobile_' + lang + '_unsubscribe_revokes_prior_confirmation')
+    if (lang === 'es') {
+      const final = await db(action.context)
+      assert.deepEqual(Object.keys(final.rows).sort(), ['en', 'es'])
+      assert.equal(final.mail_count, 2)
+      assert.ok(Object.values(final.rows).every(row => row.status === 'unsubscribed'))
+      assert.equal(Object.keys(await links()).length, 2)
+    }
+    await action.context.close()
+  }
+  advance('browser_teardown')
+  await browser.close()
+  browser = undefined
+  assert.equal(checks.length, 16)
+  console.log('NEWSLETTER_BROWSER_ACCEPTANCE ' + JSON.stringify({
+    checks, viewport: 390, locales: ['en', 'es'], mail_messages: 2, live_messages: 0,
+    application: '4c4d2a71f406a7d552cc2e00a38f346b180fcf45',
+    frontend: '4d0a99e0bef524fe00eab5f2c0916d91768a4efb',
+    authoritative_rows: 2, final_status: 'unsubscribed', action_external_requests: 0,
+  }))
+} catch (error) {
+  const kind = /^[A-Za-z][A-Za-z0-9_]{0,62}$/.test(error?.name ?? '') ? error.name : 'UnhandledError'
+  console.log('NEWSLETTER_BROWSER_FAILURE ' + JSON.stringify({ stage, error_type: kind }))
+  process.exitCode = 1
+} finally {
+  for (const context of contexts) await context.close().catch(() => {})
+  if (browser) await browser.close().catch(() => {})
+}
