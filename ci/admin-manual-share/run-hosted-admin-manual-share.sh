@@ -8,7 +8,7 @@ bounded() { timeout --kill-after=8s "$@"; }
 
 [[ $# == 5 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api ]] || die CI_REQUIRED
 [[ ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 && ${GITHUB_RUN_ATTEMPT:-} == 1 ]] || die STANDARD_LINUX_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-listing-floor-plans-browser-ci-20261117-v2 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
+[[ ${GITHUB_REF:-} == refs/heads/codex-listing-floor-plans-browser-ci-20261117-v3 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 
 ops="$1"; frontend="$2"; backend="$3"; migration="$4"; landing_relay="$5"
 [[ "$ops" == "$GITHUB_WORKSPACE/browser-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-base" &&
@@ -19,7 +19,7 @@ for checkout in "$ops" "$frontend" "$backend" "$migration" "$landing_relay"; do
   checkout_status=$(git -C "$checkout" status --porcelain=v1 --untracked-files=all) || die CLEAN_CHECKOUT_REQUIRED
   [[ $(realpath "$checkout") == "$checkout" && -z "$checkout_status" ]] || die CLEAN_CHECKOUT_REQUIRED
 done
-[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == 5c94ac6f53f1ef4358a19745e60f4f89f71080a6 ]] ||
+[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == 010deb48aae73bb969689e3640d698088ae69aa1 ]] ||
   die EXACT_OPERATIONS_PARENT_REQUIRED
 operations_delta=$(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) || die EXACT_OPERATIONS_DELTA_REQUIRED
 [[ "$operations_delta" == $'.github/workflows/admin-manual-share.yml\nci/admin-manual-share/run-hosted-admin-manual-share.sh\nci/admin-manual-share/run-listing-floor-plans.mjs' ]] ||
@@ -31,7 +31,7 @@ frontend_test_count=26
 backend_commit=eb0a47c7fe18feb5c0695608bc0ebd6d5c048298
 backend_tree=0ab55d99df8804a1f16a487e8286180b2325d6b6
 migration_head=86fc1b2e4a79
-browser_failure_stages='fixture,browser_launch,auth,admin_entry,admin_find_listing,admin_open_floor_plan,admin_role_denials,stage_original,preview_original,deny_before_approval,publish_first,public_english,public_spanish,stage_replacement,withdraw,publish_replacement,browser_teardown'
+browser_failure_stages='fixture,browser_launch,auth,admin_entry,admin_find_listing,admin_open_floor_plan,admin_role_denials,stage_original,preview_original,unchecked_publish_button,deny_missing_attestation,deny_false_attestation,public_unpublished_navigation,deny_draft_bytes,publish_first,public_english,public_spanish,stage_replacement,withdraw,publish_replacement,browser_teardown'
 browser_checks=(
   normal_admin_edit_stages_and_previews_exact_private_png
   draft_hidden_from_visitor_and_owner_permission_enforced
@@ -594,6 +594,12 @@ assert len(stages) <= len(allowed_stages) and len(stages) == len(set(stages))
 for stage in stages:
     assert re.fullmatch(rb'[a-z_]{1,40}', stage) and stage.decode('ascii') in allowed_stages
     print(stage_marker.decode('ascii') + stage.decode('ascii'))
+geometry_marker = b'LISTING_FLOOR_PLAN_BROWSER_GEOMETRY '
+geometries = [line[len(geometry_marker):] for line in lines if line.startswith(geometry_marker)]
+assert len(geometries) <= 4
+for geometry in geometries:
+    assert re.fullmatch(rb'(?:public_english|public_spanish|stage_replacement|publish_replacement)(?: -?[0-9]{1,4}){6}', geometry)
+    print(geometry_marker.decode('ascii') + geometry.decode('ascii'))
 failure = b'LISTING_FLOOR_PLAN_BROWSER_FAILURE '
 failures = [line[len(failure):] for line in lines if line.startswith(failure)]
 assert len(failures) <= 1
@@ -609,6 +615,7 @@ assert len(matches) == 1 and len(matches[0]) <= 8192
 value = json.loads(matches[0])
 assert value == {'status': 'PASS', 'checks': sys.argv[3:]}
 assert set(stages) == {stage.encode('ascii') for stage in allowed_stages}
+assert len(geometries) == 4
 print(prefix.decode('ascii') + json.dumps(value, separators=(',', ':')))
 PY
 [[ "$client_exit" == 0 && "$container_state" == '0 false false' ]] || die NATIVE_BROWSER_FAILED

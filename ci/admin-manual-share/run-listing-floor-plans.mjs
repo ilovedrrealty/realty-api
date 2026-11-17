@@ -93,7 +93,6 @@ async function status(context, path, expected, method = 'GET', data) {
   try {
     current(response)
     check(response.status() === expected, 'EXACT_SCOPED_ACCESS_STATUS_REQUIRED')
-    return await response.json()
   } finally {
     await response.dispose()
   }
@@ -195,18 +194,31 @@ async function shownImage(region, label, expected) {
   }, [expected.width, expected.height]), 'EXACT_APPROVED_BLOB_IMAGE_REQUIRED')
 }
 
+async function transmittedHeaders(request) {
+  let timer
+  try {
+    return await Promise.race([
+      request.allHeaders(),
+      new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new CheckFailure('TRANSMITTED_HEADERS_DEADLINE')), 6000)
+      }),
+    ])
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 async function openVisitor(page, statusCode) {
-  await page.bringToFront()
   const [metadata, route] = await Promise.all([
-    page.waitForResponse(response => apiResponse(response, publicPath)),
-    page.goto(landing + listingPath, { waitUntil: 'domcontentloaded' }),
+    page.waitForResponse(response => apiResponse(response, publicPath), { timeout: 12_000 }),
+    page.goto(landing + listingPath, { waitUntil: 'domcontentloaded', timeout: 12_000 }),
   ])
   current(metadata)
-  const headers = await metadata.request().allHeaders()
+  const headers = await transmittedHeaders(metadata.request())
   check(route?.status() === 200 && metadata.status() === statusCode && !headers.cookie && !headers.authorization,
     'REAL_ANONYMOUS_STATIC_DETAIL_REQUIRED')
   await control(page, 'heading', listingTitle).waitFor()
-  return metadata.json()
+  return statusCode === 200 ? metadata.json() : null
 }
 
 async function viewVisitor(page, copy, published, expected) {
@@ -224,6 +236,10 @@ async function viewVisitor(page, copy, published, expected) {
     screen: document.documentElement.clientWidth, content: document.documentElement.scrollWidth, touch: navigator.maxTouchPoints,
   }))
   const box = await open.boundingBox()
+  console.log('LISTING_FLOOR_PLAN_BROWSER_GEOMETRY ' + stage + ' ' + [
+    dimensions.screen, dimensions.content, dimensions.touch,
+    box ? Math.round(box.x) : -1, box ? Math.round(box.x + box.width) : -1, box ? Math.round(box.height) : -1,
+  ].join(' '))
   check(dimensions.screen === 390 && dimensions.content <= 391 && dimensions.touch > 0
     && box && box.x >= -1 && box.x + box.width <= 391 && box.height >= 43, 'MOBILE_IMAGE_CONTROL_REQUIRED')
   await button(region, copy.close).click()
@@ -252,8 +268,6 @@ async function run(browser, fixture) {
   const owner = await session(browser, { account: fixture.owner })
   const publicEn = await session(browser, { mobile: true })
   const publicEs = await session(browser, { locale: 'es', mobile: true })
-  const enPage = await publicEn.newPage()
-  const esPage = await publicEs.newPage()
 
   progress('admin_entry')
   const { page, editor } = await openAdmin(admin)
@@ -274,14 +288,19 @@ async function run(browser, fixture) {
   await button(editor, 'Close preview').click()
   checks.push('normal_admin_edit_stages_and_previews_exact_private_png')
 
-  progress('deny_before_approval')
+  progress('unchecked_publish_button')
   check(await button(editor, 'Publish floor plan').isDisabled(), 'OWNER_PERMISSION_REQUIRED_IN_EDITOR')
+  progress('deny_missing_attestation')
   await status(admin, adminPath + '/publish', 422, 'POST', { draft_id: first.id, expected_published_id: null })
+  progress('deny_false_attestation')
   await status(admin, adminPath + '/publish', 422, 'POST', {
     draft_id: first.id, expected_published_id: null, owner_permission_confirmed: false,
   })
+  progress('public_unpublished_navigation')
+  const enPage = await publicEn.newPage()
   await openVisitor(enPage, 404)
   check(await button(enPage, english.view).count() === 0, 'DRAFT_ACTION_MUST_NOT_APPEAR')
+  progress('deny_draft_bytes')
   await status(publicEn, publicPath + firstContent, 404)
   await status(publicEn, adminPath + '/draft' + firstContent, 401)
   await status(owner, adminPath + '/draft' + firstContent, 403)
@@ -295,6 +314,7 @@ async function run(browser, fixture) {
   progress('public_english')
   await viewVisitor(enPage, english, first, fixture.original)
   progress('public_spanish')
+  const esPage = await publicEs.newPage()
   await viewVisitor(esPage, spanish, first, fixture.original)
   checks.push('english_and_spanish_public_mobile_load_only_approved_bytes')
 
