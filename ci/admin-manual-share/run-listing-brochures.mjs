@@ -1,4 +1,4 @@
-import { lstat, readFile, readdir } from 'node:fs/promises'
+import { lstat, readFile, readdir, realpath } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { inflateSync } from 'node:zlib'
 import { chromium } from 'playwright-core'
@@ -89,22 +89,18 @@ async function exterior(page, locale) {
 }
 
 async function readPdf(download, locale) {
+  stage = locale + '_pdf_file'
   const { PDFArray, PDFDict, PDFDocument, PDFName, PDFString } = require('/package-source/pdf-lib')
   check(download.suggestedFilename() === 'ilovedrrealty-' + id + '-' + locale + '.pdf',
     'EXACT_PDF_FILENAME_REQUIRED')
-  const stream = await download.createReadStream()
-  const chunks = []
-  let total = 0
-  for await (const part of stream) {
-    total += part.length
-    if (total > 96 * 1024) {
-      stream.destroy()
-      throw new CheckFailure('PDF_SIZE_LIMIT_EXCEEDED')
-    }
-    chunks.push(part)
-  }
-  const bytes = Buffer.concat(chunks)
-  check(bytes.length >= 1500 && bytes.subarray(0, 5).toString('ascii') === '%PDF-', 'ACTUAL_PDF_DOWNLOAD_REQUIRED')
+  check(await download.failure() === null, 'NATIVE_ATTACHMENT_MUST_COMPLETE')
+  const file = await download.path()
+  check(file.startsWith('/tmp/') && await realpath(file) === file, 'OWNED_DOWNLOAD_FILE_REQUIRED')
+  const stat = await lstat(file)
+  check(stat.isFile() && stat.size >= 1500 && stat.size <= 96 * 1024, 'BOUND_PDF_ATTACHMENT_REQUIRED')
+  const bytes = await readFile(file)
+  check(bytes.length === stat.size && bytes.subarray(0, 5).toString('ascii') === '%PDF-', 'ACTUAL_PDF_DOWNLOAD_REQUIRED')
+  stage = locale + '_pdf_parse'
   const pdf = await PDFDocument.load(bytes)
   check(pdf.getPageCount() === 1 && pdf.getPage(0).getWidth() === 612 && pdf.getPage(0).getHeight() === 792
     && pdf.getAuthor() === 'I Love DR Realty', 'SINGLE_BRANDED_LETTER_PAGE_REQUIRED')
@@ -114,6 +110,7 @@ async function readPdf(download, locale) {
   const action = annotations.lookup(0, PDFDict).lookup(PDFName.of('A'), PDFDict)
   check(action.lookup(PDFName.of('S'), PDFName).asString() === '/URI'
     && action.lookup(PDFName.of('URI'), PDFString).decodeText() === canonical, 'CANONICAL_PUBLIC_LINK_REQUIRED')
+  stage = locale + '_pdf_text'
   const references = pdf.getPage(0).node.Contents().asArray()
   check(references.length === 1, 'SINGLE_PDF_CONTENT_STREAM_REQUIRED')
   const operations = inflateSync(pdf.context.lookup(references[0]).getContents(), { maxOutputLength: 131072 }).toString('ascii')
@@ -142,6 +139,7 @@ async function downloadBrochure(page, label, locale) {
   console.log('LISTING_BROCHURE_GEOMETRY locale=' + locale + ' ' + geometry.join(' '))
   check(viewport.inner === 390 && bounds.x >= -1 && bounds.x + bounds.width <= 391 && bounds.height >= 44,
     'MOBILE_DOWNLOAD_CONTROL_MUST_FIT')
+  stage = locale + '_request_attachment'
   const [detail, download] = await Promise.all([
     page.waitForResponse(isDetail),
     page.waitForEvent('download'),
@@ -149,7 +147,11 @@ async function downloadBrochure(page, label, locale) {
   ])
   check(detail.status() === 200, 'DOWNLOAD_REVALIDATES_ACTIVE_LISTING')
   noStore(detail)
-  return { text: await readPdf(download, locale), body: await detail.json() }
+  stage = locale + '_read_detail'
+  const body = await detail.json()
+  const text = await readPdf(download, locale)
+  stage = locale + '_review_receipt'
+  return { text, body }
 }
 
 async function main() {
@@ -229,6 +231,14 @@ try {
 } catch (error) {
   const reason = error instanceof CheckFailure ? error.message
     : error?.name === 'TimeoutError' ? 'TIMED_OUT' : 'BROWSER_OPERATION_FAILED'
+  if (!(error instanceof CheckFailure)) {
+    const type = ['Error', 'TypeError', 'RangeError', 'SyntaxError', 'TimeoutError'].includes(error?.name)
+      ? error.name : 'OtherError'
+    const line = /\/rehearsal\/run-listing-brochures\.mjs:([0-9]{1,4}):[0-9]{1,4}/.exec(error?.stack ?? '')?.[1] ?? 'none'
+    const code = ['MODULE_NOT_FOUND', 'ERR_INVALID_ARG_TYPE', 'ENOENT', 'EACCES', 'Z_DATA_ERROR'].includes(error?.code)
+      ? error.code : 'none'
+    console.error('LISTING_BROCHURE_DIAGNOSTIC type=' + type + ' line=' + line + ' code=' + code)
+  }
   console.error('LISTING_BROCHURE_BROWSER_FAILURE', stage, reason)
   process.exitCode = 1
 }

@@ -8,7 +8,7 @@ bounded() { timeout --kill-after=8s "$@"; }
 
 [[ $# == 5 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api ]] || die CI_REQUIRED
 [[ ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 && ${GITHUB_RUN_ATTEMPT:-} == 1 ]] || die STANDARD_LINUX_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-listing-brochures-browser-20261117-v3 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
+[[ ${GITHUB_REF:-} == refs/heads/codex-ci-listing-brochures-browser-20261117-v4 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 
 ops="$1"; frontend="$2"; backend="$3"; migration="$4"; landing_relay="$5"
 [[ "$ops" == "$GITHUB_WORKSPACE/browser-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-base" &&
@@ -19,10 +19,10 @@ for checkout in "$ops" "$frontend" "$backend" "$migration" "$landing_relay"; do
   checkout_status=$(git -C "$checkout" status --porcelain=v1 --untracked-files=all) || die CLEAN_CHECKOUT_REQUIRED
   [[ $(realpath "$checkout") == "$checkout" && -z "$checkout_status" ]] || die CLEAN_CHECKOUT_REQUIRED
 done
-[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == e96f19f8721e5860410148a00670fd84aca7efe3 ]] ||
+[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == 63baee9a1cb12a074a8f8f89392b62a47ea8e062 ]] ||
   die EXACT_OPERATIONS_PARENT_REQUIRED
 operations_delta=$(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) || die EXACT_OPERATIONS_DELTA_REQUIRED
-[[ "$operations_delta" == $'.github/workflows/admin-manual-share.yml\nci/admin-manual-share/run-hosted-admin-manual-share.sh\nci/admin-manual-share/run-listing-brochures.mjs\nci/admin-manual-share/serve_listing_brochures_fixture.py' ]] ||
+[[ "$operations_delta" == $'.github/workflows/admin-manual-share.yml\nci/admin-manual-share/run-hosted-admin-manual-share.sh\nci/admin-manual-share/run-listing-brochures.mjs' ]] ||
   die EXACT_OPERATIONS_DELTA_REQUIRED
 frontend_commit=2d070cb965fe2f921822fdb8436ecab72a4099f0
 frontend_tree=8d6b533d9967d6a5fd335c7557e80bc321af8a0b
@@ -34,7 +34,9 @@ frontend_test_count=25
 backend_commit=7f8a3c4682fd0037383926051e96fe155ab77583
 backend_tree=16a94a41d1b0fa07493df7a74e4a124071cf7aaf
 migration_head=e12ac7d49f03
-browser_failure_stages='fixture,english_mobile_listing,english_fresh_download,spanish_hidden_listing,spanish_public_rent_download,withdrawal_blocks_stale_download,withdrawn_page_hides_action'
+browser_failure_stages='fixture,english_mobile_listing,english_fresh_download,spanish_hidden_listing,spanish_public_rent_download,withdrawal_blocks_stale_download,withdrawn_page_hides_action,'\
+'en_request_attachment,en_read_detail,en_pdf_file,en_pdf_parse,en_pdf_text,en_review_receipt,'\
+'es_request_attachment,es_read_detail,es_pdf_file,es_pdf_parse,es_pdf_text,es_review_receipt'
 browser_checks=(
   english_mobile_attachment_contains_fresh_native_price_and_terms
   spanish_hidden_rental_has_only_declared_usd_rate_and_safe_fields
@@ -556,6 +558,11 @@ measurements = [line for line in lines if re.fullmatch(geometry, line)]
 assert len(measurements) <= 2
 for measurement in measurements:
     print(measurement.decode('ascii'))
+diagnostic = rb'LISTING_BROCHURE_DIAGNOSTIC type=(?:Error|TypeError|RangeError|SyntaxError|TimeoutError|OtherError) line=(?:[0-9]{1,4}|none) code=(?:MODULE_NOT_FOUND|ERR_INVALID_ARG_TYPE|ENOENT|EACCES|Z_DATA_ERROR|none)'
+diagnostics = [line for line in lines if re.fullmatch(diagnostic, line)]
+assert len(diagnostics) <= 1
+for row in diagnostics:
+    print(row.decode('ascii'))
 failure = b'LISTING_BROCHURE_BROWSER_FAILURE '
 failures = [line[len(failure):] for line in lines if line.startswith(failure)]
 assert len(failures) <= 1
