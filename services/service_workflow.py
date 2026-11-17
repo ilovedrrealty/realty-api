@@ -8,13 +8,14 @@ from fastapi import HTTPException
 from sqlalchemy import and_, or_, exists, func
 from models.user import User
 from models.listing import Listing
+from models.professional_profile import ProfessionalProfile
 from models.property_network import NetworkProperty as Property, NetworkProject as Project, NetworkProjectMember as Member
 from models.service_workflow import (NetworkServicePreference as Preference, NetworkServiceRequest as ServiceRequest,
     NetworkServiceRecipient as Recipient, NetworkServiceProposal as Proposal, NetworkServiceAction as Action)
 from schemas.property_network import ProjectCreate
 from services import property_network as network
 from services.property_management import listings_for, today_dr
-from utils.professional_options import CATEGORY_IDS, PROPERTY_CLASS_IDS
+from utils.professional_options import CATEGORY_IDS, PROPERTY_CLASS_IDS, matching_areas
 
 PAGE_SIZE = 30
 MAX_SOURCE_REQUESTS = 500
@@ -38,7 +39,11 @@ def checked_user(user):
 
 
 def fingerprint(operation, target, body):
-    value = {"operation": operation, "target": str(target), "input": body.model_dump(mode="json")}
+    original = body.model_dump(mode="json")
+    # Earlier submissions were sealed before this optional field existed.
+    if operation == "request_create" and original.get("reviewed_match") is None:
+        original.pop("reviewed_match", None)
+    value = {"operation": operation, "target": str(target), "input": original}
     return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()).hexdigest()
 
 
@@ -282,15 +287,62 @@ def save_preference(db, user, body):
     return preference_view(db, user)
 
 
+def _offering_providers(db, category_id, property_class):
+    return db.query(User.user_code, Preference.member_alias, Preference.category_ids).select_from(Preference).join(
+        User, User.id == Preference.user_id,
+    ).filter(
+        Preference.service_opt_in.is_(True), User.status == "active", User.email_verified.is_(True), User.user_code > 0,
+        Preference.category_ids.contains([category_id]), Preference.property_class_ids.contains([property_class]))
+
+
+def _provider_page(query, number):
+    return network.page(query.order_by(User.user_code), number, lambda row: {
+        "user_code": row.user_code, "member_alias": row.member_alias, "category_ids": row.category_ids,
+    })
+
+
 def discovery(db, user, category_id, property_class, number):
     checked_user(user)
     if category_id not in CATEGORY_IDS or property_class not in PROPERTY_CLASS_IDS:
         raise HTTPException(422, "Choose a known service context")
-    query = db.query(Preference, User).join(User, User.id == Preference.user_id).filter(
-        Preference.service_opt_in.is_(True), User.status == "active", User.email_verified.is_(True), User.user_code > 0,
-        Preference.category_ids.contains([category_id]), Preference.property_class_ids.contains([property_class]))
-    return network.page(query.order_by(User.user_code), number, lambda pair: {
-        "user_code": pair[1].user_code, "member_alias": pair[0].member_alias, "category_ids": pair[0].category_ids})
+    return _provider_page(_offering_providers(db, category_id, property_class), number)
+
+
+def _reviewed_providers(db, user, owner, category_id, property_class, context):
+    snapshot = ProfessionalProfile.published_data
+    query = _offering_providers(db, category_id, property_class).join(
+        ProfessionalProfile, ProfessionalProfile.user_id == User.id,
+    ).filter(
+        User.id.notin_({user.id, owner.id}),
+        ProfessionalProfile.listing_status == "published", ProfessionalProfile.published_at.isnot(None),
+        snapshot.contains({"public_contact_consent": True, "category_ids": [category_id]}),
+        or_(*(snapshot["service_area_ids"].contains([area]) for area in sorted(matching_areas(context.area_id)))),
+    )
+    if context.language is not None:
+        query = query.filter(snapshot["languages"].contains([context.language]))
+    return query
+
+
+def reviewed_discovery(db, user, filters):
+    checked_user(user)
+    source, owner = source_row(db, filters.property_id, filters.listing_id)
+    if (not source_authorized(db, user, source) or source.status != "active" or owner is None
+            or owner.status != "active" or owner.email_verified is not True):
+        unavailable()
+    if filters.property_id is not None and source.property_class != filters.property_class:
+        conflict()
+    providers = _reviewed_providers(db, user, owner, filters.category_id, filters.property_class, filters)
+    return _provider_page(providers, filters.page)
+
+
+def _require_reviewed_selection(db, user, owner, body, members):
+    qualifying = _reviewed_providers(db, user, owner, body.category_id, body.property_class, body.reviewed_match).filter(
+        User.id.in_([member.id for member in members]),
+    ).order_by(ProfessionalProfile.id).with_for_update(read=True, of=ProfessionalProfile).all()
+    # Hold the published rows until commit, alongside the existing account and
+    # preferences locks, so withdrawal or consent changes cannot race creation.
+    if {row.user_code for row in qualifying} != set(body.recipient_user_codes):
+        conflict()
 
 
 def create_request(db, user, body):
@@ -325,6 +377,8 @@ def create_request(db, user, body):
         conflict()
     if body.property_id and body.property_class != source.property_class:
         conflict()
+    if body.reviewed_match is not None:
+        _require_reviewed_selection(db, user, owner, body, members)
     if body.desired_start_on is not None and not today_dr() <= body.desired_start_on <= today_dr() + timedelta(days=365):
         raise HTTPException(422, "Choose a desired date within the next year")
     query = db.query(ServiceRequest).filter(ServiceRequest.property_id == body.property_id) if body.property_id else db.query(ServiceRequest).filter(ServiceRequest.listing_id == body.listing_id)

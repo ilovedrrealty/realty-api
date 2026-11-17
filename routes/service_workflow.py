@@ -1,7 +1,7 @@
 """Private service request routes; no notifications or provider execution."""
 from uuid import UUID
-from typing import Literal
-from fastapi import APIRouter, Depends, Request, Response
+from typing import Annotated, Literal
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from sqlalchemy.orm import Session
 from database import get_db
 from routes.property_network import NetworkRoute, Page
@@ -11,7 +11,7 @@ from schemas.service_conversation import ServiceConversationWrite
 from schemas.service_review import ServiceReviewWrite
 from schemas.service_visit import ServiceWorkWrite
 from schemas.service_workflow import (PreferenceWrite, RequestCreate, RecipientAction, ManagedRecipientAction,
-    QuoteWrite, CounterWrite, ProposalAction, RequestAction, AwardWrite, ServiceFavoriteWrite)
+    QuoteWrite, CounterWrite, ProposalAction, RequestAction, AwardWrite, ServiceFavoriteWrite, ServiceMatchQuery)
 from services import (due_work_reminders, maintenance_reminders, service_conversation, service_favorites, service_negotiation, service_rebooking,
     service_operations, service_review, service_visit, service_workflow as service)
 from utils.auth import get_current_user
@@ -36,6 +36,14 @@ def save_preferences(request: Request, response: Response, body: PreferenceWrite
 def providers(category_id: str, property_class: str, page: int = Page,
               user=Depends(get_current_user), db: Session = Depends(get_db)):
     return service.discovery(db, user, category_id, property_class, page)
+
+
+@router.get("/service-provider-matches")
+def provider_matches(request: Request, filters: Annotated[ServiceMatchQuery, Query()],
+                     user=Depends(get_current_user), db: Session = Depends(get_db)):
+    if any(len(request.query_params.getlist(field)) > 1 for field in ServiceMatchQuery.model_fields):
+        raise HTTPException(422, "Use one value per service match filter")
+    return service.reviewed_discovery(db, user, filters)
 
 
 @router.post("/service-requests", status_code=201)

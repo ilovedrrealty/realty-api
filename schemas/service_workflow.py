@@ -5,7 +5,7 @@ from typing import Literal
 from uuid import UUID
 from pydantic import Field, StrictBool, field_validator, model_validator
 from schemas.property_network import Input
-from utils.professional_options import CATEGORY_IDS, PROPERTY_CLASS_IDS
+from utils.professional_options import AREA_IDS, CATEGORY_IDS, LANGUAGE_IDS, PROPERTY_CLASS_IDS
 
 
 class Submission(Input):
@@ -33,6 +33,33 @@ class PreferenceWrite(Submission):
         return self
 
 
+class ReviewedMatch(Input):
+    area_id: str
+    language: str | None = None
+
+    @model_validator(mode="after")
+    def known_catalog_options(self):
+        if self.area_id not in AREA_IDS or (self.language is not None and self.language not in LANGUAGE_IDS):
+            raise ValueError("Choose a known service area and language")
+        return self
+
+
+class ServiceMatchQuery(ReviewedMatch):
+    property_id: UUID | None = None
+    listing_id: UUID | None = None
+    category_id: str
+    property_class: str
+    page: int = Field(default=1, ge=1, le=1000)
+
+    @model_validator(mode="after")
+    def known_source_and_context(self):
+        if (self.property_id is None) == (self.listing_id is None):
+            raise ValueError("Choose exactly one property source")
+        if self.category_id not in CATEGORY_IDS or self.property_class not in PROPERTY_CLASS_IDS:
+            raise ValueError("Choose a known service context")
+        return self
+
+
 class RequestCreate(Submission):
     property_id: UUID | None = None
     listing_id: UUID | None = None
@@ -45,6 +72,7 @@ class RequestCreate(Submission):
     desired_start_on: date | None = None
     recipient_user_codes: list[int] = Field(min_length=1, max_length=5)
     shared_brief_acknowledged: StrictBool
+    reviewed_match: ReviewedMatch | None = None
 
     @field_validator("recipient_user_codes", mode="before")
     @classmethod

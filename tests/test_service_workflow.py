@@ -3,7 +3,9 @@
 Only an explicitly supplied reviewed disposable loopback Postgres is accepted.
 No lifespan, production data, accounts, mail, storage or external providers.
 """
+import hashlib
 import importlib.util
+import json
 import os
 import re
 import threading
@@ -13,6 +15,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 from pathlib import Path
 from unittest.mock import patch
+from urllib.parse import urlencode
 from uuid import UUID, uuid4
 
 os.environ.update(DATABASE_URL="sqlite+pysqlite:///:memory:", JWT_SECRET="synthetic-service-only",
@@ -242,6 +245,168 @@ class PrivateServiceWorkflow(unittest.TestCase):
         self.opt("pro1", service_opt_in=False)
         self.assertEqual(self.ok(self.send("GET", path))["total"], 0)
         self.assertEqual(self.send("GET", path + "&page=0").status_code, 422)
+
+    def _publish_match_profile(self, key, *, areas=("north_coast",), languages=("es",), category="pool_service",
+                               consent=True, status="published", review_status="approved"):
+        snapshot = {
+            "business_name": "Fixture business", "contact_name": "PROFILE_PRIVATE_NAME",
+            "public_email": "PROFILE_CONTACT@example.invalid", "public_phone": "+18095550100",
+            "category_ids": [category], "service_area_ids": list(areas), "languages": list(languages),
+            "public_contact_consent": consent,
+        }
+        with Session(self.engine) as db:
+            item = ProfessionalProfile(
+                id=uuid4(), user_id=self.ids[key] if key else None,
+                draft_data={"service_area_ids": ["south"], "languages": ["other"], "category_ids": ["roofing"],
+                            "contact_name": "DRAFT_UNREVIEWED_NAME", "public_contact_consent": True},
+                published_data=snapshot, listing_status=status, review_status=review_status,
+                published_at=network.now(), reviewed_at=network.now(), reviewed_by=self.ids["admin"],
+            )
+            db.add(item)
+            db.commit()
+            return item.id
+
+    def _match_url(self, *, source=True, **changes):
+        filters = {"category_id": "pool_service", "property_class": "house_villa", "area_id": "cabarete"}
+        if source:
+            filters["listing_id"] = str(self.listing)
+        return "/service-provider-matches?" + urlencode({**filters, **changes})
+
+    def _match_codes(self, path, actor="owner"):
+        result = self.send("GET", path, actor)
+        body = self.ok(result)
+        self.assertEqual(result.headers["Cache-Control"], "no-store")
+        self.assertEqual(set(body), {"items", "total", "page", "page_size"})
+        for row in body["items"]:
+            self.assertEqual(set(row), {"user_code", "member_alias", "category_ids"})
+        for hidden in ("PROFILE_PRIVATE_NAME", "PROFILE_CONTACT", "DRAFT_UNREVIEWED_NAME", "EXACT-LOCATION-MARKER",
+                       "PRIVATE-ACCOUNT-", "+18095550100"):
+            self.assertNotIn(hidden, result.text)
+        return [row["user_code"] for row in body["items"]]
+
+    def test_reviewed_matches_use_published_town_region_national_and_exact_language_class(self):
+        self.opt("pro1", property_class_ids=["apartment_condominium", "house_villa"])
+        self.opt("pro2")
+        self.opt("outsider")
+        # A new draft under review does not replace the live approved snapshot.
+        self._publish_match_profile("pro1", areas=("north_coast",), languages=("en", "es"), review_status="pending")
+        self._publish_match_profile("pro2", areas=("nationwide",), languages=("en",), review_status="rejected")
+        self._publish_match_profile("outsider", areas=("punta_cana",), languages=("es",))
+        self.assertEqual(self._match_codes(self._match_url(language="es")), [self.codes["pro1"]])
+        self.assertEqual(self._match_codes(self._match_url(language="en")), [self.codes["pro1"], self.codes["pro2"]])
+        self.assertEqual(self._match_codes(self._match_url(area_id="north_coast")), [self.codes["pro1"], self.codes["pro2"]])
+        self.assertEqual(self._match_codes(self._match_url(area_id="nationwide")), [self.codes["pro2"]])
+        self.assertEqual(self._match_codes(self._match_url(area_id="east", language="es")), [self.codes["outsider"]])
+        self.assertEqual(self._match_codes(self._match_url(property_class="apartment_condominium")), [self.codes["pro1"]])
+        self.assertEqual(self._match_codes(self._match_url(page=2)), [])
+
+    def test_reviewed_matches_exclude_held_unowned_self_and_current_custodian(self):
+        for key in ("pro1", "pro2", "owner", "manager", "new_manager", "outsider"):
+            self.opt(key, service_opt_in=key != "outsider")
+        hidden_id = self._publish_match_profile("pro1", status="hidden")
+        self._publish_match_profile("pro2")
+        self._publish_match_profile("owner")
+        self._publish_match_profile("manager")
+        self._publish_match_profile("new_manager", consent=False)
+        self._publish_match_profile("outsider")
+        self._publish_match_profile(None)  # A published Admin-managed entry is not a service member.
+        self._publish_match_profile("suspended")
+        self._publish_match_profile("unverified")
+        self.assertEqual(self._match_codes(self._match_url(), "manager"), [self.codes["pro2"]])
+        self.opt("outsider")
+        with Session(self.engine) as db:
+            db.get(User, self.ids["outsider"]).status = "suspended"
+            db.get(ProfessionalProfile, hidden_id).listing_status = "suspended"
+            db.commit()
+        self.assertEqual(self._match_codes(self._match_url(), "manager"), [self.codes["pro2"]])
+        with Session(self.engine) as db:
+            removed = db.get(ProfessionalProfile, hidden_id)
+            removed.listing_status, removed.published_at = "published", None
+            changed = db.query(ProfessionalProfile).filter_by(user_id=self.ids["pro2"]).one()
+            changed.published_data = {**changed.published_data, "category_ids": ["plumbing"]}
+            db.commit()
+        self.assertEqual(self._match_codes(self._match_url(), "manager"), [])
+        with Session(self.engine) as db:
+            changed = db.query(ProfessionalProfile).filter_by(user_id=self.ids["new_manager"]).one()
+            changed.published_data = {**changed.published_data, "public_contact_consent": "true"}
+            db.commit()
+        self.assertEqual(self._match_codes(self._match_url(), "manager"), [])
+        # Existing opt-in discovery acts independently of the reviewed feature.
+        raw_discovery = self.ok(self.send("GET", "/service-providers?category_id=pool_service&property_class=house_villa"))
+        self.assertIn(self.codes["pro1"], [row["user_code"] for row in raw_discovery["items"]])
+
+    def test_reviewed_matches_require_canonical_context_and_current_source_grant(self):
+        self.opt("pro1")
+        self._publish_match_profile("pro1")
+        private = self.private()
+        path = self._match_url(source=False, property_id=private["id"])
+        self.assertEqual(self._match_codes(path), [self.codes["pro1"]])
+        self.assertEqual(self._match_codes(self._match_url(), "manager"), [self.codes["pro1"]])
+        for actor, denied_path in (
+            ("manager", path), ("outsider", self._match_url()), ("new_manager", self._match_url()),
+            ("owner", self._match_url(listing_id=str(uuid4()))),
+        ):
+            self.assertEqual(self.send("GET", denied_path, actor).status_code, 404)
+        for invalid in (
+            self._match_url(source=False), self._match_url(property_id=private["id"]),
+            self._match_url(area_id="unknown"), self._match_url(language="EN"), self._match_url(category_id="unknown"),
+            self._match_url(page=0), self._match_url() + "&listing_id=" + str(self.listing),
+            self._match_url() + "&unexpected=unsupported",
+        ):
+            self.assertEqual(self.send("GET", invalid).status_code, 422)
+        self.assertEqual(self.send("GET", self._match_url(source=False, property_id=private["id"],
+                         property_class="apartment_condominium")).status_code, 409)
+        self.ok(self.send("PUT", "/registry/" + private["id"], body={
+            **{k: private[k] for k in ("title", "location", "address", "property_class", "relationship", "notes")},
+            "status": "archived", "expected_version": 1,
+        }))
+        self.assertEqual(self.send("GET", path).status_code, 404)
+
+    def test_reviewed_create_rechecks_current_match_and_replays_only_original_context(self):
+        self.opt("pro1")
+        profile = self._publish_match_profile("pro1")
+        self.assertEqual(self._match_codes(self._match_url(language="es")), [self.codes["pro1"]])
+        body = self.request_body(recipient_user_codes=[self.codes["pro1"]],
+                                 reviewed_match={"area_id": "cabarete", "language": "es"})
+        with Session(self.engine) as db:
+            row = db.get(ProfessionalProfile, profile)
+            row.published_data = {**row.published_data, "public_contact_consent": False}
+            db.commit()
+        before = self.counts()
+        denied = self.send("POST", "/service-requests", body=body)
+        self.assertEqual(denied.status_code, 409, denied.text)
+        self.assertNotIn("PROFILE_CONTACT", denied.text)
+        self.assertEqual(self.counts(), before)
+        with Session(self.engine) as db:
+            row = db.get(ProfessionalProfile, profile)
+            row.published_data = {**row.published_data, "public_contact_consent": True}
+            db.commit()
+        request = self.ok(self.send("POST", "/service-requests", body=body), 201)
+        self.assertEqual([item["user_code"] for item in request["recipients"]], [self.codes["pro1"]])
+        self.assertEqual(self.send("POST", "/service-requests", body={
+            **body, "reviewed_match": {"area_id": "north_coast", "language": "es"},
+        }).status_code, 409)
+        with Session(self.engine) as db:
+            db.get(ProfessionalProfile, profile).listing_status = "hidden"
+            db.commit()
+        self.assertEqual(self.ok(self.send("POST", "/service-requests", body=body), 201)["id"], request["id"])
+        self.assertEqual(self.send("POST", "/service-requests", body={**body, "submission_id": str(uuid4())}).status_code, 409)
+
+    def test_legacy_create_fingerprint_stays_compatible_without_reviewed_match(self):
+        self.opt("pro1")
+        self.opt("pro2")
+        body = self.request_body()
+        value_before_field = {**body, "property_id": None, "desired_start_on": None}
+        old_encoded = json.dumps({"operation": "request_create", "target": str(self.listing), "input": value_before_field},
+                                 sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+        expected = hashlib.sha256(old_encoded.encode()).hexdigest()
+        created = self.ok(self.send("POST", "/service-requests", body=body), 201)
+        with Session(self.engine) as db:
+            action = db.query(NetworkServiceAction).filter_by(submission_id=UUID(body["submission_id"])).one()
+            self.assertEqual(action.creation_sha256, expected)
+            self.assertEqual(db.get(NetworkServiceRequest, UUID(created["id"])).scope_sha256, expected)
+        legacy = self.ok(self.send("POST", "/service-requests", body={**body, "reviewed_match": None}), 201)
+        self.assertEqual(legacy["id"], created["id"])
 
     def test_request_source_authority_selection_xor_and_strict_codes(self):
         self.opt("pro1"); self.opt("pro2")
