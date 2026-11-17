@@ -17,7 +17,7 @@ from routes import shortlists
 from routes import viewings
 from routes import editorial
 from routes import market_reports
-from routes import development_inventory
+from routes import development_inventory, listing_floor_plans
 from routes import seller_valuation
 from routes import listing_performance
 from routes import transaction_room
@@ -201,6 +201,7 @@ app.include_router(viewings.router)
 app.include_router(editorial.router)
 app.include_router(market_reports.router)
 app.include_router(development_inventory.router)
+app.include_router(listing_floor_plans.router)
 app.include_router(seller_valuation.router)
 app.include_router(listing_performance.router)
 app.include_router(transaction_room.router)

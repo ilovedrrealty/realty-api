@@ -1,6 +1,7 @@
 from .user import User
 from .pending_user import PendingUser
 from .listing import Listing
+from .listing_floor_plan import ListingFloorPlan
 from .listing_performance import ListingDailyView, ListingPerformanceEntry, ListingViewCoverage
 from .transaction_room import TransactionMilestone, TransactionRoom, TransactionRoomEvent, TransactionRoomGrant, TransactionTask
 from .transaction_document import TransactionDocument, TransactionDocumentVersion
