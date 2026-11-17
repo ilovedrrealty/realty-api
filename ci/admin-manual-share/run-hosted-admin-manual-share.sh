@@ -8,7 +8,7 @@ bounded() { timeout --kill-after=8s "$@"; }
 
 [[ $# == 5 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api ]] || die CI_REQUIRED
 [[ ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 && ${GITHUB_RUN_ATTEMPT:-} == 1 ]] || die STANDARD_LINUX_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-neighborhood-comparison-browser-20261117-v2 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
+[[ ${GITHUB_REF:-} == refs/heads/codex-ci-neighborhood-comparison-browser-20261117-v3 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 
 ops="$1"; frontend="$2"; backend="$3"; migration="$4"; landing_relay="$5"
 [[ "$ops" == "$GITHUB_WORKSPACE/browser-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-base" &&
@@ -19,10 +19,10 @@ for checkout in "$ops" "$frontend" "$backend" "$migration" "$landing_relay"; do
   checkout_status=$(git -C "$checkout" status --porcelain=v1 --untracked-files=all) || die CLEAN_CHECKOUT_REQUIRED
   [[ $(realpath "$checkout") == "$checkout" && -z "$checkout_status" ]] || die CLEAN_CHECKOUT_REQUIRED
 done
-[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == 2ebce1a0d1ca72852641e7fa0c91e121a6cc5fbc ]] ||
+[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == 789bc34f11207032a5d3e44dbce912cab87020b5 ]] ||
   die EXACT_OPERATIONS_PARENT_REQUIRED
 operations_delta=$(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) || die EXACT_OPERATIONS_DELTA_REQUIRED
-[[ "$operations_delta" == $'.github/workflows/admin-manual-share.yml\nci/admin-manual-share/run-hosted-admin-manual-share.sh\nci/admin-manual-share/run-neighborhood-comparison.mjs\nci/admin-manual-share/serve_neighborhood_comparison_fixture.py' ]] ||
+[[ "$operations_delta" == $'.github/workflows/admin-manual-share.yml\nci/admin-manual-share/run-hosted-admin-manual-share.sh' ]] ||
   die EXACT_OPERATIONS_DELTA_REQUIRED
 frontend_commit=f332f37ca1a7c17283071c551792985af232e287
 frontend_tree=87bfbc79bdbaa0dd9d0f1bd7d1483e8b5406f7e0
@@ -291,8 +291,9 @@ bounded 690s docker run "${prepare[@]}" --network none --workdir /work \
   env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp CI=true node /rehearsal/landing.cjs \
   >"$state/landing.log" 2>&1 || landing_exit=$?
 python3 -I -B - "$state/landing.log" "$state/frontend-work/apps/landing/out" "$landing_exit" <<'PY' || die NEIGHBORHOOD_LANDING_EXPORT_REQUIRED
+from hashlib import sha256
 from pathlib import Path
-import json, sys
+import json, re, sys
 log, output = map(Path, sys.argv[1:3])
 assert log.stat().st_size <= 8 * 1024 * 1024
 lines = log.read_bytes().splitlines()
@@ -311,6 +312,37 @@ failure_prefix = b"CUMULATIVE_LANDING_FAILED "
 for line in lines:
     if line.startswith(failure_prefix) and line[len(failure_prefix):] in allowed:
         print("NEIGHBORHOOD_NEXT_FAILURE " + line[len(failure_prefix):].decode("ascii"))
+if sys.argv[3] != "0":
+    raw = b"\n".join(lines)
+    categories = (
+        (b"Type error:", "TYPE_ERROR"),
+        (b"Failed to compile", "COMPILE_FAILED"),
+        (b"Module not found", "MODULE_NOT_FOUND"),
+        (b"missing generateStaticParams", "STATIC_PARAMS_MISSING"),
+        (b"Error occurred prerendering page", "PRERENDER_FAILED"),
+        (b"useSearchParams() should be wrapped", "SEARCH_PARAMS_SUSPENSE_REQUIRED"),
+        (b"ECONNREFUSED", "FIXTURE_CONNECTION_REFUSED"),
+        (b"LISTING_EXPORT_", "LISTING_EXPORT_VALIDATION"),
+        (b"fetch failed", "SYNTHETIC_FETCH_FAILED"),
+        (b"NEXT_PUBLIC_API_URL", "API_URL_SETTING_REFERENCED"),
+        (b"npm error Lifecycle script", "NPM_LIFECYCLE"),
+    )
+    for token, tag in categories:
+        if token in raw:
+            print(f"NEIGHBORHOOD_NEXT_DETAIL code={tag}")
+    sources = re.findall(
+        rb"(?m)^(?:\./)?(src/[A-Za-z0-9_./\[\]-]+\.(?:tsx?|jsx?))(?::([0-9]{1,5}):([0-9]{1,5}))?\s*$",
+        raw,
+    )
+    for source, line, column in sorted(set(sources))[:10]:
+        print("NEIGHBORHOOD_NEXT_DETAIL file=" + source.decode("ascii")
+              + " line=" + (line or b"0").decode("ascii") + " column=" + (column or b"0").decode("ascii"))
+    known_routes = {b"/local-guides", b"/local-guides/compare", b"/search", b"/listing/[id]"}
+    paths = re.findall(rb'(?m)(?:prerendering page|Page) "(/[A-Za-z0-9_/\[\]-]+)"', raw)
+    for route in sorted(set(paths) & known_routes):
+        print("NEIGHBORHOOD_NEXT_DETAIL route=" + route.decode("ascii"))
+    for count in re.findall(rb"(?m)^# fail ([1-9][0-9]{0,2})$", raw)[:3]:
+        print("NEIGHBORHOOD_NEXT_DETAIL unit_failures=" + count.decode("ascii"))
 assert sys.argv[3] == "0"
 assert len(phases) == len(names) and {phase["name"] for phase in phases} == names
 assert all(phase["native_exit"] == 0 and phase["child_group_absent"] == True for phase in phases)
@@ -318,7 +350,9 @@ assert sum(line.startswith(b"CUMULATIVE_LANDING_RESULT ") for line in lines) == 
 for route in ("local-guides/index.html", "local-guides/compare/index.html", "search/index.html"):
     path = output / route
     assert path.is_file() and not path.is_symlink()
-    assert b"D01_PRIVATE_EDITORIAL_NOTE" not in path.read_bytes()
+    data = path.read_bytes()
+    assert b"D01_PRIVATE_EDITORIAL_NOTE" not in data
+    print(f"NEIGHBORHOOD_EXPORT_SHA256 route={route} sha256={sha256(data).hexdigest()}")
 print("NEIGHBORHOOD_NEXT_EXPORT native=0 compare=static guides=static search=static typecheck=success")
 PY
 verify_frontend_files || die LANDING_BUILD_SOURCE_CHANGED
