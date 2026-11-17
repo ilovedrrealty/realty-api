@@ -1,8 +1,8 @@
-name: Isolated assigned-client shared shortlists rehearsal
+name: Isolated property viewing itinerary rehearsal
 
 on:
   push:
-    branches: [codex-ci-shared-shortlists-20261117-v4]
+    branches: [codex-ci-property-viewings-20261117]
 
 permissions:
   contents: read
@@ -31,17 +31,17 @@ jobs:
           path: browser-ops
           fetch-depth: 2
           persist-credentials: false
-      - name: Read exact shortlist frontend and login handoff
+      - name: Read exact property viewing frontend and login handoff
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: ilovedrrealty/iLoveDRRealty
-          ref: b7daf320ceb1e813d5a4b07238bbf102b13a29b5
+          ref: 99aa4b305991d7017f478e02e0926397ace9a445
           path: frontend-base
           persist-credentials: false
       - name: Read exact backend application
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 0ff004a479d2eac690918cf5993934646d91a8cf
+          ref: 703158f0df31ed2abfae762688f2d8c15c46e274
           path: browser-backend
           persist-credentials: false
       - name: Read accepted migration dependency recipe
@@ -50,7 +50,7 @@ jobs:
           ref: c193a925ba57ea2d67ea48c44e5262817885c8a2
           path: migration-relay
           persist-credentials: false
-      - name: Verify assigned-client collaboration and revocable signed-in links
+      - name: Verify two-property itineraries, assignment and bilingual scheduling
         shell: bash
         run: |
           set -euo pipefail
