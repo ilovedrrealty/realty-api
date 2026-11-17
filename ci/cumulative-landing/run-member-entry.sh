@@ -7,22 +7,22 @@ bounded() { timeout --kill-after=8s "$@"; }
 [[ $# == 4 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 &&
    ${GITHUB_RUN_ATTEMPT:-} == 1 ]] || die HOST_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-property-viewings-landing-login-20261117-v2 &&
+[[ ${GITHUB_REF:-} == refs/heads/codex-ci-editorial-landing-20261117 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 
 ops="$1"; fixture="$2"; frontend="$3"; backend="$4"
-parent=a843472423e0a43b423b50bc9be69fa1a3c24293
+parent=0dd2b4598972d2cc97cff5047f6b5f657a2469f8
 g06_regression_ops=36ea3f1a58905453030454077edb27bf8922937f
 fixture_commit=441efdc288c3a38b8607c816c684abec080d83ad
 fixture_tree=6c01c7577e343d5e2542d4f8a84cbc0f103e4b5d
-frontend_commit=904db1e7d146e7211ab3c69fada163750d47f325
-frontend_tree=4405d3e2c592e7752d918ce3ead9b52cd7f4f54a
-frontend_files=484
-backend_commit=703158f0df31ed2abfae762688f2d8c15c46e274
-backend_tree=2e811241e9fe80c6a53d140225cec134bf8d94ca
+frontend_commit=f628e36eebd93eaef3a8193c74b2f6b1c5d3cc74
+frontend_tree=e02c1cd27fa79fc7dd0da10930d94cd950594778
+frontend_files=495
+backend_commit=483cb04f149a003dfca35fdd6b19ec43f942d127
+backend_tree=a7d4526175f85ffed2ef668e72e361522612bba6
 [[ "$frontend_commit" =~ ^[a-f0-9]{40}$ && "$frontend_tree" =~ ^[a-f0-9]{40}$ &&
    "$backend_commit" =~ ^[a-f0-9]{40}$ && "$backend_tree" =~ ^[a-f0-9]{40}$ &&
-   "$frontend_files" =~ ^[1-9][0-9]{0,3}$ ]] || die G07_EXACT_PAIR_NOT_PINNED
+   "$frontend_files" =~ ^[1-9][0-9]{0,3}$ ]] || die G08_EXACT_PAIR_NOT_PINNED
 [[ "$ops" == "$GITHUB_WORKSPACE/member-landing-ops" && "$fixture" == "$GITHUB_WORKSPACE/member-landing-fixture" &&
    "$frontend" == "$GITHUB_WORKSPACE/member-landing-source" &&
    "$backend" == "$GITHUB_WORKSPACE/member-landing-backend" ]] || die EXACT_CHECKOUT_PATHS_REQUIRED
@@ -36,13 +36,14 @@ done
    $(git -C "$frontend" rev-parse 'HEAD^{tree}') == "$frontend_tree" &&
    $(git -C "$backend" rev-parse HEAD) == "$backend_commit" &&
    $(git -C "$backend" rev-parse 'HEAD^{tree}') == "$backend_tree" ]] || die EXACT_CHECKOUTS_REQUIRED
-expected=$'.github/workflows/network-member-entry-landing.yml\nci/cumulative-landing/run-member-entry.sh'
+expected=$'.github/workflows/network-member-entry-landing.yml\nci/cumulative-landing/editorial-browser.mjs\nci/cumulative-landing/run-member-entry.sh\nci/cumulative-landing/run-shortlist-login.mjs'
 [[ $(git -C "$ops" diff --name-only "$parent" "$GITHUB_SHA") == "$expected" ]] || die EXACT_OPERATIONS_DELTA_REQUIRED
 tools="$ops/ci/cumulative-landing"
 fixture_tools="$fixture/ci/frontend"
 printf '%s  %s\n' \
   d74afd5e90685485a5a8edb64fa72288b284b1676f3a9db8f5293423479c8842 "$tools/landing.cjs" \
-  500a8dd9e6527c5e1e7e96fed754cd0914ba93f78d394907804281157716be63 "$tools/run-shortlist-login.mjs" \
+  ca7120d26418163588e216edcf32b4a170f18eb6f58d6f8df51cd4520bf79175 "$tools/run-shortlist-login.mjs" \
+  f20dc2ee8d949f5e971a47bef6334d6d7cd1aa7a741a4a58d8005adb4e7ffa57 "$tools/editorial-browser.mjs" \
   a166dc60598e76b7fdcc3fe2aa5253bc56952b48fd99e4cab5eb4a24523a548e "$fixture_tools/landing_fixture.cjs" \
   0a1abbdbd65a82e67ded20a0603a21fc9321a1b1aa5fd83dbccf1c049ffc4110 "$fixture_tools/landing_fixture.test.cjs" \
   | sha256sum --check --status || die ACCEPTED_TOOL_HASH_MISMATCH
@@ -172,6 +173,23 @@ fi
 [[ $(<"$state/swc.log") == 'MEMBER_LANDING_SWC native=0 locked_version=15.5.18 platform=linux-x64-gnu' ]] || die SWC_RESULT_REQUIRED
 printf 'MEMBER_LANDING_SWC native=0 locked_version=15.5.18 platform=linux-x64-gnu\n'
 
+bounded 45s docker run --rm "${prepare[@]}" --network none \
+  --mount "type=bind,src=$state/frontend-work,dst=/work,readonly" \
+  "$node_image" env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp CI=true \
+  node --test --test-concurrency=1 --test-reporter=tap tests/public-editorial.test.cjs \
+  >"$state/editorial-unit.log" 2>&1 || die EDITORIAL_PUBLIC_UNIT_FAILED
+python3 -I -B - "$state/editorial-unit.log" <<'PY' || die EXACT_EDITORIAL_PUBLIC_UNIT_RESULT_REQUIRED
+import re, sys
+from pathlib import Path
+path = Path(sys.argv[1])
+assert path.stat().st_size <= 131072
+lines = path.read_bytes().splitlines()
+summary = re.compile(rb'# (tests|pass|fail|skipped) (\d+)')
+assert [(m[1], m[2]) for line in lines if (m := summary.fullmatch(line))] == [
+    (b'tests', b'5'), (b'pass', b'5'), (b'fail', b'0'), (b'skipped', b'0')]
+print('MEMBER_LANDING_EDITORIAL_UNIT tests=5 pass=5 fail=0 skipped=0')
+PY
+
 landing_exit=0
 bounded 690s docker run --rm "${prepare[@]}" --network none \
   --mount "type=bind,src=$state/frontend-work,dst=/work" \
@@ -233,7 +251,7 @@ python3 -I -B "$tools/verify-member-entry-export.py" "$state/frontend-work/apps/
   die PUBLIC_ROUTE_METADATA_REQUIRED
 
 mkdir "$state/browser-run"
-cp -- "$tools/run-shortlist-login.mjs" "$state/browser-run/"
+cp -- "$tools/run-shortlist-login.mjs" "$tools/editorial-browser.mjs" "$state/browser-run/"
 bounded 180s docker pull --platform linux/amd64 "$browser_image" >/dev/null || die PINNED_BROWSER_PULL_FAILED
 [[ $(bounded 15s docker image inspect --format '{{.Os}}/{{.Architecture}}' "$browser_image") == linux/amd64 ]] ||
   die EXACT_BROWSER_PLATFORM_REQUIRED
@@ -266,7 +284,7 @@ assert json.loads((target/'package.json').read_bytes())['version'] == '1.64.1'
 PY
 
 browser_exit=0
-bounded 180s docker run --rm --network none --label "$label=$run_key" \
+bounded 240s docker run --rm --network none --label "$label=$run_key" \
   --user "$(id -u):$(id -g)" --read-only --cap-drop ALL --security-opt no-new-privileges:true \
   --memory 2g --memory-swap 2g --pids-limit 256 --cpus 2 --shm-size 384m \
   --tmpfs /tmp:rw,exec,size=192m --workdir /rehearsal \
@@ -285,7 +303,8 @@ lines = p.read_text(encoding='utf-8', errors='replace').splitlines()
 if int(sys.argv[2]):
     allowed = ('host','static_export','browser','viewing_listing_en','viewing_listing_es',
                'anonymous_login','wrong_password','form_login_redirect',
-               'existing_session_redirect')
+               'existing_session_redirect','editorial_export','editorial_absent','editorial_published',
+               'editorial_updated','editorial_removed')
     prefix = 'VIEWINGS_LANDING_LOGIN_FAILED stage='
     stage = next((line[len(prefix):] for line in lines if line.startswith(prefix)), None)
     print('MEMBER_LANDING_LOGIN_BROWSER native=' + sys.argv[2] + ' stage=' + (stage if stage in allowed else 'unknown'))
@@ -298,6 +317,13 @@ else:
                            viewing_listing_redirect_en_es=True, existing_session_redirect=True,
                            loopback_only=True, fixtures_closed=True)]
     print('MEMBER_LANDING_LOGIN_BROWSER ' + json.dumps(results[0], sort_keys=True, separators=(',', ':')))
+    prefix = 'EDITORIAL_RUNTIME_BROWSER '
+    editorial = [json.loads(line[len(prefix):]) for line in lines if line.startswith(prefix)]
+    assert editorial == [dict(status='PASS', actual_export=True, both_languages=True, body_absent_in_static_html=True,
+                              runtime_publish=True, runtime_update=True, runtime_unpublish=True, noindex_reader=True,
+                              no_stale_body_after_removal=True, public_no_store=True, synthetic_public_endpoint=True,
+                              same_unrebuilt_export=True)]
+    print('MEMBER_LANDING_EDITORIAL_BROWSER ' + json.dumps(editorial[0], sort_keys=True, separators=(',', ':')))
 PY
 [[ "$browser_exit" == 0 ]] || die LANDING_LOGIN_BROWSER_FAILED
 printf 'MEMBER_LANDING_LOGIN_PAIR frontend=%s frontend_tree=%s backend=%s backend_tree=%s g06_regression_ops=%s\n' \

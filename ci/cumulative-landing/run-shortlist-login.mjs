@@ -4,12 +4,14 @@ import { randomBytes } from 'node:crypto'
 import { readFile, readdir, realpath, stat } from 'node:fs/promises'
 import { chromium } from 'playwright-core'
 import listingFixture from '/listing-fixture/landing_fixture.cjs'
+import { createEditorialFixture, verifyEditorial } from './editorial-browser.mjs'
 
 const host = '127.0.0.1'
 const landing = `http://${host}:8918`
 const api = `http://${host}:8917`
 const dashboard = `http://${host}:4175`
 const exportRoot = '/landing-export'
+const editorial = createEditorialFixture(api)
 const { LISTING_ID: listing, fixtureResponse } = listingFixture
 const listingPath = `/listing/${listing}/`
 const grant = 'b357412c-d096-47d6-8a77-30cf544e8d97'
@@ -68,6 +70,8 @@ async function serveAuth(request, response) {
     response.writeHead(204, cors)
     return response.end()
   }
+  const editorialResult = editorial.responseFor(request)
+  if (editorialResult) return json(response, editorialResult.status, editorialResult.data, cors)
   if (key === 'GET /auth/me') {
     if (!hasCookie(request)) {
       observations.signedOutReads++
@@ -215,6 +219,7 @@ async function main() {
     && (await readdir('/sys/class/net')).join(',') === 'lo', 'HOSTED_LOOPBACK_REQUIRED')
   const servers = []
   let browser
+  let editorialResult
   try {
     stage = 'static_export'
     check(await realpath(exportRoot + '/login/index.html') === exportRoot + '/login/index.html'
@@ -235,6 +240,8 @@ async function main() {
       && observations.rejectedLogin === 1 && observations.acceptedLogin === 3
       && destinationCounts.get(shortlist.destination) === 2 && destinationCounts.get(viewing.destination) === 4,
       'SERVER_SIDE_SESSION_EVIDENCE_REQUIRED')
+    stage = 'editorial_export'
+    editorialResult = await verifyEditorial(browser, editorial, { landing, api }, exportRoot, next => { stage = next })
   } finally {
     try { if (browser) await browser.close() } finally {
       await Promise.all(servers.map(server => new Promise(resolve => {
@@ -249,6 +256,7 @@ async function main() {
     rejected_password_without_cookie: true, http_only_cookie: true, shortlist_regression: true,
     viewing_cta_en_es: true, viewing_listing_redirect_en_es: true, existing_session_redirect: true,
     loopback_only: true, fixtures_closed: true }))
+  console.log('EDITORIAL_RUNTIME_BROWSER', JSON.stringify(editorialResult))
 }
 
 main().catch(() => {
