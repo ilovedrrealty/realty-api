@@ -7,7 +7,7 @@ bounded() { timeout --kill-after=8s "$@"; }
 
 [[ ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 &&
-   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-integrated-release-native-20261117-v3 &&
+   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-integrated-release-native-20261117-v4 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_HOSTED_EVENT_REQUIRED
 
 ops="$GITHUB_WORKSPACE/rehearsal-ops"
@@ -25,7 +25,7 @@ for checkout in "$ops" "$backend" "$baseline" "$relay"; do
      ! -e "$checkout/.env" && ! -L "$checkout/.env" ]] || die CLEAN_CHECKOUT_REQUIRED
 done
 [[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" &&
-   $(git -C "$ops" rev-parse 'HEAD^') == 64b2a1ce9d7c739200c67f6bb704f4e03db1d57f ]] || die EXACT_OPERATIONS_REQUIRED
+   $(git -C "$ops" rev-parse 'HEAD^') == bef80556495daca393d0d8fe8d2c621a1800ca37 ]] || die EXACT_OPERATIONS_REQUIRED
 operations_delta=$(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) || die EXACT_OPERATIONS_REQUIRED
 [[ "$operations_delta" == $'.github/workflows/transaction-room-native.yml\nci/transaction-room/rehearse.py\nci/transaction-room/run-hosted-native.sh' ]] ||
   die EXACT_OPERATIONS_REQUIRED
@@ -171,6 +171,14 @@ lines = raw.splitlines()
 safe = [line for line in lines if pass_line.fullmatch(line) or error_line.fullmatch(line)]
 if len(safe) == 1:
     print(safe[0].decode('ascii'))
+if mode == "restore" and native != "0":
+    catalog_failure = re.compile(rb"INTEGRATED_PRIVATE_CATALOG_FAILURE "
+                                 rb"(?:restore_(?:source|target)_catalog) "
+                                 rb"(?:private_table_roles|definitions_or_triggers|evidence_columns_and_constraints"
+                                 rb"|floor_plan_binary_column|floor_plan_constraints|baseline_shape)"
+                                 rb"(?: shape=[a-f0-9]{64})?")
+    for line in [item for item in lines if catalog_failure.fullmatch(item)][:1]:
+        print(line.decode('ascii'))
 if mode in {"core", "documents", "floorplans"} and native != "0":
     assertion = re.compile(rb"TASK_EVIDENCE_NATIVE_ASSERTION test=[a-z0-9_]{1,100} line=(?:[0-9]{1,4}|none)"
                            rb" actual=(?:[1-5][0-9]{2}|none) expected=(?:[1-5][0-9]{2}|none)")

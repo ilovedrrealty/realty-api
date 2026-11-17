@@ -168,6 +168,12 @@ def check_test_schema_cleanup():
 
 
 def catalog(database, *, floorplans):
+    def require_catalog(condition, label, shape=None):
+        if not condition and stage in {"restore_source_catalog", "restore_target_catalog"}:
+            print(f"INTEGRATED_PRIVATE_CATALOG_FAILURE {stage} {label}" +
+                  (f" shape={shape}" if shape else ""))
+        check(condition)
+
     selected = list(PRIVATE_TABLES)
     if floorplans:
         selected.append(FLOOR_PLAN_TABLE)
@@ -181,7 +187,8 @@ def catalog(database, *, floorplans):
             WHERE ns.nspname='public' AND rel.relname::text=ANY(%s) AND rel.relkind='r'
             ORDER BY rel.relname
         """, (selected,))
-        check(cursor.fetchall() == [(name, True, False) for name in sorted(selected)])
+        require_catalog(cursor.fetchall() == [(name, True, False) for name in sorted(selected)],
+                        "private_table_roles")
         cursor.execute("""
             SELECT table_name, column_name, data_type, is_nullable, column_default
             FROM information_schema.columns
@@ -207,25 +214,27 @@ def catalog(database, *, floorplans):
             AND NOT t.tgisinternal AND t.tgname::text=ANY(%s) ORDER BY t.tgname
         """, (list(TRIGGERS),))
         triggers = cursor.fetchall()
-        check(len(columns) > 0 and len(checks) > 0 and len(indexes) > 0
-              and [(name, enabled) for name, enabled, _ in triggers] == [(name, "O") for name in TRIGGERS])
+        require_catalog(len(columns) > 0 and len(checks) > 0 and len(indexes) > 0
+                        and [(name, enabled) for name, enabled, _ in triggers] == [(name, "O") for name in TRIGGERS],
+                        "definitions_or_triggers")
     task_columns = [row for row in columns if row[0] == "transaction_room_tasks" and row[1] in EVIDENCE_COLUMNS]
     task_constraints = [row for row in checks if row[0] == "transaction_room_tasks" and row[1] in EVIDENCE_CONSTRAINTS]
-    check([(row[1], *row[2:]) for row in task_columns] == [
+    require_catalog([(row[1], *row[2:]) for row in task_columns] == [
         ("evidence_document_id", "uuid", "YES", None), ("evidence_version_id", "uuid", "YES", None),
-    ] and {row[1] for row in task_constraints} == EVIDENCE_CONSTRAINTS)
+    ] and {row[1] for row in task_constraints} == EVIDENCE_CONSTRAINTS, "evidence_columns_and_constraints")
     if floorplans:
-        check((FLOOR_PLAN_TABLE, "payload", "bytea", "NO", None) in columns)
-        check({row[1] for row in checks if row[0] == FLOOR_PLAN_TABLE} >= {
+        require_catalog((FLOOR_PLAN_TABLE, "payload", "bytea", "NO", None) in columns, "floor_plan_binary_column")
+        require_catalog({row[1] for row in checks if row[0] == FLOOR_PLAN_TABLE} >= {
             "uq_listing_floor_plan_slot", "ck_listing_floor_plan_file", "ck_listing_floor_plan_stage",
-        })
+        }, "floor_plan_constraints")
     else:
         with closing(connect(database)) as conn, conn.cursor() as cursor:
             cursor.execute("SELECT to_regclass('public.listing_floor_plans')")
             check(cursor.fetchone() == (None,))
     inherited = tuple([row for row in block if row[0] != FLOOR_PLAN_TABLE]
                       for block in (columns, checks, indexes)) + (triggers,)
-    check(sha256(json.dumps(inherited, separators=(",", ":")).encode()).hexdigest() == BASELINE_SHAPE)
+    inherited_shape = sha256(json.dumps(inherited, separators=(",", ":")).encode()).hexdigest()
+    require_catalog(inherited_shape == BASELINE_SHAPE, "baseline_shape", inherited_shape)
     return sha256(json.dumps((columns, checks, indexes, triggers), separators=(",", ":")).encode()).hexdigest()
 
 
