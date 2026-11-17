@@ -2,7 +2,7 @@ name: Isolated assigned-client shared shortlists rehearsal
 
 on:
   push:
-    branches: [codex-ci-shared-shortlists-20261117]
+    branches: [codex-ci-shared-shortlists-20261117-v2]
 
 permissions:
   contents: read

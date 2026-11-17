@@ -73,7 +73,11 @@ async function createSession(browser, account = null, mobile = false) {
     }
     return route.abort('blockedbyclient')
   })
-  if (mobile) await context.addInitScript(() => localStorage.setItem('ildr_lang', 'es'))
+  // Chromium treats a loopback-only container as offline. Exercise its real local API reads.
+  await context.addInitScript(useSpanish => {
+    if (!navigator.onLine) Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => true })
+    if (useSpanish) localStorage.setItem('ildr_lang', 'es')
+  }, mobile)
   if (account !== null) {
     const response = await call(context, '/auth/login', 'POST', account)
     check(response.status() === 200 && (await context.cookies(api)).some(cookie => cookie.name === 'ildr_token' && cookie.httpOnly),
@@ -89,6 +93,8 @@ async function visit(context, path, role) {
   await page.goto(dashboard + path, { waitUntil: 'domcontentloaded' })
   const identity = await identityPromise
   check(identity.ok() && (await identity.json()).role === role, 'EXACT_TEST_ACCOUNT_REQUIRED')
+  await page.bringToFront()
+  await page.waitForFunction(() => document.visibilityState === 'visible' && navigator.onLine)
   return page
 }
 
@@ -101,20 +107,34 @@ async function main() {
     args: ['--disable-background-networking', '--disable-component-update', '--disable-sync', '--no-first-run'],
   })
   try {
-    step = 'buyer_create'
+    step = 'buyer_sign_in'
     const buyer = await createSession(browser, fixture.accounts.buyer)
     await buyer.addInitScript(() => {
       Object.defineProperty(navigator, 'clipboard', { value: {
         writeText: async value => { window.syntheticCopiedShortlist = value },
       } })
     })
+    step = 'buyer_shortlist_route'
     const page = await visit(buyer, '/shortlists', 'buyer')
+    await page.bringToFront()
+    step = 'buyer_open_editor'
     await page.getByRole('button', { name: 'Create shortlist', exact: true }).click()
+    step = 'buyer_title_field'
     await page.getByLabel('Shortlist title', { exact: true }).fill(title)
+    step = 'buyer_notes_and_preferences'
     await page.getByLabel('Shared notes', { exact: true }).fill(notes)
     await page.getByLabel('Shared preferences', { exact: true }).fill(preferences)
+    step = 'buyer_public_picker'
+    const catalogPromise = page.waitForResponse(response => fromApi(response, '/listings'))
     await page.getByRole('button', { name: 'Choose properties', exact: true }).click()
+    const catalog = await catalogPromise
+    check(catalog.status() === 200, 'PUBLIC_CATALOG_REQUIRED')
+    const listingPage = await catalog.json()
+    check(listingPage?.items?.some(item => item.id === fixture.activeListing) && !listingPage.items.some(item => item.id === fixture.inactiveListing),
+      'FIXTURE_PUBLIC_ELIGIBILITY_MISMATCH')
+    step = 'buyer_select_listing'
     await page.getByRole('button', { name: 'Add Browser rehearsal villa', exact: true }).click()
+    step = 'buyer_save'
     const createPromise = page.waitForResponse(response => fromApi(response, '/shortlists/owned', 'POST'))
     await page.getByRole('button', { name: 'Save shortlist', exact: true }).click()
     const created = await createPromise
@@ -131,9 +151,10 @@ async function main() {
     })
     checks.push('browser_create_public_property_and_shared_fields')
 
-    step = 'named_share'
+    step = 'buyer_enter_share_fields'
     await page.getByLabel('Recipient account code', { exact: true }).fill('#' + String(fixture.realtorCode).padStart(7, '0'))
     await page.getByLabel('Access duration', { exact: true }).selectOption('7')
+    step = 'buyer_share_review'
     await page.getByRole('button', { name: 'Review share', exact: true }).click()
     const sharePromise = page.waitForResponse(response => fromApi(response, ownerPath + '/share', 'POST'))
     await page.getByRole('button', { name: 'Share shortlist', exact: true }).click()
@@ -144,10 +165,12 @@ async function main() {
     check(grant?.state === 'active' && idShape.test(grant.id) && Date.parse(grant.expires_at) > Date.now(),
       'TIME_BOUND_ASSIGNED_AGENT_GRANT_REQUIRED')
     const receiverPath = `/shortlists/received/${grant.id}`
+    step = 'buyer_copy_share_link'
     await page.getByRole('button', { name: 'Copy private link', exact: true }).click()
     const privateLink = `/shortlists?grant=${grant.id}`
     check(await page.evaluate(() => window.syntheticCopiedShortlist) === dashboard + privateLink,
       'EXACT_SIGNED_IN_SHARE_LINK_REQUIRED')
+    step = 'actor_scope_and_login_handoff'
     const anonymous = await createSession(browser)
     await requireStatus(anonymous, receiverPath, [401])
     const unauthorized = await createSession(browser, fixture.accounts.admin)
@@ -163,8 +186,10 @@ async function main() {
     const agent = await createSession(browser, fixture.accounts.realtor, true)
     await requireStatus(agent, ownerPath, [403, 404])
     const mobile = await visit(agent, privateLink, 'realtor')
+    await mobile.bringToFront()
     await mobile.getByText(notes, { exact: true }).waitFor({ state: 'visible' })
     check(await mobile.getByText(privateNote, { exact: true }).count() === 0, 'PRIVATE_RESEARCH_MUST_NOT_APPEAR')
+    step = 'assigned_realtor_editor'
     await mobile.getByRole('button', { name: 'Editar lista', exact: true }).click()
     await mobile.getByLabel('Notas compartidas', { exact: true }).fill(agentNotes)
     const editPromise = mobile.waitForResponse(response => fromApi(response, receiverPath, 'PUT'))
@@ -183,6 +208,7 @@ async function main() {
     checks.push('spanish_mobile_assigned_realtor_collaboration')
 
     step = 'buyer_revoke'
+    await page.bringToFront()
     await requireStatus(buyer, ownerPath, [409], 'PUT', { expected_version: owned.version, title, shared_notes: notes,
       shared_preferences: preferences })
     await page.getByRole('button', { name: 'Revoke access', exact: true }).click()
@@ -196,6 +222,8 @@ async function main() {
     await requireStatus(agent, receiverPath, [404], 'PUT', {
       expected_version: response.version, title, shared_notes: 'Synthetic denied text', shared_preferences: '',
     })
+    step = 'recipient_revoked_view'
+    await mobile.bringToFront()
     await mobile.reload({ waitUntil: 'domcontentloaded' })
     await mobile.getByText('Esta lista de propiedades no está disponible.', { exact: true }).waitFor({ state: 'visible' })
     check(await mobile.getByText(agentNotes, { exact: true }).count() === 0, 'REVOKED_CONTENT_STILL_VISIBLE')
@@ -209,7 +237,8 @@ async function main() {
 try {
   await main()
 } catch (error) {
-  const reason = error instanceof CheckFailure ? error.message : 'BROWSER_OPERATION_FAILED'
+  const reason = error instanceof CheckFailure ? error.message
+    : error?.name === 'TimeoutError' ? 'TIMED_OUT' : 'BROWSER_OPERATION_FAILED'
   console.log('SHARED_SHORTLIST_BROWSER ' + JSON.stringify({ status: 'FAIL', step, reason, checks }))
   process.exitCode = 1
 }
