@@ -8,8 +8,8 @@ import sys
 
 BASE = "99bc8d4c0ee4f3f0b72cf174530971f6a35f0ab3"
 LIVE = "b5df6a9321365e827c01df556c09b8808151e59a"
-SOURCE = "69d64e6bb7ba4d748267d22b7e215bd53089f325"
-TREE = "2570e8ccc497bd03fbee402897d67cbd9ad9a294"
+SOURCE = "f286c979ea9433a44db314745d24145ffeb31f11"
+TREE = "de19a750fa00f22baf24a995adc1720f93d5d7c9"
 PHASES = (
     ("integrated-trade-frontend", "12f5b00fc5aa4040cb91c8ecc483812999c0e33e",
      "9f1817d1f744d3c57c365f18435c79051219f0df",
@@ -27,9 +27,13 @@ PHASES = (
      "0da98d76419ff0501b87b112d975037496b9583f",
      "5b723caae48f8867102646f262a6540a116ef89dca4ed8a81a0298df1ee33c20",
      "59ea851b47d3f6f012cd91109246c6a8acc65fd2bfc89dd03c71d6370da3f71a"),
-    ("account-deletion-frontend", SOURCE, TREE,
+    ("account-deletion-frontend", "69d64e6bb7ba4d748267d22b7e215bd53089f325",
+     "2570e8ccc497bd03fbee402897d67cbd9ad9a294",
      "677f123321b22aece9f7fd5b396c3d4c76457723d588190ed5c5f6b911d093b8",
      "8bde73aa77efe883779189a40540272660b778478b07681e0704e45141132c6f"),
+    ("settings-mobile", SOURCE, TREE,
+     "5fa111aa64291472fda16c876dbafdffc7c78836a0038b71b322341c5a27bb7e",
+     "d18c431615e02f03bdd1c7dc5a3ab567aabed353ccd42e0bc799bd53dbfddece"),
 )
 
 

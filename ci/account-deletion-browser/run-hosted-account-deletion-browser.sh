@@ -7,7 +7,7 @@ bounded() { timeout --kill-after=8s "$@"; }
 
 [[ $# == 5 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 &&
-   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-f09-deletion-browser-20261117 &&
+   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-f09-deletion-browser-20261117-v2 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_HOSTED_EVENT_REQUIRED
 ops="$1"; frontend="$2"; live="$3"; backend="$4"; migration="$5"
 [[ "$ops" == "$GITHUB_WORKSPACE/browser-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-base" &&
@@ -19,11 +19,11 @@ for checkout in "$ops" "$frontend" "$live" "$backend" "$migration"; do
      ! -e "$checkout/.env" && ! -L "$checkout/.env" ]] || die CLEAN_CHECKOUT_REQUIRED
 done
 [[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" &&
-   $(git -C "$ops" rev-parse HEAD^) == c57b2836e331dc02a346a85786f3ab674a60a9ac ]] || die EXACT_OPERATIONS_PARENT_REQUIRED
+   $(git -C "$ops" rev-parse HEAD^) == bec5f2eccb7bc5c535d2f5a5594262028f028a88 ]] || die EXACT_OPERATIONS_PARENT_REQUIRED
 operations_delta=$(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) || die EXACT_OPERATIONS_DELTA_REQUIRED
-[[ "$operations_delta" == $'.github/workflows/account-deletion-browser.yml\nci/account-deletion-browser/check-browser-result.py\nci/account-deletion-browser/reconstruct_frontend.py\nci/account-deletion-browser/run-account-deletion-browser.mjs\nci/account-deletion-browser/run-hosted-account-deletion-browser.sh\nci/account-deletion-browser/serve_account_deletion_fixture.py\nci/account-deletion-browser/serve_admin_share_fixture.py\nci/account-deletion-browser/serve_dashboard_fixture.mjs' ]] || die EXACT_OPERATIONS_DELTA_REQUIRED
-frontend_commit=69d64e6bb7ba4d748267d22b7e215bd53089f325
-frontend_tree=2570e8ccc497bd03fbee402897d67cbd9ad9a294
+[[ "$operations_delta" == $'.github/workflows/account-deletion-browser.yml\nci/account-deletion-browser/reconstruct_frontend.py\nci/account-deletion-browser/run-hosted-account-deletion-browser.sh\nci/cumulative-landing/settings-mobile.commit\nci/cumulative-landing/settings-mobile.patch' ]] || die EXACT_OPERATIONS_DELTA_REQUIRED
+frontend_commit=f286c979ea9433a44db314745d24145ffeb31f11
+frontend_tree=de19a750fa00f22baf24a995adc1720f93d5d7c9
 frontend_paths=575
 backend_commit=979b5faf37a819161a0501962b2a807836da5b30
 backend_tree=d286ca58414fa971f967c0657cba142ca41a5694

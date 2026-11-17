@@ -1,0 +1,26 @@
+diff --git a/apps/dashboard/src/locale/en/settings.json b/apps/dashboard/src/locale/en/settings.json
+index f68f97a0fa37622d8430868f8179b5d8d2c9f63b..219499dc21ea75fba122ee8039a0b06b8e83b777 100644
+--- a/apps/dashboard/src/locale/en/settings.json
++++ b/apps/dashboard/src/locale/en/settings.json
+@@ -5 +5,2 @@
+-    "notifications": "Notifications"
++    "notifications": "Notifications",
++    "connections": "Connections"
+diff --git a/apps/dashboard/src/locale/es/settings.json b/apps/dashboard/src/locale/es/settings.json
+index 0731fe1bc6b0c9cd9e412ce6e03614b2f0b7c748..6dc6ea8b430bf23e505fae69b0c8b32837732735 100644
+--- a/apps/dashboard/src/locale/es/settings.json
++++ b/apps/dashboard/src/locale/es/settings.json
+@@ -5 +5,2 @@
+-    "notifications": "Notificaciones"
++    "notifications": "Notificaciones",
++    "connections": "Conexiones"
+diff --git a/apps/dashboard/src/pages/Settings.tsx b/apps/dashboard/src/pages/Settings.tsx
+index f9f6a8f3a79f0d672b9a195bb1b4017722fb66e9..55e453e9c99ac29bf780435c536ed9ccd782ed4e 100644
+--- a/apps/dashboard/src/pages/Settings.tsx
++++ b/apps/dashboard/src/pages/Settings.tsx
+@@ -84 +84 @@ export function UserSettings({ user, role, tone, onUserUpdate, initialTab }: { u
+-    ...(role === 'Realtor' || role === 'Owner' ? [{ id: 'connections' as const, label: 'Connections' }] : []),
++    ...(role === 'Realtor' || role === 'Owner' ? [{ id: 'connections' as const, label: t('tabs.connections') }] : []),
+@@ -360 +360 @@ export function UserSettings({ user, role, tone, onUserUpdate, initialTab }: { u
+-      <div className="flex gap-1.5 p-1 bg-paper border border-line rounded-xl w-fit">
++      <div className="flex max-w-full flex-wrap gap-1.5 p-1 bg-paper border border-line rounded-xl w-fit">

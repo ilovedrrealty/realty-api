@@ -1,0 +1,6 @@
+tree de19a750fa00f22baf24a995adc1720f93d5d7c9
+parent 69d64e6bb7ba4d748267d22b7e215bd53089f325
+author Codex <codex@openai.com> 1794958889 -0400
+committer Codex <codex@openai.com> 1794958889 -0400
+
+Wrap member Settings tabs within phone widths

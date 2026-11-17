@@ -2,7 +2,7 @@ name: Isolated account deletion review role and mobile browser rehearsal
 
 on:
   push:
-    branches: [codex-ci-f09-deletion-browser-20261117]
+    branches: [codex-ci-f09-deletion-browser-20261117-v2]
 
 permissions:
   contents: read
