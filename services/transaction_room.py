@@ -4,10 +4,11 @@ from datetime import datetime, timezone
 from uuid import uuid4
 
 from fastapi import HTTPException
-from sqlalchemy import and_, or_
+from sqlalchemy import and_, or_, tuple_
 
 from models.lead import Lead
 from models.listing import Listing
+from models.transaction_document import TransactionDocument as Document, TransactionDocumentVersion as DocumentVersion
 from models.transaction_room import (
     TransactionMilestone as Milestone,
     TransactionRoom as Room,
@@ -212,7 +213,7 @@ def create(db, actor, lead_id, body):
     # The room is inserted before its first event, which has a foreign key to it.
     db.add(Event(room_id=room.id, sequence=1, action="room_created", actor_role=role,
                  actor_id=actor.id, created_at=room.created_at))
-    return _commit_detail(db, room, role)
+    return _commit_detail(db, room, role, actor.id)
 
 
 def _member(user, role, state="active", grant=None, *, show_code=False):
@@ -247,33 +248,86 @@ def _members(db, room, role):
     return members
 
 
-def _detail(db, room, role):
+def document_grant_id(db, room_id, actor_id):
+    return db.query(Grant.id).filter(
+        Grant.room_id == room_id, Grant.recipient_id == actor_id, Grant.state == "active",
+    ).scalar()
+
+
+def may_download_document(version, role, grant_id):
+    if version.status == "reserved":
+        return False
+    if role in MANAGERS:
+        return True
+    return version.status == "approved" and (
+        (role == "buyer" and version.share_with_buyer)
+        or (role == "professional" and grant_id is not None and version.professional_grant_id == grant_id)
+    )
+
+
+def _visible_task_evidence(db, room_id, tasks, role, actor_id, current_members):
+    linked = {(row.evidence_document_id, row.evidence_version_id) for row in tasks if row.evidence_version_id is not None}
+    if not linked:
+        return {}
+    grant_id = document_grant_id(db, room_id, actor_id) if role == "professional" else None
+    versions = db.query(DocumentVersion, Document.title).join(Document, and_(
+        Document.room_id == DocumentVersion.room_id, Document.id == DocumentVersion.document_id,
+    )).filter(DocumentVersion.room_id == room_id,
+              tuple_(DocumentVersion.document_id, DocumentVersion.id).in_(linked)).populate_existing().all()
+    readable = {
+        (version.document_id, version.id): dict(document_id=version.document_id, version_id=version.id,
+                                               title=title, number=version.number)
+        for version, title in versions if may_download_document(version, role, grant_id)
+    }
+    evidence = {task.id: readable[(task.evidence_document_id, task.evidence_version_id)].copy()
+                for task in tasks if (task.evidence_document_id, task.evidence_version_id) in readable}
+    completed = [task.id for task in tasks if task.status == "done" and task.id in evidence]
+    receipts = {}
+    if completed:
+        receipts = {
+            target_id: (created_at, name if role in MANAGERS or reviewer_id in current_members else None)
+            for target_id, created_at, reviewer_id, name in db.query(
+                Event.target_id, Event.created_at, Event.actor_id, User.display_name,
+            ).outerjoin(User, User.id == Event.actor_id).filter(
+                Event.room_id == room_id, Event.action == "task_evidence_reviewed", Event.target_id.in_(completed),
+            ).order_by(Event.sequence).all()
+        }
+    for task_id, item in evidence.items():
+        item["reviewed_at"], item["reviewer_name"] = receipts.get(task_id, (None, None))
+    return evidence
+
+
+def _detail(db, room, role, actor_id):
     members = _members(db, room, role)
     current_members = {member["user_id"] for member in members if member["state"] == "active"}
     tasks = db.query(Task).filter(Task.room_id == room.id).order_by(Task.due_on.nulls_last(), Task.title, Task.id).all()
+    evidence = _visible_task_evidence(db, room.id, tasks, role, actor_id, current_members)
     milestones = db.query(Milestone).filter(Milestone.room_id == room.id).order_by(
         Milestone.target_on.nulls_last(), Milestone.title, Milestone.id,
     ).all()
     return dict(
         **_summary(room, role), members=members,
         tasks=[dict(id=row.id, title=row.title, due_on=row.due_on, status=row.status, version=row.version,
-                    assignee_user_id=row.assignee_user_id if row.assignee_user_id in current_members else None)
+                    assignee_user_id=row.assignee_user_id if row.assignee_user_id in current_members else None,
+                    requires_evidence_review=row.evidence_version_id is not None
+                    and (role in MANAGERS or actor_id == row.assignee_user_id),
+                    evidence=evidence.get(row.id))
                for row in tasks],
         milestones=[dict(id=row.id, title=row.title, target_on=row.target_on, actual_on=row.actual_on,
                          version=row.version) for row in milestones],
     )
 
 
-def _commit_detail(db, room, role):
+def _commit_detail(db, room, role, actor_id):
     db.flush()
-    detail = _detail(db, room, role)
+    detail = _detail(db, room, role, actor_id)
     db.commit()
     return detail
 
 
 def read(db, actor, room_id):
     room, role = room_for(db, actor, room_id, stabilize=True)
-    return _detail(db, room, role)
+    return _detail(db, room, role, actor.id)
 
 
 def history(db, actor, room_id, before, limit):
@@ -317,7 +371,7 @@ def invite(db, actor, room_id, body):
                   invited_at=datetime.now(timezone.utc))
     db.add(grant)
     record_event(db, room, actor, role, "professional_invited", grant.id)
-    return _commit_detail(db, room, role)
+    return _commit_detail(db, room, role, actor.id)
 
 
 def _pending_for(db, actor):
@@ -353,7 +407,7 @@ def accept(db, actor, grant_id):
         raise _missing()
     grant.state, grant.accepted_at = "active", datetime.now(timezone.utc)
     record_event(db, room, actor, "professional", "professional_accepted", grant.id)
-    return _commit_detail(db, room, "professional")
+    return _commit_detail(db, room, "professional", actor.id)
 
 
 def revoke(db, actor, room_id, grant_id, body):
@@ -370,7 +424,7 @@ def revoke(db, actor, room_id, grant_id, body):
             {Task.assignee_user_id: None, Task.version: Task.version + 1}, synchronize_session="fetch",
         )
     record_event(db, room, actor, role, "professional_revoked", grant.id)
-    return _commit_detail(db, room, role)
+    return _commit_detail(db, room, role, actor.id)
 
 
 def _check_assignee(db, room, user_id):
@@ -380,6 +434,17 @@ def _check_assignee(db, room, user_id):
         raise HTTPException(422, "Choose an active room participant.")
 
 
+def _check_evidence_access(db, room, reviewer_id, document_id, version_id):
+    member = next((entry for entry in _members(db, room, "admin")
+                   if entry["role"] == "professional" and entry["state"] == "active"
+                   and entry["user_id"] == reviewer_id), None)
+    version = db.query(DocumentVersion).filter(
+        DocumentVersion.room_id == room.id, DocumentVersion.document_id == document_id, DocumentVersion.id == version_id,
+    ).populate_existing().one_or_none()
+    if member is None or version is None or not may_download_document(version, "professional", member["grant_id"]):
+        raise HTTPException(422, "Choose a document version already shared with the named room professional.")
+
+
 def create_task(db, actor, room_id, body):
     room, role = room_for(db, actor, room_id, permission="manage")
     require_version(room, body.expected_version)
@@ -387,9 +452,13 @@ def create_task(db, actor, room_id, body):
     _limit_room_items(db, Task, room)
     task = Task(id=uuid4(), room_id=room.id, title=body.title, assignee_user_id=body.assignee_user_id,
                 due_on=body.due_on, status="open", version=1)
+    if body.evidence is not None:
+        _check_evidence_access(db, room, body.assignee_user_id, body.evidence.document_id, body.evidence.version_id)
+        task.evidence_document_id = body.evidence.document_id
+        task.evidence_version_id = body.evidence.version_id
     db.add(task)
     record_event(db, room, actor, role, "task_created", task.id)
-    return _commit_detail(db, room, role)
+    return _commit_detail(db, room, role, actor.id)
 
 
 def update_task(db, actor, room_id, task_id, body):
@@ -406,11 +475,35 @@ def update_task(db, actor, room_id, task_id, body):
         raise HTTPException(403, "This task update requires transaction room management access.")
     if "assignee_user_id" in changes:
         _check_assignee(db, room, body.assignee_user_id)
+    evidence_before = task.evidence_document_id, task.evidence_version_id
+    evidence = evidence_before
+    if "evidence" in changes:
+        changes.pop("evidence")
+        evidence = (body.evidence.document_id, body.evidence.version_id) if body.evidence is not None else (None, None)
+        if evidence_before[1] is not None and evidence[1] is None:
+            raise HTTPException(422, "Cancel the task to retain its linked document.")
+    reviewer_id = changes.get("assignee_user_id", task.assignee_user_id)
+    scope_changed = evidence != evidence_before or reviewer_id != task.assignee_user_id
+    if task.status == "done" and (
+        (evidence_before[1] and changes.get("status", "done") != "done")
+        or ((evidence_before[1] or evidence[1]) and scope_changed)
+    ):
+        raise HTTPException(409, "Create another task to review a document for completed work.")
+    action = "task_updated"
+    if evidence[1]:
+        finishing = changes.get("status") == "done" and task.status != "done"
+        if finishing and role != "professional":
+            raise HTTPException(403, "The named professional must complete this document review.")
+        if scope_changed or (role == "professional" and changes.get("status") in {"in_progress", "done"}):
+            _check_evidence_access(db, room, reviewer_id, *evidence)
+        if finishing:
+            action = "task_evidence_reviewed"
+    task.evidence_document_id, task.evidence_version_id = evidence
     for field, value in changes.items():
         setattr(task, field, value)
     task.version += 1
-    record_event(db, room, actor, role, "task_updated", task.id)
-    return _commit_detail(db, room, role)
+    record_event(db, room, actor, role, action, task.id)
+    return _commit_detail(db, room, role, actor.id)
 
 
 def save_milestone(db, actor, room_id, body, milestone_id=None):
@@ -432,7 +525,7 @@ def save_milestone(db, actor, room_id, body, milestone_id=None):
     milestone.version += 1
     action = "milestone_created" if milestone_id is None else "milestone_updated"
     record_event(db, room, actor, role, action, milestone.id)
-    return _commit_detail(db, room, role)
+    return _commit_detail(db, room, role, actor.id)
 
 
 def close(db, actor, room_id, body):
@@ -443,4 +536,4 @@ def close(db, actor, room_id, body):
         {Grant.state: "revoked", Grant.revoked_at: datetime.now(timezone.utc)}, synchronize_session="fetch",
     )
     record_event(db, room, actor, role, "room_closed")
-    return _commit_detail(db, room, role)
+    return _commit_detail(db, room, role, actor.id)

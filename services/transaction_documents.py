@@ -9,7 +9,9 @@ from sqlalchemy import and_, func, or_
 from models.transaction_document import TransactionDocument as Document, TransactionDocumentVersion as Version
 from models.transaction_room import TransactionRoomGrant as Grant
 from models.user import User
-from services.transaction_room import MANAGERS, PROFESSIONAL_ACCOUNTS, record_event, require_version, room_for
+from services.transaction_room import (
+    MANAGERS, PROFESSIONAL_ACCOUNTS, document_grant_id, may_download_document, record_event, require_version, room_for,
+)
 from utils.transaction_document_storage import DocumentContent, read_document
 
 
@@ -108,27 +110,10 @@ def complete_upload(db, actor, room_id, document_id, version_id, expected):
     return receipt
 
 
-def _current_grant(db, room_id, actor_id):
-    return db.query(Grant.id).filter(
-        Grant.room_id == room_id, Grant.recipient_id == actor_id, Grant.state == "active",
-    ).scalar()
-
-
-def _may_download(version, role, grant_id):
-    if version.status == "reserved":
-        return False
-    if role in MANAGERS:
-        return True
-    return version.status == "approved" and (
-        (role == "buyer" and version.share_with_buyer)
-        or (role == "professional" and grant_id is not None and version.professional_grant_id == grant_id)
-    )
-
-
 def list_documents(db, actor, room_id):
     room, role = room_for(db, actor, room_id, stabilize=True)
     staff = role in MANAGERS
-    grant_id = _current_grant(db, room_id, actor.id) if role == "professional" else None
+    grant_id = document_grant_id(db, room_id, actor.id) if role == "professional" else None
     query = db.query(Document, Version).join(Version, and_(
         Version.room_id == Document.room_id, Version.document_id == Document.id,
     )).filter(Document.room_id == room.id, Version.status != "reserved")
@@ -148,7 +133,7 @@ def list_documents(db, actor, room_id):
         results[document.id]["versions"].append(dict(
             id=version.id, number=version.number, file_name=version.file_name, content_type=version.content_type,
             byte_count=version.byte_count, uploaded_at=version.uploaded_at, reviewed_at=version.reviewed_at,
-            status=version.status, can_download=_may_download(version, role, grant_id),
+            status=version.status, can_download=may_download_document(version, role, grant_id),
             can_review=staff and room.status == "open" and version.status in {"approved", "submitted"},
             share_with_buyer=version.share_with_buyer if staff else None,
             professional_grant_id=version.professional_grant_id if staff else None,
@@ -159,8 +144,8 @@ def list_documents(db, actor, room_id):
 def _authorized_download(db, actor, room_id, document_id, version_id, *, stabilize=False):
     _, role = room_for(db, actor, room_id, stabilize=stabilize)
     version = _get_version(db, room_id, document_id, version_id)
-    grant_id = _current_grant(db, room_id, actor.id) if role == "professional" else None
-    if not _may_download(version, role, grant_id):
+    grant_id = document_grant_id(db, room_id, actor.id) if role == "professional" else None
+    if not may_download_document(version, role, grant_id):
         raise _missing()
     return version
 

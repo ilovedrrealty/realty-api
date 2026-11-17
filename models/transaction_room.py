@@ -1,6 +1,6 @@
 """Private buyer transaction rooms and their explicitly managed participation."""
 
-from sqlalchemy import CheckConstraint, Column, Date, ForeignKey, Index, Integer, Text, TIMESTAMP, text
+from sqlalchemy import CheckConstraint, Column, Date, ForeignKey, ForeignKeyConstraint, Index, Integer, Text, TIMESTAMP, text
 from sqlalchemy.dialects.postgresql import UUID
 
 from database import Base
@@ -58,10 +58,20 @@ class TransactionTask(Base):
     due_on = Column(Date)
     status = Column(Text, nullable=False)
     version = Column(Integer, nullable=False)
+    evidence_document_id = Column(UUID(as_uuid=True))
+    evidence_version_id = Column(UUID(as_uuid=True))
 
     __table_args__ = (
         CheckConstraint("version >= 1 AND status IN ('open','in_progress','done','cancelled') "
                         "AND char_length(btrim(title)) BETWEEN 1 AND 160", name="ck_transaction_task_state"),
+        CheckConstraint("(evidence_document_id IS NULL) = (evidence_version_id IS NULL)",
+                        name="ck_transaction_task_evidence_pair"),
+        ForeignKeyConstraint(
+            ["room_id", "evidence_document_id", "evidence_version_id"],
+            ["transaction_document_versions.room_id", "transaction_document_versions.document_id",
+             "transaction_document_versions.id"],
+            ondelete="RESTRICT", name="fk_transaction_task_evidence_version",
+        ),
         Index("ix_transaction_task_room", "room_id"),
         Index("ix_transaction_task_assignee", "assignee_user_id"),
     )

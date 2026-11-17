@@ -5,7 +5,7 @@ import io
 from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 from unittest.mock import patch
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from PIL import Image
 
@@ -15,9 +15,11 @@ from alembic.operations import Operations
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from database import get_db
+from models.transaction_room import TransactionTask
 from routes import transaction_documents as document_routes
 from services import transaction_documents as document_service
 from utils.transaction_document_storage import DocumentStorageUnavailable
@@ -201,3 +203,68 @@ class TransactionDocumentTests(room_fixture.TransactionRoomFixture):
         self.writing.side_effect = self.synthetic_store
         self.upload("buyer", version, data)
         self.assertEqual(self.request("realtor", "GET", room)["version"], 2)
+
+    def test_named_evidence_task_keeps_private_scope_and_records_actual_reviewer(self):
+        room, documents = self.start_documents()
+        _, grant = self.invite(self.request("realtor", "GET", room))
+        self.request("professional", "POST", f"/invitations/{grant}/accept", body={})
+        data = self.file()
+        receipt = self.request("realtor", "POST", documents, body=self.reservation(data))
+        version = self.upload_path(documents, receipt)
+        self.upload("realtor", version, data)
+        link = {key: receipt[key] for key in ("document_id", "version_id")}
+        task_input = {"title": "Review title evidence", "assignee_user_id": str(self.users["professional"]), "evidence": link}
+        current = self.request("realtor", "GET", room)
+        self.request("realtor", "POST", room + "/tasks", 422, {**task_input, "expected_version": current["version"]})
+        self.review(room, version, professional_grant_id=grant)
+        current = self.request("realtor", "GET", room)
+        result = self.request("realtor", "POST", room + "/tasks", 201, {**task_input, "expected_version": current["version"]})
+        task = result["tasks"][0]
+        path = room + "/tasks/" + task["id"]
+        self.assertTrue(task["requires_evidence_review"])
+        self.assertEqual(task["evidence"], {**link, "number": 1, "title": "Synthetic closing document",
+                                            "reviewed_at": None, "reviewer_name": None})
+        self.assertEqual(self.request("professional", "GET", room)["tasks"][0]["evidence"], task["evidence"])
+        buyer_task = self.request("buyer", "GET", room)["tasks"][0]
+        self.assertIsNone(buyer_task["evidence"])
+        self.assertFalse(buyer_task["requires_evidence_review"])
+        self.request("other_buyer", "GET", room, 404)
+        self.request("realtor", "PATCH", path, 403, {"expected_version": result["version"], "status": "done"})
+        self.request("realtor", "PATCH", path, 422, {"expected_version": result["version"], "evidence": None})
+        self.request("buyer", "PATCH", path, 403, {"expected_version": result["version"], "status": "done"})
+        in_review = self.request("professional", "PATCH", path, body={
+            "expected_version": result["version"], "status": "in_progress",
+        })
+        self.review(room, version)
+        changed = self.request("professional", "GET", room)
+        self.assertGreater(changed["version"], in_review["version"])
+        self.assertIsNone(changed["tasks"][0]["evidence"])
+        self.request("professional", "PATCH", path, 422, {"expected_version": changed["version"], "status": "done"})
+
+        self.review(room, version, professional_grant_id=grant, share_with_buyer=True)
+        self.receive("professional", version, data)
+        current = self.request("professional", "GET", room)
+        done = self.request("professional", "PATCH", path, body={"expected_version": current["version"], "status": "done"})
+        self.assertEqual(done["tasks"][0]["evidence"]["reviewer_name"], "Synthetic professional")
+        self.assertIsNotNone(done["tasks"][0]["evidence"]["reviewed_at"])
+        self.assertEqual(self.request("buyer", "GET", room)["tasks"][0]["evidence"]["version_id"], link["version_id"])
+        self.request("realtor", "PATCH", path, 409, {"expected_version": done["version"], "status": "open"})
+        revoked = self.request("realtor", "POST", room + f"/members/{grant}/revoke",
+                               body={"expected_version": done["version"]})
+        self.request("professional", "GET", room, 404)
+        self.assertEqual(revoked["tasks"][0]["evidence"]["reviewer_name"], "Synthetic professional")
+        self.assertIsNone(self.request("buyer", "GET", room)["tasks"][0]["evidence"]["reviewer_name"])
+        self.assertEqual(sum(event["action"] == "task_evidence_reviewed"
+                         for event in self.request("realtor", "GET", room + "/history")["items"]), 1)
+
+    def test_evidence_database_rejects_a_cross_room_or_partial_document_reference(self):
+        room, documents = self.start_documents()
+        other = self.make_room(lead="inquiry")
+        data = self.file()
+        receipt = self.request("realtor", "POST", documents, body=self.reservation(data))
+        for value in (None, UUID(receipt["version_id"])):
+            with Session(self.engine) as session, self.assertRaises(IntegrityError):
+                session.add(TransactionTask(id=uuid4(), room_id=UUID(other["id"]), title="Invalid review",
+                    version=1, status="open", evidence_document_id=UUID(receipt["document_id"]),
+                    evidence_version_id=value))
+                session.flush()

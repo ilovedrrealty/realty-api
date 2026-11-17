@@ -46,10 +46,23 @@ class AcceptInvitation(Input):
     pass
 
 
+class TaskEvidence(Input):
+    document_id: UUID
+    version_id: UUID
+
+
+class TaskEvidenceView(TaskEvidence):
+    title: Title
+    number: int = Field(ge=1)
+    reviewed_at: AwareDatetime | None
+    reviewer_name: str | None
+
+
 class CreateTask(VersionChange):
     title: Title
     assignee_user_id: UUID | None = None
     due_on: Day | None = None
+    evidence: TaskEvidence | None = None
 
 
 class ChangeTask(VersionChange):
@@ -57,6 +70,7 @@ class ChangeTask(VersionChange):
     assignee_user_id: UUID | None = None
     due_on: Day | None = None
     status: TaskStatus | None = None
+    evidence: TaskEvidence | None = None
 
     @model_validator(mode="after")
     def require_an_edit(self):
@@ -107,6 +121,8 @@ class TaskView(Input):
     due_on: Day | None
     status: TaskStatus
     version: Version
+    requires_evidence_review: bool = False
+    evidence: TaskEvidenceView | None = None
 
 
 class MilestoneView(Input):

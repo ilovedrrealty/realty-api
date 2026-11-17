@@ -36,6 +36,8 @@ from services import transaction_room as service
 
 
 MIGRATION = Path(__file__).resolve().parents[1] / "alembic/versions/6c942ea8385d_private_transaction_rooms.py"
+DOCUMENT_MIGRATION = MIGRATION.with_name("de248ab5c9f3_private_transaction_documents.py")
+EVIDENCE_MIGRATION = MIGRATION.with_name("21f2fe166874_transaction_task_document_evidence.py")
 
 
 @unittest.skipUnless(os.environ.get("SEARCH_FILTER_TEST_DATABASE_URL"), "Requires owned loopback PostgreSQL")
@@ -70,17 +72,21 @@ class TransactionRoomFixture(unittest.TestCase):
         engine = create_engine(cls.url, connect_args={"options": options})
         engine.update_execution_options(fixture_schema=schema)
         try:
-            spec = spec_from_file_location(MIGRATION.stem, MIGRATION)
-            migration = module_from_spec(spec)
-            spec.loader.exec_module(migration)
+            migrations = []
+            for path in (MIGRATION, DOCUMENT_MIGRATION, EVIDENCE_MIGRATION):
+                spec = spec_from_file_location(path.stem, path)
+                migration = module_from_spec(spec)
+                spec.loader.exec_module(migration)
+                migrations.append(migration)
             table_names = ("users", "listings", "leads")
             if prebuild:
-                table_names += migration.TABLES
+                table_names += migrations[0].TABLES + migrations[1].TABLES
             tables = [Base.metadata.tables[name] for name in table_names]
             Base.metadata.create_all(engine, tables=tables)
             with engine.begin() as connection:
-                migration.op = Operations(MigrationContext.configure(connection))
-                migration.upgrade()
+                for migration in migrations:
+                    migration.op = Operations(MigrationContext.configure(connection))
+                    migration.upgrade()
         except Exception:
             cls.drop_schema(engine)
             raise
