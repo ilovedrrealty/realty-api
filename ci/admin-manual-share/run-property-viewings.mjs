@@ -172,9 +172,13 @@ async function main() {
     step = 'realtor_spanish_proposal'
     const agentPage = await visit(agent, '/viewings', 'realtor')
     await agentPage.getByRole('button', { name: 'Proponer otra hora', exact: true }).click()
+    step = 'realtor_spanish_open_editor'
+    check(await agentPage.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1),
+      'SPANISH_MOBILE_OPEN_EDITOR_OVERFLOW')
     await agentPage.locator('input[type="datetime-local"]').fill(fixture.day + 'T14:30')
     await agentPage.getByRole('textbox', { name: /^Lugar de encuentro/ }).fill('Entrada principal de prueba')
     await agentPage.getByRole('checkbox', { name: /^Confirmar disponibilidad/ }).check()
+    step = 'realtor_spanish_save_proposal'
     const proposal = agentPage.waitForResponse(response => fromApi(response, actionPath(realtorItem), 'POST'))
     await agentPage.getByRole('button', { name: 'Guardar cambios de la visita', exact: true }).click()
     const proposed = await proposal
