@@ -11,7 +11,7 @@ from slowapi.errors import RateLimitExceeded
 from config import settings
 from database import SessionLocal
 from utils.limiter import limiter
-from routes import research_workspaces, trade_contacts
+from routes import newsletter, research_workspaces, trade_contacts
 from routes import arrival_guide
 from routes import shortlists
 from routes import viewings
@@ -212,6 +212,7 @@ app.include_router(stats.router)
 app.include_router(professionals.router)
 app.include_router(research_workspaces.router)
 app.include_router(trade_contacts.router)
+app.include_router(newsletter.router)
 app.include_router(analytics.router)
 app.include_router(lead_delivery_routes.router)
 app.include_router(property_management.router)
