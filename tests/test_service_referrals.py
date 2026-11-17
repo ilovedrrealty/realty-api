@@ -283,6 +283,8 @@ class PrivateServiceReferrals(unittest.TestCase):
             with self.assertRaises(TimeoutError):
                 pending.result(timeout=0.2)
             preference.service_opt_in = False
+            preference.version += 1
+            preference.updated_at = workflow.network.now()
             db.commit()
             self.checked(pending.result(timeout=12), 409)
         self.receipt(command, "outsider", 404)
