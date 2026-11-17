@@ -346,7 +346,12 @@ async function main() {
     const spanish = label(dialog, 'Project name (Spanish)')
     check(await spanish.inputValue() === spanishName, 'SPANISH_MOBILE_PREVIEW_REQUIRED')
     step = 'mobile_preview_source_field'
-    const sourceField = label(dialog, 'Developer source reference')
+    const evidence = dialog.getByRole('group', { name: 'Private developer evidence', exact: true })
+    // The native textarea's initial text also contributes to its wrapper's
+    // getByLabel text. Match the exact visible caption, then its own control.
+    const sourceCaption = evidence.locator('span').and(evidence.getByText('Developer source reference', { exact: true }))
+    await sourceCaption.waitFor({ state: 'visible' })
+    const sourceField = sourceCaption.locator('xpath=parent::label').locator('textarea')
     check(await sourceField.inputValue() === source, 'PRIVATE_SOURCE_MOBILE_PREVIEW_REQUIRED')
     step = 'mobile_preview_read_only'
     check(await spanish.isDisabled() && await sourceField.isDisabled(), 'READ_ONLY_MOBILE_PREVIEW_REQUIRED')

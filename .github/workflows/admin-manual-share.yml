@@ -2,7 +2,7 @@ name: Isolated development inventory and cumulative Dashboard rehearsal
 
 on:
   push:
-    branches: [codex-ci-development-browser-20261117-v4]
+    branches: [codex-ci-development-browser-20261117-v5]
 
 permissions:
   contents: read
