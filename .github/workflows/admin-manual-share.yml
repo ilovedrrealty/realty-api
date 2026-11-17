@@ -2,7 +2,7 @@ name: Isolated seller valuation and cumulative Dashboard rehearsal
 
 on:
   push:
-    branches: [codex-ci-seller-valuation-browser-20261117-v2]
+    branches: [codex-ci-seller-valuation-browser-20261117-v3]
 
 permissions:
   contents: read

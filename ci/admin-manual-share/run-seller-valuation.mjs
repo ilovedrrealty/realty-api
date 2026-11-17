@@ -114,6 +114,11 @@ async function responseFor(page, path, method, action, query) {
   return response.json()
 }
 
+async function clickForResponse(page, path, method, control, query) {
+  await control.waitFor({ state: 'visible' })
+  return responseFor(page, path, method, () => control.click(), query)
+}
+
 async function openFromLead(context, role, path) {
   step = role + '_lead_list_identity'
   const page = await context.newPage()
@@ -124,7 +129,7 @@ async function openFromLead(context, role, path) {
   step = role + '_seller_lead_row'
   await text(page.locator('main'), sellerName).filter({ visible: true }).click()
   step = role + '_open_valuation_from_lead'
-  const state = await responseFor(page, path, 'GET', () => button(page, 'Open seller valuation').click())
+  const state = await clickForResponse(page, path, 'GET', button(page, 'Open seller valuation'))
   await page.getByRole('heading', { name: 'Seller valuation', exact: true }).waitFor({ state: 'visible' })
   check(state.lead_id === path.split('/')[3], 'EXACT_SELLER_WORKSPACE_REQUIRED')
   return { page, state }
@@ -132,7 +137,7 @@ async function openFromLead(context, role, path) {
 
 async function dialogAction(page, title, path, method, submit) {
   const panel = dialog(page, title)
-  const state = await responseFor(page, path, method, () => button(panel, submit).click())
+  const state = await clickForResponse(page, path, method, button(panel, submit))
   await panel.waitFor({ state: 'hidden' })
   return state
 }
@@ -164,7 +169,7 @@ async function main() {
     const { page, state: empty } = await openFromLead(admin, 'admin', path)
     step = 'admin_starts_historical_valuation'
     check(empty.version === 0 && empty.started === false && empty.intake_subject === null, 'HISTORICAL_BLANK_WORKSPACE_REQUIRED')
-    const started = await responseFor(page, path + '/draft', 'PUT', () => button(page, 'Start valuation').click())
+    const started = await clickForResponse(page, path + '/draft', 'PUT', button(page, 'Start valuation'))
     check(started.version === 1 && started.started && started.intake_subject === null, 'START_HISTORICAL_VALUATION_REQUIRED')
     step = 'admin_edits_property_facts'
     await option(page, 'villa')
@@ -174,7 +179,7 @@ async function main() {
     await labeled(page, 'Bathrooms').fill('2.5')
     await option(page, 'good')
     step = 'admin_saves_property_facts'
-    const draft = await responseFor(page, path + '/draft', 'PUT', () => button(page, 'Save property facts').click())
+    const draft = await clickForResponse(page, path + '/draft', 'PUT', button(page, 'Save property facts'))
     check(draft.version === 2 && draft.subject.property_type === 'villa' && draft.subject.condition === 'good'
       && Number(draft.subject.area_m2) === 125.75 && draft.subject.location === 'Cabarete'
       && draft.intake_subject === null, 'EXACT_HISTORICAL_PROPERTY_DRAFT_REQUIRED')
@@ -187,13 +192,16 @@ async function main() {
     await button(agent, 'Find asking comparables').click()
     let panel = dialog(agent, 'Find asking comparables')
     await labeled(panel, 'Search listings').fill(saleTitle)
-    const candidates = await responseFor(agent, path + '/asking-candidates', 'GET', () => button(panel, 'Search').click(), saleTitle)
+    const candidates = await clickForResponse(agent, path + '/asking-candidates', 'GET', button(panel, 'Search'), saleTitle)
     check(candidates.items.length === 1 && candidates.items[0].listing_id === fixture.foreignListingId,
       'EXACT_ACTIVE_SALE_COMPARABLE_REQUIRED')
+    step = 'realtor_finds_exact_asking_row'
+    const heading = panel.getByRole('heading', { name: saleTitle, exact: true })
+    await heading.waitFor({ state: 'visible' })
+    const row = heading.locator('xpath=ancestor::li[1]')
     step = 'realtor_saves_asking_snapshot'
-    const row = panel.getByRole('listitem').filter({ has: text(panel, saleTitle) })
-    const asking = await responseFor(agent, path + '/comparables/asking', 'POST',
-      () => button(row, 'Add asking comparable').click())
+    const asking = await clickForResponse(agent, path + '/comparables/asking', 'POST',
+      button(row, 'Add asking comparable'))
     await panel.waitFor({ state: 'hidden' })
     check(asking.comparables.length === 1 && asking.comparables[0].kind === 'asking'
       && asking.comparables[0].listing_id === fixture.foreignListingId && Number(asking.comparables[0].price) === 1000
