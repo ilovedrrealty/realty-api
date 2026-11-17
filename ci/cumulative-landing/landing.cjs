@@ -25,7 +25,8 @@ async function phase(name, args, seconds, heap) {
       npm_config_userconfig: '/tmp/landing-home/.npmrc', npm_config_globalconfig: '/tmp/landing-global-npmrc',
       npm_config_audit: 'false', npm_config_fund: 'false', npm_config_update_notifier: 'false',
       NEXT_PUBLIC_API_URL: 'http://127.0.0.1:8917', NEXT_PUBLIC_DASHBOARD_URL: 'http://127.0.0.1:4175',
-      NEXT_PUBLIC_GOOGLE_CLIENT_ID: 'synthetic-ci.apps.googleusercontent.com' } })
+      NEXT_PUBLIC_GOOGLE_CLIENT_ID: 'synthetic-ci.apps.googleusercontent.com',
+      NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: 'synthetic-map-fixture-only' } })
   const streams = { stdout: [], stderr: [] }
   const size = { stdout: 0, stderr: 0 }
   let stop = null, force

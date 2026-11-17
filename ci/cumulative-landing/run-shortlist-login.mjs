@@ -5,6 +5,7 @@ import { readFile, readdir, realpath, stat } from 'node:fs/promises'
 import { chromium } from 'playwright-core'
 import listingFixture from '/listing-fixture/landing_fixture.cjs'
 import { createEditorialFixture, verifyEditorial } from './editorial-browser.mjs'
+import { createSpatialFixture, verifySpatial } from './spatial-browser.mjs'
 
 const host = '127.0.0.1'
 const landing = `http://${host}:8918`
@@ -12,6 +13,7 @@ const api = `http://${host}:8917`
 const dashboard = `http://${host}:4175`
 const exportRoot = '/landing-export'
 const editorial = createEditorialFixture(api)
+const spatialSearch = createSpatialFixture(api)
 const { LISTING_ID: listing, fixtureResponse } = listingFixture
 const listingPath = `/listing/${listing}/`
 const grant = 'b357412c-d096-47d6-8a77-30cf544e8d97'
@@ -72,6 +74,8 @@ async function serveAuth(request, response) {
   }
   const editorialResult = editorial.responseFor(request)
   if (editorialResult) return json(response, editorialResult.status, editorialResult.data, cors)
+  const spatialResult = spatialSearch.responseFor(request)
+  if (spatialResult) return json(response, spatialResult.status, spatialResult.data, cors)
   if (key === 'GET /auth/me') {
     if (!hasCookie(request)) {
       observations.signedOutReads++
@@ -220,6 +224,7 @@ async function main() {
   const servers = []
   let browser
   let editorialResult
+  let spatialResult
   try {
     stage = 'static_export'
     check(await realpath(exportRoot + '/login/index.html') === exportRoot + '/login/index.html'
@@ -242,6 +247,8 @@ async function main() {
       'SERVER_SIDE_SESSION_EVIDENCE_REQUIRED')
     stage = 'editorial_export'
     editorialResult = await verifyEditorial(browser, editorial, { landing, api }, exportRoot, next => { stage = next })
+    stage = 'spatial_export'
+    spatialResult = await verifySpatial(browser, spatialSearch, { landing, api }, next => { stage = next })
   } finally {
     try { if (browser) await browser.close() } finally {
       await Promise.all(servers.map(server => new Promise(resolve => {
@@ -257,6 +264,7 @@ async function main() {
     viewing_cta_en_es: true, viewing_listing_redirect_en_es: true, existing_session_redirect: true,
     loopback_only: true, fixtures_closed: true }))
   console.log('EDITORIAL_RUNTIME_BROWSER', JSON.stringify(editorialResult))
+  console.log('SPATIAL_SEARCH_BROWSER', JSON.stringify(spatialResult))
 }
 
 main().catch(() => {

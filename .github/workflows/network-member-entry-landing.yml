@@ -1,8 +1,8 @@
-name: Exact bilingual live editorial reader rehearsal
+name: Exact spatial property search landing browser rehearsal
 
 on:
   push:
-    branches: [codex-ci-editorial-landing-20261117]
+    branches: [codex-ci-spatial-landing-20261117]
 
 permissions:
   contents: read
@@ -37,16 +37,16 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: ilovedrrealty/iLoveDRRealty
-          ref: f628e36eebd93eaef3a8193c74b2f6b1c5d3cc74
+          ref: d38e372a5a41ccc4f1baa8cc857b7350136f81e2
           path: member-landing-source
           persist-credentials: false
       - name: Read the exact candidate backend source for pair identity
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 483cb04f149a003dfca35fdd6b19ec43f942d127
+          ref: 833d35becff5a75ddfa3cd02fb999785c07bcdfa
           path: member-landing-backend
           persist-credentials: false
-      - name: Verify static export, live editorial changes and the existing sign-in journeys in Chromium
+      - name: Verify the actual mobile spatial search and existing landing journeys in Chromium
         shell: bash
         run: |
           set -euo pipefail
