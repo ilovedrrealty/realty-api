@@ -2,7 +2,7 @@ name: Isolated reviewed service matching Dashboard rehearsal
 
 on:
   push:
-    branches: [codex-ci-reviewed-service-matches-browser-20261117]
+    branches: [codex-ci-reviewed-service-matches-browser-20261117-v2]
 
 permissions:
   contents: read

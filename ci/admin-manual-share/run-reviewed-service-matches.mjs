@@ -41,6 +41,8 @@ class FailedCheck extends Error {}
 function check(condition, reason) { if (!condition) throw new FailedCheck(reason) }
 function failureReason(error) {
   if (error instanceof FailedCheck) return error.message
+  if (String(error?.message).includes('did not find some options')) return 'SELECT_OPTION_NOT_FOUND'
+  if (String(error?.message).includes('intercepts pointer events')) return 'POINTER_INTERCEPTED'
   if (error?.name === 'TimeoutError') return 'LOCATOR_OR_EVENT_NOT_FOUND'
   if (String(error?.message).includes('strict mode violation')) return 'LOCATOR_AMBIGUOUS'
   return 'BROWSER_OPERATION_FAILED'
@@ -121,6 +123,14 @@ const button = (scope, name) => scope.getByRole('button', { name, exact: true })
 const label = (scope, name) => scope.getByLabel(name, { exact: true })
 const text = (scope, name) => scope.getByText(name, { exact: true })
 const pathOf = (id, view) => requestsPath + '/' + id + '?view=' + view
+const combo = (scope, label) => {
+  const name = label.replaceAll('(', '\\(').replaceAll(')', '\\)')
+  return scope.getByRole('combobox', { name: new RegExp('^' + name) })
+}
+
+function entryStage(actor, event) {
+  if (actor) stage = actor + '_' + event
+}
 
 function selected(page, alias) {
   return page.getByRole('group', { name: alias, exact: true }).getByRole('checkbox')
@@ -139,15 +149,24 @@ async function mobileLayout(page) {
   check(layout.touch > 0 && layout.width === 390 && layout.right <= 391 && layout.rootWidth <= 391, 'MOBILE_LAYOUT_REQUIRED')
 }
 
-async function services(context, labels) {
+async function services(context, labels, actor = null) {
+  entryStage(actor, 'dashboard')
   const page = await context.newPage()
   await page.bringToFront()
   const identity = observe(page, 'GET', '/auth/me')
   check((await page.goto(dashboard + '/', { waitUntil: 'domcontentloaded' }))?.ok(), 'REAL_DASHBOARD_REQUIRED')
   await matchedResponse(identity, 200, false)
+  await page.waitForFunction(() => document.visibilityState === 'visible' && navigator.onLine)
+  entryStage(actor, 'open_menu')
   await page.locator('main button:has(svg.lucide-menu)').click()
+  await page.waitForFunction(() => {
+    const bounds = document.querySelector('aside')?.getBoundingClientRect()
+    return Boolean(bounds && bounds.left >= -1 && bounds.right <= innerWidth + 1)
+  })
+  entryStage(actor, 'open_network')
   await button(page.locator('aside'), labels.network).click()
-  check(new URL(page.url()).pathname === '/property-network', 'NORMAL_NETWORK_ROUTE_REQUIRED')
+  await page.waitForURL(url => url.pathname === '/property-network')
+  entryStage(actor, 'open_services')
   const managed = observe(page, 'GET', requestsPath, { view: 'managed' })
   await button(page, labels.services).click()
   await matchedResponse(managed)
@@ -159,26 +178,34 @@ async function verifyCandidates(response, codes) {
   check(output.page === 1 && output.page_size === 30 && output.total === codes.length
     && Array.isArray(output.items) && output.items.length === codes.length, 'EXACT_CANDIDATE_PAGE_REQUIRED')
   check(output.items.every(item => Object.keys(item).sort().join(',') === 'category_ids,member_alias,user_code'
-    && item.category_ids.includes(category) && codes.includes(item.user_code)), 'UNAUTHORIZED_PROVIDER_PROJECTION')
+    && item.category_ids.includes(category) && codes.includes(item.user_code))
+    && new Set(output.items.map(item => item.user_code)).size === codes.length, 'UNAUTHORIZED_PROVIDER_PROJECTION')
 }
 
 async function prepareMatch(context, data, language, browserLanguage, alias) {
   const labels = locale[browserLanguage]
-  stage = browserLanguage === 'en' ? 'owner_entry' : 'realtor_entry'
-  const page = await services(context, labels)
+  const actor = browserLanguage === 'en' ? 'owner' : 'realtor'
+  const page = await services(context, labels, actor)
+  entryStage(actor, 'open_create')
   await button(page, labels.create).click()
-  check(await label(page, labels.mode).inputValue() === 'reviewed', 'DEFAULT_REVIEWED_REQUIRED')
-  await label(page, labels.sourceKind).selectOption('listing')
-  const source = label(page, labels.source)
+  entryStage(actor, 'check_mode')
+  check(await combo(page, labels.mode).inputValue() === 'reviewed', 'DEFAULT_REVIEWED_REQUIRED')
+  entryStage(actor, 'choose_kind')
+  await combo(page, labels.sourceKind).selectOption('listing')
+  entryStage(actor, 'choose_source')
+  const source = combo(page, labels.source)
   await source.locator(`option[value="${data.serviceSourceId}"]`).waitFor({ state: 'attached' })
   check(await source.locator(`option[value="${data.foreignListingId}"]`).count() === 0, 'FOREIGN_SOURCE_LISTED')
   await source.selectOption(data.serviceSourceId)
-  await label(page, labels.propertyClass).selectOption(propertyClass)
-  await label(page, labels.category).selectOption(category)
-  await label(page, labels.language).selectOption(language)
-  stage = browserLanguage === 'en' ? 'owner_discovery' : 'realtor_discovery'
+  entryStage(actor, 'choose_class')
+  await combo(page, labels.propertyClass).selectOption(propertyClass)
+  entryStage(actor, 'choose_category')
+  await combo(page, labels.category).selectOption(category)
+  entryStage(actor, 'choose_language')
+  await combo(page, labels.language).selectOption(language)
+  entryStage(actor, 'discovery')
   const matched = observe(page, 'GET', matchPath, matchFilters(data, language))
-  await label(page, labels.area).selectOption(area)
+  await combo(page, labels.area).selectOption(area)
   const result = await matchedResponse(matched)
   const actual = new URL(result.url()).searchParams
   check(!actual.has('property_id') && [...actual.keys()].sort().join(',')
@@ -186,7 +213,8 @@ async function prepareMatch(context, data, language, browserLanguage, alias) {
   await verifyCandidates(result, [data.serviceCodes[language === 'es' ? 'north' : 'english']])
   await selected(page, alias).waitFor()
   check(await selected(page, alias).isChecked() === false, 'CANDIDATE_AUTOMATICALLY_SELECTED')
-  for (const value of privateAliases) check(await text(page, value).count() === 0, 'PRIVATE_PROVIDER_RENDERED')
+  for (const value of privateAliases) check(await selected(page, value).count() === 0
+    && await text(page, value).count() === 0, 'PRIVATE_PROVIDER_RENDERED')
   check(await selected(page, language === 'es' ? englishAlias : northAlias).count() === 0, 'WRONG_LANGUAGE_RENDERED')
   await mobileLayout(page)
   return { page, labels }
@@ -196,20 +224,20 @@ async function ownerFilterEdits({ page, labels }, data) {
   stage = 'owner_filter_reset'
   await selected(page, northAlias).check()
   const anyLanguage = observe(page, 'GET', matchPath, matchFilters(data, null))
-  await label(page, labels.language).selectOption('')
+  await combo(page, labels.language).selectOption('')
   await verifyCandidates(await matchedResponse(anyLanguage), [data.serviceCodes.north, data.serviceCodes.english])
   await selected(page, northAlias).waitFor()
   check(!(await selected(page, northAlias).isChecked()) && !(await selected(page, englishAlias).isChecked()),
     'FILTER_KEPT_STALE_SELECTION')
   const opted = observe(page, 'GET', legacyPath, { category_id: category, property_class: propertyClass, page: '1' })
-  await label(page, labels.mode).selectOption('opt_in')
+  await combo(page, labels.mode).selectOption('opt_in')
   await matchedResponse(opted)
-  check(await label(page, labels.area).count() === 0, 'OPT_IN_MODE_USED_REVIEWED_FIELDS')
+  check(await combo(page, labels.area).count() === 0, 'OPT_IN_MODE_USED_REVIEWED_FIELDS')
   const reviewedAgain = observe(page, 'GET', matchPath, matchFilters(data, null))
-  await label(page, labels.mode).selectOption('reviewed')
+  await combo(page, labels.mode).selectOption('reviewed')
   await verifyCandidates(await matchedResponse(reviewedAgain), [data.serviceCodes.north, data.serviceCodes.english])
   const restore = observe(page, 'GET', matchPath, matchFilters(data, 'es'))
-  await label(page, labels.language).selectOption('es')
+  await combo(page, labels.language).selectOption('es')
   await verifyCandidates(await matchedResponse(restore), [data.serviceCodes.north])
   await selected(page, northAlias).waitFor()
   check(!await selected(page, northAlias).isChecked(), 'MODE_KEPT_STALE_SELECTION')

@@ -8,7 +8,7 @@ bounded() { timeout --kill-after=8s "$@"; }
 
 [[ $# == 4 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api ]] || die CI_REQUIRED
 [[ ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 && ${GITHUB_RUN_ATTEMPT:-} == 1 ]] || die STANDARD_LINUX_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-reviewed-service-matches-browser-20261117 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
+[[ ${GITHUB_REF:-} == refs/heads/codex-ci-reviewed-service-matches-browser-20261117-v2 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 
 ops="$1"; frontend="$2"; backend="$3"; migration="$4"
 [[ "$ops" == "$GITHUB_WORKSPACE/browser-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-base" &&
@@ -18,10 +18,10 @@ for checkout in "$ops" "$frontend" "$backend" "$migration"; do
   checkout_status=$(git -C "$checkout" status --porcelain=v1 --untracked-files=all) || die CLEAN_CHECKOUT_REQUIRED
   [[ $(realpath "$checkout") == "$checkout" && -z "$checkout_status" ]] || die CLEAN_CHECKOUT_REQUIRED
 done
-[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == be3ef310e967b9d79a947562a4888884f0812edb ]] ||
+[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == 4ed3033e82f34e4f178227859e1b27dcb42c3489 ]] ||
   die EXACT_OPERATIONS_PARENT_REQUIRED
 operations_delta=$(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) || die EXACT_OPERATIONS_DELTA_REQUIRED
-[[ "$operations_delta" == $'.github/workflows/admin-manual-share.yml\nci/admin-manual-share/run-hosted-admin-manual-share.sh\nci/admin-manual-share/run-reviewed-service-matches.mjs\nci/admin-manual-share/serve_reviewed_service_matches_fixture.py' ]] ||
+[[ "$operations_delta" == $'.github/workflows/admin-manual-share.yml\nci/admin-manual-share/run-hosted-admin-manual-share.sh\nci/admin-manual-share/run-reviewed-service-matches.mjs' ]] ||
   die EXACT_OPERATIONS_DELTA_REQUIRED
 frontend_commit=64899948056a2570b91ab62697453721828ee334
 frontend_tree=048989a516ad758030bfd1320e1fc01dc2d085b5
@@ -33,8 +33,13 @@ frontend_test_count=31
 backend_commit=ae63b4a9d79877b77cdd78248b6a228738588a2f
 backend_tree=4dd47c73bf001841a855328136a628b74610f587
 migration_head=de248ab5c9f3
-browser_failure_stages='fixture,auth,scope,owner_entry,realtor_entry,owner_discovery,realtor_discovery,'\
-'owner_filter_reset,owner_create,realtor_create,received_north,received_english,unassigned_received_scope'
+browser_failure_stages='fixture,auth,scope,owner_discovery,realtor_discovery,owner_filter_reset,owner_create,realtor_create,'\
+'received_north,received_english,unassigned_received_scope'
+for actor in owner realtor; do
+  for entry in dashboard open_menu open_network open_services open_create check_mode choose_kind choose_source choose_class choose_category choose_language; do
+    browser_failure_stages+=",${actor}_$entry"
+  done
+done
 browser_checks=(
   foreign_and_unassigned_sources_denied
   reviewed_area_language_class_and_held_exclusion
