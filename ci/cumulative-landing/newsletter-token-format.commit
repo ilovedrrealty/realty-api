@@ -1,0 +1,6 @@
+tree ca59517c57b8e06ffe5fd2840340ee739e29937b
+parent 5994fbe6d1c09b3f74000ca20261778f0c46887e
+author Codex <codex@localhost> 1794954388 -0400
+committer Codex <codex@localhost> 1794954388 -0400
+
+Accept the exact newsletter UUID and HMAC action token format

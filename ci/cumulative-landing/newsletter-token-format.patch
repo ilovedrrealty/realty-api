@@ -1,0 +1,23 @@
+diff --git a/apps/landing/src/api/newsletter.ts b/apps/landing/src/api/newsletter.ts
+index ab3c039abbb65943b2eb8a25e0b1ce98bae043a9..19979ceb529e597b233eb9678f55f09efcc43bac 100644
+--- a/apps/landing/src/api/newsletter.ts
++++ b/apps/landing/src/api/newsletter.ts
+@@ -14 +14 @@ export class NewsletterRequestError extends Error {
+-const TOKEN = /^[A-Za-z0-9_-]{32,256}$/
++const TOKEN = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}\.[0-9a-f]{64}$/
+@@ -18 +18 @@ export function readNewsletterLink(fragment: string): { action: NewsletterAction
+-  const match = /^#(confirm|unsubscribe)=([A-Za-z0-9_-]+)$/.exec(fragment)
++  const match = /^#(confirm|unsubscribe)=([^#&=?]+)$/.exec(fragment)
+diff --git a/tests/newsletter.test.cjs b/tests/newsletter.test.cjs
+index 96a2fa036f4c96361e526711034b5becc498015b..df030181ad4d5af62e7437cff4514156ffdf831b 100644
+--- a/tests/newsletter.test.cjs
++++ b/tests/newsletter.test.cjs
+@@ -12 +12 @@ const plain = value => JSON.parse(JSON.stringify(value))
+-const token = 'synthetic_' + 'a'.repeat(34)
++const token = '00112233-4455-4677-8899-aabbccddeeff.' + 'a'.repeat(64)
+@@ -123,0 +124 @@ test('only a bounded purpose-specific fragment can supply an action token', asyn
++  assert.equal(token.length, 101)
+@@ -127 +128,2 @@ test('only a bounded purpose-specific fragment can supply an action token', asyn
+-    '#confirm=short', '#confirm=' + 'a'.repeat(257), '#unsubscribe=' + token + '%20', '#confirm=' + token + '#other']) {
++    '#confirm=short', '#confirm=' + 'a'.repeat(257), '#unsubscribe=' + token + '%20', '#confirm=' + token + '#other',
++    '#confirm=' + token.toUpperCase(), '#confirm=synthetic_' + 'a'.repeat(34), '#confirm=' + token.replace('.', '_')]) {

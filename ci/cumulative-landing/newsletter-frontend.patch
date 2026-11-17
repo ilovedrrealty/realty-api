@@ -1,0 +1,762 @@
+diff --git a/apps/landing/src/api/newsletter.ts b/apps/landing/src/api/newsletter.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..ab3c039abbb65943b2eb8a25e0b1ce98bae043a9
+--- /dev/null
++++ b/apps/landing/src/api/newsletter.ts
+@@ -0,0 +1,61 @@
++const API = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/+$/, '')
++
++export type NewsletterLanguage = 'en' | 'es'
++export type NewsletterAction = 'confirm' | 'unsubscribe'
++type NewsletterStatus = 'accepted' | 'subscribed' | 'unsubscribed'
++type NewsletterErrorCode = 'invalid' | 'rate_limited' | 'unavailable'
++
++export class NewsletterRequestError extends Error {
++  constructor(readonly code: NewsletterErrorCode) {
++    super(code)
++  }
++}
++
++const TOKEN = /^[A-Za-z0-9_-]{32,256}$/
++
++export function readNewsletterLink(fragment: string): { action: NewsletterAction; token: string } | null {
++  if (fragment.length > 300) return null
++  const match = /^#(confirm|unsubscribe)=([A-Za-z0-9_-]+)$/.exec(fragment)
++  if (!match || !TOKEN.test(match[2])) return null
++  return { action: match[1] === 'confirm' ? 'confirm' : 'unsubscribe', token: match[2] }
++}
++
++async function request(
++  action: 'subscribe' | NewsletterAction,
++  body: { email: string; consent: true; language: NewsletterLanguage } | { token: string },
++  httpStatus: 200 | 202,
++  expected: NewsletterStatus,
++): Promise<void> {
++  let response: Response
++  try {
++    response = await fetch(API + '/newsletter/' + action, {
++      method: 'POST',
++      headers: { 'Content-Type': 'application/json' },
++      credentials: 'omit',
++      referrerPolicy: 'no-referrer',
++      redirect: 'error',
++      cache: 'no-store',
++      body: JSON.stringify(body),
++    })
++  } catch {
++    throw new NewsletterRequestError('unavailable')
++  }
++  if (response.status === 429) throw new NewsletterRequestError('rate_limited')
++  if (response.status === 400 || response.status === 422) throw new NewsletterRequestError('invalid')
++  if (response.status !== httpStatus) throw new NewsletterRequestError('unavailable')
++
++  const payload: unknown = await response.json().catch(() => null)
++  if (typeof payload !== 'object' || payload === null || Array.isArray(payload)
++    || Object.keys(payload).length !== 1 || !('status' in payload) || payload.status !== expected) {
++    throw new NewsletterRequestError('unavailable')
++  }
++}
++
++export function subscribeToNewsletter(email: string, language: NewsletterLanguage): Promise<void> {
++  return request('subscribe', { email: email.trim(), consent: true, language }, 202, 'accepted')
++}
++
++export async function applyNewsletterAction(action: NewsletterAction, token: string): Promise<void> {
++  if (!TOKEN.test(token)) throw new NewsletterRequestError('invalid')
++  await request(action, { token }, 200, action === 'confirm' ? 'subscribed' : 'unsubscribed')
++}
+diff --git a/apps/landing/src/app/layout.tsx b/apps/landing/src/app/layout.tsx
+index a18f3784fdf78379e4b4ca7ee6fc9048f81d9bfe..817f6224ba3922ad41abe65fda590658d708bb8b 100644
+--- a/apps/landing/src/app/layout.tsx
++++ b/apps/landing/src/app/layout.tsx
+@@ -2,2 +1,0 @@ import type { Metadata } from 'next'
+-import { Suspense } from 'react'
+-import Script from 'next/script'
+@@ -5,9 +3 @@ import './globals.css'
+-import Navbar from '../components/Navbar'
+-import Footer from '../components/Footer'
+-import { Toaster } from 'react-hot-toast'
+-import GoogleAuthProvider from '../components/GoogleAuthProvider'
+-import LeadCaptureProvider from '../components/LeadCaptureProvider'
+-import I18nProvider from '../components/I18nProvider'
+-import WebsiteSettingsProvider from '../components/WebsiteSettingsProvider'
+-import TrackingCapture from '../components/TrackingCapture'
+-import MeasurementPreferences from '../components/MeasurementPreferences'
++import LandingRouteShell from '../components/LandingRouteShell'
+@@ -44,21 +34 @@ export default function RootLayout({ children }: { children: React.ReactNode })
+-        <Suspense fallback={null}><TrackingCapture /></Suspense>
+-        <I18nProvider>
+-        <MeasurementPreferences />
+-        <WebsiteSettingsProvider>
+-        <GoogleAuthProvider>
+-          <LeadCaptureProvider>
+-          <Navbar />
+-          {children}
+-          <Footer />
+-          <Toaster
+-            position="top-center"
+-            toastOptions={{
+-              duration: 3500,
+-              style: { fontFamily: 'inherit', fontSize: '14px', borderRadius: '12px' },
+-            }}
+-          />
+-          </LeadCaptureProvider>
+-        </GoogleAuthProvider>
+-        </WebsiteSettingsProvider>
+-        </I18nProvider>
+-        <Script src="//code.tidio.co/31bscsjpyxzsm0q0fxc65bs1aba5dsf1.js" strategy="lazyOnload" />
++        <LandingRouteShell>{children}</LandingRouteShell>
+diff --git a/apps/landing/src/app/newsletter/page.tsx b/apps/landing/src/app/newsletter/page.tsx
+new file mode 100644
+index 0000000000000000000000000000000000000000..6a9f0e1797cedd09ef886679e319f560cd477fbe
+--- /dev/null
++++ b/apps/landing/src/app/newsletter/page.tsx
+@@ -0,0 +1,12 @@
++import type { Metadata } from 'next'
++import NewsletterPreferences from '../../views/NewsletterPreferences'
++
++export const metadata: Metadata = {
++  title: 'Newsletter preferences',
++  robots: { index: false, follow: false },
++  referrer: 'no-referrer',
++}
++
++export default function NewsletterPage() {
++  return <NewsletterPreferences />
++}
+diff --git a/apps/landing/src/app/privacy-policy/page.tsx b/apps/landing/src/app/privacy-policy/page.tsx
+index 0b8b8eaf4d34ac06dc6d82b4861c0ae1b25b7cb6..a41f40503a0879edb703868b1cfbb55db4db6716 100644
+--- a/apps/landing/src/app/privacy-policy/page.tsx
++++ b/apps/landing/src/app/privacy-policy/page.tsx
+@@ -15 +15 @@ export default function Page() {
+-        <p className="text-[13px] text-dim">Last updated: October 22, 2026</p>
++        <p className="text-[13px] text-dim">Last updated November 17, 2026</p>
+@@ -75,0 +76,19 @@ export default function Page() {
++        <h2>Newsletter choices</h2>
++        <p>
++          Newsletter signup is optional and has its own consent checkbox. We keep your email,
++          selected language and consent record privately. A request remains pending until you
++          deliberately confirm through the email link. Our email delivery provider, Resend,
++          processes the confirmation message when delivery is enabled. You can use a newsletter
++          email's unsubscribe link to stop future newsletter messages. Submitting a property
++          inquiry or creating an account does not enroll you in the newsletter.
++        </p>
++        <p lang="es">
++          La suscripción al boletín es opcional y requiere marcar su propia casilla de consentimiento.
++          Guardamos de forma privada tu correo, idioma elegido y registro de consentimiento.
++          La solicitud queda pendiente hasta que confirmes expresamente mediante el enlace del
++          correo. Nuestro proveedor de correo, Resend, procesa el mensaje de confirmación cuando
++          el envío está habilitado. Puedes usar el enlace para cancelar la suscripción en un correo
++          del boletín y dejar de recibir futuros mensajes. Enviar una consulta inmobiliaria o crear
++          una cuenta no te suscribe al boletín.
++        </p>
++
+diff --git a/apps/landing/src/components/LandingRouteShell.tsx b/apps/landing/src/components/LandingRouteShell.tsx
+new file mode 100644
+index 0000000000000000000000000000000000000000..f04adfdfbcb123df6ccf63dfd923ea2f01db0d37
+--- /dev/null
++++ b/apps/landing/src/components/LandingRouteShell.tsx
+@@ -0,0 +1,47 @@
++'use client'
++
++import { Suspense } from 'react'
++import { usePathname } from 'next/navigation'
++import Script from 'next/script'
++import { Toaster } from 'react-hot-toast'
++import Navbar from './Navbar'
++import Footer from './Footer'
++import GoogleAuthProvider from './GoogleAuthProvider'
++import LeadCaptureProvider from './LeadCaptureProvider'
++import I18nProvider from './I18nProvider'
++import WebsiteSettingsProvider from './WebsiteSettingsProvider'
++import TrackingCapture from './TrackingCapture'
++import MeasurementPreferences from './MeasurementPreferences'
++
++export default function LandingRouteShell({ children }: { children: React.ReactNode }) {
++  const pathname = usePathname()
++  if (!pathname || pathname.replace(/\/+$/, '') === '/newsletter') {
++    // Keep action links outside measurement, chat, lead capture and OAuth.
++    return <I18nProvider>{children}</I18nProvider>
++  }
++  return (
++    <>
++      <Suspense fallback={null}><TrackingCapture /></Suspense>
++      <I18nProvider>
++        <MeasurementPreferences />
++        <WebsiteSettingsProvider>
++          <GoogleAuthProvider>
++            <LeadCaptureProvider>
++              <Navbar />
++              {children}
++              <Footer />
++              <Toaster
++                position="top-center"
++                toastOptions={{
++                  duration: 3500,
++                  style: { fontFamily: 'inherit', fontSize: '14px', borderRadius: '12px' },
++                }}
++              />
++            </LeadCaptureProvider>
++          </GoogleAuthProvider>
++        </WebsiteSettingsProvider>
++      </I18nProvider>
++      <Script src="//code.tidio.co/31bscsjpyxzsm0q0fxc65bs1aba5dsf1.js" strategy="lazyOnload" />
++    </>
++  )
++}
+diff --git a/apps/landing/src/components/NewsletterSignup.tsx b/apps/landing/src/components/NewsletterSignup.tsx
+new file mode 100644
+index 0000000000000000000000000000000000000000..ba044735afeb7aea7582f79af2accaa1af91025c
+--- /dev/null
++++ b/apps/landing/src/components/NewsletterSignup.tsx
+@@ -0,0 +1,86 @@
++'use client'
++
++import { useId, useRef, useState, type FormEvent } from 'react'
++import { useTranslation } from 'react-i18next'
++import { NewsletterRequestError, subscribeToNewsletter } from '../api/newsletter'
++
++export default function NewsletterSignup() {
++  const { t, i18n } = useTranslation('blog')
++  const emailId = useId()
++  const consentId = useId()
++  const pending = useRef(false)
++  const [email, setEmail] = useState('')
++  const [consent, setConsent] = useState(false)
++  const [submitting, setSubmitting] = useState(false)
++  const [status, setStatus] = useState<'accepted' | 'invalid' | 'rate_limited' | 'unavailable' | null>(null)
++
++  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
++    event.preventDefault()
++    if (pending.current || !consent) return
++    pending.current = true
++    setSubmitting(true)
++    setStatus(null)
++    try {
++      await subscribeToNewsletter(email, i18n.language.startsWith('es') ? 'es' : 'en')
++      setStatus('accepted')
++      setEmail('')
++      setConsent(false)
++    } catch (error) {
++      setStatus(error instanceof NewsletterRequestError ? error.code : 'unavailable')
++    } finally {
++      pending.current = false
++      setSubmitting(false)
++    }
++  }
++
++  return (
++    <form onSubmit={handleSubmit} aria-busy={submitting} className="max-w-120 mx-auto text-left font-sans">
++      <label htmlFor={emailId} className="block mb-2 text-sm font-semibold text-white">
++        {t('newsletter.email_label')}
++      </label>
++      <input
++        id={emailId}
++        type="email"
++        name="email"
++        autoComplete="email"
++        value={email}
++        onChange={event => { setEmail(event.target.value); setStatus(null) }}
++        placeholder={t('newsletter.placeholder')}
++        maxLength={254}
++        required
++        disabled={submitting}
++        className="w-full min-h-12 rounded-xl border border-white/65 bg-white px-4 text-base text-ink outline-offset-2 focus-visible:outline"
++      />
++      <div className="my-4 flex items-start gap-3">
++        <input
++          id={consentId}
++          type="checkbox"
++          checked={consent}
++          onChange={event => setConsent(event.target.checked)}
++          required
++          disabled={submitting}
++          className="mt-0.5 min-h-5 min-w-5 accent-white outline-offset-2 focus-visible:outline"
++        />
++        <label htmlFor={consentId} className="text-sm leading-relaxed text-white">
++          {t('newsletter.consent')}
++        </label>
++      </div>
++      <button
++        type="submit"
++        disabled={submitting || !consent}
++        className="w-full min-h-12 rounded-xl bg-white px-4 py-3 text-sm font-bold text-coral-deep cursor-pointer outline-offset-2 focus-visible:outline disabled:opacity-65 disabled:cursor-not-allowed"
++      >
++        {t(submitting ? 'newsletter.sending' : 'newsletter.cta')}
++      </button>
++      <p className="mt-3 text-sm text-white/90">
++        {t('newsletter.confirmation_note')}{' '}
++        <a href="/privacy-policy/" className="underline underline-offset-2">{t('newsletter.privacy')}</a>{' '}
++        <span aria-hidden="true">·</span>{' '}
++        <a href="/terms-of-service/" className="underline underline-offset-2">{t('newsletter.terms')}</a>
++      </p>
++      {status && <p role={status === 'accepted' ? 'status' : 'alert'} className="mt-3 rounded-xl bg-white px-4 py-3 text-sm text-ink">
++        {t(`newsletter.signup_status.${status}`)}
++      </p>}
++    </form>
++  )
++}
+diff --git a/apps/landing/src/locales/en/blog.json b/apps/landing/src/locales/en/blog.json
+index 2cdf577b236850cfed63af1347f22e47c1ba631b..9a17e2a58e22e6c05aae40856d3c7a94741a6573 100644
+--- a/apps/landing/src/locales/en/blog.json
++++ b/apps/landing/src/locales/en/blog.json
+@@ -194,2 +194,29 @@
+-    "cta": "Subscribe free",
+-    "disclaimer": "Review the subscription terms before submitting your email."
++    "email_label": "Email address",
++    "consent": "I agree to receive property updates and guides by email from I Love DR Realty. I can unsubscribe at any time.",
++    "cta": "Request a free subscription",
++    "sending": "Submitting request…",
++    "confirmation_note": "Confirm your email address to finish subscribing.",
++    "privacy": "Privacy policy",
++    "terms": "Terms of service",
++    "signup_status": {
++      "accepted": "Request received. If your address needs confirmation, look for our email in your inbox or spam folder. Open the link and confirm to finish.",
++      "invalid": "Check your email address and try again.",
++      "rate_limited": "Please wait a little before trying again.",
++      "unavailable": "Newsletter signup is temporarily unavailable. Try again later."
++    },
++    "manage": {
++      "heading": "Newsletter preferences",
++      "language": "Choose a language",
++      "loading": "Opening your newsletter link…",
++      "confirm_note": "Confirm that you want property updates and guides by email from I Love DR Realty.",
++      "unsubscribe_note": "Confirm that you want to stop receiving the I Love DR Realty newsletter.",
++      "confirm_button": "Confirm subscription",
++      "unsubscribe_button": "Unsubscribe",
++      "working": "Updating your preference…",
++      "subscribed": "Your newsletter subscription is confirmed.",
++      "unsubscribed": "You’re unsubscribed from the newsletter.",
++      "invalid": "This link is invalid or has expired. Use the link from your most recent newsletter email.",
++      "rate_limited": "Please wait a little before trying again.",
++      "unavailable": "We couldn’t update your preference right now. Try again later.",
++      "back": "Back to resources"
++    }
+diff --git a/apps/landing/src/locales/es/blog.json b/apps/landing/src/locales/es/blog.json
+index 31616da5578d455828f326977ce58b54a5be29f7..db7d7d9e10e8b5ab887a45fc669b7212b4924932 100644
+--- a/apps/landing/src/locales/es/blog.json
++++ b/apps/landing/src/locales/es/blog.json
+@@ -194,2 +194,29 @@
+-    "cta": "Suscribirse gratis",
+-    "disclaimer": "Revisa las condiciones de suscripción antes de enviar tu correo."
++    "email_label": "Correo electrónico",
++    "consent": "Acepto recibir por correo electrónico novedades inmobiliarias y guías de I Love DR Realty. Puedo cancelar mi suscripción en cualquier momento.",
++    "cta": "Solicitar una suscripción gratuita",
++    "sending": "Enviando solicitud…",
++    "confirmation_note": "Confirma tu correo para completar la suscripción.",
++    "privacy": "Política de privacidad",
++    "terms": "Términos del servicio",
++    "signup_status": {
++      "accepted": "Recibimos tu solicitud. Si tu dirección requiere confirmación, busca nuestro correo en tu bandeja de entrada o en correo no deseado. Abre el enlace y confirma para completar la suscripción.",
++      "invalid": "Revisa tu dirección de correo y vuelve a intentarlo.",
++      "rate_limited": "Espera un momento antes de volver a intentarlo.",
++      "unavailable": "Las suscripciones al boletín no están disponibles en este momento. Inténtalo más tarde."
++    },
++    "manage": {
++      "heading": "Preferencias del boletín",
++      "language": "Elegir idioma",
++      "loading": "Abriendo el enlace del boletín…",
++      "confirm_note": "Confirma que quieres recibir por correo novedades inmobiliarias y guías de I Love DR Realty.",
++      "unsubscribe_note": "Confirma que quieres dejar de recibir el boletín de I Love DR Realty.",
++      "confirm_button": "Confirmar suscripción",
++      "unsubscribe_button": "Cancelar suscripción",
++      "working": "Actualizando tu preferencia…",
++      "subscribed": "Confirmamos tu suscripción al boletín.",
++      "unsubscribed": "Cancelamos tu suscripción al boletín.",
++      "invalid": "Este enlace no es válido o ha vencido. Usa el enlace de tu correo más reciente del boletín.",
++      "rate_limited": "Espera un momento antes de volver a intentarlo.",
++      "unavailable": "No pudimos actualizar tu preferencia en este momento. Inténtalo más tarde.",
++      "back": "Volver a recursos"
++    }
+diff --git a/apps/landing/src/views/Blog.tsx b/apps/landing/src/views/Blog.tsx
+index e216aee3d45f7315e8e2970c88101e5cf9ea0042..187cd1cffd6cdc88201a04f3730dcff2832887ed 100644
+--- a/apps/landing/src/views/Blog.tsx
++++ b/apps/landing/src/views/Blog.tsx
+@@ -3,0 +4 @@ import ProfessionalResourceCard from '../components/ProfessionalResourceCard'
++import NewsletterSignup from '../components/NewsletterSignup'
+@@ -26 +26,0 @@ export default function Blog() {
+-  const [email, setEmail] = useState('')
+@@ -330,14 +330 @@ export default function Blog() {
+-          <div className="flex gap-2.5 max-w-120 mx-auto bg-white/18 p-1.5 rounded-full backdrop-blur-2.5 border border-white/30">
+-            <input
+-              placeholder={t('newsletter.placeholder')}
+-              value={email}
+-              onChange={e => setEmail(e.target.value)}
+-              className="flex-1 min-w-0 py-3.25 px-4.5 rounded-full border-none font-sans text-sm bg-transparent text-white outline-none"
+-            />
+-            <button className="bg-white text-coral-deep border-none py-2.75 px-4 sm:px-5.5 rounded-full font-sans text-[13.5px] font-bold cursor-pointer shrink-0">
+-              {t('newsletter.cta')}
+-            </button>
+-          </div>
+-          <div className="mt-4.5 text-xs text-white/65 font-sans">
+-            {t('newsletter.disclaimer')}
+-          </div>
++          <NewsletterSignup />
+diff --git a/apps/landing/src/views/NewsletterPreferences.tsx b/apps/landing/src/views/NewsletterPreferences.tsx
+new file mode 100644
+index 0000000000000000000000000000000000000000..49dfe3545887aee72687d08136720526bd3cb67e
+--- /dev/null
++++ b/apps/landing/src/views/NewsletterPreferences.tsx
+@@ -0,0 +1,94 @@
++'use client'
++
++import { useEffect, useRef, useState } from 'react'
++import { useTranslation } from 'react-i18next'
++import { applyNewsletterAction, NewsletterRequestError, readNewsletterLink, type NewsletterAction } from '../api/newsletter'
++
++export default function NewsletterPreferences() {
++  const { t, i18n } = useTranslation('blog')
++  const tokenRef = useRef<string | null>(null)
++  const initialized = useRef(false)
++  const pending = useRef(false)
++  const [action, setAction] = useState<NewsletterAction | null>()
++  const [submitting, setSubmitting] = useState(false)
++  const [status, setStatus] = useState<'subscribed' | 'unsubscribed' | 'invalid' | 'rate_limited' | 'unavailable' | null>(null)
++
++  useEffect(() => {
++    if (initialized.current) return
++    initialized.current = true
++    const { hash, search, pathname } = window.location
++    const link = readNewsletterLink(hash)
++    if (hash || search) {
++      try {
++        window.history.replaceState(window.history.state, '', pathname)
++      } catch {
++        setAction(null)
++        return
++      }
++    }
++    tokenRef.current = link?.token ?? null
++    setAction(link?.action ?? null)
++  }, [])
++
++  async function submit() {
++    const token = tokenRef.current
++    if (!action || !token || pending.current) return
++    pending.current = true
++    setSubmitting(true)
++    setStatus(null)
++    try {
++      await applyNewsletterAction(action, token)
++      tokenRef.current = null
++      setAction(null)
++      setStatus(action === 'confirm' ? 'subscribed' : 'unsubscribed')
++    } catch (error) {
++      const code = error instanceof NewsletterRequestError ? error.code : 'unavailable'
++      if (code === 'invalid') {
++        tokenRef.current = null
++        setAction(null)
++      }
++      setStatus(code)
++    } finally {
++      pending.current = false
++      setSubmitting(false)
++    }
++  }
++
++  const language = i18n.language.startsWith('es') ? 'es' : 'en'
++
++  return (
++    <main lang={language} className="min-h-screen bg-paper2 px-4 py-10 sm:py-16 font-sans">
++      <div className="mx-auto max-w-md rounded-2xl border border-line bg-paper p-5 sm:p-8">
++        <div className="mb-5 flex gap-4 text-sm text-sea" role="group" aria-label={t('newsletter.manage.language')}>
++          <button type="button" lang="en" aria-pressed={language === 'en'} onClick={() => { void i18n.changeLanguage('en') }}
++            className="min-h-11 cursor-pointer underline underline-offset-2 aria-pressed:font-bold">English</button>
++          <button type="button" lang="es" aria-pressed={language === 'es'} onClick={() => { void i18n.changeLanguage('es') }}
++            className="min-h-11 cursor-pointer underline underline-offset-2 aria-pressed:font-bold">Español</button>
++        </div>
++        <h1 className="mb-3 text-2xl font-bold text-ink">{t('newsletter.manage.heading')}</h1>
++        {action === undefined && <p role="status" className="text-ink2">{t('newsletter.manage.loading')}</p>}
++        {action === null && !status && <p className="text-ink2">{t('newsletter.manage.invalid')}</p>}
++        {action && (
++          <>
++            <p className="mb-5 leading-relaxed text-ink2">{t(`newsletter.manage.${action}_note`)}</p>
++            <button
++              type="button"
++              onClick={() => { void submit() }}
++              disabled={submitting}
++              aria-busy={submitting}
++              className="w-full min-h-12 rounded-xl bg-ink px-4 py-3 text-white font-semibold cursor-pointer outline-offset-2 focus-visible:outline disabled:opacity-65 disabled:cursor-not-allowed"
++            >
++              {t(submitting ? 'newsletter.manage.working' : `newsletter.manage.${action}_button`)}
++            </button>
++          </>
++        )}
++        {status && <p role={status === 'subscribed' || status === 'unsubscribed' ? 'status' : 'alert'} className="mt-4 text-ink">
++          {t(`newsletter.manage.${status}`)}
++        </p>}
++        <a href="/blog/" referrerPolicy="no-referrer" className="mt-5 inline-flex min-h-11 items-center text-sm text-sea underline underline-offset-2">
++          {t('newsletter.manage.back')}
++        </a>
++      </div>
++    </main>
++  )
++}
+diff --git a/tests/blog-articles.test.cjs b/tests/blog-articles.test.cjs
+index f340195bb67d0aa518a33fc16f32d7311e9da8f1..dcca093863b331164a9005d728b580ef97e95080 100644
+--- a/tests/blog-articles.test.cjs
++++ b/tests/blog-articles.test.cjs
+@@ -146,0 +147,8 @@ test('actual Blog SSR uses the selected locale for statistics, process, FAQs, ca
++    const NewsletterSignup = sourceModule(path.join(app, 'components/NewsletterSignup.tsx'), {
++      react: React,
++      'react-i18next': { useTranslation: () => ({ t: fixedT(lang), i18n: { language: lang } }) },
++      '../api/newsletter': {
++        NewsletterRequestError: class extends Error {},
++        subscribeToNewsletter: () => { throw new Error('Newsletter writes are forbidden in article SSR') },
++      },
++    }).default
+@@ -155,0 +164 @@ test('actual Blog SSR uses the selected locale for statistics, process, FAQs, ca
++      '../components/NewsletterSignup': { __esModule: true, default: NewsletterSignup },
+@@ -163 +172,2 @@ test('actual Blog SSR uses the selected locale for statistics, process, FAQs, ca
+-      locale.newsletter.heading, locale.newsletter.sub, locale.newsletter.disclaimer,
++      locale.newsletter.heading, locale.newsletter.sub, locale.newsletter.email_label,
++      locale.newsletter.consent, locale.newsletter.confirmation_note,
+diff --git a/tests/lead-tracking.test.cjs b/tests/lead-tracking.test.cjs
+index 3c7a20469252eebebc4eb301aa00445d48dfb38c..b61e50956f7f0865da6c083ce0069be5e27fc5ed 100644
+--- a/tests/lead-tracking.test.cjs
++++ b/tests/lead-tracking.test.cjs
+@@ -165,0 +166 @@ test('all four inquiry forms use the shared receipt path, independent contact co
++  const shell = fs.readFileSync(path.join(root, 'components/LandingRouteShell.tsx'), 'utf8')
+@@ -167 +168,3 @@ test('all four inquiry forms use the shared receipt path, independent contact co
+-  assert.match(layout, /MeasurementPreferences/)
++  assert.match(layout, /LandingRouteShell/)
++  assert.doesNotMatch(shell, /googletagmanager|gtag\('config'/)
++  assert.match(shell, /MeasurementPreferences/)
+diff --git a/tests/newsletter.test.cjs b/tests/newsletter.test.cjs
+new file mode 100644
+index 0000000000000000000000000000000000000000..96a2fa036f4c96361e526711034b5becc498015b
+--- /dev/null
++++ b/tests/newsletter.test.cjs
+@@ -0,0 +1,232 @@
++const assert = require('node:assert/strict')
++const fs = require('node:fs')
++const path = require('node:path')
++const vm = require('node:vm')
++const { test } = require('node:test')
++const React = require('react')
++const ts = require('typescript')
++const { renderToStaticMarkup } = require('react-dom/server')
++
++const root = path.resolve(__dirname, '../apps/landing/src')
++const plain = value => JSON.parse(JSON.stringify(value))
++const token = 'synthetic_' + 'a'.repeat(34)
++const locales = Object.fromEntries(['en', 'es'].map(language => [language,
++  JSON.parse(fs.readFileSync(path.join(root, 'locales', language, 'blog.json'), 'utf8'))]))
++
++function load(file, imports = {}, globals = {}) {
++  const filename = path.join(root, file)
++  const output = ts.transpileModule(fs.readFileSync(filename, 'utf8'), { compilerOptions: {
++    target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX,
++  }, fileName: filename, reportDiagnostics: true })
++  assert.deepEqual(output.diagnostics, [])
++  const module = { exports: {} }
++  vm.runInNewContext(output.outputText, {
++    module, exports: module.exports,
++    process: { env: { NEXT_PUBLIC_API_URL: 'https://api.example.test/' } },
++    require: name => {
++      if (name === 'react/jsx-runtime') return require(name)
++      assert.ok(Object.hasOwn(imports, name), 'unexpected import ' + name)
++      return imports[name]
++    },
++    ...globals,
++  }, { filename, timeout: 3000 })
++  return module.exports
++}
++
++function fixedT(language) {
++  return key => {
++    const value = key.split('.').reduce((object, field) => object?.[field], locales[language])
++    assert.equal(typeof value, 'string', language + ' missing ' + key)
++    return value
++  }
++}
++
++function treeNodes(node) {
++  if (Array.isArray(node)) return node.flatMap(treeNodes)
++  return React.isValidElement(node) ? [node, ...treeNodes(node.props.children)] : []
++}
++
++function interactive(file, api, browser = {}, language = 'en') {
++  const state = []
++  let index = 0
++  let effect
++  const hooks = {
++    useId: () => 'newsletter-test-' + index++,
++    useState: initial => {
++      const key = index++
++      if (!(key in state)) state[key] = initial
++      return [state[key], value => { state[key] = value }]
++    },
++    useRef: initial => {
++      const key = index++
++      if (!(key in state)) state[key] = { current: initial }
++      return state[key]
++    },
++    useEffect: callback => { effect = callback },
++  }
++  const Component = load(file, {
++    react: hooks,
++    'react-i18next': { useTranslation: () => ({ t: fixedT(language), i18n: { language, changeLanguage: () => {} } }) },
++    '../api/newsletter': api,
++  }, { window: browser }).default
++  return {
++    render() { index = 0; return Component() },
++    effect() { effect() },
++  }
++}
++
++test('subscribe and explicit actions send only their exact private JSON contract', async () => {
++  const calls = []
++  const api = load('api/newsletter.ts', {}, { fetch: async (url, options) => {
++    calls.push([url, options])
++    const action = url.split('/').at(-1)
++    return { status: action === 'subscribe' ? 202 : 200,
++      json: async () => ({ status: { subscribe: 'accepted', confirm: 'subscribed', unsubscribe: 'unsubscribed' }[action] }) }
++  } })
++  await api.subscribeToNewsletter(' person@example.com ', 'es')
++  await api.applyNewsletterAction('confirm', token)
++  await api.applyNewsletterAction('unsubscribe', token)
++  assert.equal(calls.length, 3)
++  assert.deepEqual(calls.map(([url]) => url), [
++    'https://api.example.test/newsletter/subscribe',
++    'https://api.example.test/newsletter/confirm',
++    'https://api.example.test/newsletter/unsubscribe',
++  ])
++  for (const [url, options] of calls) {
++    assert.ok(!url.includes(token) && !url.includes('person'))
++    const fields = plain(options)
++    delete fields.body
++    assert.deepEqual(fields, { method: 'POST', headers: { 'Content-Type': 'application/json' },
++      credentials: 'omit', referrerPolicy: 'no-referrer', redirect: 'error', cache: 'no-store' })
++  }
++  assert.deepEqual(calls.map(([, options]) => JSON.parse(options.body)), [
++    { email: 'person@example.com', consent: true, language: 'es' }, { token }, { token },
++  ])
++})
++
++test('responses are validated and failures cannot become subscription success', async () => {
++  for (const [status, body, code] of [
++    [400, null, 'invalid'], [422, null, 'invalid'], [429, null, 'rate_limited'],
++    [503, null, 'unavailable'], [200, { status: 'accepted' }, 'unavailable'],
++    [202, { status: 'subscribed' }, 'unavailable'],
++    [202, { status: 'accepted', email: 'private@example.com' }, 'unavailable'],
++  ]) {
++    const api = load('api/newsletter.ts', {}, { fetch: async () => ({ status, json: async () => body }) })
++    await assert.rejects(api.subscribeToNewsletter('person@example.com', 'en'), error => error.code === code)
++  }
++  const api = load('api/newsletter.ts', {}, { fetch: async () => { throw new Error('private transport error') } })
++  await assert.rejects(api.applyNewsletterAction('confirm', token), error => error.code === 'unavailable')
++})
++
++test('only a bounded purpose-specific fragment can supply an action token', async () => {
++  let calls = 0
++  const api = load('api/newsletter.ts', {}, { fetch: async () => { calls++; throw new Error('unexpected fetch') } })
++  assert.deepEqual(plain(api.readNewsletterLink('#confirm=' + token)), { action: 'confirm', token })
++  assert.deepEqual(plain(api.readNewsletterLink('#unsubscribe=' + token)), { action: 'unsubscribe', token })
++  for (const link of ['', '#email=user@example.com', '?confirm=' + token, '#confirm=' + token + '&extra=1',
++    '#confirm=short', '#confirm=' + 'a'.repeat(257), '#unsubscribe=' + token + '%20', '#confirm=' + token + '#other']) {
++    assert.equal(api.readNewsletterLink(link), null)
++  }
++  await assert.rejects(api.applyNewsletterAction('confirm', 'invalid'), error => error.code === 'invalid')
++  assert.equal(calls, 0)
++})
++
++test('newsletter sign-up renders a required email and unchecked independent consent in each language', () => {
++  for (const language of ['en', 'es']) {
++    const Signup = load('components/NewsletterSignup.tsx', {
++      react: React,
++      'react-i18next': { useTranslation: () => ({ t: fixedT(language), i18n: { language } }) },
++      '../api/newsletter': { NewsletterRequestError: class extends Error {}, subscribeToNewsletter: () => {} },
++    }).default
++    const html = renderToStaticMarkup(React.createElement(Signup))
++    assert.match(html, /<form/)
++    assert.match(html, /type="email"[^>]*required=""/)
++    assert.match(html, /type="checkbox"[^>]*required=""/)
++    assert.ok(!/<input[^>]*type="checkbox"[^>]*checked/.test(html))
++    assert.match(html, /<button[^>]*type="submit"[^>]*disabled=""/)
++    assert.ok(html.includes(locales[language].newsletter.consent))
++    assert.match(html, /href="\/privacy-policy\/"/)
++    assert.match(html, /href="\/terms-of-service\/"/)
++  }
++})
++
++test('sign-up needs deliberate consent and one in-flight request', async () => {
++  let release
++  const calls = []
++  const api = {
++    NewsletterRequestError: class extends Error {},
++    subscribeToNewsletter: (...args) => { calls.push(args); return new Promise(resolve => { release = resolve }) },
++  }
++  const signup = interactive('components/NewsletterSignup.tsx', api)
++  let nodes = treeNodes(signup.render())
++  await nodes.find(node => node.type === 'form').props.onSubmit({ preventDefault() {} })
++  assert.equal(calls.length, 0)
++  nodes.find(node => node.type === 'input' && node.props.type === 'email').props.onChange({ target: { value: 'office@example.com' } })
++  nodes.find(node => node.type === 'input' && node.props.type === 'checkbox').props.onChange({ target: { checked: true } })
++  nodes = treeNodes(signup.render())
++  const first = nodes.find(node => node.type === 'form').props.onSubmit({ preventDefault() {} })
++  await nodes.find(node => node.type === 'form').props.onSubmit({ preventDefault() {} })
++  assert.equal(calls.length, 1)
++  assert.deepEqual(calls[0], ['office@example.com', 'en'])
++  assert.equal(treeNodes(signup.render()).find(node => node.type === 'button').props.disabled, true)
++  release()
++  await first
++  assert.ok(treeNodes(signup.render()).some(node => node.props.role === 'status'))
++})
++
++test('action GET scrubs the token without submitting; only the human control posts once', async () => {
++  for (const action of ['confirm', 'unsubscribe']) {
++    const calls = []
++    let replaced = false
++    const api = load('api/newsletter.ts', {}, { fetch: () => { throw new Error('network forbidden') } })
++    api.applyNewsletterAction = async (...args) => { calls.push(args) }
++    const view = interactive('views/NewsletterPreferences.tsx', api, {
++      location: { hash: '#' + action + '=' + token, search: '?source=mail', pathname: '/newsletter/' },
++      history: { state: null, replaceState: (_state, _title, location) => {
++        assert.equal(location, '/newsletter/')
++        replaced = true
++      } },
++    })
++    view.render()
++    view.effect()
++    assert.equal(calls.length, 0)
++    assert.equal(replaced, true)
++    let nodes = treeNodes(view.render())
++    const label = locales.en.newsletter.manage[action + '_button']
++    const button = nodes.find(node => node.type === 'button' && node.props.children === label)
++    assert.ok(button)
++    const pending = button.props.onClick()
++    await pending
++    await new Promise(resolve => setImmediate(resolve))
++    assert.deepEqual(calls, [[action, token]])
++    nodes = treeNodes(view.render())
++    assert.ok(nodes.some(node => node.props.role === 'status'))
++    assert.ok(!JSON.stringify(nodes).includes(token))
++  }
++})
++
++test('action links stay outside third-party features and outside the sitemap', () => {
++  const Provider = ({ children }) => children
++  for (const pathname of ['/newsletter', '/newsletter/', null]) {
++    const forbidden = () => { throw new Error('Private link mounted public site integrations') }
++    const shell = load('components/LandingRouteShell.tsx', {
++      react: { Suspense: Provider },
++      'next/navigation': { usePathname: () => pathname },
++      'next/script': { __esModule: true, default: forbidden },
++      'react-hot-toast': { Toaster: forbidden },
++      './Navbar': { __esModule: true, default: forbidden },
++      './Footer': { __esModule: true, default: forbidden },
++      './GoogleAuthProvider': { __esModule: true, default: forbidden },
++      './LeadCaptureProvider': { __esModule: true, default: forbidden },
++      './I18nProvider': { __esModule: true, default: Provider },
++      './WebsiteSettingsProvider': { __esModule: true, default: forbidden },
++      './TrackingCapture': { __esModule: true, default: forbidden },
++      './MeasurementPreferences': { __esModule: true, default: forbidden },
++    }).default
++    assert.equal(renderToStaticMarkup(React.createElement(shell, null, React.createElement('main', null, 'Preferences'))), '<main>Preferences</main>')
++  }
++  const page = load('app/newsletter/page.tsx', { '../../views/NewsletterPreferences': { __esModule: true, default: () => null } })
++  assert.deepEqual(plain(page.metadata.robots), { index: false, follow: false })
++  assert.equal(page.metadata.referrer, 'no-referrer')
++  assert.ok(!fs.readFileSync(path.join(root, 'app/sitemap.ts'), 'utf8').includes('/newsletter/'))
++})

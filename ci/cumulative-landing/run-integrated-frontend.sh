@@ -8,7 +8,7 @@ bounded() { timeout --kill-after=8s "$@"; }
 
 [[ $# == 4 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 &&
-   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-integrated-frontend-trade-directory-20261117 &&
+   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-f08-newsletter-frontend-20261117 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die HOSTED_EXACT_EVENT_REQUIRED
 ops="$1"; frontend="$2"; live="$3"; relay="$4"
 [[ "$ops" == "$GITHUB_WORKSPACE/build-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-base" &&
@@ -20,26 +20,38 @@ for checkout in "$ops" "$frontend" "$live" "$relay"; do
     die CLEAN_CHECKOUT_REQUIRED
 done
 [[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" &&
-   $(git -C "$ops" rev-parse 'HEAD^') == da31f9144fee290ab042222c0539652b65f1efeb ]] || die EXACT_OPERATIONS_REQUIRED
+   $(git -C "$ops" rev-parse 'HEAD^') == 806746e617d2e70769fe521c3313ae88a2d97bb3 ]] || die EXACT_OPERATIONS_REQUIRED
 delta=$(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) || die EXACT_DELTA_REQUIRED
-[[ "$delta" == $'.github/workflows/integrated-frontend-build.yml\nci/cumulative-landing/integrated-trade-frontend.commit\nci/cumulative-landing/integrated-trade-frontend.patch\nci/cumulative-landing/run-integrated-frontend.sh' ]] ||
+[[ "$delta" == $'.github/workflows/integrated-frontend-build.yml\nci/cumulative-landing/newsletter-frontend.commit\nci/cumulative-landing/newsletter-frontend.patch\nci/cumulative-landing/newsletter-token-format.commit\nci/cumulative-landing/newsletter-token-format.patch\nci/cumulative-landing/run-integrated-frontend.sh' ]] ||
   die EXACT_DELTA_REQUIRED
 frontend_base_commit=99bc8d4c0ee4f3f0b72cf174530971f6a35f0ab3
 frontend_base_tree=4053ae36068790f5f4562ad256dd8a0018fac6ae
 frontend_live_commit=b5df6a9321365e827c01df556c09b8808151e59a
 frontend_live_tree=27f08141cd78943e4c32fe4212d871e5153022ae
-frontend_commit=12f5b00fc5aa4040cb91c8ecc483812999c0e33e
-frontend_tree=9f1817d1f744d3c57c365f18435c79051219f0df
-frontend_paths=563
+frontend_combined_commit=12f5b00fc5aa4040cb91c8ecc483812999c0e33e
+frontend_combined_tree=9f1817d1f744d3c57c365f18435c79051219f0df
+frontend_newsletter_commit=5994fbe6d1c09b3f74000ca20261778f0c46887e
+frontend_newsletter_tree=d7d803a5b53f70e077ea4995ac1f1ba288a8d7da
+frontend_commit=4d0a99e0bef524fe00eab5f2c0916d91768a4efb
+frontend_tree=ca59517c57b8e06ffe5fd2840340ee739e29937b
+frontend_paths=569
 [[ $(git -C "$frontend" rev-parse HEAD) == "$frontend_base_commit" &&
    $(git -C "$frontend" rev-parse 'HEAD^{tree}') == "$frontend_base_tree" &&
    $(git -C "$live" rev-parse HEAD) == "$frontend_live_commit" &&
    $(git -C "$live" rev-parse 'HEAD^{tree}') == "$frontend_live_tree" ]] || die EXACT_FRONTEND_PARENTS_REQUIRED
 frontend_patch="$ops/ci/cumulative-landing/integrated-trade-frontend.patch"
 frontend_payload="$ops/ci/cumulative-landing/integrated-trade-frontend.commit"
+newsletter_patch="$ops/ci/cumulative-landing/newsletter-frontend.patch"
+newsletter_payload="$ops/ci/cumulative-landing/newsletter-frontend.commit"
+token_patch="$ops/ci/cumulative-landing/newsletter-token-format.patch"
+token_payload="$ops/ci/cumulative-landing/newsletter-token-format.commit"
 printf '%s  %s\n' \
   bab3d68fa5740ef914deb0b3d623feb7a9641aa160f0c502daf1078f23fcf7ae "$frontend_patch" \
   9f955c1533cbe0fde9965c7c6122f089b0bdfbd546ed2cb53557fd86d3fe1636 "$frontend_payload" \
+  df8f19de80b143d3176409d05f5402964fe7e710e5686accc525dfe530f19e6c "$newsletter_patch" \
+  a2d1178b3cd61d0e00a6172395cd9330ddac7decc2a3a46016d5666a13bfb040 "$newsletter_payload" \
+  ef4f871d8719f7e2a45b7ca1ea4eb4065e52eb7b71b89ea5a75e6345827a5009 "$token_patch" \
+  154685af21a73f4885ae20d266a4e67397f8124b58e9367cf8ede1327afa5404 "$token_payload" \
   | sha256sum --check --status || die EXACT_RECONSTRUCTION_INPUTS_REQUIRED
 [[ $(git -C "$relay" rev-parse HEAD) == d49acd7d48e92dac6d06b1678570bc137fb6a5ba ]] || die EXACT_RELAY_REQUIRED
 landing_fixture="$relay/ci/frontend"
@@ -87,21 +99,47 @@ git -C "$source_repo" read-tree "$frontend_base_commit" || die READ_FRONTEND_BAS
 git -C "$source_repo" apply --cached --check --whitespace=error-all "$frontend_patch" ||
   die REVIEWED_PATCH_CHECK_REQUIRED
 git -C "$source_repo" apply --cached --whitespace=error-all "$frontend_patch" || die REVIEWED_PATCH_REQUIRED
-[[ $(git -C "$source_repo" write-tree) == "$frontend_tree" ]] || die EXACT_RECONSTRUCTED_TREE_REQUIRED
-[[ $(git -C "$source_repo" hash-object -t commit -w "$frontend_payload") == "$frontend_commit" &&
-   $(git -C "$source_repo" rev-parse "$frontend_commit^{tree}") == "$frontend_tree" &&
-   $(git -C "$source_repo" rev-parse "$frontend_commit^1") == "$frontend_live_commit" &&
-   $(git -C "$source_repo" rev-parse "$frontend_commit^2") == "$frontend_base_commit" ]] ||
+[[ $(git -C "$source_repo" write-tree) == "$frontend_combined_tree" ]] || die EXACT_RECONSTRUCTED_TREE_REQUIRED
+[[ $(git -C "$source_repo" hash-object -t commit -w "$frontend_payload") == "$frontend_combined_commit" &&
+   $(git -C "$source_repo" rev-parse "$frontend_combined_commit^{tree}") == "$frontend_combined_tree" &&
+   $(git -C "$source_repo" rev-parse "$frontend_combined_commit^1") == "$frontend_live_commit" &&
+   $(git -C "$source_repo" rev-parse "$frontend_combined_commit^2") == "$frontend_base_commit" ]] ||
   die EXACT_RECONSTRUCTED_MERGE_REQUIRED
 frontend_delta=$(git -C "$source_repo" diff-tree --no-commit-id --name-only -r \
-  "$frontend_base_commit" "$frontend_commit") || die EXACT_FRONTEND_DELTA_REQUIRED
+  "$frontend_base_commit" "$frontend_combined_commit") || die EXACT_FRONTEND_DELTA_REQUIRED
 [[ "$frontend_delta" == $'apps/dashboard/src/api/tradeContacts.ts\napps/dashboard/src/layouts/DashLayout.tsx\napps/dashboard/src/locale/en/admin.json\napps/dashboard/src/locale/en/nav.json\napps/dashboard/src/locale/es/admin.json\napps/dashboard/src/locale/es/nav.json\napps/dashboard/src/pages/AdminDash.tsx\napps/dashboard/src/pages/admin/TradeContacts.tsx' ]] ||
   die EXACT_FRONTEND_DELTA_REQUIRED
-git -C "$source_repo" diff --quiet "$frontend_live_commit" "$frontend_commit" -- \
+git -C "$source_repo" diff --quiet "$frontend_live_commit" "$frontend_combined_commit" -- \
   apps/dashboard/src/api/tradeContacts.ts apps/dashboard/src/pages/admin/TradeContacts.tsx ||
   die EXACT_LIVE_TRADE_COMPONENTS_REQUIRED
 printf 'INTEGRATED_FRONTEND_RECONSTRUCTION commit=%s tree=%s live_parent=%s integrated_parent=%s delta=8\n' \
-  "$frontend_commit" "$frontend_tree" "$frontend_live_commit" "$frontend_base_commit"
+  "$frontend_combined_commit" "$frontend_combined_tree" "$frontend_live_commit" "$frontend_base_commit"
+git -C "$source_repo" apply --cached --check --unidiff-zero --whitespace=error-all "$newsletter_patch" ||
+  die REVIEWED_NEWSLETTER_PATCH_CHECK_REQUIRED
+git -C "$source_repo" apply --cached --unidiff-zero --whitespace=error-all "$newsletter_patch" ||
+  die REVIEWED_NEWSLETTER_PATCH_REQUIRED
+[[ $(git -C "$source_repo" write-tree) == "$frontend_newsletter_tree" &&
+   $(git -C "$source_repo" hash-object -t commit -w "$newsletter_payload") == "$frontend_newsletter_commit" &&
+   $(git -C "$source_repo" rev-parse "$frontend_newsletter_commit^") == "$frontend_combined_commit" ]] ||
+  die EXACT_RECONSTRUCTED_NEWSLETTER_REQUIRED
+newsletter_delta=$(git -C "$source_repo" diff-tree --no-commit-id --name-only -r \
+  "$frontend_combined_commit" "$frontend_newsletter_commit") || die EXACT_NEWSLETTER_SCOPE_REQUIRED
+[[ "$newsletter_delta" == $'apps/landing/src/api/newsletter.ts\napps/landing/src/app/layout.tsx\napps/landing/src/app/newsletter/page.tsx\napps/landing/src/app/privacy-policy/page.tsx\napps/landing/src/components/LandingRouteShell.tsx\napps/landing/src/components/NewsletterSignup.tsx\napps/landing/src/locales/en/blog.json\napps/landing/src/locales/es/blog.json\napps/landing/src/views/Blog.tsx\napps/landing/src/views/NewsletterPreferences.tsx\ntests/blog-articles.test.cjs\ntests/lead-tracking.test.cjs\ntests/newsletter.test.cjs' ]] ||
+  die EXACT_NEWSLETTER_SCOPE_REQUIRED
+git -C "$source_repo" apply --cached --check --unidiff-zero --whitespace=error-all "$token_patch" ||
+  die REVIEWED_TOKEN_FORMAT_CHECK_REQUIRED
+git -C "$source_repo" apply --cached --unidiff-zero --whitespace=error-all "$token_patch" ||
+  die REVIEWED_TOKEN_FORMAT_REQUIRED
+[[ $(git -C "$source_repo" write-tree) == "$frontend_tree" &&
+   $(git -C "$source_repo" hash-object -t commit -w "$token_payload") == "$frontend_commit" &&
+   $(git -C "$source_repo" rev-parse "$frontend_commit^") == "$frontend_newsletter_commit" ]] ||
+  die EXACT_TOKEN_FORMAT_COMMIT_REQUIRED
+[[ $(git -C "$source_repo" diff-tree --no-commit-id --name-only -r "$frontend_newsletter_commit" "$frontend_commit") == \
+   $'apps/landing/src/api/newsletter.ts\ntests/newsletter.test.cjs' ]] || die EXACT_TOKEN_FORMAT_SCOPE_REQUIRED
+git -C "$source_repo" diff --quiet "$frontend_combined_commit" "$frontend_commit" -- apps/dashboard ||
+  die DASHBOARD_SCOPE_CHANGED
+printf 'NEWSLETTER_FRONTEND_RECONSTRUCTION commit=%s tree=%s parent=%s delta=13\n' \
+  "$frontend_commit" "$frontend_tree" "$frontend_combined_commit"
 git -C "$source_repo" archive --format=tar "$frontend_commit" | tar -xf - -C "$state/frontend-work" || die ARCHIVE_REQUIRED
 verify_source() {
   python3 -I -B - "$source_repo" "$state/frontend-work" "$frontend_commit" "$frontend_paths" <<'PY'
@@ -181,7 +219,8 @@ tests=(tests/blog-articles.test.cjs tests/editorial-admin.test.cjs tests/listing
        tests/local-market-report.test.cjs tests/location-review.test.cjs tests/management-navigation.test.cjs
        tests/professionals-admin-entry.test.cjs tests/property-viewings.test.cjs
        tests/public-editorial.test.cjs tests/purchase-cost-worksheet.test.cjs tests/shared-shortlists.test.cjs
-       tests/transaction-documents.test.cjs tests/transaction-rooms.test.cjs)
+       tests/transaction-documents.test.cjs tests/transaction-rooms.test.cjs
+       tests/newsletter.test.cjs tests/lead-tracking.test.cjs)
 native=0
 bounded 300s docker run "${prepare[@]}" --network none \
   --mount "type=bind,src=$state/frontend-work,dst=/work" "$node_image" \
@@ -199,7 +238,7 @@ print("INTEGRATED_FRONTEND_CONTRACTS native=" + str(int(sys.argv[2])) + " " +
       " ".join(f"{key.decode()}={rows.get(key, 0)}" for key in (b"tests", b"pass", b"fail", b"skipped")))
 for index in re.findall(rb"(?m)^not ok ([1-9][0-9]{0,2}) - ", data)[:12]:
     print("INTEGRATED_CONTRACT_FAILURE index=" + index.decode("ascii"))
-assert sys.argv[2] == "0" and rows == {b"tests": 109, b"pass": 109, b"fail": 0, b"skipped": 0}
+assert sys.argv[2] == "0" and rows == {b"tests": 126, b"pass": 126, b"fail": 0, b"skipped": 0}
 PY
 verify_source || die CONTRACTS_ALTERED_SOURCE
 
@@ -285,12 +324,43 @@ assert counts["inventory"] >= 1 and counts["detail"] >= 1 and counts["refused"] 
 assert counts["total"] == counts["inventory"] + counts["detail"] <= 128
 for route in ("index.html", "login/index.html", "blog/index.html", "professionals/index.html",
               "search/index.html", "local-guides/index.html", "local-guides/read/index.html",
-              "local-guides/compare/index.html", "local-guides/market-report/index.html", "sitemap.xml"):
+              "local-guides/compare/index.html", "local-guides/market-report/index.html", "newsletter/index.html", "sitemap.xml"):
     path = output / route
     assert path.is_file() and not path.is_symlink()
     print(f"INTEGRATED_EXPORT_SHA256 route={route} sha256={sha256(path.read_bytes()).hexdigest()}")
+from html.parser import HTMLParser
+from urllib.parse import urlsplit
+
+class NewsletterHtml(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.metadata = {}
+        self.external_scripts = []
+        self.iframes = 0
+
+    def handle_starttag(self, tag, attrs):
+        value = dict(attrs)
+        if tag == "meta" and "name" in value:
+            self.metadata[value["name"].lower()] = value.get("content", "")
+        if tag == "script" and "src" in value:
+            target = urlsplit(value["src"])
+            if target.netloc or target.scheme:
+                self.external_scripts.append(target.netloc)
+        if tag == "iframe":
+            self.iframes += 1
+
+newsletter_html = (output / "newsletter/index.html").read_text(encoding="utf-8")
+page = NewsletterHtml()
+page.feed(newsletter_html)
+assert page.metadata.get("referrer") == "no-referrer"
+assert "noindex" in page.metadata.get("robots", "") and "nofollow" in page.metadata.get("robots", "")
+assert not page.external_scripts and not page.iframes
+assert "Newsletter preferences" in newsletter_html
+assert not any(host in newsletter_html for host in ("code.tidio.co", "googletagmanager.com", "accounts.google.com"))
+assert "/newsletter/" not in (output / "sitemap.xml").read_text(encoding="utf-8")
+print("NEWSLETTER_STATIC_EXPORT page=verified robots=noindex,nofollow referrer=no-referrer external_integrations=absent")
 print(f'INTEGRATED_NEXT_EXPORT native=0 typecheck=success static=success fixture_closed=true inventory={counts["inventory"]} detail={counts["detail"]}')
 PY
 verify_source || die STATIC_EXPORT_ALTERED_SOURCE
-printf 'INTEGRATED_FRONTEND_ACCEPTANCE operations=%s frontend=%s frontend_tree=%s paths=%s tests=109 run=%s attempt=1\n' \
+printf 'INTEGRATED_FRONTEND_ACCEPTANCE operations=%s frontend=%s frontend_tree=%s paths=%s tests=126 run=%s attempt=1\n' \
   "$GITHUB_SHA" "$frontend_commit" "$frontend_tree" "$frontend_paths" "$GITHUB_RUN_ID"
