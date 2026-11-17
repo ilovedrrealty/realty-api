@@ -2,7 +2,7 @@ name: Exact spatial property search landing browser rehearsal
 
 on:
   push:
-    branches: [codex-ci-spatial-landing-20261117-v2]
+    branches: [codex-ci-spatial-landing-20261117-v3]
 
 permissions:
   contents: read

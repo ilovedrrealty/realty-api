@@ -100,6 +100,17 @@ function installSyntheticMaps() {
         new LatLng(center.lat() + offset, center.lng() + offset))
     }
   }
+  class PathShape extends Shape {
+    constructor(options = {}) {
+      super(options)
+      this.path = []
+      this.setPaths(options.paths ?? options.path ?? [])
+    }
+    // PolygonF registers events against this object, so keep its identity when the shape updates.
+    getPath() { return this.path }
+    setPath(points) { this.path.splice(0, this.path.length, ...points) }
+    setPaths(points) { this.setPath(Array.isArray(points[0]) ? points[0] : points) }
+  }
   class MapSurface extends Shape {
     constructor(element, options) {
       super(options)
@@ -124,7 +135,7 @@ function installSyntheticMaps() {
   class Size { constructor(width, height) { this.width = width; this.height = height } }
   class OverlayView extends Shape {}
   const maps = { version: '3.64', event, Map: MapSurface, Circle, LatLng, LatLngBounds, Point, Size,
-    Polygon: Shape, Polyline: Shape, Marker: Shape, OverlayView, SymbolPath: { CIRCLE: 0 },
+    Polygon: PathShape, Polyline: PathShape, Marker: Shape, OverlayView, SymbolPath: { CIRCLE: 0 },
     importLibrary: async () => maps }
   window.google = { maps }
 }

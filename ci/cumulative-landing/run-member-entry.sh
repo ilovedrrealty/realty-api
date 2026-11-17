@@ -7,11 +7,11 @@ bounded() { timeout --kill-after=8s "$@"; }
 [[ $# == 4 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 &&
    ${GITHUB_RUN_ATTEMPT:-} == 1 ]] || die HOST_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-spatial-landing-20261117-v2 &&
+[[ ${GITHUB_REF:-} == refs/heads/codex-ci-spatial-landing-20261117-v3 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 
 ops="$1"; fixture="$2"; frontend="$3"; backend="$4"
-parent=b11fe4c762ae6daf3a26ab32f821a26ae7a8e7a5
+parent=a63ba8c086373a32cae20673963f46c5399ef6bd
 g06_regression_ops=36ea3f1a58905453030454077edb27bf8922937f
 fixture_commit=441efdc288c3a38b8607c816c684abec080d83ad
 fixture_tree=6c01c7577e343d5e2542d4f8a84cbc0f103e4b5d
@@ -36,14 +36,14 @@ done
    $(git -C "$frontend" rev-parse 'HEAD^{tree}') == "$frontend_tree" &&
    $(git -C "$backend" rev-parse HEAD) == "$backend_commit" &&
    $(git -C "$backend" rev-parse 'HEAD^{tree}') == "$backend_tree" ]] || die EXACT_CHECKOUTS_REQUIRED
-expected=$'.github/workflows/network-member-entry-landing.yml\nci/cumulative-landing/run-member-entry.sh\nci/cumulative-landing/run-shortlist-login.mjs\nci/cumulative-landing/spatial-browser.mjs'
+expected=$'.github/workflows/network-member-entry-landing.yml\nci/cumulative-landing/run-member-entry.sh\nci/cumulative-landing/spatial-browser.mjs'
 [[ $(git -C "$ops" diff --name-only "$parent" "$GITHUB_SHA") == "$expected" ]] || die EXACT_OPERATIONS_DELTA_REQUIRED
 tools="$ops/ci/cumulative-landing"
 fixture_tools="$fixture/ci/frontend"
 printf '%s  %s\n' \
   c57087318e513ad8d2d38c0fc08fa5f081bc77932aa3a89e33734ca8f2f560c4 "$tools/landing.cjs" \
   5424a1608fbee74e991dca0ceeee5a3ea1eac0cbf3d0875946fe51c7ad243fc1 "$tools/run-shortlist-login.mjs" \
-  c8ca9e1cb3f9aae8a70d1f556e229aedef9f7816e64d50626db2ce794b4070c2 "$tools/spatial-browser.mjs" \
+  af438d517fcd98883fbf8237cfc8e22d53b662209704c8a4ea5a03a75ae9a38c "$tools/spatial-browser.mjs" \
   f20dc2ee8d949f5e971a47bef6334d6d7cd1aa7a741a4a58d8005adb4e7ffa57 "$tools/editorial-browser.mjs" \
   a166dc60598e76b7fdcc3fe2aa5253bc56952b48fd99e4cab5eb4a24523a548e "$fixture_tools/landing_fixture.cjs" \
   0a1abbdbd65a82e67ded20a0603a21fc9321a1b1aa5fd83dbccf1c049ffc4110 "$fixture_tools/landing_fixture.test.cjs" \
