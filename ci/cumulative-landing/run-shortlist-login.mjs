@@ -6,6 +6,7 @@ import { chromium } from 'playwright-core'
 import listingFixture from '/listing-fixture/landing_fixture.cjs'
 import { createEditorialFixture, verifyEditorial } from './editorial-browser.mjs'
 import { createSpatialFixture, verifySpatial } from './spatial-browser.mjs'
+import { createDevelopmentFixture, verifyDevelopment } from './development-browser.mjs'
 
 const host = '127.0.0.1'
 const landing = `http://${host}:8918`
@@ -15,6 +16,7 @@ const exportRoot = '/landing-export'
 const editorial = createEditorialFixture(api)
 const spatialSearch = createSpatialFixture(api)
 const { LISTING_ID: listing, fixtureResponse } = listingFixture
+const development = createDevelopmentFixture(api, listing)
 const listingPath = `/listing/${listing}/`
 const grant = 'b357412c-d096-47d6-8a77-30cf544e8d97'
 const shortlist = { loginPath: `/login/?shortlist=${grant}`, destination: `/shortlists?grant=${grant}` }
@@ -76,6 +78,8 @@ async function serveAuth(request, response) {
   if (editorialResult) return json(response, editorialResult.status, editorialResult.data, cors)
   const spatialResult = spatialSearch.responseFor(request)
   if (spatialResult) return json(response, spatialResult.status, spatialResult.data, cors)
+  const developmentResult = development.responseFor(request)
+  if (developmentResult) return json(response, developmentResult.status, developmentResult.data, cors)
   if (key === 'GET /auth/me') {
     if (!hasCookie(request)) {
       observations.signedOutReads++
@@ -225,6 +229,7 @@ async function main() {
   let browser
   let editorialResult
   let spatialResult
+  let developmentResult
   try {
     stage = 'static_export'
     check(await realpath(exportRoot + '/login/index.html') === exportRoot + '/login/index.html'
@@ -249,6 +254,9 @@ async function main() {
     editorialResult = await verifyEditorial(browser, editorial, { landing, api }, exportRoot, next => { stage = next })
     stage = 'spatial_export'
     spatialResult = await verifySpatial(browser, spatialSearch, { landing, api }, next => { stage = next })
+    stage = 'development_export'
+    developmentResult = await verifyDevelopment(browser, development, { landing, api }, exportRoot, listing,
+      next => { stage = next })
   } finally {
     try { if (browser) await browser.close() } finally {
       await Promise.all(servers.map(server => new Promise(resolve => {
@@ -265,6 +273,7 @@ async function main() {
     loopback_only: true, fixtures_closed: true }))
   console.log('EDITORIAL_RUNTIME_BROWSER', JSON.stringify(editorialResult))
   console.log('SPATIAL_SEARCH_BROWSER', JSON.stringify(spatialResult))
+  console.log('DEVELOPMENT_INVENTORY_BROWSER', JSON.stringify(developmentResult))
 }
 
 const safeBrowserFailures = new Set([
@@ -272,6 +281,11 @@ const safeBrowserFailures = new Set([
   'FULLSCREEN_MAP_SURFACE_REQUIRED', 'BROAD_RESULTS_IN_ACTIVE_SHAPE', 'SPA_MUST_NOT_BROADEN_MISSING_SCOPE',
   'LIST_RESPONSE_MISSING', 'MAP_RESPONSE_MISSING', 'MAP_SHIM_METHOD_MISSING',
   'MAP_INITIALIZATION_FAILED', 'BROWSER_PAGE_EXCEPTION', 'LOOPBACK_CLEANUP_REQUIRED',
+  'DEVELOPMENT_NO_STORE_RESPONSE_REQUIRED', 'DEVELOPMENT_PRIVATE_RESPONSE_LEAK', 'DEVELOPMENT_WITHDRAWN_CONTENT_VISIBLE',
+  'ACTUAL_DEVELOPMENT_LISTING_EXPORT_REQUIRED', 'DEVELOPMENT_FLOOR_PLAN_SAFETY_REQUIRED',
+  'DATED_DEVELOPMENT_PAYMENT_REQUIRED', 'DATED_DEVELOPMENT_UPDATE_REQUIRED', 'DEVELOPMENT_MOBILE_CARDS_REQUIRED',
+  'DEVELOPMENT_PHASE_FILTER_REQUIRED', 'DEVELOPMENT_STALE_STOCK_VISIBLE',
+  'DEVELOPMENT_STATIC_STOCK_OR_DRAFT_REQUIRED_ABSENT', 'DEVELOPMENT_PUBLIC_API_LIFECYCLE_REQUIRED',
 ])
 function browserFailureCode(error) {
   if (safeBrowserFailures.has(error?.message)) return error.message
