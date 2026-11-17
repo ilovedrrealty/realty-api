@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 
 from database import get_db
 from models.lead import Lead
+from models.seller_valuation import SellerValuationIntake
 from models.user import User
 from models.listing import Listing
 from models.booking import Booking
@@ -26,6 +27,7 @@ from config import settings
 from models.site_settings import SiteSettings
 from utils.phone import normalize_phone
 from schemas.lead_tracking import LeadTracking
+from schemas.seller_valuation import SellerValuationSubject
 from utils.lead_tracking import tracking_metadata, measurement_receipt, private_tracking_summary
 from services import lead_delivery
 
@@ -64,6 +66,7 @@ class LeadCreate(BaseModel):
     property_id: Optional[UUID] = None
     submission_id: Optional[UUID] = None
     tracking: Optional[LeadTracking] = None
+    valuation_subject: SellerValuationSubject | None = None
 
     @field_validator("name", "email", mode="before")
     @classmethod
@@ -86,6 +89,11 @@ class LeadCreate(BaseModel):
                 raise ValueError("Provide a valid phone number or email address")
         elif not self.email:
             raise ValueError("Email is required for bookings")
+        if self.valuation_subject is not None and (
+            self.type != "seller_interest" or self.submission_id is None
+            or self.tracking is None or not self.tracking.contact_consent
+        ):
+            raise ValueError("A valuation request must be a seller lead with contact consent and a submission identifier")
         return self
 
 
@@ -237,7 +245,10 @@ def _get_notify_email(db: Session) -> str:
 # ── Public endpoints ──────────────────────────────────────────────────────────
 
 def _receipt(lead: Lead) -> dict:
-    return {"id": str(lead.id), "status": lead.status, "measurement": measurement_receipt(lead)}
+    receipt = {"id": str(lead.id), "status": lead.status, "measurement": measurement_receipt(lead)}
+    if getattr(lead, "_valuation_request_registered", False):
+        receipt["valuation_request_registered"] = True
+    return receipt
 
 
 def _existing_submission(body: LeadCreate, db: Session, user, legacy: bool = False):
@@ -257,10 +268,18 @@ def _existing_submission(body: LeadCreate, db: Session, user, legacy: bool = Fal
     saved_tracking = {k: v for k, v in (lead.tracking or {}).items() if k not in {"received_at", "version"}} or None
     if actual != expected or submitted_tracking != saved_tracking:
         raise HTTPException(status_code=409, detail="This submission identifier was already used. Start a new request.")
+    if body.type == "seller_interest":
+        intake = db.get(SellerValuationIntake, lead.id)
+        saved_subject = SellerValuationSubject.model_validate(intake.subject) if intake is not None else None
+        if saved_subject != body.valuation_subject:
+            raise HTTPException(status_code=409, detail="This submission identifier was already used. Start a new request.")
+        lead._valuation_request_registered = intake is not None
     return lead
 
 
 def _persist_submission(body: LeadCreate, db: Session, user=None, legacy: bool = False):
+    if legacy and body.valuation_subject is not None:
+        raise HTTPException(422, "Use the property valuation form", headers={"Cache-Control": "no-store"})
     existing = _existing_submission(body, db, user, legacy)
     if existing:
         return existing, False
@@ -292,8 +311,11 @@ def _persist_submission(body: LeadCreate, db: Session, user=None, legacy: bool =
     db.add(lead)
     queued = lead_delivery.enabled()
     try:
-        if queued:
+        if queued or body.valuation_subject is not None:
             db.flush()
+        if body.valuation_subject is not None:
+            db.add(SellerValuationIntake(lead_id=lead.id, subject=body.valuation_subject.model_dump(mode="json")))
+        if queued:
             lead_delivery.enqueue_lead_delivery(db, lead, lead_delivery.property_snapshot(db, lead), include_crm=not legacy)
         db.commit()
     except IntegrityError:
@@ -315,6 +337,7 @@ def _persist_submission(body: LeadCreate, db: Session, user=None, legacy: bool =
                             headers={"Cache-Control": "no-store"}) from None
     db.refresh(lead)
     lead._delivery_enqueued = queued
+    lead._valuation_request_registered = body.valuation_subject is not None
     return lead, True
 
 @router.post("/leads", status_code=201)
