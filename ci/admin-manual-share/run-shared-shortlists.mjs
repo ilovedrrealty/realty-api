@@ -192,9 +192,13 @@ async function main() {
     await mobile.bringToFront()
     await mobile.getByText(notes, { exact: true }).waitFor({ state: 'visible' })
     check(await mobile.getByText(privateNote, { exact: true }).count() === 0, 'PRIVATE_RESEARCH_MUST_NOT_APPEAR')
-    step = 'assigned_realtor_editor'
+    step = 'assigned_realtor_open_editor'
     await mobile.getByRole('button', { name: 'Editar lista', exact: true }).click()
-    await mobile.getByLabel('Notas compartidas', { exact: true }).fill(agentNotes)
+    step = 'assigned_realtor_change_notes'
+    const notesField = mobile.getByRole('textbox', { name: /^Notas compartidas/ })
+    check(await notesField.inputValue() === notes, 'EXISTING_SHARED_NOTES_REQUIRED')
+    await notesField.fill(agentNotes)
+    step = 'assigned_realtor_save'
     const editPromise = mobile.waitForResponse(response => fromApi(response, receiverPath, 'PUT'))
     await mobile.getByRole('button', { name: 'Guardar lista', exact: true }).click()
     const edited = await editPromise
@@ -203,6 +207,7 @@ async function main() {
     const response = await edited.json()
     check(response.id === grant.id && response.shared_notes === agentNotes
       && !JSON.stringify(response).includes(privateNote), 'CROSS_PARTY_SHARED_FIELDS_ONLY')
+    step = 'owner_reads_collaborator_change'
     const ownerRead = await call(buyer, ownerPath)
     check(ownerRead.ok() && (await ownerRead.json()).shared_notes === agentNotes, 'OWNER_MUST_SEE_RECIPIENT_EDIT')
     noCache(ownerRead)
