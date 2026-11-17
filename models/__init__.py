@@ -16,6 +16,7 @@ from .lead import Lead
 from .site_settings import SiteSettings
 from .bulk_import_job import BulkImportJob
 from .website_settings import WebsiteSettings, WebsiteSettingsRevision
+from .editorial import EditorialEvent, EditorialPage, EditorialRevision
 from .professional_profile import ProfessionalProfile, ProfessionalProfileRevision
 from .research_workspace import ResearchWorkspace
 from .lead_delivery import LeadDeliveryJob, LeadDeliveryWorkerState

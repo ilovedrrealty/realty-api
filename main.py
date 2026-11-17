@@ -15,6 +15,7 @@ from routes import research_workspaces
 from routes import arrival_guide
 from routes import shortlists
 from routes import viewings
+from routes import editorial
 from routes import property_network
 from routes import service_workflow
 from routes import analytics, lead_delivery as lead_delivery_routes, property_management, location_review, owner_leads
@@ -190,6 +191,7 @@ app.include_router(bookings.router)
 app.include_router(arrival_guide.router)
 app.include_router(shortlists.router)
 app.include_router(viewings.router)
+app.include_router(editorial.router)
 app.include_router(chat.router)
 app.include_router(webhooks.router)
 app.include_router(stats.router)
