@@ -23,6 +23,7 @@ from routes import transaction_room
 from routes import transaction_documents
 from routes import property_network
 from routes import service_workflow
+from routes import service_referral
 from routes import analytics, lead_delivery as lead_delivery_routes, property_management, location_review, owner_leads
 
 # Import all models so Base.metadata knows about them before create_all
@@ -212,6 +213,7 @@ app.include_router(lead_delivery_routes.router)
 app.include_router(property_management.router)
 app.include_router(property_network.router)
 app.include_router(service_workflow.router)
+app.include_router(service_referral.router)
 app.include_router(location_review.router)
 app.include_router(owner_leads.router)
 app.include_router(website_settings.router)

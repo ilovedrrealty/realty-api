@@ -468,20 +468,27 @@ def comparison(db, user, identity):
         "unquoted": [r for r in recipients if r["current_proposal"] is None]}
 
 
-def locked_request(db, user, identity):
+def locked_request(db, user, identity, *, additional_providers=(), nominated_actor=None):
     hint = db.get(ServiceRequest, identity)
     if hint is None:
         unavailable()
     recipient_hints = db.query(Recipient).filter(Recipient.request_id == identity).all()
-    if not managed(db, user, hint) and not any(r.provider_id == user.id and r.status != "revoked" for r in recipient_hints):
+    if not managed(db, user, hint) and user.id != nominated_actor and not any(
+        r.provider_id == user.id and r.status != "revoked" for r in recipient_hints
+    ):
         unavailable()
-    user = lock_users(db, user, {hint.custodian_id, hint.requester_id} | {r.provider_id for r in recipient_hints})
+    provider_hints = {r.provider_id for r in recipient_hints}
+    providers = provider_hints | set(additional_providers)
+    user = lock_users(db, user, {hint.custodian_id, hint.requester_id} | providers)
     source = source_row(db, hint.property_id, hint.listing_id, lock=True)
-    db.query(Preference).filter(Preference.user_id.in_([r.provider_id for r in recipient_hints])).order_by(Preference.user_id).populate_existing().with_for_update().all()
+    db.query(Preference).filter(Preference.user_id.in_(providers)).order_by(Preference.user_id).populate_existing().with_for_update().all()
     request = db.query(ServiceRequest).filter(ServiceRequest.id == identity).populate_existing().with_for_update().one()
     if request.custody_closed:
         conflict()
     recipients = db.query(Recipient).filter(Recipient.request_id == identity).order_by(Recipient.id).populate_existing().with_for_update().all()
+    if {row.provider_id for row in recipients} != provider_hints:
+        # A referral can add to the recipient set while we acquire locks.
+        conflict()
     db.query(Proposal).filter(Proposal.request_id == identity).order_by(Proposal.id).populate_existing().with_for_update().all()
     return user, request, source, {r.id: r for r in recipients}
 
