@@ -2,7 +2,7 @@ name: Isolated public market report browser rehearsal
 
 on:
   push:
-    branches: [codex-ci-market-report-browser-20261117]
+    branches: [codex-ci-market-report-browser-20261117-v2]
 
 permissions:
   contents: read

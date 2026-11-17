@@ -8,7 +8,7 @@ bounded() { timeout --kill-after=8s "$@"; }
 
 [[ $# == 5 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api ]] || die CI_REQUIRED
 [[ ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 && ${GITHUB_RUN_ATTEMPT:-} == 1 ]] || die STANDARD_LINUX_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-market-report-browser-20261117 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
+[[ ${GITHUB_REF:-} == refs/heads/codex-ci-market-report-browser-20261117-v2 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 
 ops="$1"; frontend="$2"; backend="$3"; migration="$4"; landing_relay="$5"
 [[ "$ops" == "$GITHUB_WORKSPACE/browser-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-base" &&
@@ -19,10 +19,10 @@ for checkout in "$ops" "$frontend" "$backend" "$migration" "$landing_relay"; do
   checkout_status=$(git -C "$checkout" status --porcelain=v1 --untracked-files=all) || die CLEAN_CHECKOUT_REQUIRED
   [[ $(realpath "$checkout") == "$checkout" && -z "$checkout_status" ]] || die CLEAN_CHECKOUT_REQUIRED
 done
-[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == 2ebce1a0d1ca72852641e7fa0c91e121a6cc5fbc ]] ||
+[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == 6264a021c2f5a62743571a962ac9a444bf491314 ]] ||
   die EXACT_OPERATIONS_PARENT_REQUIRED
 operations_delta=$(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) || die EXACT_OPERATIONS_DELTA_REQUIRED
-[[ "$operations_delta" == $'.github/workflows/admin-manual-share.yml\nci/admin-manual-share/run-hosted-admin-manual-share.sh\nci/admin-manual-share/run-market-report.mjs\nci/admin-manual-share/serve_market_report_fixture.py' ]] ||
+[[ "$operations_delta" == $'.github/workflows/admin-manual-share.yml\nci/admin-manual-share/run-hosted-admin-manual-share.sh' ]] ||
   die EXACT_OPERATIONS_DELTA_REQUIRED
 frontend_commit=919948242f0bf53bb993899cf6d2f08fff2d86c4
 frontend_tree=05de0ac1179f43fcb0ee23bcdb37a1c9ae9c284f
@@ -134,6 +134,7 @@ cleanup() {
 trap cleanup EXIT
 
 mkdir "$state/frontend-work" "$state/fixtures" "$state/browser-run" "$state/python-context" "$state/landing-run"
+mkdir "$state/npm-cache"
 cp "$backend/requirements.txt" "$state/python-context/requirements.txt"
 cp "$tools/run-market-report.mjs" "$state/browser-run/"
 
@@ -177,10 +178,10 @@ prepare=(--label "$label=$run_key" --user "$uids" --read-only --cap-drop ALL --s
 
 install_exit=0
 bounded 500s docker run "${prepare[@]}" --network bridge --workdir /work \
-  --mount "type=bind,src=$state/frontend-work,dst=/work" "$node_image" \
+  --mount "type=bind,src=$state/frontend-work,dst=/work" --mount "type=bind,src=$state/npm-cache,dst=/npm-cache" "$node_image" \
   env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp CI=true NODE_OPTIONS=--max-old-space-size=1024 \
   npm_config_registry=https://registry.npmjs.org/ npm_config_userconfig=/tmp/ildr-user.npmrc \
-  npm_config_globalconfig=/tmp/ildr-global.npmrc npm_config_cache=/tmp/npm \
+  npm_config_globalconfig=/tmp/ildr-global.npmrc npm_config_cache=/npm-cache \
   npm_config_update_notifier=false npm_config_audit=false npm_config_fund=false \
   npm ci --ignore-scripts --no-audit --no-fund --include=dev --include=optional \
   >"$state/npm-install.log" 2>&1 || install_exit=$?
@@ -217,6 +218,35 @@ PY
 fi
 printf 'MARKET_REPORT_INSTALL native=0 summary=success codes=none\n'
 verify_frontend_files || die INSTALLED_FRONTEND_SOURCE_CHANGED
+swc_exit=0
+bounded 30s docker run --rm "${prepare[@]}" --network none \
+  --mount "type=bind,src=$state/frontend-work,dst=/work,readonly" \
+  "$node_image" env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp CI=true node -e '
+  const fs = require("node:fs");
+  if (process.version !== "v24.22.1" || process.platform !== "linux" || process.arch !== "x64" ||
+      fs.readdirSync("/sys/class/net").join(",") !== "lo") process.exit(2);
+  const lock = require("/work/package-lock.json").packages;
+  for (const name of ["next", "@next/swc-linux-x64-gnu"]) {
+    const path = "/work/node_modules/" + name + "/package.json";
+    if (!fs.existsSync(path)) process.exit(3);
+    if (!lock["node_modules/" + name].integrity || lock["node_modules/" + name].version !== "15.5.18" ||
+        require(path).version !== "15.5.18") process.exit(4);
+  }
+  try {
+    if (typeof require("/work/node_modules/@next/swc-linux-x64-gnu").transformSync !== "function") process.exit(6);
+  } catch (error) {
+    process.exit(error.code === "ERR_DLOPEN_FAILED" ? 5 : 6);
+  }
+  console.log("MARKET_REPORT_SWC native=0 locked_version=15.5.18 platform=linux-x64-gnu");
+' >"$state/swc.log" 2>&1 || swc_exit=$?
+if [[ "$swc_exit" != 0 ]]; then
+  printf 'MARKET_REPORT_SWC native=%s\n' "$swc_exit"
+  die LOCKED_LINUX_SWC_UNAVAILABLE
+fi
+[[ $(<"$state/swc.log") == 'MARKET_REPORT_SWC native=0 locked_version=15.5.18 platform=linux-x64-gnu' ]] ||
+  die SWC_RESULT_REQUIRED
+cat "$state/swc.log"
+
 if ! bounded 360s docker run "${prepare[@]}" --network none --workdir /work \
   --mount "type=bind,src=$state/frontend-work,dst=/work" "$node_image" \
   env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp CI=true NODE_OPTIONS=--max-old-space-size=1536 \
