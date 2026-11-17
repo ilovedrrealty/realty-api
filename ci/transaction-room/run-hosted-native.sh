@@ -7,15 +7,15 @@ bounded() { timeout --kill-after=8s "$@"; }
 
 [[ ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 &&
-   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-private-service-referrals-20261117-v2 &&
+   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-private-service-referrals-20261117-v3 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_HOSTED_EVENT_REQUIRED
 
 ops="$GITHUB_WORKSPACE/rehearsal-ops"
 backend="$GITHUB_WORKSPACE/transaction-backend"
 baseline="$GITHUB_WORKSPACE/previous-backend"
 relay="$GITHUB_WORKSPACE/migration-relay"
-candidate_commit=27fe6b2a5e9435979e4a6e942200bce9f541ba05
-candidate_tree=ec804ecb39d090da6d31aa9539f88039931f5af5
+candidate_commit=0882f3c3d87aea03917fb8e155b9ec8ecc5cc7b8
+candidate_tree=32cc38f5d4331c0daf5b629e01f0e5c51833ea93
 baseline_commit=630f05b80384428bb1191d3475a765877def80a9
 baseline_tree=7d491000a969029df024b908f85a857fd9b88b89
 
@@ -25,9 +25,9 @@ for checkout in "$ops" "$backend" "$baseline" "$relay"; do
      ! -e "$checkout/.env" && ! -L "$checkout/.env" ]] || die CLEAN_CHECKOUT_REQUIRED
 done
 [[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" &&
-   $(git -C "$ops" rev-parse 'HEAD^') == a77149e401f396041e0388d5b8edbef088bfe644 ]] || die EXACT_OPERATIONS_REQUIRED
+   $(git -C "$ops" rev-parse 'HEAD^') == 723887de237b5834e90a9ea69291d61ffb90ad81 ]] || die EXACT_OPERATIONS_REQUIRED
 operations_delta=$(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) || die EXACT_OPERATIONS_REQUIRED
-[[ "$operations_delta" == $'.github/workflows/transaction-room-native.yml\nci/transaction-room/rehearse.py\nci/transaction-room/run-hosted-native.sh' ]] ||
+[[ "$operations_delta" == $'.github/workflows/transaction-room-native.yml\nci/transaction-room/run-hosted-native.sh' ]] ||
   die EXACT_OPERATIONS_REQUIRED
 [[ $(git -C "$backend" rev-parse HEAD) == "$candidate_commit" &&
    $(git -C "$backend" rev-parse 'HEAD^{tree}') == "$candidate_tree" &&
