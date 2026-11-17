@@ -1,8 +1,8 @@
-name: Isolated spatial search and editorial regression rehearsal
+name: Isolated development inventory and cumulative Dashboard rehearsal
 
 on:
   push:
-    branches: [codex-ci-spatial-search-20261117]
+    branches: [codex-ci-development-browser-20261117]
 
 permissions:
   contents: read
@@ -31,17 +31,17 @@ jobs:
           path: browser-ops
           fetch-depth: 2
           persist-credentials: false
-      - name: Read exact spatial search frontend and editorial regression
+      - name: Read exact development inventory frontend
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: ilovedrrealty/iLoveDRRealty
-          ref: d38e372a5a41ccc4f1baa8cc857b7350136f81e2
+          ref: 954b79f7c01e85a57230165eae82d741d88e3e73
           path: frontend-base
           persist-credentials: false
       - name: Read exact backend application
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 833d35becff5a75ddfa3cd02fb999785c07bcdfa
+          ref: 8f679b0bceefbf5b5f2565a5412746109d0f18e1
           path: browser-backend
           persist-credentials: false
       - name: Read accepted migration dependency recipe
@@ -50,7 +50,7 @@ jobs:
           ref: c193a925ba57ea2d67ea48c44e5262817885c8a2
           path: migration-relay
           persist-credentials: false
-      - name: Verify spatial listing filters and retain the editorial browser flow
+      - name: Verify listing-attached development review, public inventory and withdrawal
         shell: bash
         run: |
           set -euo pipefail
