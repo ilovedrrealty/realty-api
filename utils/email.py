@@ -161,11 +161,8 @@ def _lead_email_row(lead) -> str:
     )
 
 
-def send_new_user_notification(user, notify_email: str | None = None) -> None:
-    """Notify configured Admin recipients of a newly committed verified signup."""
-    recipients = parse_notification_recipients(notify_email or settings.notify_email)
-    if not recipients:
-        return
+def build_new_user_notification(user) -> tuple[str, str]:
+    """Render the existing owner alert without sending or reading recipients."""
     body = f"""
       <h2 style="margin:0 0 16px;color:#00102e;font-size:20px;font-weight:700">New verified signup</h2>
       <table style="border-collapse:collapse;width:100%">
@@ -178,13 +175,20 @@ def send_new_user_notification(user, notify_email: str | None = None) -> None:
         <a href="https://app.ilovedrrealty.com/users?workspace=admin">View users in Admin</a>
       </p>
     """
-    _send(recipients, "New verified signup — I Love DR Realty", _email_wrap("New verified signup", body))
+    return "New verified signup — I Love DR Realty", _email_wrap("New verified signup", body)
 
 
-def send_lead_notification(lead, property_info: dict | None = None, notify_email: str | None = None) -> None:
-    email = notify_email or settings.notify_email
-    if not email:
+def send_new_user_notification(user, notify_email: str | None = None) -> None:
+    """Notify configured Admin recipients of a newly committed verified signup."""
+    recipients = parse_notification_recipients(notify_email or settings.notify_email)
+    if not recipients:
         return
+    subject, html = build_new_user_notification(user)
+    _send(recipients, subject, html)
+
+
+def build_lead_notification(lead, property_info: dict | None = None) -> tuple[str, str]:
+    """Render without sending, so the outbox can store an immutable request."""
     type_labels = {
         "property_inquiry": "Property Inquiry",
         "buyer_interest":   "Buyer Interest",
@@ -224,7 +228,15 @@ def send_lead_notification(lead, property_info: dict | None = None, notify_email
         </td></tr>
       </table>
     """
-    _send(parse_notification_recipients(email), f"New lead: {lead.name}", _email_wrap("Lead notification", body))
+    return f"New lead: {lead.name}", _email_wrap("Lead notification", body)
+
+
+def send_lead_notification(lead, property_info: dict | None = None, notify_email: str | None = None) -> None:
+    email = notify_email or settings.notify_email
+    if not email:
+        return
+    subject, html = build_lead_notification(lead, property_info)
+    _send(parse_notification_recipients(email), subject, html)
 
 
 def send_realtor_lead_assigned_email(

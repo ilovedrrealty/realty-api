@@ -4,6 +4,7 @@ from datetime import date, datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
 from typing import List
 from uuid import UUID
 
@@ -335,14 +336,9 @@ def create_booking(
         )
         db.add(booking)
 
-    db.commit()
-    db.refresh(lead)
-    if booking:
-        db.refresh(booking)
-        # Link lead to booking so the for-owner query can join to it for GHL URL / deduplication
-        booking.lead_id = lead.id
-        db.commit()
-
+    # Lead notification jobs share the original lead/booking transaction. They
+    # are not a payment retry and do not change guest/owner booking messages.
+    from services import lead_delivery
     property_info = {
         "id": str(listing.id),
         "title": listing.title,
@@ -352,11 +348,31 @@ def create_booking(
         "bathrooms": float(listing.bathrooms) if listing.bathrooms else None,
         "listing_type": listing.type,
     }
-    ghl.create_contact(lead, property_info, db)
+    queued_lead_delivery = lead_delivery.enabled()
     try:
-        send_lead_notification(lead, property_info, notify_email=_notify_email(db))
-    except Exception:
-        pass
+        db.flush()
+        if booking:
+            # The booking, its lead link and notification jobs are one intake
+            # transaction. A worker must never observe an unlinked booking.
+            booking.lead_id = lead.id
+        if queued_lead_delivery:
+            lead_delivery.enqueue_lead_delivery(db, lead, property_info)
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        # Driver repr/statement parameters may include the full private outbox.
+        raise HTTPException(503, "Booking could not be confirmed. Refresh before trying again.",
+                            headers={"Cache-Control": "no-store"}) from None
+    db.refresh(lead)
+    if booking:
+        db.refresh(booking)
+
+    if not queued_lead_delivery:
+        ghl.create_contact(lead, property_info, db)
+        try:
+            send_lead_notification(lead, property_info, notify_email=_notify_email(db))
+        except Exception:
+            pass
     try:
         send_booking_submitted_email(
             to_email=guest_email,

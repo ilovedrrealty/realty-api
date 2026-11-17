@@ -15,6 +15,7 @@ from models.user import User
 from models.pending_user import PendingUser
 from models.lead import Lead
 from models.site_settings import SiteSettings
+from services import lead_delivery
 from schemas.auth import RegisterRequest, RegisterResponse, LoginRequest, VerifyRequest, ResendCodeRequest, TokenResponse, GoogleAuthRequest, UpdateProfileRequest, ChangePasswordRequest, SetPasswordRequest, ForgotPasswordRequest, ResetPasswordRequest
 from utils.security import hash_password, verify_password
 from utils.jwt import create_access_token, TOKEN_EXPIRE_HOURS
@@ -140,9 +141,14 @@ def verify_email(request: Request, body: VerifyRequest, response: Response, db: 
     )
     db.add(user)
     db.delete(pending)
+    queued = lead_delivery.signup_enabled()
+    if queued:
+        db.flush()
+        queued = bool(lead_delivery.enqueue_signup_delivery(db, user, locale=body.locale))
     db.commit()
     db.refresh(user)
-    _notify_verified_signup(db, user)
+    if not queued:
+        _notify_verified_signup(db, user)
 
     token = create_access_token(user)
     _set_auth_cookie(response, token)
@@ -362,9 +368,14 @@ def google_auth(body: GoogleAuthRequest, response: Response, db: Session = Depen
                 avatar_url=picture,
             )
             db.add(user)
+            queued = lead_delivery.signup_enabled()
+            if queued:
+                db.flush()
+                queued = bool(lead_delivery.enqueue_signup_delivery(db, user, locale=body.locale))
             db.commit()
             db.refresh(user)
-            _notify_verified_signup(db, user)
+            if not queued:
+                _notify_verified_signup(db, user)
     elif picture and not user.avatar_url:
         user.avatar_url = picture
         db.commit()

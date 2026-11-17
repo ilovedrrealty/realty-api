@@ -10,6 +10,7 @@ from .activity_log import ActivityLog
 from .deal_request import DealRequest
 from .listing_event import ListingEvent
 from .lead import Lead
+from .lead_delivery import LeadDeliveryJob, LeadDeliveryWorkerState
 from .site_settings import SiteSettings
 from .bulk_import_job import BulkImportJob
 from .website_settings import WebsiteSettings, WebsiteSettingsRevision
