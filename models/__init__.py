@@ -3,6 +3,7 @@ from .pending_user import PendingUser
 from .listing import Listing
 from .listing_performance import ListingDailyView, ListingPerformanceEntry, ListingViewCoverage
 from .transaction_room import TransactionMilestone, TransactionRoom, TransactionRoomEvent, TransactionRoomGrant, TransactionTask
+from .transaction_document import TransactionDocument, TransactionDocumentVersion
 from .upgrade_request import UpgradeRequest
 from .inquiry import Inquiry, AnonymousLead
 from .listing_edit import ListingEdit

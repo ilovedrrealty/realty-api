@@ -16,7 +16,11 @@ def require_json_mutation(request: Request, *, bodyless_delete: bool = False) ->
     media_type = request.headers.get("content-type", "").split(";", 1)[0].strip().lower()
     if media_type != "application/json" and not (bodyless_delete and request.method == "DELETE" and not media_type):
         raise HTTPException(415, "Send this request as application/json")
+    require_mutation_origin(request)
 
+
+def require_mutation_origin(request: Request) -> None:
+    """Apply the same exact-origin check to authenticated non-JSON mutations."""
     origin = request.headers.get("origin")
     authorization = request.headers.get("authorization", "")
     scheme, _, credential = authorization.partition(" ")

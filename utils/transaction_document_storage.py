@@ -56,7 +56,7 @@ def prepare_document(data: bytes, content_type: str) -> DocumentContent:
                         raise InvalidDocument("Document type does not match its contents")
                     if image.width * image.height > MAX_IMAGE_PIXELS:
                         raise InvalidDocument("Document image dimensions are too large")
-                    image.verify()
+                    image.load()
         except InvalidDocument:
             raise
         except (OSError, SyntaxError, ValueError, Image.DecompressionBombError, Image.DecompressionBombWarning):
