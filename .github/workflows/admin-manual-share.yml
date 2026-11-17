@@ -1,8 +1,8 @@
-name: Isolated listing performance and cumulative Dashboard rehearsal
+name: Isolated transaction room Dashboard rehearsal
 
 on:
   push:
-    branches: [codex-ci-listing-performance-browser-20261117-v3]
+    branches: [codex-ci-transaction-room-browser-20261117]
 
 permissions:
   contents: read
@@ -31,17 +31,17 @@ jobs:
           path: browser-ops
           fetch-depth: 2
           persist-credentials: false
-      - name: Read exact listing performance frontend
+      - name: Read exact transaction room frontend
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: ilovedrrealty/iLoveDRRealty
-          ref: fd0e65fa39cda23ec8d549b0c85e8b00696b0326
+          ref: 764a3a6b126e9d4d4bce93bffe2a2ca8c553da13
           path: frontend-base
           persist-credentials: false
       - name: Read exact backend application
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 630f05b80384428bb1191d3475a765877def80a9
+          ref: 939723e88c224be89dbb1705cfc282de2ac1a6ef
           path: browser-backend
           persist-credentials: false
       - name: Read accepted migration dependency recipe
@@ -50,7 +50,7 @@ jobs:
           ref: c193a925ba57ea2d67ea48c44e5262817885c8a2
           path: migration-relay
           persist-credentials: false
-      - name: Verify listing performance through staff and Owner dashboards
+      - name: Verify transaction room from the normal dashboards
         shell: bash
         run: |
           set -euo pipefail

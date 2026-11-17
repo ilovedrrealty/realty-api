@@ -8,7 +8,7 @@ bounded() { timeout --kill-after=8s "$@"; }
 
 [[ $# == 4 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api ]] || die CI_REQUIRED
 [[ ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 && ${GITHUB_RUN_ATTEMPT:-} == 1 ]] || die STANDARD_LINUX_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-listing-performance-browser-20261117-v3 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
+[[ ${GITHUB_REF:-} == refs/heads/codex-ci-transaction-room-browser-20261117 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 
 ops="$1"; frontend="$2"; backend="$3"; migration="$4"
 [[ "$ops" == "$GITHUB_WORKSPACE/browser-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-base" &&
@@ -18,16 +18,39 @@ for checkout in "$ops" "$frontend" "$backend" "$migration"; do
   checkout_status=$(git -C "$checkout" status --porcelain=v1 --untracked-files=all) || die CLEAN_CHECKOUT_REQUIRED
   [[ $(realpath "$checkout") == "$checkout" && -z "$checkout_status" ]] || die CLEAN_CHECKOUT_REQUIRED
 done
-[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == 46fafff567719f7f277c09540b9009e9c6c8e1d8 ]] ||
+[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == 8bd40ffd15340fc60cf9da9e4984927b1a7b21dd ]] ||
   die EXACT_OPERATIONS_PARENT_REQUIRED
 operations_delta=$(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) || die EXACT_OPERATIONS_DELTA_REQUIRED
-[[ "$operations_delta" == $'.github/workflows/admin-manual-share.yml\nci/admin-manual-share/run-hosted-admin-manual-share.sh\nci/admin-manual-share/run-listing-performance.mjs' ]] ||
+[[ "$operations_delta" == $'.github/workflows/admin-manual-share.yml\nci/admin-manual-share/run-hosted-admin-manual-share.sh\nci/admin-manual-share/run-transaction-room.mjs\nci/admin-manual-share/serve_transaction_room_fixture.py' ]] ||
   die EXACT_OPERATIONS_DELTA_REQUIRED
-frontend_commit=fd0e65fa39cda23ec8d549b0c85e8b00696b0326
-frontend_tree=41e48dde71280b012e99135e452ecd18dedeb2ad
-backend_commit=630f05b80384428bb1191d3475a765877def80a9
-backend_tree=7d491000a969029df024b908f85a857fd9b88b89
-migration_head=5a4e7f921bc0
+frontend_commit=764a3a6b126e9d4d4bce93bffe2a2ca8c553da13
+frontend_tree=629b2fc2f880dd4d4d2a1b9229eb1b9cd6e2950d
+frontend_paths=538
+frontend_rooms_test_sha=61fa6fb1fad2613bab99bd3da5e62740b8a630b1a9a57b2b7b75200829100a65
+frontend_documents_test_sha=afb137b361cfe9527b4f6cb2d865e1489f649cdebe291ced8e77166ea92764db
+frontend_test_count=10
+backend_commit=939723e88c224be89dbb1705cfc282de2ac1a6ef
+backend_tree=65c0ef2f19ee459745fb55fafa444b9f04e832cc
+migration_head=de248ab5c9f3
+browser_failure_stages='fixture,auth,scope,lead_open,room_create,invitation_create,invitation_accept,'\
+'task_create,task_update,milestone_create,milestone_update,buyer_room,pdf_upload,png_upload,'\
+'staff_document_panel,pdf_review,png_review,buyer_download,withheld,professional_download,'\
+'staff_audit,member_audit,revoke,mobile_denied'
+browser_checks=(
+  realtor_creates_from_assigned_lead
+  verified_professional_accepts_invitation
+  task_and_closing_milestone_changed
+  buyer_uploads_pdf_and_png_as_exact_versions
+  staff_reviews_exact_version_and_explicit_audience
+  permitted_downloads_preserve_exact_bytes
+  unassigned_buyer_withheld_and_revoked_professional_denied
+  staff_only_document_audit_and_mobile_room
+)
+[[ "$frontend_commit" =~ ^[a-f0-9]{40}$ && "$frontend_tree" =~ ^[a-f0-9]{40}$ &&
+   "$frontend_rooms_test_sha" =~ ^[a-f0-9]{64}$ && "$frontend_documents_test_sha" =~ ^[a-f0-9]{64}$ &&
+   "$frontend_paths" =~ ^[1-9][0-9]{2,3}$ &&
+   "$frontend_test_count" =~ ^[1-9][0-9]?$ ]] || die FRONTEND_PINS_INCOMPLETE
+[[ "$browser_failure_stages" =~ ^[a-z][a-z0-9_]*(,[a-z][a-z0-9_]*)+$ ]] || die BROWSER_PINS_INCOMPLETE
 [[ $(git -C "$frontend" rev-parse HEAD) == "$frontend_commit" &&
    $(git -C "$frontend" rev-parse 'HEAD^{tree}') == "$frontend_tree" ]] || die EXACT_FRONTEND_REQUIRED
 [[ $(git -C "$backend" rev-parse HEAD) == "$backend_commit" &&
@@ -37,10 +60,9 @@ migration_head=5a4e7f921bc0
 
 tools="$ops/ci/admin-manual-share"
 dockerfile="$migration/ci/migration/services163.Dockerfile"
-for file in serve_admin_share_fixture.py serve_dashboard_fixture.mjs serve_editorial_fixture.py run-editorial.mjs \
-  serve_development_inventory_fixture.py run-development-inventory.mjs \
-  serve_seller_valuation_fixture.py run-seller-valuation.mjs \
-  serve_listing_performance_fixture.py run-listing-performance.mjs; do
+for file in serve_admin_share_fixture.py serve_dashboard_fixture.mjs serve_editorial_fixture.py \
+  serve_development_inventory_fixture.py serve_seller_valuation_fixture.py serve_listing_performance_fixture.py \
+  serve_transaction_room_fixture.py run-transaction-room.mjs; do
   [[ -f "$tools/$file" && ! -L "$tools/$file" ]] || die EXACT_FIXTURE_SOURCE_REQUIRED
 done
 printf '%s  %s\n' e546d8c5668b87ef28e604107bbb330e6f4b3873cf0208b4d24ca378bd0851f9 "$dockerfile" \
@@ -116,8 +138,7 @@ trap cleanup EXIT
 
 mkdir "$state/frontend-work" "$state/fixtures" "$state/browser-run" "$state/python-context"
 cp "$backend/requirements.txt" "$state/python-context/requirements.txt"
-cp "$tools/run-editorial.mjs" "$tools/run-development-inventory.mjs" "$tools/run-seller-valuation.mjs" \
-  "$tools/run-listing-performance.mjs" "$state/browser-run/"
+cp "$tools/run-transaction-room.mjs" "$state/browser-run/"
 
 # Public, pinned dependency preparation. No app or browser process is running yet.
 for image in "$node_image" "$python_image" "$postgres_image" "$browser_image"; do
@@ -129,13 +150,13 @@ bounded 600s docker build --platform linux/amd64 --pull=false --quiet --label "$
 
 git -C "$frontend" archive --format=tar HEAD | tar -xf - -C "$state/frontend-work" || die FRONTEND_ARCHIVE_FAILED
 verify_frontend_files() {
-  python3 -I -B - "$frontend" "$state/frontend-work" <<'PY'
+  python3 -I -B - "$frontend" "$state/frontend-work" "$frontend_paths" <<'PY'
 from hashlib import sha1
 from pathlib import Path
 import subprocess, sys
-source, copy = map(Path, sys.argv[1:])
+source, copy = map(Path, sys.argv[1:3])
 files = subprocess.check_output(['git', '-C', str(source), 'ls-tree', '-rz', 'HEAD']).split(b'\0')
-assert len(files) == 527 and not files[-1]
+assert len(files) == int(sys.argv[3]) + 1 and not files[-1]
 for entry in filter(None, files):
     metadata, name = entry.split(b'\t', 1)
     mode, kind, object_id = metadata.split()
@@ -149,57 +170,12 @@ verify_frontend_files || die EXACT_ARCHIVED_FRONTEND_REQUIRED
 printf '%s  %s\n' \
   8df3c4c580c65694bc727488fc0ec02d88ab1577e5fa16c509f4897b58e60f33 "$state/frontend-work/package-lock.json" \
   1126aeb69e32b34394cca03ac440848f7b88b339042496cb6722a1781a204337 "$state/frontend-work/apps/dashboard/package.json" \
-  45893e6dfebaad4d2e73f7e7d6b26f176883bc1ba8c8dc025f188cc1b4d12344 "$state/frontend-work/apps/landing/package.json" \
-  32a58ba8e28b4231ab7cc92cf557c519d77138e54e6c7c47a2eacf799167288f "$state/frontend-work/tests/contact-share.test.cjs" \
-  1a3f25627fdaaaa41a57704b4fe386bef2dd53d545ed3d190700338eca51d6ef "$state/frontend-work/tests/professionals-contract.test.cjs" \
-  1c33c5dd2eec461c3601db0aa1fbcefae5661d732d745df89f20692231119381 "$state/frontend-work/tests/arrival-guide.test.cjs" \
-  2cc23ae28e6d0dfadf83cad9b76b6e458cd499b129fb745415a9f86b301d750d "$state/frontend-work/tests/shared-shortlists.test.cjs" \
-  6f2307b05bcfc0c1fc3653f91a575ccb46af70afc5e2b591f63299a13b1acdea "$state/frontend-work/tests/property-viewings.test.cjs" \
-  99f79eb9cb04bcff5a0979c730f7c9189bb9bdc40b9b3bbca20fd8850d1f231a "$state/frontend-work/tests/editorial-admin.test.cjs" \
-  e9c35cc7feee51f722f9a592052e6034b00e1aed3cb6d9551cdbf6878a1f89a0 "$state/frontend-work/tests/public-editorial.test.cjs" \
-  9b2fc413ff653011eed0e127ccea3db23d326a47a85040151c99da488b8b494d "$state/frontend-work/tests/search-map.test.cjs" \
-  7d6e336151b00f9aed669b088f18a76ca9b9fd2e1c7e75dbcb44f9e4d22e3655 "$state/frontend-work/tests/spatial-search-geometry.test.cjs" \
-  d1b8cb1067b6a9ed1e9e1f6bf46f3d52ee3301647fb43f344dd53fd96df4dfad "$state/frontend-work/tests/development-inventory-admin.test.cjs" \
-  b367b59edc076a336b2aa0115cacc61b1d2b40e63c3f65e2b42eccff574729b6 "$state/frontend-work/tests/development-inventory-admin-fields.test.cjs" \
-  f2ccbdce0958f0fc1cf53e434eb25613ce3869e431142d02e662f0a8e6e42e07 "$state/frontend-work/tests/development-inventory-public.test.cjs" \
-  abc08dfc11671b1615878dd2d6c39c234832e028484d9a648ad5dea547cb7f79 "$state/frontend-work/tests/seller-valuation-intake.test.cjs" \
-  c07f09b2569133676568d6fd75a4d200e76592a8616f323d35eac7894d1d8c00 "$state/frontend-work/tests/seller-valuation-workspace.test.cjs" \
-  982911057c9932efe84b31e416c32962372073059b889a80c2f0083f559155da "$state/frontend-work/tests/lead-tracking.test.cjs" \
-  2539d1a83e54bea4b54854e154147ec4c013db17da17c927b48c4f384ef217e0 "$state/frontend-work/tests/listing-performance.test.cjs" \
+  "$frontend_rooms_test_sha" "$state/frontend-work/tests/transaction-rooms.test.cjs" \
+  "$frontend_documents_test_sha" "$state/frontend-work/tests/transaction-documents.test.cjs" \
   | sha256sum --check --status || die EXACT_PACKAGE_AND_TEST_PINS_REQUIRED
 
 prepare=(--label "$label=$run_key" --user "$uids" --read-only --cap-drop ALL --security-opt no-new-privileges:true
          --memory 8g --memory-swap 8g --pids-limit 256 --cpus 2 --tmpfs /tmp:rw,exec,size=128m)
-
-if ! bounded 30s docker run -i "${prepare[@]}" --network none --workdir /application \
-  --mount "type=bind,src=$backend,dst=/application,readonly" "$app_image" \
-  env -i PATH=/usr/local/bin:/usr/bin:/bin /usr/local/bin/python -I -B - \
-  >"$state/customer-copy.log" 2>&1 <<'PY'
-from io import StringIO
-from pathlib import Path
-import importlib.util
-import os
-import sys
-import unittest
-
-checkout = Path("/application")
-assert os.statvfs(checkout).f_flag & os.ST_RDONLY
-assert {interface.name for interface in Path("/sys/class/net").iterdir()} == {"lo"}
-sys.path.insert(0, str(checkout))
-spec = importlib.util.spec_from_file_location("customer_copy_tests", checkout / "tests/test_customer_messages.py")
-tests = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(tests)
-suite = unittest.defaultTestLoader.loadTestsFromTestCase(tests.CustomerMessageTests)
-result = unittest.TextTestRunner(stream=StringIO()).run(suite)
-assert result.testsRun == 7 and result.wasSuccessful() and not result.skipped and not result.expectedFailures
-print("NETWORK_LIVE_SHARE_CUSTOMER_COPY native=0 tests=7 pass=7")
-PY
-then
-  die OFFLINE_CUSTOMER_COPY_TEST_FAILED
-fi
-[[ $(<"$state/customer-copy.log") == 'NETWORK_LIVE_SHARE_CUSTOMER_COPY native=0 tests=7 pass=7' ]] ||
-  die CUSTOMER_COPY_RESULT_REQUIRED
-printf 'NETWORK_LIVE_SHARE_CUSTOMER_COPY native=0 tests=7 pass=7\n'
 
 install_exit=0
 bounded 500s docker run "${prepare[@]}" --network bridge --workdir /work \
@@ -237,188 +213,21 @@ elif re.search(rb'(?m)^npm (?:error|ERR!) network(?:[ \t\r]|$)', tail):
     summary = 'npm_network_summary'
 else:
     summary = 'unclassified_install_failure'
-print(f'NETWORK_LIVE_SHARE_INSTALL native={native} summary={summary} codes={codes}')
+print(f'TRANSACTION_ROOM_INSTALL native={native} summary={summary} codes={codes}')
 PY
   die LOCKED_FRONTEND_INSTALL_FAILED
 fi
-printf 'NETWORK_LIVE_SHARE_INSTALL native=0 summary=success codes=none\n'
+printf 'TRANSACTION_ROOM_INSTALL native=0 summary=success codes=none\n'
 verify_frontend_files || die INSTALLED_FRONTEND_SOURCE_CHANGED
-professionals_exit=0
-bounded 120s docker run "${prepare[@]}" --network none --workdir /work \
-  --mount "type=bind,src=$state/frontend-work,dst=/work,readonly" "$node_image" \
-  env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp CI=true \
-  node --test --test-reporter=tap tests/professionals-contract.test.cjs \
-  >"$state/professionals-contracts.log" 2>&1 || professionals_exit=$?
-python3 -I -B - "$state/professionals-contracts.log" "$professionals_exit" <<'PY' || die PROFESSIONALS_CONTRACT_RESULT_INVALID
-from pathlib import Path
-import os, re, sys
-with Path(sys.argv[1]).open('rb') as log:
-    log.seek(max(0, os.fstat(log.fileno()).st_size - 131072))
-    body = log.read(131072)
-native = int(sys.argv[2])
-if native:
-    failures = sorted({int(index) for index in re.findall(rb'(?m)^not ok ([1-9]|1[0-9]|20) - ', body)})
-    print(f'NETWORK_LIVE_SHARE_PROFESSIONALS_FAILURE native={native} failed_indices='
-          + (','.join(map(str, failures)) or 'none'))
-    sys.exit(0)
-lines = body.splitlines()
-for row in (b'# tests 20', b'# pass 20', b'# fail 0', b'# skipped 0', b'# todo 0'):
-    assert lines.count(row) == 1
-hero = b'professional landing leads with member signup in both languages and keeps provider applications separate'
-assert sum(line.startswith(b'ok ') and line.endswith(hero) for line in lines) == 1
-print('PROPERTY_VIEWINGS_AUTH_UNIT native=0 tests=20 pass=20 bilingual_hero=pass')
-PY
-[[ "$professionals_exit" == 0 ]] || die OFFLINE_PROFESSIONALS_CONTRACTS_FAILED
-if ! bounded 120s docker run "${prepare[@]}" --network none --workdir /work \
-  --mount "type=bind,src=$state/frontend-work,dst=/work,readonly" "$node_image" \
-  env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp CI=true \
-  node --test --test-reporter=tap tests/arrival-guide.test.cjs \
-  >"$state/arrival-contracts.log" 2>&1; then
-  die OFFLINE_STAY_GUIDE_CONTRACTS_FAILED
-fi
-python3 -I -B - "$state/arrival-contracts.log" <<'PY' || die OFFLINE_STAY_GUIDE_RESULT_REQUIRED
-from pathlib import Path
-import sys
-path = Path(sys.argv[1])
-assert path.stat().st_size <= 32768
-lines = path.read_bytes().splitlines()
-assert all(lines.count(line) == 1 for line in (b'# tests 7', b'# pass 7', b'# fail 0', b'# skipped 0', b'# todo 0'))
-print('STAY_ARRIVAL_FRONTEND_CONTRACTS native=0 tests=7 pass=7')
-PY
-if ! bounded 120s docker run "${prepare[@]}" --network none --workdir /work \
-  --mount "type=bind,src=$state/frontend-work,dst=/work,readonly" "$node_image" \
-  env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp CI=true \
-  node --test --test-reporter=tap tests/shared-shortlists.test.cjs \
-  >"$state/shortlist-contracts.log" 2>&1; then
-  die OFFLINE_SHARED_SHORTLIST_CONTRACTS_FAILED
-fi
-python3 -I -B - "$state/shortlist-contracts.log" <<'PY' || die OFFLINE_SHARED_SHORTLIST_RESULT_REQUIRED
-from pathlib import Path
-import sys
-path = Path(sys.argv[1])
-count = 7
-assert path.stat().st_size <= 32768
-lines = path.read_bytes().splitlines()
-expected = (f'# tests {count}'.encode(), f'# pass {count}'.encode(), b'# fail 0', b'# skipped 0', b'# todo 0')
-assert all(lines.count(line) == 1 for line in expected)
-print(f'SHARED_SHORTLIST_FRONTEND_CONTRACTS native=0 tests={count} pass={count}')
-PY
-if ! bounded 120s docker run "${prepare[@]}" --network none --workdir /work \
-  --mount "type=bind,src=$state/frontend-work,dst=/work,readonly" "$node_image" \
-  env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp CI=true \
-  node --test --test-reporter=tap tests/property-viewings.test.cjs \
-  >"$state/viewing-contracts.log" 2>&1; then
-  die OFFLINE_VIEWING_CONTRACTS_FAILED
-fi
-python3 -I -B - "$state/viewing-contracts.log" <<'PY' || die OFFLINE_VIEWING_CONTRACTS_RESULT_REQUIRED
-from pathlib import Path
-import sys
-path = Path(sys.argv[1])
-count = 7
-assert path.stat().st_size <= 32768
-lines = path.read_bytes().splitlines()
-expected = (f'# tests {count}'.encode(), f'# pass {count}'.encode(), b'# fail 0', b'# skipped 0', b'# todo 0')
-assert all(lines.count(line) == 1 for line in expected)
-print(f'PROPERTY_VIEWINGS_FRONTEND_CONTRACTS native=0 tests={count} pass={count}')
-PY
-if ! bounded 120s docker run "${prepare[@]}" --network none --workdir /work \
-  --mount "type=bind,src=$state/frontend-work,dst=/work,readonly" "$node_image" \
-  env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp CI=true \
-  node --test --test-reporter=tap tests/editorial-admin.test.cjs tests/public-editorial.test.cjs \
-  >"$state/editorial-contracts.log" 2>&1; then
-  die OFFLINE_EDITORIAL_CONTRACTS_FAILED
-fi
-python3 -I -B - "$state/editorial-contracts.log" <<'PY' || die OFFLINE_EDITORIAL_CONTRACT_RESULT_REQUIRED
-from pathlib import Path
-import sys
-path = Path(sys.argv[1])
-count = 11
-assert path.stat().st_size <= 32768
-lines = path.read_bytes().splitlines()
-expected = (f'# tests {count}'.encode(), f'# pass {count}'.encode(), b'# fail 0', b'# skipped 0', b'# todo 0')
-assert all(lines.count(line) == 1 for line in expected)
-print(f'EDITORIAL_FRONTEND_CONTRACTS native=0 tests={count} pass={count}')
-PY
-if ! bounded 120s docker run "${prepare[@]}" --network none --workdir /work \
-  --mount "type=bind,src=$state/frontend-work,dst=/work,readonly" "$node_image" \
-  env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp CI=true \
-  node --test --test-reporter=tap tests/search-map.test.cjs tests/spatial-search-geometry.test.cjs \
-  >"$state/spatial-contracts.log" 2>&1; then
-  die OFFLINE_SPATIAL_CONTRACTS_FAILED
-fi
-python3 -I -B - "$state/spatial-contracts.log" <<'PY' || die OFFLINE_SPATIAL_CONTRACT_RESULT_REQUIRED
-from pathlib import Path
-import sys
-path = Path(sys.argv[1])
-count = 19
-assert path.stat().st_size <= 32768
-lines = path.read_bytes().splitlines()
-expected = (f'# tests {count}'.encode(), f'# pass {count}'.encode(), b'# fail 0', b'# skipped 0', b'# todo 0')
-assert all(lines.count(line) == 1 for line in expected)
-print(f'SPATIAL_SEARCH_FRONTEND_CONTRACTS native=0 tests={count} pass={count}')
-PY
-if ! bounded 120s docker run "${prepare[@]}" --network none --workdir /work \
-  --mount "type=bind,src=$state/frontend-work,dst=/work,readonly" "$node_image" \
-  env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp CI=true \
-  node --test --test-reporter=tap tests/development-inventory-admin.test.cjs \
-    tests/development-inventory-admin-fields.test.cjs tests/development-inventory-public.test.cjs \
-  >"$state/development-contracts.log" 2>&1; then
-  die OFFLINE_DEVELOPMENT_INVENTORY_CONTRACTS_FAILED
-fi
-python3 -I -B - "$state/development-contracts.log" <<'PY' || die OFFLINE_DEVELOPMENT_INVENTORY_CONTRACT_RESULT_REQUIRED
-from pathlib import Path
-import sys
-path = Path(sys.argv[1])
-count = 14
-assert path.stat().st_size <= 32768
-lines = path.read_bytes().splitlines()
-expected = (f'# tests {count}'.encode(), f'# pass {count}'.encode(), b'# fail 0', b'# skipped 0', b'# todo 0')
-assert all(lines.count(line) == 1 for line in expected)
-print(f'DEVELOPMENT_INVENTORY_FRONTEND_CONTRACTS native=0 tests={count} pass={count}')
-PY
-if ! bounded 120s docker run "${prepare[@]}" --network none --workdir /work \
-  --mount "type=bind,src=$state/frontend-work,dst=/work,readonly" "$node_image" \
-  env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp CI=true \
-  node --test --test-reporter=tap tests/seller-valuation-intake.test.cjs tests/seller-valuation-workspace.test.cjs \
-    tests/lead-tracking.test.cjs >"$state/seller-valuation-contracts.log" 2>&1; then
-  die OFFLINE_SELLER_VALUATION_CONTRACTS_FAILED
-fi
-python3 -I -B - "$state/seller-valuation-contracts.log" <<'PY' || die OFFLINE_SELLER_VALUATION_CONTRACT_RESULT_REQUIRED
-from pathlib import Path
-import sys
-path = Path(sys.argv[1])
-count = 22
-assert path.stat().st_size <= 65536
-lines = path.read_bytes().splitlines()
-expected = (f'# tests {count}'.encode(), f'# pass {count}'.encode(), b'# fail 0', b'# skipped 0', b'# todo 0')
-assert all(lines.count(line) == 1 for line in expected)
-print(f'SELLER_VALUATION_FRONTEND_CONTRACTS native=0 tests={count} pass={count}')
-PY
-if ! bounded 120s docker run "${prepare[@]}" --network none --workdir /work \
-  --mount "type=bind,src=$state/frontend-work,dst=/work,readonly" "$node_image" \
-  env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp CI=true \
-  node --test --test-reporter=tap tests/listing-performance.test.cjs >"$state/listing-performance-contracts.log" 2>&1; then
-  die OFFLINE_LISTING_PERFORMANCE_CONTRACTS_FAILED
-fi
-python3 -I -B - "$state/listing-performance-contracts.log" <<'PY' || die OFFLINE_LISTING_PERFORMANCE_CONTRACT_RESULT_REQUIRED
-from pathlib import Path
-import sys
-path = Path(sys.argv[1])
-count = 5
-assert path.stat().st_size <= 65536
-lines = path.read_bytes().splitlines()
-expected = (f'# tests {count}'.encode(), f'# pass {count}'.encode(), b'# fail 0', b'# skipped 0', b'# todo 0')
-assert all(lines.count(line) == 1 for line in expected)
-print(f'LISTING_PERFORMANCE_FRONTEND_CONTRACTS native=0 tests={count} pass={count}')
-PY
 if ! bounded 360s docker run "${prepare[@]}" --network none --workdir /work \
   --mount "type=bind,src=$state/frontend-work,dst=/work" "$node_image" \
   env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp CI=true NODE_OPTIONS=--max-old-space-size=1536 \
   npm_config_userconfig=/tmp/ildr-user.npmrc npm_config_globalconfig=/tmp/ildr-global.npmrc npm_config_cache=/tmp/npm \
   npm_config_update_notifier=false npm_config_audit=false npm_config_fund=false \
   VITE_API_URL=http://127.0.0.1:8000 VITE_LANDING_URL=http://127.0.0.1:8917 \
-  VITE_GOOGLE_CLIENT_ID=synthetic-ci.apps.googleusercontent.com sh -c 'node --test --test-reporter=tap tests/contact-share.test.cjs &&
-  npm run build --workspace=dashboard' >"$state/dashboard-build.log" 2>&1; then
+  VITE_GOOGLE_CLIENT_ID=synthetic-ci.apps.googleusercontent.com sh -c 'node --test --test-reporter=tap \
+    tests/transaction-rooms.test.cjs tests/transaction-documents.test.cjs && npm run build --workspace=dashboard' \
+    >"$state/dashboard-build.log" 2>&1; then
   python3 -I -B - "$state/dashboard-build.log" <<'PY'
 import re
 import sys
@@ -434,13 +243,16 @@ PY
   die DASHBOARD_BUILD_FAILED
 fi
 
-python3 -I -B - "$state/dashboard-build.log" <<'PY'
+python3 -I -B - "$state/dashboard-build.log" "$frontend_test_count" <<'PY' || die TRANSACTION_ROOM_FRONTEND_RESULT_REQUIRED
 import sys
 from pathlib import Path
-lines = Path(sys.argv[1]).read_bytes().splitlines()
-for row in (b'# tests 7', b'# pass 7', b'# fail 0', b'# skipped 0'):
+path = Path(sys.argv[1])
+assert path.stat().st_size <= 1048576
+count = int(sys.argv[2])
+lines = path.read_bytes().splitlines()
+for row in (f'# tests {count}'.encode(), f'# pass {count}'.encode(), b'# fail 0', b'# skipped 0', b'# todo 0'):
     assert lines.count(row) == 1
-print('NETWORK_LIVE_SHARE_FRONTEND_UNIT native=0 tests=7 pass=7 typecheck=success build=success')
+print(f'TRANSACTION_ROOM_FRONTEND_CONTRACTS native=0 tests={count} pass={count} typecheck=success build=success')
 PY
 verify_frontend_files || die FRONTEND_SOURCE_CHANGED
 
@@ -495,74 +307,23 @@ done
 [[ "$ready" == 1 && $(bounded 5s docker exec "$pg" ls /sys/class/net) == lo ]] || die LOOPBACK_POSTGRES_REQUIRED
 bounded 10s docker exec "$pg" psql -X -h 127.0.0.1 -p 55449 -U postgres -d "$db" -v ON_ERROR_STOP=1 \
   -c 'CREATE ROLE anon NOLOGIN; CREATE ROLE authenticated NOLOGIN; CREATE ROLE service_role NOLOGIN' \
-  -c 'CREATE DATABASE ildr_platform_test_20261025' \
   -c "COMMENT ON DATABASE $db IS 'ildr-admin-share-ci:$nonce'" >/dev/null || die DATABASE_IDENTITY_MARKER_FAILED
+postgres_version_num=$(bounded 6s docker exec "$pg" psql -XAt -h 127.0.0.1 -p 55449 -U postgres -d "$db" \
+  -v ON_ERROR_STOP=1 -c 'SHOW server_version_num') || die EXACT_POSTGRES_VERSION_REQUIRED
+[[ "$postgres_version_num" == 170006 ]] || die EXACT_POSTGRES_VERSION_REQUIRED
 
 runtime=(--label "$label=$run_key" --network "container:$pg" --user "$uids" --read-only --init
          --cap-drop ALL --security-opt no-new-privileges:true --pids-limit 256 --cpus 2
          --env GITHUB_ACTIONS=true --env GITHUB_REPOSITORY=ilovedrrealty/realty-api)
 
-test_exit=0
-bounded 90s docker run -i "${runtime[@]}" --memory 1g --memory-swap 1g --workdir /application \
-  --tmpfs /tmp:rw,exec,size=64m \
-  --env SEARCH_FILTER_TEST_DATABASE_URL=postgresql+psycopg2://postgres@127.0.0.1:55449/ildr_platform_test_20261025 \
-  --mount "type=bind,src=$backend,dst=/application,readonly" \
-  "$app_image" /usr/local/bin/python -I -B - >"$state/shortlist-backend.log" 2>&1 <<'PY' || test_exit=$?
-from importlib.util import module_from_spec, spec_from_file_location
-from io import StringIO
-import os
-from pathlib import Path
-import re
-import sys
-import unittest
-
-app = Path('/application')
-assert os.statvfs(app).f_flag & os.ST_RDONLY
-assert {interface.name for interface in Path('/sys/class/net').iterdir()} == {'lo'}
-sys.path.insert(0, str(app))
-for name, marker, count in (
-    ('arrival_guide', 'STAY_ARRIVAL', 7),
-    ('shortlists', 'SHARED_SHORTLIST', 6),
-    ('property_viewings', 'PROPERTY_VIEWINGS', 9),
-    ('editorial', 'EDITORIAL', 7),
-    ('listing_search', 'SPATIAL_SEARCH', 19),
-    ('search_geometry', 'SPATIAL_GEOMETRY', 3),
-    ('development_inventory', 'DEVELOPMENT_INVENTORY', 8),
-    ('lead_tracking', 'LEAD_TRACKING', 17),
-    ('seller_valuation_workspace', 'SELLER_VALUATION', 6),
-    ('listing_performance', 'LISTING_PERFORMANCE', 5),
-):
-    spec = spec_from_file_location(name + '_tests', app / f'tests/test_{name}.py')
-    tests = module_from_spec(spec)
-    spec.loader.exec_module(tests)
-    result = unittest.TextTestRunner(stream=StringIO()).run(unittest.defaultTestLoader.loadTestsFromModule(tests))
-    failed = [getattr(test, '_testMethodName', 'setup_or_teardown') for test, _ in result.failures + result.errors]
-    valid = all(re.fullmatch(r'[a-z0-9_]{1,100}', item) for item in failed)
-    print(f'{marker}_BACKEND_CONTRACTS tests={result.testsRun} failed={len(failed)} skipped={len(result.skipped)} '
-          f'methods={",".join(failed) if failed and valid else "none"}')
-    assert result.testsRun == count and result.wasSuccessful() and not result.skipped and not result.expectedFailures
-PY
-python3 -I -B - "$state/shortlist-backend.log" <<'PY' || die SHARED_SHORTLIST_BACKEND_RESULT_INVALID
-import re, sys
-from pathlib import Path
-path = Path(sys.argv[1])
-assert path.stat().st_size <= 131072
-pattern = rb'(?:STAY_ARRIVAL|SHARED_SHORTLIST|PROPERTY_VIEWINGS|EDITORIAL|SPATIAL_SEARCH|SPATIAL_GEOMETRY|DEVELOPMENT_INVENTORY|LEAD_TRACKING|SELLER_VALUATION|LISTING_PERFORMANCE)_BACKEND_CONTRACTS tests=[0-9]+ failed=[0-9]+ skipped=[0-9]+ methods=[a-z0-9_,]+'
-matches = [line for line in path.read_bytes().splitlines() if re.fullmatch(pattern, line)]
-assert 1 <= len(matches) <= 10
-for line in matches:
-    print(line.decode('ascii'))
-PY
-[[ "$test_exit" == 0 ]] || die SHARED_SHORTLIST_DISPOSABLE_BACKEND_TEST_FAILED
-
 api=$(bounded 25s docker create "${runtime[@]}" --memory 2g --memory-swap 2g \
   --tmpfs /tmp:rw,exec,size=128m --env "ILDR_BROWSER_CI_NONCE=$nonce" \
-  --env "ILDR_PERFORMANCE_APP_COMMIT=$backend_commit" --env "ILDR_PERFORMANCE_APP_TREE=$backend_tree" \
-  --env "ILDR_PERFORMANCE_MIGRATION=$migration_head" \
+  --env "ILDR_TRANSACTION_APP_COMMIT=$backend_commit" --env "ILDR_TRANSACTION_APP_TREE=$backend_tree" \
+  --env "ILDR_TRANSACTION_MIGRATION=$migration_head" \
   --mount "type=bind,src=$backend,dst=/application,readonly" \
   --mount "type=bind,src=$tools,dst=/tools,readonly" \
   --mount "type=bind,src=$state/fixtures,dst=/browser-fixtures" \
-  "$app_image" /usr/local/bin/python -I -B /tools/serve_listing_performance_fixture.py) || die API_CREATE_FAILED
+  "$app_image" /usr/local/bin/python -I -B /tools/serve_transaction_room_fixture.py) || die API_CREATE_FAILED
 owned "$api" && bounded 25s docker start "$api" >/dev/null || die API_START_FAILED
 dashboard=$(bounded 25s docker create "${runtime[@]}" --memory 512m --memory-swap 512m \
   --mount "type=bind,src=$state/frontend-work/apps/dashboard/dist,dst=/dashboard-dist,readonly" \
@@ -586,7 +347,8 @@ assert len(reports)<=1
 if reports:
     value=json.loads(reports[0]); assert set(value)=={'stage','error_type','fixture_line','sqlstate'}
     assert value['stage'] in {'checkout','claim_database','configure_application','load_application','bootstrap_database',
-        'apply_alembic','seed_accounts','seed_lead','seed_valuation','seed_performance','write_fixture','serve_application'}
+        'apply_alembic','seed_accounts','seed_lead','seed_valuation','seed_performance','seed_transaction_room',
+        'write_fixture','serve_application'}
     assert re.fullmatch(r'[A-Za-z][A-Za-z0-9_]{0,62}',value['error_type'])
     assert value['fixture_line'] is None or type(value['fixture_line']) is int and 0<value['fixture_line']<=1000
     assert value['sqlstate'] is None or value['stage']=='apply_alembic' and re.fullmatch(r'[0-9A-Z]{5}',value['sqlstate'])
@@ -604,7 +366,7 @@ browser=$(bounded 25s docker create "${runtime[@]}" --memory 2g --memory-swap 2g
   --env PLAYWRIGHT_BROWSERS_PATH=/ms-playwright --env ILDR_BROWSER_FIXTURES=/browser-fixtures/fixtures.json \
   --mount "type=bind,src=$state/browser-run,dst=/rehearsal,readonly" \
   --mount "type=bind,src=$state/fixtures,dst=/browser-fixtures,readonly" \
-  "$browser_image" /bin/sh -ec 'node /rehearsal/run-seller-valuation.mjs; node /rehearsal/run-development-inventory.mjs; node /rehearsal/run-editorial.mjs; node /rehearsal/run-listing-performance.mjs') || die BROWSER_CREATE_FAILED
+  "$browser_image" node /rehearsal/run-transaction-room.mjs) || die BROWSER_CREATE_FAILED
 owned "$browser" || die OWNED_BROWSER_REQUIRED
 client_exit=0
 bounded 300s docker start --attach "$browser" >"$state/browser.log" 2>&1 || client_exit=$?
@@ -612,65 +374,31 @@ container_state=$(bounded 15s docker inspect --format '{{.State.ExitCode}} {{.St
 [[ "$container_state" =~ ^[0-9]+\ (true|false)\ (true|false)$ ]] || die BROWSER_NATIVE_STATE_REQUIRED
 printf 'BROWSER_REHEARSAL_NATIVE client=%s state=%s\n' "$client_exit" "$container_state"
 
-python3 -I -B - "$state/browser.log" <<'PY'
+python3 -I -B - "$state/browser.log" "$browser_failure_stages" "${browser_checks[@]}" <<'PY' || die TRANSACTION_ROOM_BROWSER_RESULT_REQUIRED
 from pathlib import Path
-import json,re,sys
-path=Path(sys.argv[1]); assert path.stat().st_size <= 131072
-def safe(value):
-    if isinstance(value,dict): return len(value)<=30 and all(re.fullmatch(r'[a-z_]+',key) and safe(item) for key,item in value.items())
-    if isinstance(value,list): return len(value)<=100 and all(safe(item) for item in value)
-    if isinstance(value,str): return re.fullmatch(r'[a-zA-Z0-9_ -]{1,120}',value) is not None
-    return value is None or type(value) in (bool,int)
-expected={
-    b'SELLER_VALUATION_BROWSER ': [
-        'unrelated_staff_and_anonymous_denied',
-        'admin_enters_normal_seller_detail_and_saves_facts',
-        'assigned_realtor_captures_asking_snapshot',
-        'assigned_realtor_records_and_verifies_sold_evidence',
-        'reviewed_range_distinguishes_asking_and_verified_sold',
-        'private_follow_up_completed_and_report_preserved',
-    ],
-    b'DEVELOPMENT_INVENTORY_BROWSER ': [
-        'exact_synthetic_admin_buyer_and_write_scope',
-        'desktop_listing_action_creates_private_bilingual_inventory',
-        'mobile_listing_action_and_read_only_saved_preview',
-        'confirmed_review_and_publication_expose_only_approved_data',
-        'later_private_draft_keeps_original_public_revision_and_rejects_stale_write',
-        'confirmed_withdrawal_hides_public_catalog_and_retains_private_history',
-    ],
-    b'EDITORIAL_ADMIN_BROWSER ': [
-        'anonymous_and_realtor_cannot_read_admin_editorial',
-        'incomplete_draft_is_editable_but_cannot_be_reviewed_or_read_publicly',
-        'private_spanish_preview_at_mobile_width',
-        'reviewed_version_appears_in_both_languages_without_private_metadata',
-        'unreviewed_edits_leave_existing_publication_and_stale_change_conflicts',
-        'withdrawal_hides_both_languages_and_restore_creates_private_draft',
-    ],
-    b'LISTING_PERFORMANCE_BROWSER ': [
-        'anonymous_owned_view_counted',
-        'staff_opens_selected_listing_and_records_showing',
-        'staff_explicitly_shares_owner_feedback',
-        'owner_opens_own_listing_on_mobile_and_applies_dates',
-        'coverage_and_real_counts_are_distinct',
-        'owner_report_excludes_private_material',
-        'foreign_and_unassigned_scope_denied',
-    ],
-}
-lines=path.read_bytes().splitlines()
-failures=[line for line in lines if line.startswith(b'LISTING_PERFORMANCE_BROWSER_FAILURE ')]
-assert len(failures)<=1
+import json
+import re
+import sys
+
+path = Path(sys.argv[1])
+assert path.stat().st_size <= 131072
+lines = path.read_bytes().splitlines()
+allowed_stages = set(sys.argv[2].split(','))
+failure = b'TRANSACTION_ROOM_BROWSER_FAILURE '
+failures = [line[len(failure):] for line in lines if line.startswith(failure)]
+assert len(failures) <= 1
 if failures:
-    assert re.fullmatch(rb'LISTING_PERFORMANCE_BROWSER_FAILURE '
-        rb'(?:fixture|scope|public_view|staff_listing|owner_listing|owner_dates|mobile_report|'
-        rb'staff_(?:completed|feedback)_(?:open|type|note|share|date|post|receipt)) '
-        rb'[A-Z][A-Z0-9_]{0,35}', failures[0])
-    print(failures[0].decode('ascii'))
-for prefix, checks in expected.items():
-    matches=[line[len(prefix):] for line in lines if line.startswith(prefix)]
-    assert len(matches)==1 and len(matches[0])<=8192
-    data=json.loads(matches[0]); assert safe(data)
-    print(prefix.decode()+json.dumps(data,sort_keys=True,separators=(',',':')))
-    assert data=={'status':'PASS','checks':checks}
+    match = re.fullmatch(rb'([a-z][a-z0-9_]{0,38}) ([A-Z][A-Z0-9_]{0,44})', failures[0])
+    assert match is not None and match[1].decode('ascii') in allowed_stages
+    print(failure.decode('ascii') + failures[0].decode('ascii'))
+    raise SystemExit(1)
+
+prefix = b'TRANSACTION_ROOM_BROWSER '
+matches = [line[len(prefix):] for line in lines if line.startswith(prefix)]
+assert len(matches) == 1 and len(matches[0]) <= 8192
+value = json.loads(matches[0])
+assert value == {'status': 'PASS', 'checks': sys.argv[3:]}
+print(prefix.decode('ascii') + json.dumps(value, separators=(',', ':')))
 PY
 [[ "$client_exit" == 0 && "$container_state" == '0 false false' ]] || die NATIVE_BROWSER_FAILED
 
@@ -681,5 +409,5 @@ api_state=$(bounded 15s docker inspect --format '{{.State.ExitCode}} {{.State.Ru
 printf 'BROWSER_API_FIXTURE_SHUTDOWN state=%s login_file=absent\n' "$api_state"
 backend_status=$(git -C "$backend" status --porcelain=v1 --untracked-files=all) || die API_SOURCE_CHANGED
 [[ -z "$backend_status" ]] || die API_SOURCE_CHANGED
-printf 'LISTING_PERFORMANCE_ACCEPTANCE operations=%s frontend=%s frontend_tree=%s backend=%s backend_tree=%s migration=%s postgres_version_num=170006 run=%s attempt=1\n' \
-  "$GITHUB_SHA" "$frontend_commit" "$frontend_tree" "$backend_commit" "$backend_tree" "$migration_head" "$GITHUB_RUN_ID"
+printf 'TRANSACTION_ROOM_ACCEPTANCE operations=%s frontend=%s frontend_tree=%s backend=%s backend_tree=%s migration=%s postgres_version_num=%s run=%s attempt=1\n' \
+  "$GITHUB_SHA" "$frontend_commit" "$frontend_tree" "$backend_commit" "$backend_tree" "$migration_head" "$postgres_version_num" "$GITHUB_RUN_ID"
