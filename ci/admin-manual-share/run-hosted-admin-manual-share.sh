@@ -8,7 +8,7 @@ bounded() { timeout --kill-after=8s "$@"; }
 
 [[ $# == 5 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api ]] || die CI_REQUIRED
 [[ ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 && ${GITHUB_RUN_ATTEMPT:-} == 1 ]] || die STANDARD_LINUX_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-neighborhood-comparison-browser-20261117-v4 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
+[[ ${GITHUB_REF:-} == refs/heads/codex-ci-neighborhood-comparison-browser-20261117-v5 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 
 ops="$1"; frontend="$2"; backend="$3"; migration="$4"; landing_relay="$5"
 [[ "$ops" == "$GITHUB_WORKSPACE/browser-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-base" &&
@@ -19,7 +19,7 @@ for checkout in "$ops" "$frontend" "$backend" "$migration" "$landing_relay"; do
   checkout_status=$(git -C "$checkout" status --porcelain=v1 --untracked-files=all) || die CLEAN_CHECKOUT_REQUIRED
   [[ $(realpath "$checkout") == "$checkout" && -z "$checkout_status" ]] || die CLEAN_CHECKOUT_REQUIRED
 done
-[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == c573f480dad2b7798cdf07c72838ef09203c3d70 ]] ||
+[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == dca8b87f9eaf2c26c48a7421a5622052b55da7d9 ]] ||
   die EXACT_OPERATIONS_PARENT_REQUIRED
 operations_delta=$(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) || die EXACT_OPERATIONS_DELTA_REQUIRED
 [[ "$operations_delta" == $'.github/workflows/admin-manual-share.yml\nci/admin-manual-share/run-hosted-admin-manual-share.sh' ]] ||
@@ -258,6 +258,31 @@ print(f'NEIGHBORHOOD_FRONTEND_CONTRACTS native=0 tests={count} pass={count} type
 PY
 verify_frontend_files || die FRONTEND_SOURCE_CHANGED
 
+# Name the two contract pretests in the real build separately for diagnosis. The
+# reviewed npm build still runs both again, as well as the actual Next export.
+pretest_exit=0
+bounded 80s docker run "${prepare[@]}" --network none --workdir /work \
+  --mount "type=bind,src=$state/frontend-work,dst=/work" "$node_image" \
+  env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp CI=true NODE_OPTIONS=--max-old-space-size=1536 \
+  node --test --test-concurrency=1 --test-reporter=tap tests/listing-export.test.cjs tests/blog-articles.test.cjs \
+  >"$state/landing-contract.log" 2>&1 || pretest_exit=$?
+python3 -I -B - "$state/landing-contract.log" "$pretest_exit" <<'PY' || die DECLARED_LANDING_PRETEST_REQUIRED
+from pathlib import Path
+import re, sys
+log = Path(sys.argv[1])
+assert log.stat().st_size <= 262144
+lines = log.read_bytes().splitlines()
+rows = {group[1]: int(group[2]) for row in lines if (group := re.fullmatch(rb"# (tests|pass|fail|skipped) ([0-9]{1,3})", row))}
+print(f"NEIGHBORHOOD_LANDING_PRETESTS native={int(sys.argv[2])} tests={rows.get(b'tests', 0)} "
+      f"pass={rows.get(b'pass', 0)} fail={rows.get(b'fail', 0)}")
+for row in lines:
+    if group := re.fullmatch(rb"not ok ([1-9][0-9]{0,2}) - [A-Za-z0-9 _.,:/-]{1,180}", row):
+        print("NEIGHBORHOOD_LANDING_PRETEST_FAILURE index=" + group[1].decode("ascii"))
+assert sys.argv[2] == "0"
+assert rows == {b"tests": 20, b"pass": 20, b"fail": 0, b"skipped": 0}
+PY
+verify_frontend_files || die LANDING_PRETEST_SOURCE_CHANGED
+
 landing_fixture="$landing_relay/ci/frontend"
 landing_script="$landing_relay/ci/cumulative-landing/landing.cjs"
 landing_server="$landing_relay/ci/browser/serve_landing_fixture.mjs"
@@ -304,7 +329,9 @@ phases = [json.loads(line[len(prefix):]) for line in lines if line.startswith(pr
 for phase in phases:
     assert phase["name"] in names and type(phase["native_exit"]) in (int, type(None))
     assert phase["native_exit"] is None or 0 <= phase["native_exit"] <= 255
-    print(f'NEIGHBORHOOD_NEXT_PHASE stage={phase["name"]} native={phase["native_exit"]}')
+    assert all(type(phase[key]) is int and 0 <= phase[key] <= 4194304 for key in ("stdout_bytes", "stderr_bytes"))
+    print(f'NEIGHBORHOOD_NEXT_PHASE stage={phase["name"]} native={phase["native_exit"]}'
+          f' stdout_bytes={phase["stdout_bytes"]} stderr_bytes={phase["stderr_bytes"]}')
 allowed = {b"FIXTURE_PORT_REFUSED", b"FIXTURE_LISTEN_REFUSED", b"FIXTURE_BINDING_REFUSED",
            b"FIXTURE_CONTRACT_NOT_ACCEPTED", b"UNEXPECTED_GENERATED_TYPE_SOURCE_CHANGE",
            b"ACTUAL_SYNTHETIC_REQUESTS_REQUIRED", b"NATIVE_PHASE_FAILED", b"SYNTHETIC_EXPORT_AND_METADATA_REQUIRED"}
@@ -365,6 +392,27 @@ if sys.argv[3] != "0":
         cleaned = b" ".join(cleaned.split())[:192]
         if cleaned:
             print(f"NEIGHBORHOOD_NEXT_DETAIL exception={kind.decode('ascii')} summary={cleaned.decode('ascii')}")
+    segment = "none"
+    tails = {"stdout": [], "stderr": []}
+    label = b" landing_declared_full_build_synthetic_input"
+    for line in lines:
+        if line == b"CUMULATIVE_LANDING_STDOUT" + label:
+            segment = "stdout"
+        elif line == b"CUMULATIVE_LANDING_STDERR" + label:
+            segment = "stderr"
+        elif line.startswith((b"CUMULATIVE_LANDING_PHASE ", b"CUMULATIVE_LANDING_END ", b"CUMULATIVE_LANDING_FAILED ")):
+            segment = "none"
+        elif segment in tails and line.strip():
+            tails[segment].append(line)
+    for stream, records in tails.items():
+        for line in records[-18:]:
+            if re.search(rb"(?i)(?:secret|password|private_key|authorization|api.?key|access.?token|cookie|credentials)", line):
+                continue
+            line = re.sub(rb"['\"][^'\"]*['\"]|https?://\S+|\S+@\S+|(?:/[A-Za-z0-9_.-]+){2,}|[A-Za-z0-9_=-]{20,}", b"[redacted]", line)
+            line = re.sub(rb"[^A-Za-z0-9 .,:!?()_\[\]>+&=-]", b" ", line)
+            summary = b" ".join(line.split())[:168]
+            if summary:
+                print(f"NEIGHBORHOOD_NEXT_SYNTHETIC_TAIL stream={stream} summary={summary.decode('ascii')}")
 assert sys.argv[3] == "0"
 assert len(phases) == len(names) and {phase["name"] for phase in phases} == names
 assert all(phase["native_exit"] == 0 and phase["child_group_absent"] == True for phase in phases)

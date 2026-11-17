@@ -2,7 +2,7 @@ name: Isolated neighborhood editorial and public comparison browser rehearsal
 
 on:
   push:
-    branches: [codex-ci-neighborhood-comparison-browser-20261117-v4]
+    branches: [codex-ci-neighborhood-comparison-browser-20261117-v5]
 
 permissions:
   contents: read
