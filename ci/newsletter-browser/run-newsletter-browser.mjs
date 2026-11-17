@@ -23,6 +23,7 @@ const copy = {
   },
 }
 const checks = []
+const pageErrorEvidence = []
 let stage = 'fixture'
 let responseEvidence = null
 let browser
@@ -109,7 +110,9 @@ async function newMobile(lang, actionPage) {
     serviceWorkers: 'block', acceptDownloads: false,
   })
   contexts.push(context)
-  await context.addInitScript(locale => { localStorage.setItem('ildr_lang', locale) }, lang)
+  await context.addInitScript(({ locale, origin }) => {
+    if (window.location.origin === origin) localStorage.setItem('ildr_lang', locale)
+  }, { locale: lang, origin: ORIGIN })
   const events = { posts: [], external: 0, localRefused: 0, errors: 0 }
   await context.route('**/*', async route => {
     const request = route.request()
@@ -137,7 +140,19 @@ async function newMobile(lang, actionPage) {
   })
   const page = await context.newPage()
   page.setDefaultTimeout(10000)
-  page.on('pageerror', () => { events.errors += 1 })
+  page.on('pageerror', error => {
+    events.errors += 1
+    if (pageErrorEvidence.length < 8) {
+      const kind = ['SecurityError', 'TypeError', 'ReferenceError', 'SyntaxError', 'Error'].includes(error.name)
+        ? error.name : 'OtherError'
+      const document = page.url() === 'about:blank' ? 'blank'
+        : page.url().startsWith(ORIGIN + '/') ? 'frontend' : 'other'
+      const code = kind === 'SecurityError' && /localStorage|access is denied|access.*denied/i.test(error.message)
+        ? 'storage_denied' : /Minified React error #(?:418|423|425)|hydration/i.test(error.message)
+          ? 'hydration' : 'application'
+      pageErrorEvidence.push({ kind, document, surface: actionPage ? 'action' : 'signup', code })
+    }
+  })
   return { context, page, events, actionPage }
 }
 
@@ -312,6 +327,7 @@ try {
   const match = /\/run-newsletter-browser\.mjs:([1-9][0-9]{0,3}):[1-9][0-9]{0,3}/.exec(error?.stack ?? '')
   console.log('NEWSLETTER_BROWSER_FAILURE ' + JSON.stringify({
     stage, error_type: kind, driver_line: match ? Number(match[1]) : null, response: responseEvidence,
+    page_errors: pageErrorEvidence,
   }))
   process.exitCode = 1
 } finally {

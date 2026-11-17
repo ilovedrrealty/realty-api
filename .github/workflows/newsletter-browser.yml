@@ -2,7 +2,7 @@ name: Isolated mobile bilingual newsletter browser journey
 
 on:
   push:
-    branches: [codex-ci-newsletter-browser-20261117-v2]
+    branches: [codex-ci-newsletter-browser-20261117-v3]
 
 permissions:
   contents: read
