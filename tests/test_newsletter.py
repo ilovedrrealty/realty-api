@@ -2,6 +2,7 @@
 
 from datetime import datetime, timedelta, timezone
 import os
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 from uuid import uuid4
@@ -33,6 +34,7 @@ class NewsletterTest(unittest.TestCase):
             self.addCleanup(setup.stop)
         self.addCleanup(patch.stopall)
         self.clock = patch.object(newsletter, "now_utc", side_effect=lambda: self.now).start()
+        self.send_confirmation_implementation = newsletter.send_confirmation
         self.mail = patch.object(newsletter, "send_confirmation").start()
 
     def call(self, action, data):
@@ -72,6 +74,8 @@ class NewsletterTest(unittest.TestCase):
         self.assertEqual(self.call("subscribe", values).status_code, 503)
         first = self.mail.call_args.args
         self.assertEqual(self.read().status, "pending")
+        self.assertEqual(self.call("subscribe", values).status_code, 503)
+        self.assertEqual(self.mail.call_count, 1)
         self.now += timedelta(minutes=6)
         self.mail.side_effect = None
         self.assertEqual(self.call("subscribe", dict(values, language="es")).status_code, 202)
@@ -89,3 +93,22 @@ class NewsletterTest(unittest.TestCase):
                 AND r.rolname IN ('anon','authenticated','service_role')
                 GROUP BY c.relrowsecurity""")).one()
         self.assertEqual(tuple(protection), (True, 3, False))
+
+    def test_email_contains_exact_localized_actions_and_stable_provider_key(self):
+        implementation = self.send_confirmation_implementation
+        identifier, nonce = uuid4(), uuid4()
+        response = SimpleNamespace(is_success=True, json=lambda: {"id": "synthetic-accepted"})
+        with patch.object(newsletter.httpx, "post", return_value=response) as provider:
+            for locale in ("en", "es"):
+                implementation(self.email, locale, identifier, nonce, "https://example.com/newsletter/")
+                request = provider.call_args
+                self.assertEqual(request.args, ("https://api.resend.com/emails",))
+                self.assertEqual(request.kwargs["headers"]["Idempotency-Key"], f"ildr-newsletter-confirm-{nonce}")
+                payload = request.kwargs["json"]
+                self.assertEqual(payload["to"], [self.email])
+                self.assertEqual(payload["subject"], newsletter.COPY[locale][0])
+                self.assertIn("#confirm=" + newsletter.action_token(identifier, "confirm", nonce), payload["html"])
+                self.assertIn("#unsubscribe=" + newsletter.action_token(identifier, "unsubscribe"), payload["html"])
+            provider.return_value = SimpleNamespace(is_success=True, json=lambda: {})
+            with self.assertRaises(newsletter.ConfirmationUnavailable):
+                implementation(self.email, "en", identifier, nonce, "https://example.com/newsletter/")
