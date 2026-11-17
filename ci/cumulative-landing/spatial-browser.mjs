@@ -130,16 +130,21 @@ function installSyntheticMaps() {
 }
 
 function apiReads(page, api, spatial) {
-  return [...properties].map(path => page.waitForResponse(response => {
+  // Attach rejection handlers before any further navigation or map operations.
+  return Promise.allSettled([...properties].map(path => page.waitForResponse(response => {
     const url = new URL(response.url())
     return url.origin === api && url.pathname === path && response.request().method() === 'GET'
       && url.searchParams.get('spatial') === spatial && response.ok()
       && (path !== '/listings' || !url.searchParams.has('exclude_ids'))
-  }))
+  })))
 }
 
 async function checkedReads(pending, excluded = null) {
-  for (const response of await Promise.all(pending)) {
+  const responses = await pending
+  check(responses[0].status === 'fulfilled', 'LIST_RESPONSE_MISSING')
+  check(responses[1].status === 'fulfilled', 'MAP_RESPONSE_MISSING')
+  for (const result of responses) {
+    const response = result.value
     const url = new URL(response.url())
     const body = await response.json()
     check(url.searchParams.get('purpose') === 'sale' && url.searchParams.get('beds') === '2',
@@ -151,6 +156,7 @@ async function checkedReads(pending, excluded = null) {
 export async function verifySpatial(browser, fixture, { landing, api }, setStage) {
   const context = await browser.newContext({ locale: 'en-US', viewport: { width: 390, height: 844 },
     isMobile: true, hasTouch: true, serviceWorkers: 'block' })
+  let pageFailure = null
   try {
     context.setDefaultTimeout(12_000)
     await context.route('**/*', route => [landing, api].includes(new URL(route.request().url()).origin)
@@ -164,10 +170,20 @@ export async function verifySpatial(browser, fixture, { landing, api }, setStage
     })
     await context.addInitScript(installSyntheticMaps)
     const page = await context.newPage()
+    page.on('pageerror', error => {
+      const message = error.message
+      if (/\b(?:getProjection|getPanes|getPath|setPaths|setMap|getBounds|getCenter|getPosition|addListener)\b.*not a function/i.test(message)) {
+        pageFailure = 'MAP_SHIM_METHOD_MISSING'
+      } else if (/Google Maps|google\.maps|google is not defined/i.test(message)) {
+        pageFailure = 'MAP_INITIALIZATION_FAILED'
+      } else {
+        pageFailure ??= 'BROWSER_PAGE_EXCEPTION'
+      }
+    })
     const dialog = page.getByRole('dialog', { name: 'Property search map' })
     const surface = dialog.locator('[data-synthetic-map=true]')
     const button = (name, scope = dialog) => scope.getByRole('button', { name, exact: true })
-    const openMap = async () => { await button('View map', page).tap(); await surface.waitFor() }
+    const openMap = async () => { await button('View map', page).tap(); await dialog.waitFor(); await surface.waitFor() }
     const closeMap = async () => { await button('Back to results').tap(); await dialog.waitFor({ state: 'hidden' }) }
     const waitScope = spatial => page.waitForURL(url => url.pathname === '/search/'
       && url.searchParams.get('spatial') === spatial && (url.searchParams.get('purpose') ?? 'sale') === 'sale'
@@ -189,8 +205,11 @@ export async function verifySpatial(browser, fixture, { landing, api }, setStage
     const initial = apiReads(page, api, null)
     const route = await page.goto(landing + '/search/?purpose=sale&beds=2', { waitUntil: 'domcontentloaded' })
     check(route?.ok(), 'ACTUAL_SEARCH_EXPORT_REQUIRED')
+    setStage('spatial_initial_http')
     await checkedReads(initial)
+    setStage('spatial_initial_cards')
     await page.getByText(outsideTitle, { exact: true }).first().waitFor()
+    setStage('spatial_open_map')
     await openMap()
 
     setStage('spatial_polygon')
@@ -198,10 +217,13 @@ export async function verifySpatial(browser, fixture, { landing, api }, setStage
     await tapMap(0.2, 0.2)
     await tapMap(0.8, 0.2)
     await tapMap(0.8, 0.8)
+    setStage('spatial_polygon_apply')
     const shapeReads = apiReads(page, api, selection.polygon)
     await button('Apply area').tap()
     await waitScope(selection.polygon)
+    setStage('spatial_polygon_http')
     await checkedReads(shapeReads, 1)
+    setStage('spatial_polygon_cards')
     await closeMap()
     await expectOnlyMatching()
 
@@ -211,9 +233,11 @@ export async function verifySpatial(browser, fixture, { landing, api }, setStage
     await button('Use map center').tap()
     await tapMap(0.8, 0.2)
     await dialog.getByRole('spinbutton', { name: 'Radius (km)' }).fill('12.5')
+    setStage('spatial_radius_apply')
     const radiusReads = apiReads(page, api, selection.radius)
     await button('Apply radius').tap()
     await waitScope(selection.radius)
+    setStage('spatial_radius_http')
     await checkedReads(radiusReads, 1)
     await closeMap()
     await expectOnlyMatching()
@@ -245,6 +269,9 @@ export async function verifySpatial(browser, fixture, { landing, api }, setStage
     await checkedReads(cleared)
     await closeMap()
     await page.getByText(outsideTitle, { exact: true }).first().waitFor()
+  } catch (error) {
+    if (pageFailure && error.name === 'TimeoutError') throw new Error(pageFailure)
+    throw error
   } finally {
     await context.close()
   }

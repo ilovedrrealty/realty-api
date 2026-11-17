@@ -7,11 +7,11 @@ bounded() { timeout --kill-after=8s "$@"; }
 [[ $# == 4 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 &&
    ${GITHUB_RUN_ATTEMPT:-} == 1 ]] || die HOST_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-spatial-landing-20261117 &&
+[[ ${GITHUB_REF:-} == refs/heads/codex-ci-spatial-landing-20261117-v2 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 
 ops="$1"; fixture="$2"; frontend="$3"; backend="$4"
-parent=d49acd7d48e92dac6d06b1678570bc137fb6a5ba
+parent=b11fe4c762ae6daf3a26ab32f821a26ae7a8e7a5
 g06_regression_ops=36ea3f1a58905453030454077edb27bf8922937f
 fixture_commit=441efdc288c3a38b8607c816c684abec080d83ad
 fixture_tree=6c01c7577e343d5e2542d4f8a84cbc0f103e4b5d
@@ -36,14 +36,14 @@ done
    $(git -C "$frontend" rev-parse 'HEAD^{tree}') == "$frontend_tree" &&
    $(git -C "$backend" rev-parse HEAD) == "$backend_commit" &&
    $(git -C "$backend" rev-parse 'HEAD^{tree}') == "$backend_tree" ]] || die EXACT_CHECKOUTS_REQUIRED
-expected=$'.github/workflows/network-member-entry-landing.yml\nci/cumulative-landing/landing.cjs\nci/cumulative-landing/run-member-entry.sh\nci/cumulative-landing/run-shortlist-login.mjs\nci/cumulative-landing/spatial-browser.mjs'
+expected=$'.github/workflows/network-member-entry-landing.yml\nci/cumulative-landing/run-member-entry.sh\nci/cumulative-landing/run-shortlist-login.mjs\nci/cumulative-landing/spatial-browser.mjs'
 [[ $(git -C "$ops" diff --name-only "$parent" "$GITHUB_SHA") == "$expected" ]] || die EXACT_OPERATIONS_DELTA_REQUIRED
 tools="$ops/ci/cumulative-landing"
 fixture_tools="$fixture/ci/frontend"
 printf '%s  %s\n' \
   c57087318e513ad8d2d38c0fc08fa5f081bc77932aa3a89e33734ca8f2f560c4 "$tools/landing.cjs" \
-  e45b74eaa31886ba38c0cb1d8d43a57befcb756c6372f4ba6c58639919e578b4 "$tools/run-shortlist-login.mjs" \
-  17eec116358ce6788febb21b95eaf66e7e94003d8373ef7d8fd0b14a5d1e234f "$tools/spatial-browser.mjs" \
+  5424a1608fbee74e991dca0ceeee5a3ea1eac0cbf3d0875946fe51c7ad243fc1 "$tools/run-shortlist-login.mjs" \
+  c8ca9e1cb3f9aae8a70d1f556e229aedef9f7816e64d50626db2ce794b4070c2 "$tools/spatial-browser.mjs" \
   f20dc2ee8d949f5e971a47bef6334d6d7cd1aa7a741a4a58d8005adb4e7ffa57 "$tools/editorial-browser.mjs" \
   a166dc60598e76b7fdcc3fe2aa5253bc56952b48fd99e4cab5eb4a24523a548e "$fixture_tools/landing_fixture.cjs" \
   0a1abbdbd65a82e67ded20a0603a21fc9321a1b1aa5fd83dbccf1c049ffc4110 "$fixture_tools/landing_fixture.test.cjs" \
@@ -309,7 +309,7 @@ bounded 240s docker run --rm --network none --label "$label=$run_key" \
   GITHUB_ACTIONS=true GITHUB_REPOSITORY=ilovedrrealty/realty-api node /rehearsal/run-shortlist-login.mjs \
   >"$state/login-browser.log" 2>&1 || browser_exit=$?
 python3 -I -B - "$state/login-browser.log" "$browser_exit" <<'PY' || die LANDING_LOGIN_BROWSER_RESULT_INVALID
-import json, sys
+import json, re, sys
 from pathlib import Path
 p = Path(sys.argv[1])
 assert p.stat().st_size <= 262144
@@ -318,11 +318,36 @@ if int(sys.argv[2]):
     allowed = ('host','static_export','browser','viewing_listing_en','viewing_listing_es',
                'anonymous_login','wrong_password','form_login_redirect',
                'existing_session_redirect','editorial_export','editorial_absent','editorial_published',
-               'editorial_updated','editorial_removed','spatial_export','spatial_initial','spatial_polygon','spatial_radius',
+               'editorial_updated','editorial_removed','spatial_export','spatial_initial','spatial_initial_http',
+               'spatial_initial_cards','spatial_open_map','spatial_polygon','spatial_polygon_apply','spatial_polygon_http',
+               'spatial_polygon_cards','spatial_radius','spatial_radius_apply','spatial_radius_http',
                'spatial_reload','spatial_legacy_mismatch','spatial_clear')
-    prefix = 'VIEWINGS_LANDING_LOGIN_FAILED stage='
-    stage = next((line[len(prefix):] for line in lines if line.startswith(prefix)), None)
-    print('MEMBER_LANDING_LOGIN_BROWSER native=' + sys.argv[2] + ' stage=' + (stage if stage in allowed else 'unknown'))
+    codes = set('''ACTUAL_SEARCH_EXPORT_REQUIRED SEARCH_FILTERS_MUST_SURVIVE_SHAPE_CHANGES SAME_PUBLIC_EXCLUDED_COUNT_REQUIRED
+                  FULLSCREEN_MAP_SURFACE_REQUIRED BROAD_RESULTS_IN_ACTIVE_SHAPE SPA_MUST_NOT_BROADEN_MISSING_SCOPE
+                  LIST_RESPONSE_MISSING MAP_RESPONSE_MISSING MAP_SHIM_METHOD_MISSING MAP_INITIALIZATION_FAILED
+                  BROWSER_PAGE_EXCEPTION LOOPBACK_CLEANUP_REQUIRED PLAYWRIGHT_TIMEOUT JS_TYPE_ERROR JS_SYNTAX_ERROR
+                  UNCLASSIFIED_BROWSER_FAILURE'''.split())
+    marker = re.compile(r'VIEWINGS_LANDING_LOGIN_FAILED stage=([a-z_]+) code=([A-Z_]+) phase=(caught|unhandled)')
+    matched = next((m for line in lines if (m := marker.fullmatch(line)) and m[1] in allowed and m[2] in codes), None)
+    if matched:
+        stage, code, phase = matched.groups()
+    else:
+        phase = 'bootstrap'
+        stage = 'browser_process'
+        body = '\n'.join(lines)
+        if 'ERR_MODULE_NOT_FOUND' in body:
+            code = 'STATIC_IMPORT_MODULE_MISSING'
+        elif 'SyntaxError:' in body:
+            code = 'STATIC_IMPORT_SYNTAX_ERROR'
+        elif 'TimeoutError:' in body:
+            code = 'UNHANDLED_PLAYWRIGHT_TIMEOUT'
+        elif 'TypeError:' in body:
+            code = 'UNHANDLED_BROWSER_TYPE_ERROR'
+        elif 'Executable doesn\'t exist' in body:
+            code = 'CHROMIUM_EXECUTABLE_MISSING'
+        else:
+            code = 'NO_SAFE_BROWSER_MARKER'
+    print(f'MEMBER_LANDING_LOGIN_BROWSER native={int(sys.argv[2])} stage={stage} code={code} phase={phase}')
 else:
     prefix = 'VIEWINGS_LANDING_LOGIN_BROWSER '
     results = [json.loads(line[len(prefix):]) for line in lines if line.startswith(prefix)]

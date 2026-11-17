@@ -267,7 +267,24 @@ async function main() {
   console.log('SPATIAL_SEARCH_BROWSER', JSON.stringify(spatialResult))
 }
 
-main().catch(() => {
-  console.error(`VIEWINGS_LANDING_LOGIN_FAILED stage=${stage}`)
+const safeBrowserFailures = new Set([
+  'ACTUAL_SEARCH_EXPORT_REQUIRED', 'SEARCH_FILTERS_MUST_SURVIVE_SHAPE_CHANGES', 'SAME_PUBLIC_EXCLUDED_COUNT_REQUIRED',
+  'FULLSCREEN_MAP_SURFACE_REQUIRED', 'BROAD_RESULTS_IN_ACTIVE_SHAPE', 'SPA_MUST_NOT_BROADEN_MISSING_SCOPE',
+  'LIST_RESPONSE_MISSING', 'MAP_RESPONSE_MISSING', 'MAP_SHIM_METHOD_MISSING',
+  'MAP_INITIALIZATION_FAILED', 'BROWSER_PAGE_EXCEPTION', 'LOOPBACK_CLEANUP_REQUIRED',
+])
+function browserFailureCode(error) {
+  if (safeBrowserFailures.has(error?.message)) return error.message
+  if (error?.name === 'TimeoutError') return 'PLAYWRIGHT_TIMEOUT'
+  if (error?.name === 'TypeError') return 'JS_TYPE_ERROR'
+  if (error?.name === 'SyntaxError') return 'JS_SYNTAX_ERROR'
+  return 'UNCLASSIFIED_BROWSER_FAILURE'
+}
+function reportBrowserFailure(error, phase) {
+  console.error(`VIEWINGS_LANDING_LOGIN_FAILED stage=${stage} code=${browserFailureCode(error)} phase=${phase}`)
   process.exitCode = 1
+}
+process.on('unhandledRejection', error => reportBrowserFailure(error, 'unhandled'))
+main().catch(error => {
+  reportBrowserFailure(error, 'caught')
 })
