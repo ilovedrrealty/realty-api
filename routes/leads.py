@@ -89,6 +89,11 @@ class LeadCreate(BaseModel):
         return self
 
 
+class LegacyLeadCreate(LeadCreate):
+    """The legacy endpoint accepts and ignores its original free-text field."""
+    property_id: Optional[str] = None
+
+
 class LeadResponse(BaseModel):
     id: str
     type: str
@@ -359,7 +364,7 @@ def create_lead(
 def capture_lead(
     request: Request,
     response: Response,
-    body: LeadCreate,
+    body: LegacyLeadCreate,
     db: Session = Depends(get_db),
 ):
     response.headers["Cache-Control"] = "no-store"

@@ -176,9 +176,12 @@ class LeadContactTests(unittest.TestCase):
 
     def test_capture_endpoint_retains_contact_validation(self):
         with patch.object(email, "_send") as send:
-            accepted = self.client.post("/leads/capture", json={"type": "rental_interest", "name": "Visitor", "phone": PHONE})
+            payload = {"type": "rental_interest", "name": "Visitor", "phone": PHONE,
+                       "property_id": "legacy-card:listing-12"}
+            accepted = self.client.post("/leads/capture", json=payload)
             self.assertEqual(accepted.status_code, 201)
             self.assertIsNone(self.db.saved[-1].email)
+            self.assertIsNone(self.db.saved[-1].property_id)
             send.assert_called_once()
         rejected = self.client.post("/leads/capture", json={"type": "rental_interest", "name": "Visitor"})
         self.assertEqual(rejected.status_code, 422)

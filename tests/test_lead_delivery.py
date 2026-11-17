@@ -981,10 +981,15 @@ class LeadDeliveryTests(unittest.TestCase):
         self.assertEqual(rows["crm_contact"].error_code, "crm_provider_not_configured")
 
     def test_capture_preserves_email_only_legacy_routing(self):
-        response = self.client.post("/leads/capture", json=body(type="rental_interest"))
+        response = self.client.post("/leads/capture", json=body(type="rental_interest", property_id="legacy-card:listing-12"))
         self.assertEqual(response.status_code, 201, response.text)
-        rows = self.jobs(UUID(response.json()["id"]))
+        lead_id = UUID(response.json()["id"])
+        rows = self.jobs(lead_id)
         self.assertEqual(set(rows), {"email_1", "email_2"})
+        with self.factory() as db:
+            self.assertIsNone(db.get(Lead, lead_id).property_id)
+        modern = self.client.post("/leads", json=body(type="rental_interest", property_id="legacy-card:listing-12"))
+        self.assertEqual(modern.status_code, 422)
 
     def test_booking_lead_is_queued_without_duplicate_legacy_alerts(self):
         payload = {"listing_id": str(self.listing_id), "name": "Synthetic guest", "email": "guest@example.com",
