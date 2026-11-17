@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, model_serializer, model_validator
 from typing import Annotated, Optional, List, Literal
 from decimal import Decimal
 from datetime import datetime
@@ -239,7 +239,18 @@ class ListingRoomTourEditorResponse(BaseModel):
     pending_review: Literal["none", "room_photo_tour", "other"]
 
 
-class PublicListingPageResponse(ListingPageResponse):
+class SpatialSearchCoverage(BaseModel):
+    spatial_excluded_unlocated: Optional[int] = Field(default=None, ge=0)
+
+    @model_serializer(mode="wrap")
+    def omit_inactive_spatial_coverage(self, serialize):
+        result = serialize(self)
+        if self.spatial_excluded_unlocated is None:
+            result.pop("spatial_excluded_unlocated", None)
+        return result
+
+
+class PublicListingPageResponse(ListingPageResponse, SpatialSearchCoverage):
     items: List[PublicListingResponse]
 
 
@@ -278,7 +289,7 @@ class ListingMapBounds(BaseModel):
     east: float
 
 
-class ListingMapResponse(BaseModel):
+class ListingMapResponse(SpatialSearchCoverage):
     items: List[ListingMapPoint]
     total: int = Field(ge=0)
     mapped_total: int = Field(ge=0)

@@ -29,6 +29,7 @@ from sqlalchemy.orm import Session
 
 from database import Base, get_db
 from models.listing import Listing
+from models.listing_location_review import ListingLocationReview
 from models.user import User
 from routes import listings
 
@@ -128,6 +129,111 @@ class ListingSearchTests(unittest.TestCase):
         response = self.client.get('/listings/map', params=list(params))
         self.assertEqual(response.status_code, 200, response.text)
         return response.json()
+
+    @contextmanager
+    def verified_spatial_coordinates(self, overrides=None):
+        eligible = {1: ("19.75", "-70.45"), 2: ("19.751", "-70.43"),
+                    3: ("19.75", "-70.2"), 9: ("19.75", "-70.42"), 12: ("19.75", "-70.45")}
+        eligible.update(overrides or {})
+        supplied = ("19.7505", "-70.445")
+        cases = {
+            **{number: (pair, pair, "verified", "exact") for number, pair in eligible.items()},
+            4: (supplied, supplied, "verified", "area"),
+            5: (supplied, supplied, "verified", "hidden"),
+            6: ((None, None), supplied, "verified", "exact"),
+            7: (supplied, None, None, None),
+            8: (supplied, ("19.7506", "-70.444"), "verified", "exact"),
+            10: (supplied, supplied, "unreviewed", "exact"),
+            11: ((None, supplied[1]), supplied, "verified", "exact"),
+        }
+        originals = {}
+        reviewed_ids = []
+        for number, (public, candidate, status, precision) in cases.items():
+            listing = self.db.get(Listing, UUID(int=number))
+            originals[number] = (listing.latitude, listing.longitude)
+            listing.latitude, listing.longitude = (None if value is None else Decimal(value) for value in public)
+            if candidate:
+                reviewed_ids.append(listing.id)
+                self.db.add(ListingLocationReview(
+                    listing_id=listing.id, latitude=Decimal(candidate[0]), longitude=Decimal(candidate[1]),
+                    review_status=status, public_precision=precision, source_reference="PRIVATE_FIXTURE_SOURCE",
+                ))
+        self.db.commit()
+        try:
+            yield
+        finally:
+            self.db.rollback()
+            self.db.query(ListingLocationReview).filter(ListingLocationReview.listing_id.in_(reviewed_ids)).delete()
+            for number, original in originals.items():
+                row = self.db.get(Listing, UUID(int=number))
+                row.latitude, row.longitude = original
+            self.db.commit()
+
+    def test_spatial_radius_applies_ordinary_filters_before_pages_median_and_privacy_counts(self):
+        with self.verified_spatial_coordinates():
+            filters = [("spatial", "radius,19.75,-70.45,4"), ("purpose", "sale"), ("price_currency", "USD")]
+            first = self.get_search(filters + [("page_size", "1"), ("sort", "low")])
+            second = self.get_search(filters + [("page_size", "1"), ("page", "2"), ("sort", "low")])
+            fourth = self.get_search(filters + [("page_size", "1"), ("page", "4")])
+            points = self.get_map(filters)
+            self.assertEqual(self.ids(first), [2])
+            self.assertEqual(self.ids(second), [1])
+            self.assertEqual(fourth["items"], [])
+            self.assertEqual(set(self.ids(points)), {1, 2, 9})
+            for page in (first, second, fourth):
+                self.assertEqual((page["total"], page["median_price"], page["spatial_excluded_unlocated"]),
+                                 (3, 200000, 3))
+            self.assertTrue(all(item["location_verified"] for item in points["items"]))
+            self.assertEqual((points["total"], points["mapped_total"], points["spatial_excluded_unlocated"]), (3, 3, 3))
+            self.assertEqual((points["unmapped_total"], points["ungrouped_total"], points["areas"]), (0, 0, []))
+            self.assertEqual(self.get_map([filters[0]])["spatial_excluded_unlocated"], 7)
+            self.assertNotIn("PRIVATE_FIXTURE_SOURCE", str(first) + str(points))
+            for ordinary in (self.get_search(), self.get_map()):
+                self.assertNotIn("spatial_excluded_unlocated", ordinary)
+                self.assertIn(7, self.ids(ordinary))  # Legacy projection remains available in ordinary map/search.
+
+    def test_spatial_polygon_includes_edges_and_respects_concavity_and_separate_viewport(self):
+        rectangle = "polygon,19.75,-70.45,19.75,-70.42,19.76,-70.42,19.76,-70.45"
+        notched = ("polygon,19.74,-70.46,19.74,-70.415,19.76,-70.415,19.76,-70.425,"
+                   "19.749,-70.425,19.749,-70.44,19.76,-70.44,19.76,-70.46")
+        with self.verified_spatial_coordinates():
+            for polygon, expected in ((rectangle, {1, 2, 9}), (notched, {1, 9})):
+                filters = [("spatial", polygon)]
+                self.assertEqual(set(self.ids(self.get_search(filters))), expected)
+                self.assertEqual(set(self.ids(self.get_map(filters))), expected)
+            bounded = self.get_map([("spatial", rectangle), ("south", "19.75"), ("north", "19.76"),
+                                    ("west", "-70.46"), ("east", "-70.445")])
+            self.assertEqual(self.ids(bounded), [1])
+            self.assertEqual((bounded["total"], bounded["mapped_total"], bounded["viewport_total"]), (3, 3, 1))
+            self.assertEqual(bounded["spatial_excluded_unlocated"], 7)
+
+    def test_spatial_polygon_edges_match_web_mercator_shape(self):
+        # At longitude 5, the sloped edge between (50,0) and (70,10) lies
+        # north of 60.5° in Web Mercator. Linear latitude would admit that point.
+        shape = [("spatial", "polygon,50,0,70,10,75,0")]
+        with self.verified_spatial_coordinates({1: ("60.5", "5"), 2: ("62", "5"), 3: ("50", "0")}):
+            self.assertEqual(set(self.ids(self.get_search(shape))), {2, 3})
+            self.assertEqual(set(self.ids(self.get_map(shape))), {2, 3})
+
+    def test_spatial_radius_wraps_antimeridian_and_great_circle_distance_is_bounded(self):
+        with self.verified_spatial_coordinates({1: ("0", "-179.99"), 2: ("0", "179.97"), 3: ("0", "-179.9")}):
+            radius = [("spatial", "radius,0,179.99,5")]
+            self.assertEqual(set(self.ids(self.get_search(radius))), {1, 2})
+            self.assertEqual(set(self.ids(self.get_map(radius))), {1, 2})
+            self.assertEqual(self.ids(self.get_map([("spatial", "radius,0,-179.99,0.1")])), [1])
+
+    def test_spatial_malformed_or_repeated_criterion_fails_closed(self):
+        for path in ("/listings", "/listings/map"):
+            for params in (
+                [("spatial", "")], [("spatial", "radius,PRIVATE_FIXTURE_SOURCE,0,4")],
+                [("spatial", "radius,19.75,-70.45,9999")], [("spatial", "polygon,0,0,1,1,1,0,0,1")],
+                [("spatial", "radius,19.75,-70.45,4"), ("spatial", "radius,19.75,-70.45,4")],
+            ):
+                with self.subTest(path=path, params=params):
+                    response = self.client.get(path, params=params)
+                    self.assertEqual(response.status_code, 422)
+                    self.assertEqual(response.headers["cache-control"], "no-store")
+                    self.assertEqual(response.json(), {"detail": "Provide one valid radius or simple drawn area"})
 
     def test_map_covers_all_public_matches_beyond_card_pagination_and_exposes_only_whitelisted_fields(self):
         with self.map_coordinates():

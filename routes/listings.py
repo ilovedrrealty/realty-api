@@ -30,8 +30,10 @@ from utils.storage import upload_image, upload_pdf
 from utils.share_image import generate_share_image, maybe_regenerate_share_image
 from utils.limiter import limiter
 from utils.listing_constants import ALL_REGIONS
-from utils.listing_search import normalized_location, normalized_location_column, escape_like, search_price_expression
+from utils.listing_search import (normalized_location, normalized_location_column, escape_like, search_price_expression,
+    spatially_usable, spatial_membership)
 from utils.location_quality import public_location, public_coordinate_expression, stage_location_change
+from utils.search_geometry import INVALID_SHAPE, Polygon, Radius, parse_shape
 from utils import listing_room_tour as room_tour
 
 router = APIRouter(prefix="/listings", tags=["listings"])
@@ -159,6 +161,26 @@ def public_responses(db, rows):
     return [PublicListingResponse.model_validate(item).model_copy(update=public_location(item, reviews.get(item.id))) for item in rows]
 
 
+def _spatial_shape(
+    request: Request,
+    spatial: Optional[str] = Query(None, description="One radius,lat,lng,km or polygon,lat,lng,... criterion"),
+) -> Radius | Polygon | None:
+    if spatial is None:
+        return None
+    try:
+        if len(request.query_params.getlist("spatial")) == 1:
+            return parse_shape(spatial)
+    except ValueError:
+        pass
+    raise HTTPException(422, INVALID_SHAPE, headers={"Cache-Control": "no-store"})
+
+
+def _restrict_to_shape(base, shape):
+    usable = spatially_usable()
+    excluded = base.filter(usable.is_not(True)).with_entities(func.count(Listing.id)).scalar() or 0
+    return base.filter(usable, spatial_membership(shape)), excluded
+
+
 @router.get("", response_model=PublicListingPageResponse)
 def get_active_listings(
     response: Response,
@@ -180,6 +202,7 @@ def get_active_listings(
     sort: str = Query("new"),
     exclude_ids: Optional[List[UUID]] = Query(None),
     include_aggregates: bool = Query(True),
+    shape: Radius | Polygon | None = Depends(_spatial_shape),
     db: Session = Depends(get_db),
 ):
     response.headers["Cache-Control"] = "no-store"
@@ -191,6 +214,11 @@ def get_active_listings(
     )
     if exclude_ids:
         base = base.filter(~Listing.id.in_(exclude_ids))
+
+    excluded = None
+    if shape is not None:
+        reviewed = base.outerjoin(ListingLocationReview, ListingLocationReview.listing_id == Listing.id)
+        base, excluded = _restrict_to_shape(reviewed, shape)
 
     total = base.with_entities(func.count(Listing.id)).scalar() or 0
 
@@ -225,6 +253,7 @@ def get_active_listings(
         page_size=page_size,
         median_price=float(median_price) if median_price is not None else None,
         avg_roi=float(avg_roi) if avg_roi is not None else None,
+        spatial_excluded_unlocated=excluded,
     )
 
 
@@ -246,13 +275,15 @@ def get_listing_map(
     north: Optional[float] = Query(None, ge=-90, le=90, allow_inf_nan=False),
     west: Optional[float] = Query(None, ge=-180, le=180, allow_inf_nan=False),
     east: Optional[float] = Query(None, ge=-180, le=180, allow_inf_nan=False),
+    shape: Radius | Polygon | None = Depends(_spatial_shape),
     db: Session = Depends(get_db),
 ):
     """All matching public inventory, independent of card pagination.
 
     Exact points are bounded and whitelisted. Missing coordinates become counts
     by recorded area, never guessed property positions. Bounds refine exact
-    points only; totals and area summaries always describe the full filter.
+    points only. A spatial criterion limits the full inventory to verified
+    points within that geometry and reports unlocatable listings separately.
     """
     response.headers["Cache-Control"] = "no-store"
     box = (south, north, west, east)
@@ -265,18 +296,24 @@ def get_listing_map(
     base = base.outerjoin(ListingLocationReview, ListingLocationReview.listing_id == Listing.id)
     if exclude_ids:
         base = base.filter(~Listing.id.in_(exclude_ids))
-    total = base.with_entities(func.count(Listing.id)).scalar() or 0
-    valid = public_coordinate_expression()
-    mapped = base.filter(valid)
+    excluded, areas = None, []
+    if shape is not None:
+        mapped, excluded = _restrict_to_shape(base, shape)
+    else:
+        total = base.with_entities(func.count(Listing.id)).scalar() or 0
+        valid = public_coordinate_expression()
+        mapped = base.filter(valid)
+        # SQL NOT(NULL) is unknown; explicitly include partial and missing pairs.
+        missing = base.filter(or_(Listing.latitude.is_(None), Listing.longitude.is_(None), ~valid))
+        location_key = normalized_location_column()
+        groups = missing.filter(or_(ListingLocationReview.listing_id.is_(None), ListingLocationReview.public_precision != "hidden")).with_entities(func.min(func.btrim(Listing.location)), func.count(Listing.id)).group_by(location_key)
+        area_rows = groups.order_by(func.count(Listing.id).desc(), location_key).limit(200).all()
+        areas = [ListingMapArea(location=area, count=amount) for area, amount in area_rows if area]
     count, min_lat, min_lng, max_lat, max_lng = mapped.with_entities(func.count(Listing.id),
         func.min(Listing.latitude), func.min(Listing.longitude), func.max(Listing.latitude), func.max(Listing.longitude)).one()
     count = int(count or 0)
-    # SQL NOT(NULL) is unknown; explicitly include partial and missing pairs.
-    missing = base.filter(or_(Listing.latitude.is_(None), Listing.longitude.is_(None), ~valid))
-    location_key = normalized_location_column()
-    groups = missing.filter(or_(ListingLocationReview.listing_id.is_(None), ListingLocationReview.public_precision != "hidden")).with_entities(func.min(func.btrim(Listing.location)), func.count(Listing.id)).group_by(location_key)
-    area_rows = groups.order_by(func.count(Listing.id).desc(), location_key).limit(200).all()
-    areas = [ListingMapArea(location=area, count=amount) for area, amount in area_rows if area]
+    if shape is not None:
+        total = count
     grouped = sum(area.count for area in areas)
     visible = mapped
     if south is not None:
@@ -293,7 +330,8 @@ def get_listing_map(
     return ListingMapResponse(items=items, total=total, mapped_total=count, unmapped_total=total-count,
         areas=areas, ungrouped_total=max(0, total-count-grouped), viewport_total=viewport_total,
         returned=len(items), limit=limit, truncated=viewport_total > limit,
-        bounds=ListingMapBounds(south=min_lat, west=min_lng, north=max_lat, east=max_lng) if count else None)
+        bounds=ListingMapBounds(south=min_lat, west=min_lng, north=max_lat, east=max_lng) if count else None,
+        spatial_excluded_unlocated=excluded)
 
 
 @router.get("/filter-options", response_model=ListingFilterOptionsResponse)
