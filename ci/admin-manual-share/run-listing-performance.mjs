@@ -44,12 +44,12 @@ async function readFixture() {
   return raw
 }
 
-async function request(context, path, method = 'GET', data, status = 200, noStore = true) {
+async function request(context, path, method = 'GET', data, status = 200, noStore = true, operation = 'REPORT') {
   const response = await context.request.fetch(api + path, {
     method, data, headers: { Origin: dashboard }, maxRedirects: 0, timeout: 12_000,
   })
   try {
-    check(response.status() === status, 'EXACT_API_STATUS_REQUIRED')
+    check(response.status() === status, `${operation}_HTTP_${response.status()}`)
     if (noStore) check(response.headers()['cache-control'] === 'no-store', 'NO_STORE_REQUIRED')
     return status === 204 ? null : await response.json()
   } finally {
@@ -57,7 +57,16 @@ async function request(context, path, method = 'GET', data, status = 200, noStor
   }
 }
 
-async function session(browser, account, mobile = false) {
+async function loginStatus(context, account) {
+  const response = await context.request.post(api + '/auth/login', {
+    data: account, headers: { Origin: dashboard }, maxRedirects: 0, timeout: 12_000,
+  })
+  const status = response.status()
+  await response.dispose()
+  return status
+}
+
+async function session(browser, account, { role, mobile = false, retryOnLimit = false } = {}) {
   const context = await browser.newContext({
     locale: 'en-US', serviceWorkers: 'block', isMobile: mobile, hasTouch: mobile,
     viewport: mobile ? { width: 390, height: 844 } : { width: 1280, height: 900 },
@@ -71,7 +80,14 @@ async function session(browser, account, mobile = false) {
     if (!navigator.onLine) Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => true })
   })
   if (account) {
-    await request(context, '/auth/login', 'POST', account, 200, false)
+    let status = await loginStatus(context, account)
+    // Earlier native browser checks share the login endpoint's 10-per-minute
+    // loopback budget. Wait for the configured window only after a real 429.
+    if (retryOnLimit && status === 429) {
+      await new Promise(resolve => setTimeout(resolve, 60_000))
+      status = await loginStatus(context, account)
+    }
+    check(status === 200, `${role}_LOGIN_HTTP_${status}`)
     check((await context.cookies(api)).some(cookie => cookie.name === 'ildr_token' && cookie.httpOnly),
       'REAL_SYNTHETIC_LOGIN_COOKIE_REQUIRED')
   }
@@ -149,17 +165,17 @@ async function main() {
   })
   try {
     step = 'scope'
-    const staff = await session(browser, fixture.accounts.realtor)
-    const owner = await session(browser, fixture.accounts.owner, true)
-    const unrelated = await session(browser, fixture.unrelatedValuationAccount)
+    const staff = await session(browser, fixture.accounts.realtor, { role: 'STAFF' })
+    const owner = await session(browser, fixture.accounts.owner, { role: 'OWNER', mobile: true })
+    const unrelated = await session(browser, fixture.unrelatedValuationAccount, { role: 'UNRELATED', retryOnLimit: true })
     const anonymous = await session(browser, null)
     const forbiddenEntry = { request_id: '668dce44-355f-4f58-8e21-960c248c4a3d', occurred_on: reportDay, kind: 'completed_showing' }
-    await request(anonymous, path, 'GET', undefined, 401)
-    await request(owner, foreign + '/performance', 'GET', undefined, 404)
-    await request(unrelated, path, 'GET', undefined, 404)
-    await request(owner, path + '/entries', 'POST', forbiddenEntry, 403)
-    await request(unrelated, path + '/entries', 'POST', forbiddenEntry, 404)
-    await request(staff, foreign + '/performance/entries', 'POST', forbiddenEntry, 405)
+    await request(anonymous, path, 'GET', undefined, 401, true, 'ANONYMOUS_READ')
+    await request(owner, foreign + '/performance', 'GET', undefined, 404, true, 'OWNER_FOREIGN_READ')
+    await request(unrelated, path, 'GET', undefined, 404, true, 'UNRELATED_READ')
+    await request(owner, path + '/entries', 'POST', forbiddenEntry, 403, true, 'OWNER_WRITE')
+    await request(unrelated, path + '/entries', 'POST', forbiddenEntry, 404, true, 'UNRELATED_WRITE')
+    await request(staff, foreign + '/performance/entries', 'POST', forbiddenEntry, 405, true, 'FOREIGN_WRITE')
 
     step = 'public_view'
     const cold = await request(owner, path + query)
@@ -167,8 +183,8 @@ async function main() {
       && cold.views.range_total === null && cold.views.tracked_from === null && cold.views.coverage === 'unavailable'
       && cold.totals.confirmed_viewings === 1 && cold.totals.recorded_completed_showings === 0,
     'BASELINE_COUNTS_REQUIRED')
-    await request(anonymous, foreign + '/view', 'POST', undefined, 405)
-    await request(anonymous, listing + '/view', 'POST', undefined, 204, false)
+    await request(anonymous, foreign + '/view', 'POST', undefined, 405, true, 'FOREIGN_VIEW')
+    await request(anonymous, listing + '/view', 'POST', undefined, 204, false, 'OWNED_VIEW')
     checks.push('anonymous_owned_view_counted')
 
     step = 'staff_listing'
