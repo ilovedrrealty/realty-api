@@ -7,6 +7,7 @@ import unittest
 from unittest.mock import patch
 from uuid import uuid4
 
+import httpx
 from fastapi.testclient import TestClient
 from sqlalchemy import select, text
 
@@ -107,6 +108,7 @@ class NewsletterTest(unittest.TestCase):
         response = SimpleNamespace(is_success=True, json=lambda: {"id": "synthetic-accepted"})
         with patch.object(newsletter.httpx, "post", return_value=response) as provider:
             for locale in ("en", "es"):
+                nonce = uuid4()
                 message = newsletter.confirmation_message(
                     self.email, locale, identifier, nonce, "https://example.com/newsletter/",
                 )
@@ -122,3 +124,25 @@ class NewsletterTest(unittest.TestCase):
             provider.return_value = SimpleNamespace(is_success=True, json=lambda: {})
             with self.assertRaises(newsletter.ConfirmationUnavailable):
                 implementation(message, nonce)
+
+    def test_uncertain_http_outcome_replays_same_key_and_stored_payload(self):
+        self.mail.side_effect = self.send_confirmation_implementation
+        accepted = SimpleNamespace(is_success=True, json=lambda: {"id": "synthetic-accepted"})
+        values = {"email": self.email, "language": "en", "consent": True}
+        with patch.object(newsletter.httpx, "post", side_effect=httpx.ReadTimeout("synthetic timeout")) as provider:
+            self.assertEqual(self.call("subscribe", values).status_code, 503)
+            first = provider.call_args.kwargs
+            self.assertIsNone(self.read().provider_accepted_at)
+            self.now += timedelta(minutes=6)
+            settings.landing_url = "http://localhost:7777"
+            sender = patch.object(settings, "email_from", "changed@example.com")
+            sender.start()
+            self.addCleanup(sender.stop)
+            provider.side_effect = None
+            provider.return_value = accepted
+            self.assertEqual(self.call("subscribe", dict(values, language="es")).status_code, 202)
+            retried = provider.call_args.kwargs
+            self.assertEqual(retried["headers"]["Idempotency-Key"], first["headers"]["Idempotency-Key"])
+            self.assertEqual(retried["json"], first["json"])
+            self.assertEqual(self.read().status, "pending")
+            self.assertIsNotNone(self.read().provider_accepted_at)
