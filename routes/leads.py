@@ -4,7 +4,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.routing import APIRoute
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.responses import JSONResponse
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Query, Session
 from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
@@ -127,6 +127,10 @@ class LeadResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class StaffLeadResponse(LeadResponse):
+    has_valuation_request: bool
 
 
 class AssignBody(BaseModel):
@@ -414,19 +418,31 @@ def get_my_leads(
 
 # ── Realtor ───────────────────────────────────────────────────────────────────
 
-@router.get("/realtor/leads", response_model=List[LeadResponse])
+def _build_staff_responses(query: Query, db: Session, *, include_tracking: bool = False) -> list[StaffLeadResponse]:
+    rows = query.outerjoin(
+        SellerValuationIntake, SellerValuationIntake.lead_id == Lead.id,
+    ).add_columns(SellerValuationIntake.lead_id).all()
+    return [
+        StaffLeadResponse(
+            **_build_response(lead, db, include_ghl=True, include_tracking=include_tracking).model_dump(),
+            has_valuation_request=lead.type == "seller_interest" and intake_id is not None,
+        )
+        for lead, intake_id in rows
+    ]
+
+
+@router.get("/realtor/leads", response_model=List[StaffLeadResponse])
 def get_realtor_leads(
     user=Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     _require_realtor(user)
-    leads = (
+    query = (
         db.query(Lead)
         .filter(Lead.assigned_realtor_id == user.id)
         .order_by(Lead.created_at.desc())
-        .all()
     )
-    return [_build_response(l, db, include_ghl=True) for l in leads]
+    return _build_staff_responses(query, db)
 
 
 @router.put("/realtor/leads/{lead_id}/status", status_code=204)
@@ -455,7 +471,7 @@ def realtor_update_lead_status(
 
 # ── Admin ─────────────────────────────────────────────────────────────────────
 
-@router.get("/admin/leads", response_model=List[LeadResponse])
+@router.get("/admin/leads", response_model=List[StaffLeadResponse])
 def admin_get_leads(
     response: Response,
     type: Optional[str] = None,
@@ -472,8 +488,7 @@ def admin_get_leads(
         q = q.filter(Lead.status == status)
     if assigned_realtor_id:
         q = q.filter(Lead.assigned_realtor_id == UUID(assigned_realtor_id))
-    leads = q.order_by(Lead.created_at.desc()).all()
-    return [_build_response(l, db, include_ghl=True, include_tracking=True) for l in leads]
+    return _build_staff_responses(q.order_by(Lead.created_at.desc()), db, include_tracking=True)
 
 
 @router.get("/admin/leads/tracking-summary")
@@ -517,18 +532,19 @@ def admin_assign_lead(
     lead.assigned_realtor_id = realtor.id
     lead.status = "assigned"
     _apply_status_timestamp(lead, "assigned")
-    # Upgrade the submitting user to owner when their seller_interest lead is assigned
+    valuation_request = lead.type == "seller_interest" and db.query(SellerValuationIntake.lead_id).filter(
+        SellerValuationIntake.lead_id == lead.id,
+    ).first() is not None
+    # A structured valuation assignment changes the lead's staff access only.
     owner_upgraded = None
-    if lead.type == "seller_interest" and lead.from_user_id:
-        owner = db.query(User).filter(User.id == lead.from_user_id).first()
-        if owner and owner.role == "buyer":
-            owner.role = "owner"
-            owner_upgraded = owner
-    # Mirror realtor assignment onto the submitting user so their "My Agent" card reflects it
-    if lead.from_user_id:
+    if lead.from_user_id and not valuation_request:
         submitter = db.query(User).filter(User.id == lead.from_user_id).first()
-        if submitter and submitter.role in ("owner", "buyer", "admin"):
-            submitter.assigned_realtor_id = realtor.id
+        if submitter:
+            if lead.type == "seller_interest" and submitter.role == "buyer":
+                submitter.role = "owner"
+                owner_upgraded = submitter
+            if submitter.role in ("owner", "buyer", "admin"):
+                submitter.assigned_realtor_id = realtor.id
     db.commit()
 
     if lead.ghl_contact_id:

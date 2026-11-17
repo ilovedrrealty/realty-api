@@ -17,7 +17,7 @@ from alembic.migration import MigrationContext
 from alembic.operations import Operations
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, event, text
 from sqlalchemy.engine import make_url
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
@@ -151,6 +151,100 @@ class LeadTrackingTests(unittest.TestCase):
             self.assertEqual(db.query(SellerValuationIntake).count(), 1)
         self.crm.assert_called_once()
         self.send.assert_called_once()
+
+    def test_only_staff_feeds_classify_structured_valuations_without_loading_subjects(self):
+        account = self.headers["buyer"]
+        structured = payload(type="seller_interest", valuation_subject={
+            "property_type": "villa", "location": "Synthetic private valuation location",
+        })
+        valuation_id = self.submit(structured, headers=account)["id"]
+        ordinary_id = self.submit(payload(type="seller_interest"), headers=account)["id"]
+        with Session(self.engine) as db:
+            for lead_id in (valuation_id, ordinary_id):
+                db.get(Lead, UUID(lead_id)).assigned_realtor_id = self.ids["realtor"]
+            db.commit()
+
+        reads = []
+
+        def capture_intake_reads(_connection, _cursor, statement, *_other):
+            if "seller_valuation_intakes" in statement:
+                reads.append(statement)
+
+        event.listen(self.engine, "before_cursor_execute", capture_intake_reads)
+        try:
+            for path, role in (("/admin/leads", "admin"), ("/realtor/leads", "realtor")):
+                before = len(reads)
+                response = self.client.get(path, headers=self.headers[role])
+                self.assertEqual(response.status_code, 200, response.text)
+                result = {row["id"]: row for row in response.json()}
+                self.assertIs(result[valuation_id]["has_valuation_request"], True)
+                self.assertIs(result[ordinary_id]["has_valuation_request"], False)
+                self.assertEqual(set(result[valuation_id]), set(leads.LeadResponse.model_fields) | {"has_valuation_request"})
+                self.assertNotIn("Synthetic private valuation location", response.text)
+                self.assertEqual(len(reads) - before, 1)
+                self.assertNotIn("seller_valuation_intakes.subject", reads[-1])
+
+            response = self.client.get("/leads/mine", headers=account)
+            self.assertEqual(response.status_code, 200, response.text)
+            self.assertEqual({row["id"] for row in response.json()}, {valuation_id, ordinary_id})
+            self.assertTrue(all(set(row) == set(leads.LeadResponse.model_fields) for row in response.json()))
+            self.assertNotIn("Synthetic private valuation location", response.text)
+            self.assertEqual(len(reads), 2)
+        finally:
+            event.remove(self.engine, "before_cursor_execute", capture_intake_reads)
+
+    def test_valuation_assignment_preserves_buyer_role_and_my_agent_but_ordinary_assignment_upgrades(self):
+        previous_agent = self.ids["admin"]
+        with Session(self.engine) as db:
+            submitter = User(email="synthetic-valuation-assignment@example.test",
+                             display_name="Synthetic valuation submitter", role="buyer",
+                             email_verified=True, status="active", assigned_realtor_id=previous_agent)
+            db.add(submitter)
+            db.flush()
+            submitter_id = submitter.id
+            db.commit()
+        token = jwt.encode({"sub": str(submitter_id), "exp": datetime.now(timezone.utc) + timedelta(hours=1)},
+                           settings.jwt_secret, algorithm="HS256")
+        account = {"Authorization": "Bearer " + token}
+        valuation_id = self.submit(payload(type="seller_interest", valuation_subject={
+            "property_type": "land", "location": "Synthetic assigned area",
+        }), headers=account)["id"]
+        ordinary_id = self.submit(payload(type="seller_interest"), headers=account)["id"]
+        realtor_id = self.ids["realtor"]
+
+        def assign(lead_id):
+            response = self.client.put(f"/admin/leads/{lead_id}/assign", headers=self.headers["admin"],
+                                       json={"realtor_id": str(realtor_id)})
+            self.assertEqual(response.status_code, 204, response.text)
+
+        with (patch.object(leads, "send_realtor_lead_assigned_email") as staff_mail,
+              patch.object(leads, "send_upgrade_approved_email") as owner_welcome,
+              patch.object(leads, "send_realtor_assigned_owner_email") as owner_assignment,
+              patch.object(leads.ghl, "update_contact_status")):
+            assign(valuation_id)
+            with Session(self.engine) as db:
+                lead = db.get(Lead, UUID(valuation_id))
+                buyer = db.get(User, submitter_id)
+                self.assertEqual(lead.assigned_realtor_id, realtor_id)
+                self.assertEqual(lead.status, "assigned")
+                self.assertIsNotNone(lead.assigned_at)
+                self.assertEqual(buyer.role, "buyer")
+                self.assertEqual(buyer.assigned_realtor_id, previous_agent)
+            staff_mail.assert_called_once()
+            owner_welcome.assert_not_called()
+            owner_assignment.assert_not_called()
+
+            assign(ordinary_id)
+            with Session(self.engine) as db:
+                lead = db.get(Lead, UUID(ordinary_id))
+                buyer = db.get(User, submitter_id)
+                self.assertEqual(lead.assigned_realtor_id, realtor_id)
+                self.assertEqual(lead.status, "assigned")
+                self.assertEqual(buyer.role, "owner")
+                self.assertEqual(buyer.assigned_realtor_id, realtor_id)
+            self.assertEqual(staff_mail.call_count, 2)
+            owner_welcome.assert_called_once()
+            owner_assignment.assert_called_once()
 
     def test_valuation_subject_is_rejected_without_seller_scope_consent_or_valid_fields(self):
         subject = {"property_type": "land", "location": "Synthetic interior valley"}
