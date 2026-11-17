@@ -1,8 +1,8 @@
-name: Exact shortlist landing and Spanish export rehearsal
+name: Exact shortlist landing login browser rehearsal
 
 on:
   push:
-    branches: [codex-ci-shared-shortlists-landing-20261117]
+    branches: [codex-ci-shared-shortlists-landing-login-20261117]
 
 permissions:
   contents: read
@@ -18,7 +18,7 @@ jobs:
       github.run_attempt == 1 && github.event.after == github.sha &&
       github.workflow_sha == github.sha
     runs-on: ubuntu-24.04
-    timeout-minutes: 27
+    timeout-minutes: 30
     steps:
       - name: Read exact rehearsal operations
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -40,7 +40,13 @@ jobs:
           ref: b7daf320ceb1e813d5a4b07238bbf102b13a29b5
           path: member-landing-source
           persist-credentials: false
-      - name: Verify exact static export and Spanish route parity
+      - name: Read the previously verified exact backend source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 0ff004a479d2eac690918cf5993934646d91a8cf
+          path: member-landing-backend
+          persist-credentials: false
+      - name: Verify exact static export and the landing sign-in handoff in Chromium
         shell: bash
         run: |
           set -euo pipefail
@@ -48,4 +54,5 @@ jobs:
           script="$GITHUB_WORKSPACE/member-landing-ops/ci/cumulative-landing/run-member-entry.sh"
           bash --noprofile --norc -n "$script"
           exec bash --noprofile --norc "$script" "$GITHUB_WORKSPACE/member-landing-ops" \
-            "$GITHUB_WORKSPACE/member-landing-fixture" "$GITHUB_WORKSPACE/member-landing-source"
+            "$GITHUB_WORKSPACE/member-landing-fixture" "$GITHUB_WORKSPACE/member-landing-source" \
+            "$GITHUB_WORKSPACE/member-landing-backend"
