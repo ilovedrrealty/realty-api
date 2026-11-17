@@ -124,15 +124,24 @@ async function openListing(context, role, path) {
 }
 
 async function record(page, panel, path, kind, date) {
+  const prefix = kind === 'owner_feedback' ? 'staff_feedback' : 'staff_completed'
+  step = prefix + '_open'
   await button(panel, 'Record performance entry').click()
   if (kind === 'owner_feedback') {
-    await label(panel, 'Entry type').selectOption(kind)
+    step = prefix + '_type'
+    const entryType = panel.locator('label').filter({ has: text(page, 'Entry type') })
+    // The wrapping label also contains the option text. Select within the labeled group.
+    await entryType.locator('select:has(> option[value="owner_feedback"])').selectOption(kind)
+    step = prefix + '_note'
     await label(panel, 'Owner-visible note').fill(feedback)
+    step = prefix + '_share'
     const share = label(panel, 'Share this note with the owner')
     check(await share.evaluate(input => input.required && input.validity.valueMissing), 'EXPLICIT_SHARING_REQUIRED')
     await share.check()
   }
+  step = prefix + '_date'
   await label(panel, 'Date').fill(date)
+  step = prefix + '_post'
   const response = await observe(page, path + '/entries', 'POST', () => button(panel, 'Save entry').click())
   const submitted = response.request().postDataJSON()
   check(submitted.kind === kind && submitted.occurred_on === date && uuid.test(submitted.request_id),
@@ -142,6 +151,7 @@ async function record(page, panel, path, kind, date) {
   } else {
     check(!Object.hasOwn(submitted, 'text') && !Object.hasOwn(submitted, 'share_with_owner'), 'SHOWING_DATE_ONLY_REQUIRED')
   }
+  step = prefix + '_receipt'
   await text(panel, 'Performance entry saved.').waitFor()
 }
 
@@ -189,10 +199,8 @@ async function main() {
 
     step = 'staff_listing'
     const staffReport = await openListing(staff, 'realtor', path)
-    step = 'staff_completed'
     await record(staffReport.page, staffReport.panel, path, 'completed_showing', reportDay)
     checks.push('staff_opens_selected_listing_and_records_showing')
-    step = 'staff_feedback'
     await record(staffReport.page, staffReport.panel, path, 'owner_feedback', reportDay)
     checks.push('staff_explicitly_shares_owner_feedback')
 

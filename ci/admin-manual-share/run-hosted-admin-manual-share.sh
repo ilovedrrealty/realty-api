@@ -8,7 +8,7 @@ bounded() { timeout --kill-after=8s "$@"; }
 
 [[ $# == 4 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api ]] || die CI_REQUIRED
 [[ ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 && ${GITHUB_RUN_ATTEMPT:-} == 1 ]] || die STANDARD_LINUX_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-listing-performance-browser-20261117-v2 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
+[[ ${GITHUB_REF:-} == refs/heads/codex-ci-listing-performance-browser-20261117-v3 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 
 ops="$1"; frontend="$2"; backend="$3"; migration="$4"
 [[ "$ops" == "$GITHUB_WORKSPACE/browser-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-base" &&
@@ -18,7 +18,7 @@ for checkout in "$ops" "$frontend" "$backend" "$migration"; do
   checkout_status=$(git -C "$checkout" status --porcelain=v1 --untracked-files=all) || die CLEAN_CHECKOUT_REQUIRED
   [[ $(realpath "$checkout") == "$checkout" && -z "$checkout_status" ]] || die CLEAN_CHECKOUT_REQUIRED
 done
-[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == 5810f684b7c8d642443d5481b511e07c1e15e06b ]] ||
+[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == 46fafff567719f7f277c09540b9009e9c6c8e1d8 ]] ||
   die EXACT_OPERATIONS_PARENT_REQUIRED
 operations_delta=$(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) || die EXACT_OPERATIONS_DELTA_REQUIRED
 [[ "$operations_delta" == $'.github/workflows/admin-manual-share.yml\nci/admin-manual-share/run-hosted-admin-manual-share.sh\nci/admin-manual-share/run-listing-performance.mjs' ]] ||
@@ -660,7 +660,10 @@ lines=path.read_bytes().splitlines()
 failures=[line for line in lines if line.startswith(b'LISTING_PERFORMANCE_BROWSER_FAILURE ')]
 assert len(failures)<=1
 if failures:
-    assert re.fullmatch(rb'LISTING_PERFORMANCE_BROWSER_FAILURE (?:fixture|scope|public_view|staff_listing|staff_completed|staff_feedback|owner_listing|owner_dates|mobile_report) [A-Z][A-Z0-9_]{0,35}', failures[0])
+    assert re.fullmatch(rb'LISTING_PERFORMANCE_BROWSER_FAILURE '
+        rb'(?:fixture|scope|public_view|staff_listing|owner_listing|owner_dates|mobile_report|'
+        rb'staff_(?:completed|feedback)_(?:open|type|note|share|date|post|receipt)) '
+        rb'[A-Z][A-Z0-9_]{0,35}', failures[0])
     print(failures[0].decode('ascii'))
 for prefix, checks in expected.items():
     matches=[line[len(prefix):] for line in lines if line.startswith(prefix)]
