@@ -8,7 +8,7 @@ bounded() { timeout --kill-after=8s "$@"; }
 
 [[ $# == 5 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api ]] || die CI_REQUIRED
 [[ ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 && ${GITHUB_RUN_ATTEMPT:-} == 1 ]] || die STANDARD_LINUX_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-neighborhood-comparison-browser-20261117-v3 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
+[[ ${GITHUB_REF:-} == refs/heads/codex-ci-neighborhood-comparison-browser-20261117-v4 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 
 ops="$1"; frontend="$2"; backend="$3"; migration="$4"; landing_relay="$5"
 [[ "$ops" == "$GITHUB_WORKSPACE/browser-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-base" &&
@@ -19,7 +19,7 @@ for checkout in "$ops" "$frontend" "$backend" "$migration" "$landing_relay"; do
   checkout_status=$(git -C "$checkout" status --porcelain=v1 --untracked-files=all) || die CLEAN_CHECKOUT_REQUIRED
   [[ $(realpath "$checkout") == "$checkout" && -z "$checkout_status" ]] || die CLEAN_CHECKOUT_REQUIRED
 done
-[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == 789bc34f11207032a5d3e44dbce912cab87020b5 ]] ||
+[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == c573f480dad2b7798cdf07c72838ef09203c3d70 ]] ||
   die EXACT_OPERATIONS_PARENT_REQUIRED
 operations_delta=$(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) || die EXACT_OPERATIONS_DELTA_REQUIRED
 [[ "$operations_delta" == $'.github/workflows/admin-manual-share.yml\nci/admin-manual-share/run-hosted-admin-manual-share.sh' ]] ||
@@ -341,8 +341,30 @@ if sys.argv[3] != "0":
     paths = re.findall(rb'(?m)(?:prerendering page|Page) "(/[A-Za-z0-9_/\[\]-]+)"', raw)
     for route in sorted(set(paths) & known_routes):
         print("NEIGHBORHOOD_NEXT_DETAIL route=" + route.decode("ascii"))
-    for count in re.findall(rb"(?m)^# fail ([1-9][0-9]{0,2})$", raw)[:3]:
+    for count in re.findall(rb"(?m)^(?:#|\xe2\x84\xb9) fail ([1-9][0-9]{0,2})$", raw)[:3]:
         print("NEIGHBORHOOD_NEXT_DETAIL unit_failures=" + count.decode("ascii"))
+    started = b"Creating an optimized production build" in raw or bool(re.search(rb"Next\.js [0-9]+\.[0-9]+\.[0-9]+", raw))
+    print(f"NEIGHBORHOOD_NEXT_DETAIL next_started={int(started)}")
+    for script, line, column in sorted(set(re.findall(
+            rb"(?m)^test at (?:/work/)?tests/(listing-export|blog-articles)\.test\.cjs:([0-9]{1,4}):([0-9]{1,4})",
+            raw,
+    )))[:8]:
+        print(f"NEIGHBORHOOD_NEXT_DETAIL test={script.decode()} line={line.decode()} column={column.decode()}")
+    codes = re.findall(rb"\b(?:ERR_[A-Z0-9_]{3,45}|EACCES|EEXIST|ENOENT|ENOSPC|ENOMEM|SIGKILL|SIGSEGV|EPIPE|MODULE_NOT_FOUND)\b", raw)
+    for code in sorted(set(codes))[:14]:
+        print("NEIGHBORHOOD_NEXT_DETAIL native_code=" + code.decode("ascii"))
+    headers = re.findall(
+        rb"(?m)^\s*(?:> )?((?:Error|TypeError|AssertionError|SyntaxError|RangeError|ReferenceError)(?: \[[A-Z0-9_]{3,45}\])?): ([^\r\n]{1,320})",
+        raw,
+    )
+    for kind, message in list(dict.fromkeys(headers))[:5]:
+        # Recompose only exception headers from the offline synthetic build,
+        # removing quoted values, paths, addresses and credential-shaped text.
+        cleaned = re.sub(rb"['\"][^'\"]*['\"]|https?://\S+|\S+@\S+|(?:/[A-Za-z0-9_.-]+){2,}|[A-Za-z0-9_=-]{20,}", b"[redacted]", message)
+        cleaned = re.sub(rb"[^A-Za-z0-9 .,:!?()_\[\]-]", b" ", cleaned)
+        cleaned = b" ".join(cleaned.split())[:192]
+        if cleaned:
+            print(f"NEIGHBORHOOD_NEXT_DETAIL exception={kind.decode('ascii')} summary={cleaned.decode('ascii')}")
 assert sys.argv[3] == "0"
 assert len(phases) == len(names) and {phase["name"] for phase in phases} == names
 assert all(phase["native_exit"] == 0 and phase["child_group_absent"] == True for phase in phases)
