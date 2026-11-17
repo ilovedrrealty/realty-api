@@ -119,7 +119,8 @@ async function readPdf(download, locale) {
   const operations = inflateSync(pdf.context.lookup(references[0]).getContents(), { maxOutputLength: 131072 }).toString('ascii')
   const text = [...operations.matchAll(/<([A-F0-9]+)> Tj/g)]
     .map(match => Buffer.from(match[1], 'hex').toString('latin1')).join('\n')
-  for (const privateValue of ['SYNTHETIC_BROCHURE_', 'internal-brochure', 'brochure-private-agreement',
+  for (const privateValue of ['Synthetic undisclosed property address', 'Synthetic private brochure description',
+    'Descripción privada de prueba', 'SYNTHETIC_BROCHURE_', 'internal-brochure', 'brochure-private-agreement',
     'maps.example', '19.719482', '-70.519482', 'Browser Owner', expectedPhoto]) {
     check(!text.includes(privateValue) && !pdf.getTitle().includes(privateValue), 'PRIVATE_SOURCE_EXCLUDED_FROM_PDF')
   }
@@ -130,8 +131,17 @@ async function downloadBrochure(page, label, locale) {
   const action = button(page, label)
   await action.scrollIntoViewIfNeeded()
   const bounds = await action.boundingBox()
-  check(bounds && bounds.x >= -1 && bounds.x + bounds.width <= 391 && bounds.height >= 44
-    && await page.evaluate(() => innerWidth === 390), 'MOBILE_DOWNLOAD_CONTROL_MUST_FIT')
+  const viewport = await page.evaluate(() => ({
+    inner: innerWidth, client: document.documentElement.clientWidth,
+    scroll: document.documentElement.scrollWidth, visual: visualViewport?.width ?? innerWidth,
+  }))
+  check(bounds, 'MOBILE_DOWNLOAD_CONTROL_MISSING')
+  const geometry = [page.viewportSize().width, viewport.inner, viewport.client, viewport.scroll, viewport.visual,
+    bounds.x, bounds.x + bounds.width, bounds.height].map(value => Math.round(value * 100) / 100)
+  check(geometry.every(value => Number.isFinite(value) && Math.abs(value) < 10000), 'MOBILE_GEOMETRY_OUTSIDE_DIAGNOSTIC_RANGE')
+  console.log('LISTING_BROCHURE_GEOMETRY locale=' + locale + ' ' + geometry.join(' '))
+  check(viewport.inner === 390 && bounds.x >= -1 && bounds.x + bounds.width <= 391 && bounds.height >= 44,
+    'MOBILE_DOWNLOAD_CONTROL_MUST_FIT')
   const [detail, download] = await Promise.all([
     page.waitForResponse(isDetail),
     page.waitForEvent('download'),
@@ -176,7 +186,7 @@ async function main() {
     const spanish = await session(browser, 'es')
     const second = await visit(spanish)
     check(second.body.location_precision === 'hidden' && second.body.latitude === null
-      && second.body.title === 'SYNTHETIC_BROCHURE_HIDDEN_ADDRESS' && second.body.currency === 'USD',
+      && second.body.title === 'Synthetic undisclosed property address' && second.body.currency === 'USD',
     'REAL_HIDDEN_PROJECTION_REQUIRED')
     const spanishPhoto = await exterior(second.page, 'es')
     const downloadEvents = []

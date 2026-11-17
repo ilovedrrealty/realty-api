@@ -8,7 +8,7 @@ bounded() { timeout --kill-after=8s "$@"; }
 
 [[ $# == 5 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api ]] || die CI_REQUIRED
 [[ ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 && ${GITHUB_RUN_ATTEMPT:-} == 1 ]] || die STANDARD_LINUX_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-listing-brochures-browser-20261117-v2 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
+[[ ${GITHUB_REF:-} == refs/heads/codex-ci-listing-brochures-browser-20261117-v3 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 
 ops="$1"; frontend="$2"; backend="$3"; migration="$4"; landing_relay="$5"
 [[ "$ops" == "$GITHUB_WORKSPACE/browser-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-base" &&
@@ -19,10 +19,10 @@ for checkout in "$ops" "$frontend" "$backend" "$migration" "$landing_relay"; do
   checkout_status=$(git -C "$checkout" status --porcelain=v1 --untracked-files=all) || die CLEAN_CHECKOUT_REQUIRED
   [[ $(realpath "$checkout") == "$checkout" && -z "$checkout_status" ]] || die CLEAN_CHECKOUT_REQUIRED
 done
-[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == ffb817d50e33b572b5cb3c41a2b90bd8a7c661a2 ]] ||
+[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == e96f19f8721e5860410148a00670fd84aca7efe3 ]] ||
   die EXACT_OPERATIONS_PARENT_REQUIRED
 operations_delta=$(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) || die EXACT_OPERATIONS_DELTA_REQUIRED
-[[ "$operations_delta" == $'.github/workflows/admin-manual-share.yml\nci/admin-manual-share/run-hosted-admin-manual-share.sh' ]] ||
+[[ "$operations_delta" == $'.github/workflows/admin-manual-share.yml\nci/admin-manual-share/run-hosted-admin-manual-share.sh\nci/admin-manual-share/run-listing-brochures.mjs\nci/admin-manual-share/serve_listing_brochures_fixture.py' ]] ||
   die EXACT_OPERATIONS_DELTA_REQUIRED
 frontend_commit=2d070cb965fe2f921822fdb8436ecab72a4099f0
 frontend_tree=8d6b533d9967d6a5fd335c7557e80bc321af8a0b
@@ -410,7 +410,7 @@ for route in ("listing/10000000-0000-0000-0000-000000000001/index.html", "search
     path = output / route
     assert path.is_file() and not path.is_symlink()
     data = path.read_bytes()
-    assert b"SYNTHETIC_BROCHURE_HIDDEN_ADDRESS" not in data and b"SYNTHETIC_BROCHURE_PRIVATE_REVIEW" not in data
+    assert b"Synthetic undisclosed property address" not in data and b"SYNTHETIC_BROCHURE_PRIVATE_REVIEW" not in data
     print(f"LISTING_BROCHURE_EXPORT_SHA256 route={route} sha256={sha256(data).hexdigest()}")
 print("LISTING_BROCHURE_NEXT_EXPORT native=0 listing=static search=static typecheck=success")
 PY
@@ -551,6 +551,11 @@ path = Path(sys.argv[1])
 assert path.stat().st_size <= 131072
 lines = path.read_bytes().splitlines()
 allowed_stages = set(sys.argv[2].split(','))
+geometry = rb'LISTING_BROCHURE_GEOMETRY locale=(?:en|es)(?: -?[0-9]{1,4}(?:\.[0-9]{1,2})?){8}'
+measurements = [line for line in lines if re.fullmatch(geometry, line)]
+assert len(measurements) <= 2
+for measurement in measurements:
+    print(measurement.decode('ascii'))
 failure = b'LISTING_BROCHURE_BROWSER_FAILURE '
 failures = [line[len(failure):] for line in lines if line.startswith(failure)]
 assert len(failures) <= 1

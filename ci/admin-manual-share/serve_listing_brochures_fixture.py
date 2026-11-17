@@ -19,7 +19,7 @@ PHOTO = base64.b64decode(
     "iVBORw0KGgoAAAANSUhEUgAAABgAAAAQCAIAAACDRijCAAAAJklEQVR4nGNQ9sukCmIYNYiOBoVXd1EFjRpET4NOLc+iChrGBgEAAZ3wkJPAtCYAAAAASUVORK5CYII="
 )
 ACTIVE_TITLE = "Synthetic Villa Mar Azul"
-HIDDEN_TITLE = "SYNTHETIC_BROCHURE_HIDDEN_ADDRESS"
+HIDDEN_TITLE = "Synthetic undisclosed property address"
 CONTROLS = {
     "/__brochure_fixture/fresh-price": "fresh-price",
     "/__brochure_fixture/hidden-rent": "hidden-rent",
@@ -42,8 +42,8 @@ def seed_brochure():
             currency="DOP", price=Decimal("15550000.00"), price_per_month=Decimal("45750.50"), price_per_day=Decimal("1450.00"),
             bedrooms=3, bathrooms=Decimal("2.5"), area_sqft=2340, lot_size_sqft=4050, year_built=2021,
             latitude=Decimal("19.719482"), longitude=Decimal("-70.519482"),
-            description="SYNTHETIC_BROCHURE_UNSCOPED_DESCRIPTION",
-            description_es="SYNTHETIC_BROCHURE_UNSCOPED_DESCRIPTION_ES",
+            description="Synthetic private brochure description",
+            description_es="Descripción privada de prueba",
             co_listing_agent_email="internal-brochure@example.invalid",
             co_listing_agreement_url="https://fixture.invalid/brochure-private-agreement",
             maps_url="https://maps.example.invalid/private-brochure",
