@@ -1,0 +1,54 @@
+name: Isolated integrated frontend build
+
+on:
+  push:
+    branches: [codex-ci-integrated-frontend-build-20261117]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: integrated-frontend-build-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: >-
+      github.repository == 'ilovedrrealty/realty-api' &&
+      github.event.repository.private == false &&
+      github.event.created == true && github.event.deleted == false &&
+      github.event.forced == false &&
+      github.event.before == '0000000000000000000000000000000000000000' &&
+      github.run_attempt == 1 && github.event.after == github.sha &&
+      github.workflow_sha == github.sha
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Read exact build operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          path: build-ops
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Read exact integrated frontend
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: ilovedrrealty/iLoveDRRealty
+          ref: 99bc8d4c0ee4f3f0b72cf174530971f6a35f0ab3
+          path: frontend-base
+          persist-credentials: false
+      - name: Read accepted static export fixture and proof harness
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: d49acd7d48e92dac6d06b1678570bc137fb6a5ba
+          path: landing-relay
+          persist-credentials: false
+      - name: Verify 95 contracts, strict Dashboard and actual static export
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$RUNNER_ENVIRONMENT" == github-hosted && "$RUNNER_OS" == Linux && "$RUNNER_ARCH" == X64 ]]
+          bash --noprofile --norc -n "$GITHUB_WORKSPACE/build-ops/ci/cumulative-landing/run-integrated-frontend.sh"
+          exec bash --noprofile --norc "$GITHUB_WORKSPACE/build-ops/ci/cumulative-landing/run-integrated-frontend.sh" \
+            "$GITHUB_WORKSPACE/build-ops" "$GITHUB_WORKSPACE/frontend-base" "$GITHUB_WORKSPACE/landing-relay"
