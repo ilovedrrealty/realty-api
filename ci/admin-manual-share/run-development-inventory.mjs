@@ -13,6 +13,7 @@ const note = 'PRIVATE_SYNTHETIC_DEVELOPER_NOTE'
 const floorPlan = 'https://example.org/synthetic-approved-floor-plan.pdf'
 const privateFloorPlan = 'https://example.org/PRIVATE_SYNTHETIC_FLOOR_PLAN.pdf'
 const checks = []
+const statuses = {}
 let step = 'fixture'
 
 class CheckFailure extends Error {}
@@ -37,6 +38,50 @@ async function readFixture() {
 function fromApi(response, path, method = 'GET') {
   const url = new URL(response.url())
   return url.origin === api && url.pathname === path && response.request().method() === method
+}
+
+const listingsReads = {
+  '/auth/me': 'auth_me',
+  '/admin/listing-edits': 'admin_listing_edits',
+  '/admin/deal-requests': 'admin_deal_requests',
+  '/admin/activity-log': 'admin_activity_log',
+  '/admin/agents': 'admin_agents',
+  '/admin/stats': 'admin_stats',
+}
+
+function listingReadName(response, inventoryPath) {
+  const url = new URL(response.url())
+  if (url.origin !== api || response.request().method() !== 'GET') return null
+  if (url.pathname === inventoryPath) return 'admin_inventory'
+  if (url.pathname !== '/admin/listings') return listingsReads[url.pathname] ?? null
+  if (url.searchParams.get('status') === 'pending_approval') return 'admin_listings_pending'
+  if (url.searchParams.get('is_deal') === 'true') return 'admin_listings_deals'
+  if (url.searchParams.get('exclude_status') === 'pending_approval') return 'admin_listings_main'
+  return 'admin_listings_other'
+}
+
+function inventoryWriteName(response, inventoryPath) {
+  const url = new URL(response.url())
+  if (url.origin !== api) return null
+  const method = response.request().method()
+  if (method === 'PUT' && url.pathname === inventoryPath + '/draft') return 'inventory_draft_write'
+  if (method !== 'POST') return null
+  for (const action of ['review', 'publish', 'withdraw']) {
+    if (url.pathname === inventoryPath + '/' + action) return 'inventory_' + action + '_write'
+  }
+  return null
+}
+
+// Register rejection handlers before navigation/clicks, so an earlier failed
+// UI event cannot create a second, unhandled waiter timeout.
+function waitForResponse(page, match) {
+  return page.waitForResponse(match).then(response => ({ response }), error => ({ error }))
+}
+
+async function requireResponse(waiting) {
+  const result = await waiting
+  if (result.error) throw result.error
+  return result.response
 }
 
 function noCache(response) {
@@ -95,30 +140,54 @@ const label = (scope, name) => scope.getByLabel(name, { exact: true })
 const button = (scope, name) => scope.getByRole('button', { name, exact: true })
 
 async function openFromListings(context, path, mobile) {
+  const surface = mobile ? 'mobile' : 'desktop'
+  step = surface + '_listings_navigation'
   const page = await context.newPage()
-  const identity = page.waitForResponse(response => fromApi(response, '/auth/me'))
+  page.on('response', response => {
+    const name = listingReadName(response, path) ?? inventoryWriteName(response, path)
+    if (name !== null) statuses[surface + '_' + name] = response.status()
+  })
+  const identity = waitForResponse(page, response => fromApi(response, '/auth/me'))
+  const mainTable = waitForResponse(page, response => listingReadName(response, path) === 'admin_listings_main')
   await page.goto(dashboard + '/listings?workspace=admin', { waitUntil: 'domcontentloaded' })
-  const user = await identity
+  step = surface + '_listings_auth'
+  const user = await requireResponse(identity)
   check(user.ok() && (await user.json()).role === 'admin', 'EXACT_ADMIN_SESSION_REQUIRED')
+  step = surface + '_listings_main_get'
+  const table = await requireResponse(mainTable)
+  check(table.ok(), 'ADMIN_LISTINGS_MAIN_GET_REQUIRED')
+  const listingId = path.split('/').at(-1)
+  check((await table.json()).items.some(listing => listing.id === listingId && listing.status === 'active'
+    && listing.transaction === 'sale'), 'EXACT_ACTIVE_SYNTHETIC_SALE_ROW_REQUIRED')
+  step = surface + '_listing_title'
   const title = page.getByText(listingTitle).filter({ visible: true })
   await title.waitFor({ state: 'visible' })
   if (!mobile) {
+    step = 'desktop_listing_actions_menu'
     const row = title.locator('xpath=ancestor::div[.//button[@aria-label="Listing actions"]][1]')
     await button(row, 'Listing actions').click()
   }
-  const opening = page.waitForResponse(response => fromApi(response, path))
+  step = surface + '_development_action'
+  const opening = waitForResponse(page, response => fromApi(response, path))
   await button(page, 'Development inventory').click()
-  const inventory = await opening
+  step = surface + '_development_get'
+  const inventory = await requireResponse(opening)
   check(inventory.ok(), 'LISTING_ENTRY_MUST_OPEN_EXACT_INVENTORY')
   noCache(inventory)
+  step = surface + '_project_name_visible'
   await label(page, 'Project name (English)').waitFor({ state: 'visible' })
   return page
 }
 
-async function save(page, path) {
-  const waiting = page.waitForResponse(response => fromApi(response, path + '/draft', 'PUT'))
-  await button(page, 'Save draft').click()
-  const response = await waiting
+async function save(page, path, surface) {
+  step = surface + '_form_validity'
+  const submit = button(page, 'Save draft')
+  check(await submit.evaluate(element => element.form?.checkValidity() === true), 'BROWSER_DRAFT_FORM_INVALID')
+  step = surface + '_save_click'
+  const waiting = waitForResponse(page, response => fromApi(response, path + '/draft', 'PUT'))
+  await submit.click()
+  step = surface + '_save_response'
+  const response = await requireResponse(waiting)
   check(response.status() === 200, 'DRAFT_SAVE_REQUIRED')
   noCache(response)
   return response.json()
@@ -126,44 +195,61 @@ async function save(page, path) {
 
 async function act(page, path, operation, control, confirmation) {
   await button(page, control).click()
-  const waiting = page.waitForResponse(response => fromApi(response, path + '/' + operation, 'POST'))
+  const waiting = waitForResponse(page, response => fromApi(response, path + '/' + operation, 'POST'))
   await button(page, confirmation).click()
-  const response = await waiting
+  const response = await requireResponse(waiting)
   check(response.status() === 200, 'CONFIRMED_INVENTORY_ACTION_REQUIRED')
   noCache(response)
   return response.json()
 }
 
 async function enterInventory(page, verified, cutoff) {
-  await label(page, 'Project name (English)').fill(englishName)
-  await label(page, 'Project name (Spanish)').fill(spanishName)
-  await label(page, 'Project summary (English)').fill('Synthetic developer-supplied units.')
-  await label(page, 'Project summary (Spanish)').fill('Unidades de prueba.')
-  await label(page, 'Delivery target').fill('2032-Q3')
-  await label(page, 'Developer source reference').fill(source)
-  await label(page, 'Verified on').fill(verified)
-  await label(page, 'Availability valid through').fill(cutoff)
-  await label(page, 'Private note').fill(note)
+  const fill = async (scope, tag, name, value) => {
+    step = 'desktop_field_' + tag
+    await label(scope, name).fill(value)
+  }
+  await fill(page, 'project_name_en', 'Project name (English)', englishName)
+  await fill(page, 'project_name_es', 'Project name (Spanish)', spanishName)
+  await fill(page, 'project_summary_en', 'Project summary (English)', 'Synthetic developer-supplied units.')
+  await fill(page, 'project_summary_es', 'Project summary (Spanish)', 'Unidades de prueba.')
+  await fill(page, 'delivery_target', 'Delivery target', '2032-Q3')
+  await fill(page, 'source_reference', 'Developer source reference', source)
+  await fill(page, 'verified_on', 'Verified on', verified)
+  await fill(page, 'cutoff', 'Availability valid through', cutoff)
+  await fill(page, 'private_note', 'Private note', note)
+  step = 'desktop_add_phase'
   await button(page, 'Add phase').click()
   const phase = page.getByRole('group', { name: 'Phase 1', exact: true })
-  await label(phase, 'Phase code').fill('A')
-  await label(phase, 'Phase name (English)').fill('Phase A')
-  await label(phase, 'Phase name (Spanish)').fill('Fase A')
+  step = 'desktop_phase_group'
+  await phase.waitFor({ state: 'visible' })
+  await fill(phase, 'phase_code', 'Phase code', 'A')
+  await fill(phase, 'phase_name_en', 'Phase name (English)', 'Phase A')
+  await fill(phase, 'phase_name_es', 'Phase name (Spanish)', 'Fase A')
+  step = 'desktop_add_unit_one'
   await button(phase, 'Add unit').click()
   const unit = phase.getByRole('group', { name: 'Unit 1', exact: true })
-  await label(unit, 'Unit code').fill('A1')
-  await label(unit, 'Floor').fill('Ground floor')
-  await label(unit, 'Size (m²)').fill('110.25')
-  await label(unit, 'Price').fill('199000.00')
+  step = 'desktop_unit_one_group'
+  await unit.waitFor({ state: 'visible' })
+  await fill(unit, 'unit_one_code', 'Unit code', 'A1')
+  await fill(unit, 'floor', 'Floor', 'Ground floor')
+  await fill(unit, 'size', 'Size (m²)', '110.25')
+  await fill(unit, 'price', 'Price', '199000.00')
+  step = 'desktop_unit_one_currency'
   await label(unit, 'Currency').selectOption('USD')
+  step = 'desktop_unit_one_status'
   await label(unit, 'Unit status').selectOption('available')
-  await label(unit, 'Floor plan URL').fill(floorPlan)
+  await fill(unit, 'unit_one_floor_plan', 'Floor plan URL', floorPlan)
+  step = 'desktop_approve_floor_plan'
   await label(unit, 'Approved for public sharing').check()
+  step = 'desktop_add_unit_two'
   await button(phase, 'Add unit').click()
   const second = phase.getByRole('group', { name: 'Unit 2', exact: true })
-  await label(second, 'Unit code').fill('A2')
+  step = 'desktop_unit_two_group'
+  await second.waitFor({ state: 'visible' })
+  await fill(second, 'unit_two_code', 'Unit code', 'A2')
+  step = 'desktop_unit_two_status'
   await label(second, 'Unit status').selectOption('reserved')
-  await label(second, 'Floor plan URL').fill(privateFloorPlan)
+  await fill(second, 'unit_two_floor_plan', 'Floor plan URL', privateFloorPlan)
 }
 
 async function main() {
@@ -198,7 +284,8 @@ async function main() {
     step = 'desktop_create_draft'
     const page = await openFromListings(admin, path, false)
     await enterInventory(page, today, cutoff)
-    const initial = await save(page, path)
+    const initial = await save(page, path, 'desktop')
+    step = 'desktop_saved_draft_verification'
     check(initial.draft_revision === 1 && initial.reviewed_revision === null && initial.published_revision === null
       && initial.draft.project.name_en === englishName && initial.draft.project.name_es === spanishName
       && initial.draft.evidence.source_reference === source && initial.draft.evidence.private_note === note
@@ -210,9 +297,10 @@ async function main() {
     const mobileAdmin = await session(browser, narrow, fixture.accounts.admin)
     const mobile = await openFromListings(mobileAdmin, path, true)
     const previewPath = path + '/revisions/' + initial.draft_revision
-    const previewResult = mobile.waitForResponse(response => fromApi(response, previewPath))
+    step = 'mobile_saved_preview'
+    const previewResult = waitForResponse(mobile, response => fromApi(response, previewPath))
     await button(mobile, 'Preview saved revision').click()
-    const savedResult = await previewResult
+    const savedResult = await requireResponse(previewResult)
     check(savedResult.status() === 200, 'ADMIN_PREVIEW_REQUIRED')
     noCache(savedResult)
     const dialog = mobile.getByRole('dialog', { name: 'Saved inventory revision 1', exact: true })
@@ -250,7 +338,8 @@ async function main() {
     await mobile.reload({ waitUntil: 'domcontentloaded' })
     await button(mobile, 'Development inventory').click()
     await label(mobile, 'Project name (English)').fill(updatedName)
-    const revised = await save(mobile, path)
+    const revised = await save(mobile, path, 'mobile')
+    step = 'mobile_saved_draft_verification'
     check(revised.draft_revision === 2 && revised.reviewed_revision === null && revised.published_revision === 1
       && revised.published.project.name_en === englishName && revised.draft.project.name_en === updatedName,
       'DRAFT_MUST_NOT_REPLACE_PUBLISHED_REVISION')
@@ -281,6 +370,6 @@ try {
 } catch (error) {
   const reason = error instanceof CheckFailure ? error.message
     : error?.name === 'TimeoutError' ? 'TIMED_OUT' : 'BROWSER_OPERATION_FAILED'
-  console.log('DEVELOPMENT_INVENTORY_BROWSER ' + JSON.stringify({ status: 'FAIL', step, reason, checks }))
+  console.log('DEVELOPMENT_INVENTORY_BROWSER ' + JSON.stringify({ status: 'FAIL', step, reason, checks, statuses }))
   process.exitCode = 1
 }
