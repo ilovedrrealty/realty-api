@@ -19,12 +19,14 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import make_url
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from config import settings
 from database import Base, get_db
 import models
 from models.lead import Lead
+from models.seller_valuation import SellerValuationIntake
 from models.user import User
 from models.site_settings import SiteSettings
 from routes import leads
@@ -123,6 +125,59 @@ class LeadTrackingTests(unittest.TestCase):
         self.crm.assert_called_once()
         self.send.assert_called_once()
         self.assertEqual(self.send.call_args.kwargs["notify_email"], "owner@example.com,other@example.com")
+
+    def test_seller_valuation_receipt_preserves_one_private_subject_and_normal_delivery(self):
+        body = payload(type="seller_interest", valuation_subject={
+            "property_type": "villa", "location": "Synthetic North Coast", "area_m2": 84.25,
+            "bedrooms": 3, "bathrooms": 2.5, "condition": "good",
+        })
+        body["tracking"]["intent"] = "sell"
+        receipt = self.submit(body)
+        self.assertIs(receipt.get("valuation_request_registered"), True)
+        self.assertNotIn("Synthetic North Coast", str(receipt))
+        self.assertEqual(self.submit(body), receipt)
+        for changed in ({**body, "valuation_subject": None},
+                        {**body, "valuation_subject": {**body["valuation_subject"], "bedrooms": 4}}):
+            retried = self.client.post("/leads", json=changed)
+            self.assertEqual(retried.status_code, 409)
+            self.assertNotIn("id", retried.json())
+        with Session(self.engine) as db:
+            lead = db.get(Lead, UUID(receipt["id"]))
+            subject = db.get(SellerValuationIntake, lead.id).subject
+            self.assertEqual(lead.message, "Synthetic property request")
+            self.assertEqual(subject["location"], "Synthetic North Coast")
+            self.assertEqual(subject["bathrooms"], "2.5")
+            self.assertEqual(db.query(Lead).count(), 1)
+            self.assertEqual(db.query(SellerValuationIntake).count(), 1)
+        self.crm.assert_called_once()
+        self.send.assert_called_once()
+
+    def test_valuation_subject_is_rejected_without_seller_scope_consent_or_valid_fields(self):
+        subject = {"property_type": "land", "location": "Synthetic interior valley"}
+        valid = payload(type="seller_interest", valuation_subject=subject)
+        for invalid in (
+            {**valid, "type": "buyer_interest"},
+            {**valid, "tracking": {**valid["tracking"], "contact_consent": False}},
+            {**valid, "submission_id": None},
+            {**valid, "valuation_subject": {**subject, "bathrooms": 1.25}},
+            {**valid, "valuation_subject": {**subject, "precise_address": "Synthetic external input"}},
+        ):
+            self.assertEqual(self.client.post("/leads", json=invalid).status_code, 422)
+        self.assertEqual(self.client.post("/leads/capture", json=valid).status_code, 422)
+        self.crm.assert_not_called()
+        self.send.assert_not_called()
+
+    def test_private_valuation_failure_rolls_back_its_lead_and_can_retry(self):
+        body = payload(type="seller_interest", valuation_subject={"property_type": "land", "location": "Synthetic coast"})
+        with patch.object(leads.SellerValuationIntake, "__init__", side_effect=SQLAlchemyError):
+            response = self.client.post("/leads", json=body)
+        self.assertEqual(response.status_code, 503)
+        self.assertNotIn("id", response.json())
+        with Session(self.engine) as db:
+            self.assertEqual(db.query(Lead).count(), 0)
+        self.crm.assert_not_called()
+        self.send.assert_not_called()
+        self.assertIs(self.submit(body).get("valuation_request_registered"), True)
 
     def test_concurrent_retry_uses_database_unique_key_and_side_effects_once(self):
         body = payload()
