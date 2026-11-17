@@ -7,15 +7,15 @@ bounded() { timeout --kill-after=8s "$@"; }
 
 [[ ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 &&
-   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-private-service-referrals-20261117 &&
+   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-private-service-referrals-20261117-v2 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_HOSTED_EVENT_REQUIRED
 
 ops="$GITHUB_WORKSPACE/rehearsal-ops"
 backend="$GITHUB_WORKSPACE/transaction-backend"
 baseline="$GITHUB_WORKSPACE/previous-backend"
 relay="$GITHUB_WORKSPACE/migration-relay"
-candidate_commit=8863b78437fe69be22725d44831c1da1b99223f0
-candidate_tree=c05fbcb00888c595f7035348c4e0cd8d1ffa0fab
+candidate_commit=27fe6b2a5e9435979e4a6e942200bce9f541ba05
+candidate_tree=ec804ecb39d090da6d31aa9539f88039931f5af5
 baseline_commit=630f05b80384428bb1191d3475a765877def80a9
 baseline_tree=7d491000a969029df024b908f85a857fd9b88b89
 
@@ -25,7 +25,7 @@ for checkout in "$ops" "$backend" "$baseline" "$relay"; do
      ! -e "$checkout/.env" && ! -L "$checkout/.env" ]] || die CLEAN_CHECKOUT_REQUIRED
 done
 [[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" &&
-   $(git -C "$ops" rev-parse 'HEAD^') == f6fd48cb8b472d99b2dd0d5101ff436536d0cb26 ]] || die EXACT_OPERATIONS_REQUIRED
+   $(git -C "$ops" rev-parse 'HEAD^') == a77149e401f396041e0388d5b8edbef088bfe644 ]] || die EXACT_OPERATIONS_REQUIRED
 operations_delta=$(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) || die EXACT_OPERATIONS_REQUIRED
 [[ "$operations_delta" == $'.github/workflows/transaction-room-native.yml\nci/transaction-room/rehearse.py\nci/transaction-room/run-hosted-native.sh' ]] ||
   die EXACT_OPERATIONS_REQUIRED
@@ -166,9 +166,16 @@ pass_line = re.compile(rb"TRANSACTION_ROOM_NATIVE " + mode.encode() +
     rb" head=(?:[0-9a-f]{12}|none) private_tables=[0-9] shape=(?:[0-9a-f]{64}|none) tests=[0-9]{1,2} pass=[0-9]{1,2}")
 error_line = re.compile(rb"TRANSACTION_ROOM_NATIVE_FAILURE " + mode.encode() + rb" stage=" + stages +
     rb" class=[A-Za-z_][A-Za-z0-9_]{0,62} sqlstate=(?:[A-Z0-9]{5}|none) methods=(?:[a-z0-9_,]{1,768}|none)")
-safe = [line for line in raw.splitlines() if pass_line.fullmatch(line) or error_line.fullmatch(line)]
+lines = raw.splitlines()
+safe = [line for line in lines if pass_line.fullmatch(line) or error_line.fullmatch(line)]
 if len(safe) == 1:
     print(safe[0].decode('ascii'))
+if mode == "referrals" and native != "0":
+    assertion = re.compile(rb"REFERRAL_NATIVE_ASSERTION test=[a-z0-9_]{1,100} line=(?:[0-9]{1,4}|none)"
+                           rb" actual=(?:[1-5][0-9]{2}|none) expected=(?:[1-5][0-9]{2}|none)")
+    sqlstates = re.compile(rb"REFERRAL_NATIVE_SQLSTATES codes=(?:[A-Z0-9]{5}(?:,[A-Z0-9]{5}){0,7}|none)")
+    for line in [item for item in lines if assertion.fullmatch(item) or sqlstates.fullmatch(item)][:6]:
+        print(line.decode('ascii'))
 if native != "0" or len(safe) != 1 or not pass_line.fullmatch(safe[0]):
     print(f"TRANSACTION_ROOM_NATIVE_PHASE_FAILURE mode={mode} native={native}")
     raise SystemExit(1)

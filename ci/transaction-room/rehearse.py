@@ -119,11 +119,38 @@ def run_cases(mode):
     # Native unittest discover with the conventional tests start directory
     # also resolves the documents suite's shared room fixture import.
     suite = unittest.defaultTestLoader.discover("tests", pattern=pattern)
-    result = unittest.TextTestRunner(stream=StringIO()).run(suite)
-    for case, _ in result.failures + result.errors:
+    sqlstates = set()
+    if mode == "referrals":
+        from sqlalchemy import event
+        from sqlalchemy.engine import Engine
+
+        def note_sqlstate(context):
+            value = getattr(context.original_exception, "pgcode", None)
+            if isinstance(value, str) and re.fullmatch(r"[A-Z0-9]{5}", value):
+                sqlstates.add(value)
+
+        event.listen(Engine, "handle_error", note_sqlstate)
+    try:
+        result = unittest.TextTestRunner(stream=StringIO()).run(suite)
+    finally:
+        if mode == "referrals":
+            event.remove(Engine, "handle_error", note_sqlstate)
+
+    for case, trace in result.failures + result.errors:
         name = getattr(case, "_testMethodName", "setup_or_teardown")
         if re.fullmatch(r"[a-z0-9_]{1,100}", name):
             failed_methods.append(name)
+            if mode == "referrals":
+                frame = re.search(
+                    rf'(?m)^  File "/application/tests/test_service_referrals\.py", line ([1-9][0-9]{{0,3}}), in {name}$',
+                    trace,
+                )
+                statuses = re.search(r"(?m)^AssertionError: ([1-5][0-9]{2}) != ([1-5][0-9]{2})(?= :|$)", trace)
+                line = frame.group(1) if frame else "none"
+                actual, expected = statuses.groups() if statuses else ("none", "none")
+                print(f"REFERRAL_NATIVE_ASSERTION test={name} line={line} actual={actual} expected={expected}")
+    if mode == "referrals" and not result.wasSuccessful():
+        print("REFERRAL_NATIVE_SQLSTATES codes=" + (",".join(sorted(sqlstates)[:8]) or "none"))
     check(result.testsRun == count and result.wasSuccessful() and not result.skipped
           and not result.expectedFailures and not result.unexpectedSuccesses)
     return count
