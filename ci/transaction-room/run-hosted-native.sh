@@ -7,7 +7,7 @@ bounded() { timeout --kill-after=8s "$@"; }
 
 [[ ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 &&
-   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-integrated-release-native-20261117 &&
+   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-integrated-release-native-20261117-v2 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_HOSTED_EVENT_REQUIRED
 
 ops="$GITHUB_WORKSPACE/rehearsal-ops"
@@ -25,9 +25,9 @@ for checkout in "$ops" "$backend" "$baseline" "$relay"; do
      ! -e "$checkout/.env" && ! -L "$checkout/.env" ]] || die CLEAN_CHECKOUT_REQUIRED
 done
 [[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" &&
-   $(git -C "$ops" rev-parse 'HEAD^') == 5807ba8c6b00a7da121318a402f0846f23179a7f ]] || die EXACT_OPERATIONS_REQUIRED
+   $(git -C "$ops" rev-parse 'HEAD^') == 41c2b8206f9a6360cdc75bf4a21561d0c2f43a34 ]] || die EXACT_OPERATIONS_REQUIRED
 operations_delta=$(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) || die EXACT_OPERATIONS_REQUIRED
-[[ "$operations_delta" == $'.github/workflows/transaction-room-native.yml\nci/transaction-room/rehearse.py\nci/transaction-room/run-hosted-native.sh' ]] ||
+[[ "$operations_delta" == $'.github/workflows/transaction-room-native.yml\nci/transaction-room/run-hosted-native.sh' ]] ||
   die EXACT_OPERATIONS_REQUIRED
 [[ $(git -C "$backend" rev-parse HEAD) == "$candidate_commit" &&
    $(git -C "$backend" rev-parse 'HEAD^{tree}') == "$candidate_tree" &&
@@ -211,13 +211,46 @@ restore_db="ildr_integration_restore_$nonce"
 [[ "$source_db" =~ ^ildr_integration_fresh_[a-f0-9]{32}$ &&
    "$restore_db" =~ ^ildr_integration_restore_[a-f0-9]{32}$ ]] || die EXACT_RESTORE_SCOPE_REQUIRED
 owned "$pg" && [[ $(bounded 5s docker exec "$pg" ls /sys/class/net) == lo ]] || die LOOPBACK_POSTGRES_REQUIRED
-bounded 10s "${psql[@]}" -d postgres -c "CREATE DATABASE $restore_db" \
+bounded 10s "${psql[@]}" -d postgres -c "CREATE DATABASE $restore_db TEMPLATE template0" \
   -c "COMMENT ON DATABASE $restore_db IS 'ildr-integration-ci:$nonce'" \
   >"$state/full-restore-create.log" 2>&1 || die DISPOSABLE_FULL_RESTORE_REQUIRED
-bounded 110s docker exec "$pg" /bin/bash -euo pipefail -c '
-  pg_dump -h 127.0.0.1 -p 55449 -U postgres --format=custom --schema=public "$1" |
-    pg_restore -h 127.0.0.1 -p 55449 -U postgres --exit-on-error --dbname="$2"
-' -- "$source_db" "$restore_db" >"$state/full-archive-restore.log" 2>&1 || die FULL_PUBLIC_ARCHIVE_RESTORE_FAILED
+archive="$state/full-public.dump"
+archive_stage() {
+  local step=$1 log=$2 result=0
+  shift 2
+  "$@" 2>"$log" || result=$?
+  [[ "$result" != 0 ]] || return 0
+  python3 -I -B - "$step" "$log" "$result" <<'PY'
+from pathlib import Path
+import re
+import sys
+
+with Path(sys.argv[2]).open("rb") as log:
+    data = log.read(131072).lower()
+categories = {
+    rb'schema "[^"]+" already exists': b"schema_already_exists",
+    rb"does not exist": b"missing_object",
+    rb"permission denied": b"permission_denied",
+    rb"connection .*failed|could not connect": b"connection_error",
+    rb"unexpected end|end of file": b"archive_truncated",
+    rb"invalid": b"invalid_input",
+}
+matches = [category for pattern, category in categories.items() if re.search(pattern, data)]
+print(f"INTEGRATED_ARCHIVE_FAILURE stage={sys.argv[1]} native={int(sys.argv[3])} classes=" +
+      (b",".join(matches).decode("ascii") or "unclassified"), file=sys.stderr)
+PY
+  die FULL_PUBLIC_ARCHIVE_FAILED
+}
+
+archive_stage dump "$state/full-archive-dump.log" bounded 75s docker exec "$pg" \
+  pg_dump -h 127.0.0.1 -p 55449 -U postgres --format=custom --schema=public --strict-names \
+  --lock-wait-timeout=15000 --dbname="$source_db" >"$archive"
+[[ -f "$archive" && ! -L "$archive" && $(head -c 5 "$archive") == PGDMP ]] ||
+  die FULL_PUBLIC_ARCHIVE_HEADER_REQUIRED
+[[ $(stat -c %s "$archive") -le 16777216 ]] || die SYNTHETIC_PUBLIC_ARCHIVE_BOUND_EXCEEDED
+archive_stage restore "$state/full-archive-restore.log" bounded 90s docker exec -i "$pg" \
+  pg_restore -h 127.0.0.1 -p 55449 -U postgres --exit-on-error --single-transaction --clean --if-exists \
+  --dbname="$restore_db" <"$archive" >/dev/null
 phase restore "$backend" "$candidate_commit" "$candidate_tree" "container:$pg" 100s || die FULL_RESTORE_VERIFICATION_FAILED
 printf 'INTEGRATED_RELEASE_NATIVE_PASS ops=%s run=%s backend=%s tree=%s postgres=17.6 core=9 documents=5 adapter=7 floorplans=4 head=86fc1b2e4a79 legacy_task=preserved storage=fake full_public_restore=verified\n' \
   "$GITHUB_SHA" "$GITHUB_RUN_ID" "$candidate_commit" "$candidate_tree"
