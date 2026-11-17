@@ -1,0 +1,92 @@
+diff --git a/apps/dashboard/src/api/leadDelivery.ts b/apps/dashboard/src/api/leadDelivery.ts
+index e4779bf68d5de92cbafd0c138ec09cfb630f30df..e1b8a21e672d288851e04a7739898604a1e5d8d0 100644
+--- a/apps/dashboard/src/api/leadDelivery.ts
++++ b/apps/dashboard/src/api/leadDelivery.ts
+@@ -2,8 +2,10 @@ import client from './axios'
+ 
+ export const DELIVERY_STATUSES = ['pending', 'processing', 'retry_wait', 'accepted', 'failed', 'needs_review', 'skipped'] as const
+ export type DeliveryStatus = typeof DELIVERY_STATUSES[number]
++export type DeliveryStep = 'crm_contact' | 'crm_tags' | 'crm_note' | 'crm_task'
++  | 'email_configuration' | 'customer_email' | `email_${1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10}`
+ export type DeliveryJob = {
+-  id: string; lead_id: string; step: string; provider: 'ghl' | 'resend'; status: DeliveryStatus
++  id: string; lead_id: string; step: DeliveryStep; provider: 'ghl' | 'resend'; status: DeliveryStatus
+   attempts: number; max_attempts: number; created_at: string; first_attempt_at: string | null
+   last_attempt_at: string | null; next_attempt_at: string; accepted_at: string | null
+   error_code: string | null; blocked_by: 'crm_contact' | null; outcome_uncertain: boolean; can_retry: boolean
+@@ -11,7 +13,7 @@ export type DeliveryJob = {
+ export type DeliverySummary = {
+   generated_at: string; enabled: boolean; total_jobs: number; tracked_leads: number
+   status_counts: Record<DeliveryStatus, number>
+-  by_step: { step: string; status: DeliveryStatus; count: number }[]
++  by_step: { step: DeliveryStep; status: DeliveryStatus; count: number }[]
+   worker: { last_poll_at: string | null; last_completed_at: string | null; last_batch_count: number; error_code: string | null }
+   note: string
+ }
+@@ -35,8 +37,8 @@ function nullableTime(value: unknown): value is string | null { return value ===
+ function status(value: unknown): value is DeliveryStatus {
+   return typeof value === 'string' && (DELIVERY_STATUSES as readonly string[]).includes(value)
+ }
+-function step(value: unknown): value is string {
+-  return typeof value === 'string' && /^(?:crm_(?:contact|tags|note|task)|email_(?:[1-9]|10|configuration))$/.test(value)
++function step(value: unknown): value is DeliveryStep {
++  return typeof value === 'string' && /^(?:crm_(?:contact|tags|note|task)|email_(?:[1-9]|10|configuration)|customer_email)$/.test(value)
+ }
+ function safeCode(value: unknown): value is string | null {
+   return value === null || typeof value === 'string' && /^[a-z\d_]{1,120}$/.test(value)
+diff --git a/apps/dashboard/src/locale/en/lead_delivery.json b/apps/dashboard/src/locale/en/lead_delivery.json
+index 6401558182a7bcf65d8fda9123f3ed5230f497f1..f62b3281d9cdffa00677eecaec685748164a67de 100644
+--- a/apps/dashboard/src/locale/en/lead_delivery.json
++++ b/apps/dashboard/src/locale/en/lead_delivery.json
+@@ -52,6 +52,7 @@
+     "crm_tags": "CRM tags",
+     "crm_note": "CRM note",
+     "crm_task": "CRM follow-up task",
++    "customer_email": "Customer confirmation email",
+     "email": "Notification recipient {{number}}",
+     "email_configuration": "Notification configuration"
+   },
+diff --git a/apps/dashboard/src/locale/es/lead_delivery.json b/apps/dashboard/src/locale/es/lead_delivery.json
+index 588cd3a419236bb6f41a4f9607722b2cbadac14c..84d7a1e940947c4927ccee964d54236579627ab4 100644
+--- a/apps/dashboard/src/locale/es/lead_delivery.json
++++ b/apps/dashboard/src/locale/es/lead_delivery.json
+@@ -52,6 +52,7 @@
+     "crm_tags": "Etiquetas del CRM",
+     "crm_note": "Nota del CRM",
+     "crm_task": "Tarea de seguimiento en CRM",
++    "customer_email": "Correo de confirmación al cliente",
+     "email": "Destinatario de notificación {{number}}",
+     "email_configuration": "Configuración de notificaciones"
+   },
+diff --git a/tests/lead-delivery.test.cjs b/tests/lead-delivery.test.cjs
+index 2c0dfc3eae5b247e30cd7d10e1170c03c822a83e..8e17557c0152baee9f0f43bf35706da578613363 100644
+--- a/tests/lead-delivery.test.cjs
++++ b/tests/lead-delivery.test.cjs
+@@ -56,6 +56,27 @@ test('summary is a read-only request with cancellation and reconciled recorded c
+   assert.equal(loaded.calls[0][2].signal, signal)
+ })
+ 
++test('customer confirmation emails are valid summary, queue and inquiry-detail jobs', async () => {
++  const data = summary()
++  data.by_step[0].step = 'customer_email'
++  assert.equal(await load(data).getDeliverySummary(), data)
++  const customer = job({ step: 'customer_email' })
++  const detail = { lead_id: leadId, tracked: true, enabled: true, jobs: [customer], note: null }
++  assert.equal(await load(detail).getLeadDelivery(leadId), detail)
++  const queued = queue([customer])
++  assert.equal(await load(queued).getDeliveryQueue({}), queued)
++  for (const step of ['customer_sms', 'customer_email_extra']) {
++    assert.equal(load().isDeliveryJob(job({ step })), false)
++    const unknown = clone(data); unknown.by_step[0].step = step
++    assert.equal(load().isDeliverySummary(unknown), false)
++  }
++  for (const language of ['en', 'es']) {
++    const copy = JSON.parse(fs.readFileSync(path.resolve(__dirname, `../apps/dashboard/src/locale/${language}/lead_delivery.json`), 'utf8'))
++    assert.equal(typeof copy.steps.customer_email, 'string')
++    assert.ok(copy.steps.customer_email.length > 0)
++  }
++})
++
+ test('genuine empty tracking is accepted, while missing or inconsistent reports are unavailable', async () => {
+   const empty = summary()
+   empty.total_jobs = 0; empty.tracked_leads = 0; empty.status_counts.pending = 0; empty.by_step = []

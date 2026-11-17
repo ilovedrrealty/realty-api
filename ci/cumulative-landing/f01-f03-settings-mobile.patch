@@ -1,0 +1,50 @@
+diff --git a/apps/dashboard/src/locale/en/settings.json b/apps/dashboard/src/locale/en/settings.json
+index 40d1753aa70710a11bc803df21e9c0eb0edf0bb2..91b63624c8e9aa8f0dd2e56cd6eba342cc273009 100644
+--- a/apps/dashboard/src/locale/en/settings.json
++++ b/apps/dashboard/src/locale/en/settings.json
+@@ -2,7 +2,8 @@
+   "tabs": {
+     "profile": "Profile",
+     "security": "Security",
+-    "notifications": "Notifications"
++    "notifications": "Notifications",
++    "connections": "Connections"
+   },
+   "profile": {
+     "title": "Profile",
+diff --git a/apps/dashboard/src/locale/es/settings.json b/apps/dashboard/src/locale/es/settings.json
+index aafddff190f63e2ba23d6d03b536091aa9ba9aa3..200b9936a9f70f5a4013a1abbd8e0be88955bb15 100644
+--- a/apps/dashboard/src/locale/es/settings.json
++++ b/apps/dashboard/src/locale/es/settings.json
+@@ -2,7 +2,8 @@
+   "tabs": {
+     "profile": "Perfil",
+     "security": "Seguridad",
+-    "notifications": "Notificaciones"
++    "notifications": "Notificaciones",
++    "connections": "Conexiones"
+   },
+   "profile": {
+     "title": "Perfil",
+diff --git a/apps/dashboard/src/pages/Settings.tsx b/apps/dashboard/src/pages/Settings.tsx
+index fc91f42cdbc98f659377bbdfea2464d89fe42ef6..f8d6812ede76e3d559e610f59bde9b0c740b8dec 100644
+--- a/apps/dashboard/src/pages/Settings.tsx
++++ b/apps/dashboard/src/pages/Settings.tsx
+@@ -80,7 +80,7 @@ export function UserSettings({ user, role, tone, onUserUpdate, initialTab }: { u
+     { id: 'profile',       label: t('tabs.profile')       },
+     { id: 'security',      label: t('tabs.security')      },
+     { id: 'notifications', label: t('tabs.notifications') },
+-    ...(role === 'Realtor' || role === 'Owner' ? [{ id: 'connections' as const, label: 'Connections' }] : []),
++    ...(role === 'Realtor' || role === 'Owner' ? [{ id: 'connections' as const, label: t('tabs.connections') }] : []),
+   ]
+ 
+   // Profile state
+@@ -373,7 +373,7 @@ export function UserSettings({ user, role, tone, onUserUpdate, initialTab }: { u
+       )}
+ 
+       {/* Tab bar */}
+-      <div className="flex gap-1.5 p-1 bg-paper border border-line rounded-xl w-fit">
++      <div className="flex max-w-full flex-wrap gap-1.5 p-1 bg-paper border border-line rounded-xl w-fit">
+         {TABS.map(tb => (
+           <button
+             key={tb.id}
