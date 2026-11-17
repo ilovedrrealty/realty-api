@@ -1,8 +1,8 @@
-name: Isolated private referral Dashboard rehearsal
+name: Isolated neighborhood editorial and public comparison browser rehearsal
 
 on:
   push:
-    branches: [codex-ci-private-referral-browser-20261117]
+    branches: [codex-ci-neighborhood-comparison-browser-20261117]
 
 permissions:
   contents: read
@@ -31,17 +31,17 @@ jobs:
           path: browser-ops
           fetch-depth: 2
           persist-credentials: false
-      - name: Read exact private referral frontend
+      - name: Read exact neighborhood comparison frontend
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: ilovedrrealty/iLoveDRRealty
-          ref: c082078e901a57e497fb9ff9760c22f9b1bfb989
+          ref: f332f37ca1a7c17283071c551792985af232e287
           path: frontend-base
           persist-credentials: false
       - name: Read exact backend application
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 0882f3c3d87aea03917fb8e155b9ec8ecc5cc7b8
+          ref: e03c968bed233362de4ec69c76c4432af184d341
           path: browser-backend
           persist-credentials: false
       - name: Read accepted migration dependency recipe
@@ -50,7 +50,13 @@ jobs:
           ref: c193a925ba57ea2d67ea48c44e5262817885c8a2
           path: migration-relay
           persist-credentials: false
-      - name: Verify private referrals through the normal Services dashboards
+      - name: Read accepted static-export fixture tools
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: d49acd7d48e92dac6d06b1678570bc137fb6a5ba
+          path: landing-relay
+          persist-credentials: false
+      - name: Verify normal Editorial publication and public mobile comparison
         shell: bash
         run: |
           set -euo pipefail
@@ -59,4 +65,4 @@ jobs:
           exec bash --noprofile --norc "$GITHUB_WORKSPACE/browser-ops/ci/admin-manual-share/run-hosted-admin-manual-share.sh" \
             "$GITHUB_WORKSPACE/browser-ops" \
             "$GITHUB_WORKSPACE/frontend-base" "$GITHUB_WORKSPACE/browser-backend" \
-            "$GITHUB_WORKSPACE/migration-relay"
+            "$GITHUB_WORKSPACE/migration-relay" "$GITHUB_WORKSPACE/landing-relay"

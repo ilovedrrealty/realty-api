@@ -6,48 +6,48 @@ set -euo pipefail
 die() { printf 'BROWSER_REHEARSAL_REFUSED %s\n' "$1" >&2; exit 1; }
 bounded() { timeout --kill-after=8s "$@"; }
 
-[[ $# == 4 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api ]] || die CI_REQUIRED
+[[ $# == 5 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api ]] || die CI_REQUIRED
 [[ ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 && ${GITHUB_RUN_ATTEMPT:-} == 1 ]] || die STANDARD_LINUX_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-private-referral-browser-20261117 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
+[[ ${GITHUB_REF:-} == refs/heads/codex-ci-neighborhood-comparison-browser-20261117 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 
-ops="$1"; frontend="$2"; backend="$3"; migration="$4"
+ops="$1"; frontend="$2"; backend="$3"; migration="$4"; landing_relay="$5"
 [[ "$ops" == "$GITHUB_WORKSPACE/browser-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-base" &&
-   "$backend" == "$GITHUB_WORKSPACE/browser-backend" && "$migration" == "$GITHUB_WORKSPACE/migration-relay" ]] ||
+   "$backend" == "$GITHUB_WORKSPACE/browser-backend" && "$migration" == "$GITHUB_WORKSPACE/migration-relay" &&
+   "$landing_relay" == "$GITHUB_WORKSPACE/landing-relay" ]] ||
   die CHECKOUT_PATHS_REQUIRED
-for checkout in "$ops" "$frontend" "$backend" "$migration"; do
+for checkout in "$ops" "$frontend" "$backend" "$migration" "$landing_relay"; do
   checkout_status=$(git -C "$checkout" status --porcelain=v1 --untracked-files=all) || die CLEAN_CHECKOUT_REQUIRED
   [[ $(realpath "$checkout") == "$checkout" && -z "$checkout_status" ]] || die CLEAN_CHECKOUT_REQUIRED
 done
-[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == a362e8e5fca92a25829bc77c5678167ff531b9d2 ]] ||
+[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == 2122b7ecee3c7745e4b8539a6b5143fd4bfec00a ]] ||
   die EXACT_OPERATIONS_PARENT_REQUIRED
 operations_delta=$(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) || die EXACT_OPERATIONS_DELTA_REQUIRED
-[[ "$operations_delta" == $'.github/workflows/admin-manual-share.yml\nci/admin-manual-share/run-hosted-admin-manual-share.sh\nci/admin-manual-share/run-private-referral.mjs\nci/admin-manual-share/serve_private_referral_fixture.py' ]] ||
+[[ "$operations_delta" == $'.github/workflows/admin-manual-share.yml\nci/admin-manual-share/run-hosted-admin-manual-share.sh\nci/admin-manual-share/run-neighborhood-comparison.mjs\nci/admin-manual-share/serve_neighborhood_comparison_fixture.py' ]] ||
   die EXACT_OPERATIONS_DELTA_REQUIRED
-frontend_commit=c082078e901a57e497fb9ff9760c22f9b1bfb989
-frontend_tree=8f0021246c6b380e15eef126cf25faae54faeee1
-frontend_paths=539
-frontend_service_test_sha=dace88cbcf7df43b159c15605a0a716e0d6c61496895149dd9177b8e3eae82d4
-frontend_rebook_test_sha=d50c340c29b872c205d636c000a6047d8bcf15865fdc5fc9e36a53314c6fa37a
-frontend_favorites_test_sha=e058fa2fb7f423f13b7bda7e91abd65afe16177e6d04c86fa738f0b0c25b2c6e
-frontend_test_count=34
-backend_commit=0882f3c3d87aea03917fb8e155b9ec8ecc5cc7b8
-backend_tree=32cc38f5d4331c0daf5b629e01f0e5c51833ea93
+frontend_commit=f332f37ca1a7c17283071c551792985af232e287
+frontend_tree=87bfbc79bdbaa0dd9d0f1bd7d1483e8b5406f7e0
+frontend_paths=544
+frontend_admin_test_sha=1d59cb6e017f2ba3f4c69578c254013c38df8f5209f34a12fec1e135b7653557
+frontend_public_test_sha=8affe09be9f007208ca5e44efc0d2e4a84abe9151fdc1c47cb76d24512b5c2a2
+frontend_test_count=14
+backend_commit=e03c968bed233362de4ec69c76c4432af184d341
+backend_tree=f5e7ba61c17de994f1204b26f307fefe2afc7e10
 migration_head=e12ac7d49f03
-browser_failure_stages='fixture,auth,scope,sponsor_services,sponsor_request,sponsor_accept,sponsor_referrals,'\
-'sponsor_candidate,sponsor_suggestion,owner_services,owner_request,owner_review,owner_offer,'\
-'target_services,target_offer,target_accept,target_quote,outsider_denied,revoke'
+browser_failure_stages='fixture,auth,scope,first_form,first_draft,first_review,first_publish,second_form,second_draft,'\
+'second_review,second_publish,public_index_english,public_compare_english,public_compare_spanish,'\
+'listing_handoff,new_draft,withdraw,public_withdrawn'
 browser_checks=(
-  provider_accepts_original_request_from_services
-  accepted_provider_suggests_reviewed_named_target
-  manager_explicitly_approves_only_selected_target
-  target_mobile_offer_contains_minimal_fields
-  accepted_target_opens_normal_quote_scope
-  other_accounts_and_revoked_offers_denied
+  admin_only_two_bilingual_staged_neighborhoods
+  reviewed_sources_and_explicit_publication
+  public_next_english_two_area_comparison_390px
+  spanish_facts_dates_sources_and_unknowns
+  exact_location_listing_filter
+  private_draft_keeps_published_revision
+  unpublish_removes_only_withdrawn_neighborhood
   actual_loopback_only_without_outbound
 )
 [[ "$frontend_commit" =~ ^[a-f0-9]{40}$ && "$frontend_tree" =~ ^[a-f0-9]{40}$ &&
-   "$frontend_service_test_sha" =~ ^[a-f0-9]{64}$ && "$frontend_rebook_test_sha" =~ ^[a-f0-9]{64}$ &&
-   "$frontend_favorites_test_sha" =~ ^[a-f0-9]{64}$ &&
+   "$frontend_admin_test_sha" =~ ^[a-f0-9]{64}$ && "$frontend_public_test_sha" =~ ^[a-f0-9]{64}$ &&
    "$frontend_paths" =~ ^[1-9][0-9]{2,3}$ &&
    "$frontend_test_count" =~ ^[1-9][0-9]?$ ]] || die FRONTEND_PINS_INCOMPLETE
 [[ "$browser_failure_stages" =~ ^[a-z][a-z0-9_]*(,[a-z][a-z0-9_]*)+$ ]] || die BROWSER_PINS_INCOMPLETE
@@ -57,11 +57,13 @@ browser_checks=(
    $(git -C "$backend" rev-parse 'HEAD^{tree}') == "$backend_tree" ]] || die EXACT_BACKEND_REQUIRED
 [[ $(git -C "$migration" rev-parse HEAD) == c193a925ba57ea2d67ea48c44e5262817885c8a2 ]] ||
   die EXACT_ACCEPTED_PYTHON_BUILD_REQUIRED
+[[ $(git -C "$landing_relay" rev-parse HEAD) == d49acd7d48e92dac6d06b1678570bc137fb6a5ba ]] ||
+  die EXACT_ACCEPTED_LANDING_TOOLS_REQUIRED
 
 tools="$ops/ci/admin-manual-share"
 dockerfile="$migration/ci/migration/services163.Dockerfile"
-for file in serve_admin_share_fixture.py serve_dashboard_fixture.mjs serve_reviewed_service_matches_fixture.py \
-  serve_private_referral_fixture.py run-private-referral.mjs; do
+for file in serve_admin_share_fixture.py serve_dashboard_fixture.mjs serve_neighborhood_comparison_fixture.py \
+  run-neighborhood-comparison.mjs; do
   [[ -f "$tools/$file" && ! -L "$tools/$file" ]] || die EXACT_FIXTURE_SOURCE_REQUIRED
 done
 printf '%s  %s\n' e546d8c5668b87ef28e604107bbb330e6f4b3873cf0208b4d24ca378bd0851f9 "$dockerfile" \
@@ -135,9 +137,9 @@ cleanup() {
 }
 trap cleanup EXIT
 
-mkdir "$state/frontend-work" "$state/fixtures" "$state/browser-run" "$state/python-context"
+mkdir "$state/frontend-work" "$state/fixtures" "$state/browser-run" "$state/python-context" "$state/landing-run"
 cp "$backend/requirements.txt" "$state/python-context/requirements.txt"
-cp "$tools/run-private-referral.mjs" "$state/browser-run/"
+cp "$tools/run-neighborhood-comparison.mjs" "$state/browser-run/"
 
 # Public, pinned dependency preparation. No app or browser process is running yet.
 for image in "$node_image" "$python_image" "$postgres_image" "$browser_image"; do
@@ -169,9 +171,9 @@ verify_frontend_files || die EXACT_ARCHIVED_FRONTEND_REQUIRED
 printf '%s  %s\n' \
   8df3c4c580c65694bc727488fc0ec02d88ab1577e5fa16c509f4897b58e60f33 "$state/frontend-work/package-lock.json" \
   1126aeb69e32b34394cca03ac440848f7b88b339042496cb6722a1781a204337 "$state/frontend-work/apps/dashboard/package.json" \
-  "$frontend_service_test_sha" "$state/frontend-work/tests/service-workflow.test.cjs" \
-  "$frontend_rebook_test_sha" "$state/frontend-work/tests/service-rebook.test.cjs" \
-  "$frontend_favorites_test_sha" "$state/frontend-work/tests/service-favorites.test.cjs" \
+  45893e6dfebaad4d2e73f7e7d6b26f176883bc1ba8c8dc025f188cc1b4d12344 "$state/frontend-work/apps/landing/package.json" \
+  "$frontend_admin_test_sha" "$state/frontend-work/tests/editorial-admin.test.cjs" \
+  "$frontend_public_test_sha" "$state/frontend-work/tests/public-editorial.test.cjs" \
   | sha256sum --check --status || die EXACT_PACKAGE_AND_TEST_PINS_REQUIRED
 
 prepare=(--label "$label=$run_key" --user "$uids" --read-only --cap-drop ALL --security-opt no-new-privileges:true
@@ -213,11 +215,11 @@ elif re.search(rb'(?m)^npm (?:error|ERR!) network(?:[ \t\r]|$)', tail):
     summary = 'npm_network_summary'
 else:
     summary = 'unclassified_install_failure'
-print(f'PRIVATE_REFERRAL_INSTALL native={native} summary={summary} codes={codes}')
+print(f'NEIGHBORHOOD_COMPARE_INSTALL native={native} summary={summary} codes={codes}')
 PY
   die LOCKED_FRONTEND_INSTALL_FAILED
 fi
-printf 'PRIVATE_REFERRAL_INSTALL native=0 summary=success codes=none\n'
+printf 'NEIGHBORHOOD_COMPARE_INSTALL native=0 summary=success codes=none\n'
 verify_frontend_files || die INSTALLED_FRONTEND_SOURCE_CHANGED
 if ! bounded 360s docker run "${prepare[@]}" --network none --workdir /work \
   --mount "type=bind,src=$state/frontend-work,dst=/work" "$node_image" \
@@ -226,7 +228,7 @@ if ! bounded 360s docker run "${prepare[@]}" --network none --workdir /work \
   npm_config_update_notifier=false npm_config_audit=false npm_config_fund=false \
   VITE_API_URL=http://127.0.0.1:8000 VITE_LANDING_URL=http://127.0.0.1:8917 \
   VITE_GOOGLE_CLIENT_ID=synthetic-ci.apps.googleusercontent.com sh -c 'node --test --test-reporter=tap \
-    tests/service-workflow.test.cjs tests/service-rebook.test.cjs tests/service-favorites.test.cjs && npm run build --workspace=dashboard' \
+    tests/editorial-admin.test.cjs tests/public-editorial.test.cjs && npm run build --workspace=dashboard' \
     >"$state/dashboard-build.log" 2>&1; then
   python3 -I -B - "$state/dashboard-build.log" <<'PY'
 import re
@@ -243,7 +245,7 @@ PY
   die DASHBOARD_BUILD_FAILED
 fi
 
-python3 -I -B - "$state/dashboard-build.log" "$frontend_test_count" <<'PY' || die PRIVATE_REFERRAL_FRONTEND_RESULT_REQUIRED
+python3 -I -B - "$state/dashboard-build.log" "$frontend_test_count" <<'PY' || die NEIGHBORHOOD_FRONTEND_RESULT_REQUIRED
 import sys
 from pathlib import Path
 path = Path(sys.argv[1])
@@ -252,9 +254,67 @@ count = int(sys.argv[2])
 lines = path.read_bytes().splitlines()
 for row in (f'# tests {count}'.encode(), f'# pass {count}'.encode(), b'# fail 0', b'# skipped 0', b'# todo 0'):
     assert lines.count(row) == 1
-print(f'PRIVATE_REFERRAL_FRONTEND_CONTRACTS native=0 tests={count} pass={count} typecheck=success build=success')
+print(f'NEIGHBORHOOD_FRONTEND_CONTRACTS native=0 tests={count} pass={count} typecheck=success build=success')
 PY
 verify_frontend_files || die FRONTEND_SOURCE_CHANGED
+
+landing_fixture="$landing_relay/ci/frontend"
+landing_script="$landing_relay/ci/cumulative-landing/landing.cjs"
+landing_server="$landing_relay/ci/browser/serve_landing_fixture.mjs"
+printf '%s  %s\n' \
+  d74afd5e90685485a5a8edb64fa72288b284b1676f3a9db8f5293423479c8842 "$landing_script" \
+  a166dc60598e76b7fdcc3fe2aa5253bc56952b48fd99e4cab5eb4a24523a548e "$landing_fixture/landing_fixture.cjs" \
+  0a1abbdbd65a82e67ded20a0603a21fc9321a1b1aa5fd83dbccf1c049ffc4110 "$landing_fixture/landing_fixture.test.cjs" \
+  d56bafd5da3b3e54d45b98764851a1d3a042be938c8a4c378e6acadf436eb80e "$landing_server" \
+  | sha256sum --check --status || die ACCEPTED_LANDING_SOURCE_REQUIRED
+# Keep the accepted offline input/build harness. Its API port is also used by
+# the real isolated API at browser time, in a different network namespace.
+python3 -I -B - "$landing_script" "$state/landing-run/landing.cjs" <<'PY' || die LANDING_FIXTURE_PORT_BIND_REQUIRED
+from pathlib import Path
+import sys
+source, copy = map(Path, sys.argv[1:])
+data = source.read_bytes()
+for before, after in (
+    (b"NEXT_PUBLIC_API_URL: 'http://127.0.0.1:8917'", b"NEXT_PUBLIC_API_URL: 'http://127.0.0.1:8000'"),
+    (b"await startFixture(8917)", b"await startFixture(8000)"),
+):
+    assert data.count(before) == 1
+    data = data.replace(before, after, 1)
+with copy.open("xb") as stream:
+    stream.write(data)
+PY
+landing_exit=0
+bounded 690s docker run "${prepare[@]}" --network none --workdir /work \
+  --mount "type=bind,src=$state/frontend-work,dst=/work" \
+  --mount "type=bind,src=$landing_fixture,dst=/fixture,readonly" \
+  --mount "type=bind,src=$state/landing-run,dst=/rehearsal,readonly" "$node_image" \
+  env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp CI=true node /rehearsal/landing.cjs \
+  >"$state/landing.log" 2>&1 || landing_exit=$?
+python3 -I -B - "$state/landing.log" "$state/frontend-work/apps/landing/out" "$landing_exit" <<'PY' || die NEIGHBORHOOD_LANDING_EXPORT_REQUIRED
+from pathlib import Path
+import json, sys
+log, output = map(Path, sys.argv[1:3])
+assert log.stat().st_size <= 8 * 1024 * 1024
+lines = log.read_bytes().splitlines()
+names = {"fixture_contract", "landing_declared_full_build_synthetic_input",
+         "landing_full_strict_typecheck_with_generated_routes"}
+prefix = b"CUMULATIVE_LANDING_PHASE "
+phases = [json.loads(line[len(prefix):]) for line in lines if line.startswith(prefix)]
+for phase in phases:
+    assert phase["name"] in names and type(phase["native_exit"]) in (int, type(None))
+    assert phase["native_exit"] is None or 0 <= phase["native_exit"] <= 255
+    print(f'NEIGHBORHOOD_NEXT_PHASE stage={phase["name"]} native={phase["native_exit"]}')
+assert sys.argv[3] == "0"
+assert len(phases) == len(names) and {phase["name"] for phase in phases} == names
+assert all(phase["native_exit"] == 0 and phase["child_group_absent"] == True for phase in phases)
+assert sum(line.startswith(b"CUMULATIVE_LANDING_RESULT ") for line in lines) == 1
+for route in ("local-guides/index.html", "local-guides/compare/index.html", "search/index.html"):
+    path = output / route
+    assert path.is_file() and not path.is_symlink()
+    assert b"D01_PRIVATE_EDITORIAL_NOTE" not in path.read_bytes()
+print("NEIGHBORHOOD_NEXT_EXPORT native=0 compare=static guides=static search=static typecheck=success")
+PY
+verify_frontend_files || die LANDING_BUILD_SOURCE_CHANGED
 
 python3 -I -B - "$state/frontend-work" "$state/browser-run" <<'PY'
 import base64, hashlib, io, json, tarfile, urllib.request
@@ -318,23 +378,28 @@ runtime=(--label "$label=$run_key" --network "container:$pg" --user "$uids" --re
 
 api=$(bounded 25s docker create "${runtime[@]}" --memory 2g --memory-swap 2g \
   --tmpfs /tmp:rw,exec,size=128m --env "ILDR_BROWSER_CI_NONCE=$nonce" \
-  --env "ILDR_REFERRAL_APP_COMMIT=$backend_commit" --env "ILDR_REFERRAL_APP_TREE=$backend_tree" \
-  --env "ILDR_REFERRAL_MIGRATION=$migration_head" \
+  --env "ILDR_NEIGHBORHOOD_APP_COMMIT=$backend_commit" --env "ILDR_NEIGHBORHOOD_APP_TREE=$backend_tree" \
+  --env "ILDR_NEIGHBORHOOD_MIGRATION=$migration_head" \
   --mount "type=bind,src=$backend,dst=/application,readonly" \
   --mount "type=bind,src=$tools,dst=/tools,readonly" \
   --mount "type=bind,src=$state/fixtures,dst=/browser-fixtures" \
-  "$app_image" /usr/local/bin/python -I -B /tools/serve_private_referral_fixture.py) || die API_CREATE_FAILED
+  "$app_image" /usr/local/bin/python -I -B /tools/serve_neighborhood_comparison_fixture.py) || die API_CREATE_FAILED
 owned "$api" && bounded 25s docker start "$api" >/dev/null || die API_START_FAILED
 dashboard=$(bounded 25s docker create "${runtime[@]}" --memory 512m --memory-swap 512m \
   --mount "type=bind,src=$state/frontend-work/apps/dashboard/dist,dst=/dashboard-dist,readonly" \
   --mount "type=bind,src=$tools,dst=/tools,readonly" \
   "$node_image" node /tools/serve_dashboard_fixture.mjs) || die DASHBOARD_CREATE_FAILED
 owned "$dashboard" && bounded 25s docker start "$dashboard" >/dev/null || die DASHBOARD_START_FAILED
+landing=$(bounded 25s docker create "${runtime[@]}" --memory 512m --memory-swap 512m \
+  --mount "type=bind,src=$state/frontend-work/apps/landing/out,dst=/landing-dist,readonly" \
+  --mount "type=bind,src=$landing_server,dst=/serve-landing.mjs,readonly" \
+  "$node_image" node /serve-landing.mjs) || die LANDING_CREATE_FAILED
+owned "$landing" && bounded 25s docker start "$landing" >/dev/null || die LANDING_START_FAILED
 
 ready=0
 for ((attempt=0; attempt<90; attempt++)); do
   if [[ -s "$state/fixtures/fixtures.json" ]] && bounded 4s docker exec "$api" /usr/local/bin/python -I -B -c \
-    'from urllib.request import urlopen; assert all(urlopen(url,timeout=1).status==200 for url in ("http://127.0.0.1:8000/health","http://127.0.0.1:4175/"))' >/dev/null 2>&1; then ready=1; break; fi
+    'from urllib.request import urlopen; assert all(urlopen(url,timeout=1).status==200 for url in ("http://127.0.0.1:8000/health","http://127.0.0.1:4175/","http://127.0.0.1:8917/local-guides/compare/"))' >/dev/null 2>&1; then ready=1; break; fi
   if [[ $(bounded 5s docker inspect --format '{{.State.Running}}' "$api") != true ]]; then
     if bounded 5s docker logs --tail 120 "$api" >"$state/api-start.log" 2>&1; then
       python3 -I -B - "$state/api-start.log" <<'PY'
@@ -347,7 +412,7 @@ assert len(reports)<=1
 if reports:
     value=json.loads(reports[0]); assert set(value)=={'stage','error_type','fixture_line','sqlstate'}
     assert value['stage'] in {'checkout','claim_database','configure_application','load_application','bootstrap_database',
-        'apply_alembic','seed_accounts','seed_lead','seed_service_matching','seed_referral',
+        'apply_alembic','seed_accounts','seed_lead','seed_neighborhood_listings',
         'write_fixture','serve_application'}
     assert re.fullmatch(r'[A-Za-z][A-Za-z0-9_]{0,62}',value['error_type'])
     assert value['fixture_line'] is None or type(value['fixture_line']) is int and 0<value['fixture_line']<=1000
@@ -366,7 +431,7 @@ browser=$(bounded 25s docker create "${runtime[@]}" --memory 2g --memory-swap 2g
   --env PLAYWRIGHT_BROWSERS_PATH=/ms-playwright --env ILDR_BROWSER_FIXTURES=/browser-fixtures/fixtures.json \
   --mount "type=bind,src=$state/browser-run,dst=/rehearsal,readonly" \
   --mount "type=bind,src=$state/fixtures,dst=/browser-fixtures,readonly" \
-  "$browser_image" node /rehearsal/run-private-referral.mjs) || die BROWSER_CREATE_FAILED
+  "$browser_image" node /rehearsal/run-neighborhood-comparison.mjs) || die BROWSER_CREATE_FAILED
 owned "$browser" || die OWNED_BROWSER_REQUIRED
 client_exit=0
 bounded 300s docker start --attach "$browser" >"$state/browser.log" 2>&1 || client_exit=$?
@@ -374,7 +439,7 @@ container_state=$(bounded 15s docker inspect --format '{{.State.ExitCode}} {{.St
 [[ "$container_state" =~ ^[0-9]+\ (true|false)\ (true|false)$ ]] || die BROWSER_NATIVE_STATE_REQUIRED
 printf 'BROWSER_REHEARSAL_NATIVE client=%s state=%s\n' "$client_exit" "$container_state"
 
-python3 -I -B - "$state/browser.log" "$browser_failure_stages" "${browser_checks[@]}" <<'PY' || die PRIVATE_REFERRAL_BROWSER_RESULT_REQUIRED
+python3 -I -B - "$state/browser.log" "$browser_failure_stages" "${browser_checks[@]}" <<'PY' || die NEIGHBORHOOD_BROWSER_RESULT_REQUIRED
 from pathlib import Path
 import json
 import re
@@ -384,16 +449,16 @@ path = Path(sys.argv[1])
 assert path.stat().st_size <= 131072
 lines = path.read_bytes().splitlines()
 allowed_stages = set(sys.argv[2].split(','))
-failure = b'PRIVATE_REFERRAL_BROWSER_FAILURE '
+failure = b'NEIGHBORHOOD_BROWSER_FAILURE '
 failures = [line[len(failure):] for line in lines if line.startswith(failure)]
 assert len(failures) <= 1
 if failures:
-    match = re.fullmatch(rb'([a-z][a-z0-9_]{0,38}) ([A-Z][A-Z0-9_]{0,44})', failures[0])
+    match = re.fullmatch(rb'([a-z][a-z0-9_]{0,38}) ([A-Z][A-Z0-9_]{0,52})(?: status=[1-5][0-9]{2})?', failures[0])
     assert match is not None and match[1].decode('ascii') in allowed_stages
     print(failure.decode('ascii') + failures[0].decode('ascii'))
     raise SystemExit(1)
 
-prefix = b'PRIVATE_REFERRAL_BROWSER '
+prefix = b'NEIGHBORHOOD_BROWSER '
 matches = [line[len(prefix):] for line in lines if line.startswith(prefix)]
 assert len(matches) == 1 and len(matches[0]) <= 8192
 value = json.loads(matches[0])
@@ -409,5 +474,5 @@ api_state=$(bounded 15s docker inspect --format '{{.State.ExitCode}} {{.State.Ru
 printf 'BROWSER_API_FIXTURE_SHUTDOWN state=%s login_file=absent\n' "$api_state"
 backend_status=$(git -C "$backend" status --porcelain=v1 --untracked-files=all) || die API_SOURCE_CHANGED
 [[ -z "$backend_status" ]] || die API_SOURCE_CHANGED
-printf 'PRIVATE_REFERRAL_ACCEPTANCE operations=%s frontend=%s frontend_tree=%s backend=%s backend_tree=%s migration=%s postgres_version_num=%s run=%s attempt=1\n' \
+printf 'NEIGHBORHOOD_COMPARISON_ACCEPTANCE operations=%s frontend=%s frontend_tree=%s backend=%s backend_tree=%s migration=%s postgres_version_num=%s run=%s attempt=1\n' \
   "$GITHUB_SHA" "$frontend_commit" "$frontend_tree" "$backend_commit" "$backend_tree" "$migration_head" "$postgres_version_num" "$GITHUB_RUN_ID"
