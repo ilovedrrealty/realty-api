@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     supabase_url: str = ""
     supabase_service_key: str = ""
     storage_bucket: str = "listing-images"
+    transaction_document_bucket: str = ""
     ghl_api_key: str = ""
     ghl_location_id: str = ""
     ghl_enabled: bool = False
