@@ -7,7 +7,7 @@ bounded() { timeout --kill-after=8s "$@"; }
 
 [[ ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 &&
-   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-integrated-release-native-20261117-v5 &&
+   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-integrated-release-native-20261117-v6 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_HOSTED_EVENT_REQUIRED
 
 ops="$GITHUB_WORKSPACE/rehearsal-ops"
@@ -25,7 +25,7 @@ for checkout in "$ops" "$backend" "$baseline" "$relay"; do
      ! -e "$checkout/.env" && ! -L "$checkout/.env" ]] || die CLEAN_CHECKOUT_REQUIRED
 done
 [[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" &&
-   $(git -C "$ops" rev-parse 'HEAD^') == 4e33466e0c66e76adf7c40fe893db15eab2bd72c ]] || die EXACT_OPERATIONS_REQUIRED
+   $(git -C "$ops" rev-parse 'HEAD^') == b9c51ea1512c9fc49c5047ecab11fcf11cb92342 ]] || die EXACT_OPERATIONS_REQUIRED
 operations_delta=$(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) || die EXACT_OPERATIONS_REQUIRED
 [[ "$operations_delta" == $'.github/workflows/transaction-room-native.yml\nci/transaction-room/rehearse.py\nci/transaction-room/run-hosted-native.sh' ]] ||
   die EXACT_OPERATIONS_REQUIRED
@@ -162,7 +162,7 @@ path = Path(sys.argv[1])
 mode, native = sys.argv[2:]
 raw = path.read_bytes() if path.stat().st_size <= 131072 else b""
 stages = (rb"(?:checkout|disposable_db|bootstrap|migrate_baseline|migrate_floorplans|catalog|restore_seed|tests|test_cleanup"
-          rb"|restore_(?:source|target)_(?:identity|catalog|state)|restore_(?:tables|counts|columns|constraints|indexes|triggers|views|grants|media))")
+          rb"|restore_(?:source|target)_(?:identity|catalog|state)|restore_(?:tables|counts|columns|constraints|constraint_deparse|indexes|triggers|views|grants|media))")
 pass_line = re.compile(rb"TRANSACTION_ROOM_NATIVE " + mode.encode() +
     rb" head=(?:[0-9a-f]{12}|none) private_tables=[0-9]{1,2} shape=(?:[0-9a-f]{64}|none) tests=[0-9]{1,2} pass=[0-9]{1,2}")
 error_line = re.compile(rb"TRANSACTION_ROOM_NATIVE_FAILURE " + mode.encode() + rb" stage=" + stages +
@@ -195,7 +195,8 @@ if native != "0" or len(safe) != 1 or not pass_line.fullmatch(safe[0]):
     raise SystemExit(1)
 if mode == "restore":
     restore_pass = re.compile(rb"INTEGRATED_FULL_ARCHIVE_RESTORE tables=[1-9][0-9]{1,3} "
-                              rb"schema_and_rows_sha256=[a-f0-9]{64} exact_floor_plans=2")
+                              rb"schema_and_rows_sha256=[a-f0-9]{64} exact_floor_plans=2 "
+                              rb"exact_check_deparse_normalizations=13")
     receipts = [line for line in lines if restore_pass.fullmatch(line)]
     assert len(receipts) == 1
     print(receipts[0].decode("ascii"))

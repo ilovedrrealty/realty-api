@@ -167,7 +167,7 @@ def check_test_schema_cleanup():
         check(cursor.fetchone() == (0,))
 
 
-def catalog(database, *, floorplans):
+def catalog(database, *, floorplans, require_raw_fingerprint=True):
     def require_catalog(condition, label, shape=None):
         if not condition and stage in {"restore_source_catalog", "restore_target_catalog"}:
             print(f"INTEGRATED_PRIVATE_CATALOG_FAILURE {stage} {label}" +
@@ -234,7 +234,8 @@ def catalog(database, *, floorplans):
     inherited = tuple([row for row in block if row[0] != FLOOR_PLAN_TABLE]
                       for block in (columns, checks, indexes)) + (triggers,)
     inherited_shape = sha256(json.dumps(inherited, separators=(",", ":")).encode()).hexdigest()
-    require_catalog(inherited_shape == BASELINE_SHAPE, "baseline_shape", inherited_shape)
+    if require_raw_fingerprint:
+        require_catalog(inherited_shape == BASELINE_SHAPE, "baseline_shape", inherited_shape)
     return sha256(json.dumps((columns, checks, indexes, triggers), separators=(",", ":")).encode()).hexdigest()
 
 
@@ -363,7 +364,10 @@ def full_archive_state(database):
             """SELECT table_name, ordinal_position, column_name, data_type, udt_name,
                       is_nullable, column_default FROM information_schema.columns
                WHERE table_schema='public' ORDER BY table_name,ordinal_position""",
-            """SELECT rel.relname, con.conname, pg_get_constraintdef(con.oid)
+            """SELECT rel.relname, con.conname, con.contype, con.convalidated, con.connoinherit,
+                      con.condeferrable, con.condeferred, pg_get_constraintdef(con.oid),
+                      CASE WHEN con.contype='c' THEN pg_get_constraintdef(con.oid, true)
+                           ELSE pg_get_constraintdef(con.oid) END
                FROM pg_constraint con JOIN pg_class rel ON rel.oid=con.conrelid
                JOIN pg_namespace ns ON ns.oid=rel.relnamespace WHERE ns.nspname='public'
                ORDER BY rel.relname,con.conname""",
@@ -391,11 +395,13 @@ def full_archive_state(database):
             check(len(payload) == byte_count and sha256(payload).hexdigest() == checksum)
             files.append((slot, checksum, byte_count, approved))
         check(files[0][1] != files[1][1])
+    raw_constraints = [(entry[:3], entry[-2]) for entry in definitions[1]]
+    constraints = [entry[:-2] + (entry[-1],) for entry in definitions[1]]
     return {
-        "tables": tables, "counts": counts, "columns": definitions[0], "constraints": definitions[1],
+        "tables": tables, "counts": counts, "columns": definitions[0], "constraints": constraints,
         "indexes": definitions[2], "triggers": definitions[3], "views": definitions[4],
         "grants": definitions[5], "media": files,
-    }
+    }, raw_constraints
 
 
 def verify_full_restore(nonce):
@@ -407,7 +413,7 @@ def verify_full_restore(nonce):
         check_database(database, nonce, RELEASE_HEAD)
         stage = f"restore_{label}_state"
         snapshots.append(full_archive_state(database))
-    source, restored = snapshots
+    (source, raw_source), (restored, raw_restored) = snapshots
     differing = [component for component in source if restored[component] != source[component]]
     for component in differing:
         expected, actual = source[component], restored[component]
@@ -424,12 +430,21 @@ def verify_full_restore(nonce):
               f"added={len(added)} object={object_name}")
     stage = f"restore_{differing[0]}" if differing else "restore_target_catalog"
     check(not differing)
+    # pg_dump reparses CHECK expressions. The same server's SQL deparser
+    # removes redundant parentheses for comparison; all other definitions
+    # and constraint metadata above still match exactly.
+    stage = "restore_constraint_deparse"
+    check([key for key, _ in raw_source] == [key for key, _ in raw_restored])
+    rewritten = [key for (key, before_ddl), (_, after_ddl) in zip(raw_source, raw_restored, strict=True)
+                 if before_ddl != after_ddl]
+    check(len(rewritten) == 13 and all(kind == "c" for _, _, kind in rewritten))
     for database, label in ((before, "source"), (after, "target")):
         stage = f"restore_{label}_catalog"
-        catalog(database, floorplans=True)
+        catalog(database, floorplans=True, require_raw_fingerprint=label == "source")
     tables = len(source["tables"])
     shape = sha256(json.dumps(source, separators=(",", ":")).encode()).hexdigest()
-    print(f"INTEGRATED_FULL_ARCHIVE_RESTORE tables={tables} schema_and_rows_sha256={shape} exact_floor_plans=2")
+    print(f"INTEGRATED_FULL_ARCHIVE_RESTORE tables={tables} schema_and_rows_sha256={shape} exact_floor_plans=2 "
+          f"exact_check_deparse_normalizations={len(rewritten)}")
 
 
 def run(mode, nonce, commit, tree):
