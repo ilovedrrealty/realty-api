@@ -41,6 +41,7 @@ class NewsletterTest(unittest.TestCase):
     def call(self, action, data):
         response = self.client.post(f"/newsletter/{action}", json=data)
         self.assertEqual(response.headers["cache-control"], "no-store")
+        self.assertEqual(response.headers["referrer-policy"], "no-referrer")
         return response
 
     def read(self):
