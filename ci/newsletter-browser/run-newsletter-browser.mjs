@@ -26,9 +26,32 @@ const checks = []
 const pageErrorEvidence = []
 let stage = 'fixture'
 let responseEvidence = null
+let bodyError = 'none'
 let browser
 const contexts = []
 const advance = name => { stage = name }
+
+async function readJson(response) {
+  let timer
+  try {
+    return await Promise.race([
+      response.json(),
+      new Promise((_, reject) => {
+        timer = setTimeout(() => reject(Object.assign(new Error('Body observer timed out'),
+          { code: 'BODY_OBSERVER_TIMEOUT' })), 15000)
+      }),
+    ])
+  } catch (error) {
+    bodyError = error?.code === 'BODY_OBSERVER_TIMEOUT' ? 'timeout'
+      : /Target.*closed|browser.*closed|context.*closed|page.*closed|has been closed/i.test(error?.message ?? '')
+        ? 'context_closed'
+        : /No resource with given identifier|not available|unavailable|No data found|could not load body/i.test(error?.message ?? '')
+          ? 'unavailable' : 'other'
+    throw error
+  } finally {
+    clearTimeout(timer)
+  }
+}
 
 async function links() {
   const path = '/browser-fixtures/mail-links.json'
@@ -55,9 +78,9 @@ async function links() {
 }
 
 async function db(context) {
-  const result = await context.request.get(API + '/__newsletter_fixture__/state')
+  const result = await context.request.get(API + '/__newsletter_fixture__/state', { timeout: 15000 })
   assert.equal(result.status(), 200)
-  const value = await result.json()
+  const value = await readJson(result)
   assert.deepEqual(Object.keys(value).sort(), ['customer_accounts', 'inquiries', 'leads', 'mail_count', 'rows'])
   assert.equal(value.customer_accounts, 0)
   assert.equal(value.leads, 0)
@@ -74,7 +97,7 @@ async function expectRow(context, lang, status, mailCount) {
   })
 }
 
-async function safeResponse(response, expectedCode, expectedBody) {
+function safeHeaders(response, expectedCode) {
   const originalStage = stage
   advance(originalStage + '_response_status')
   const headers = response.headers()
@@ -91,8 +114,14 @@ async function safeResponse(response, expectedCode, expectedBody) {
   assert.equal(headers['referrer-policy'], 'no-referrer')
   advance(originalStage + '_response_cookie')
   assert.equal(headers['set-cookie'], undefined)
+  advance(originalStage)
+}
+
+async function safeResponse(response, expectedCode, expectedBody) {
+  const originalStage = stage
+  safeHeaders(response, expectedCode)
   advance(originalStage + '_response_body')
-  assert.deepEqual(await response.json(), expectedBody)
+  assert.deepEqual(await readJson(response), expectedBody)
   advance(originalStage)
 }
 
@@ -293,8 +322,16 @@ try {
       action.page.waitForResponse(value => value.url() === API + '/newsletter/confirm'
         && value.request().method() === 'POST'), invalidated.click(),
     ])
-    await safeResponse(refused, 400, { detail: 'The newsletter link is invalid or has expired' })
+    // The real frontend intentionally handles 400 by status without consuming
+    // its JSON. Observe that browser contract, then prove the exact error body
+    // independently against the same synthetic refused action and token.
+    safeHeaders(refused, 400)
     await action.page.getByRole('alert').filter({ hasText: copy[lang].invalid }).waitFor()
+    const refusedJson = await action.context.request.post(API + '/newsletter/confirm', {
+      data: { token: new URL(delivery.confirm).hash.slice('#confirm='.length) },
+      headers: { Origin: ORIGIN }, timeout: 15000,
+    })
+    await safeResponse(refusedJson, 400, { detail: 'The newsletter link is invalid or has expired' })
     await expectRow(action.context, lang, 'unsubscribed', mailCount)
     assert.equal(action.events.posts.length, 5)
     assert.equal(action.events.external, 0)
@@ -318,9 +355,10 @@ try {
   assert.equal(checks.length, 16)
   console.log('NEWSLETTER_BROWSER_ACCEPTANCE ' + JSON.stringify({
     checks, viewport: 390, locales: ['en', 'es'], mail_messages: 2, live_messages: 0,
-    application: '7c0d04bdb5e2935f2dc7ddfd5fd3bfc75709d90b',
+    application: '365eef9962ab5938a614348d3cb95d8aea3c0ba1',
     frontend: '4d0a99e0bef524fe00eab5f2c0916d91768a4efb',
     authoritative_rows: 2, final_status: 'unsubscribed', action_external_requests: 0,
+    browser_stale_confirmation_body_observed: false, independent_stale_confirmation_json: true,
   }))
 } catch (error) {
   const kind = /^[A-Za-z][A-Za-z0-9_]{0,62}$/.test(error?.name ?? '') ? error.name : 'UnhandledError'
@@ -328,6 +366,7 @@ try {
   console.log('NEWSLETTER_BROWSER_FAILURE ' + JSON.stringify({
     stage, error_type: kind, driver_line: match ? Number(match[1]) : null, response: responseEvidence,
     page_errors: pageErrorEvidence,
+    body_error: bodyError,
   }))
   process.exitCode = 1
 } finally {

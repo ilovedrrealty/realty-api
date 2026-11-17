@@ -17,8 +17,8 @@ from urllib.parse import urlsplit
 from uuid import UUID
 
 
-APP_COMMIT = "7c0d04bdb5e2935f2dc7ddfd5fd3bfc75709d90b"
-APP_TREE = "8604c75d9556276f06567dde5e8a5eef5d4d730f"
+APP_COMMIT = "365eef9962ab5938a614348d3cb95d8aea3c0ba1"
+APP_TREE = "943027cc48a99c2dce1f70ab860e1ea8ecbf81ca"
 MIGRATION = "f92c8a74d31e"
 ORIGIN = "http://127.0.0.1:8917"
 API_PORT = 8918
