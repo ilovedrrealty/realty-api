@@ -1,8 +1,8 @@
-name: Isolated private stay arrival guide rehearsal
+name: Isolated assigned-client shared shortlists rehearsal
 
 on:
   push:
-    branches: [codex-ci-stay-arrival-browser-20261116-v2]
+    branches: [codex-ci-shared-shortlists-20261117]
 
 permissions:
   contents: read
@@ -31,17 +31,17 @@ jobs:
           path: browser-ops
           fetch-depth: 2
           persist-credentials: false
-      - name: Read exact arrival guide frontend
+      - name: Read exact shortlist frontend and login handoff
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: ilovedrrealty/iLoveDRRealty
-          ref: 84548f628880eb3b2fdae0027d2f2ddfedd52d2e
+          ref: b7daf320ceb1e813d5a4b07238bbf102b13a29b5
           path: frontend-base
           persist-credentials: false
       - name: Read exact backend application
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 170870dcfc844712ea2e5fcf5137d59939de8979
+          ref: 0ff004a479d2eac690918cf5993934646d91a8cf
           path: browser-backend
           persist-credentials: false
       - name: Read accepted migration dependency recipe
@@ -50,7 +50,7 @@ jobs:
           ref: c193a925ba57ea2d67ea48c44e5262817885c8a2
           path: migration-relay
           persist-credentials: false
-      - name: Verify private bilingual stay instructions and guest authorization
+      - name: Verify assigned-client collaboration and revocable signed-in links
         shell: bash
         run: |
           set -euo pipefail

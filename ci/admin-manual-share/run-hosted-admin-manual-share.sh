@@ -8,7 +8,7 @@ bounded() { timeout --kill-after=8s "$@"; }
 
 [[ $# == 4 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api ]] || die CI_REQUIRED
 [[ ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 && ${GITHUB_RUN_ATTEMPT:-} == 1 ]] || die STANDARD_LINUX_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-stay-arrival-browser-20261116-v2 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
+[[ ${GITHUB_REF:-} == refs/heads/codex-ci-shared-shortlists-20261117 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 
 ops="$1"; frontend="$2"; backend="$3"; migration="$4"
 [[ "$ops" == "$GITHUB_WORKSPACE/browser-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-base" &&
@@ -18,13 +18,13 @@ for checkout in "$ops" "$frontend" "$backend" "$migration"; do
   checkout_status=$(git -C "$checkout" status --porcelain=v1 --untracked-files=all) || die CLEAN_CHECKOUT_REQUIRED
   [[ $(realpath "$checkout") == "$checkout" && -z "$checkout_status" ]] || die CLEAN_CHECKOUT_REQUIRED
 done
-[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == 0d38718024deee0b0e1f0229a1c35849949c88e3 ]] ||
+[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == 85c9a5d3bb89be7c22af79ed305d18d8f1b4f1a0 ]] ||
   die EXACT_OPERATIONS_PARENT_REQUIRED
-frontend_commit=84548f628880eb3b2fdae0027d2f2ddfedd52d2e
-frontend_tree=d07de0a4d2e209ce174edf3db21f605a25aa92b7
-backend_commit=170870dcfc844712ea2e5fcf5137d59939de8979
-backend_tree=c38e3c556ff330e5395a7a08b017193d19bc710f
-migration_head=87e9c4a1d620
+frontend_commit=b7daf320ceb1e813d5a4b07238bbf102b13a29b5
+frontend_tree=9c21d0c1c506c52530455076a11bce7ea7c2ce68
+backend_commit=0ff004a479d2eac690918cf5993934646d91a8cf
+backend_tree=6efedf597cdf2ad41d18b758f36377d37331ea0d
+migration_head=9f65b4e21ca0
 [[ $(git -C "$frontend" rev-parse HEAD) == "$frontend_commit" &&
    $(git -C "$frontend" rev-parse 'HEAD^{tree}') == "$frontend_tree" ]] || die EXACT_FRONTEND_REQUIRED
 [[ $(git -C "$backend" rev-parse HEAD) == "$backend_commit" &&
@@ -34,7 +34,7 @@ migration_head=87e9c4a1d620
 
 tools="$ops/ci/admin-manual-share"
 dockerfile="$migration/ci/migration/services163.Dockerfile"
-for file in serve_admin_share_fixture.py serve_dashboard_fixture.mjs serve_stay_arrival_fixture.py run-stay-arrival-guide.mjs; do
+for file in serve_admin_share_fixture.py serve_dashboard_fixture.mjs serve_shortlists_fixture.py run-shared-shortlists.mjs; do
   [[ -f "$tools/$file" && ! -L "$tools/$file" ]] || die EXACT_FIXTURE_SOURCE_REQUIRED
 done
 printf '%s  %s\n' e546d8c5668b87ef28e604107bbb330e6f4b3873cf0208b4d24ca378bd0851f9 "$dockerfile" \
@@ -110,7 +110,7 @@ trap cleanup EXIT
 
 mkdir "$state/frontend-work" "$state/fixtures" "$state/browser-run" "$state/python-context"
 cp "$backend/requirements.txt" "$state/python-context/requirements.txt"
-cp "$tools/run-stay-arrival-guide.mjs" "$state/browser-run/"
+cp "$tools/run-shared-shortlists.mjs" "$state/browser-run/"
 
 # Public, pinned dependency preparation. No app or browser process is running yet.
 for image in "$node_image" "$python_image" "$postgres_image" "$browser_image"; do
@@ -143,8 +143,9 @@ printf '%s  %s\n' \
   1126aeb69e32b34394cca03ac440848f7b88b339042496cb6722a1781a204337 "$state/frontend-work/apps/dashboard/package.json" \
   45893e6dfebaad4d2e73f7e7d6b26f176883bc1ba8c8dc025f188cc1b4d12344 "$state/frontend-work/apps/landing/package.json" \
   32a58ba8e28b4231ab7cc92cf557c519d77138e54e6c7c47a2eacf799167288f "$state/frontend-work/tests/contact-share.test.cjs" \
-  dc3722b78e0cf4bd7c110430e2aade1e4509434615965ab695c17ce096b85d59 "$state/frontend-work/tests/professionals-contract.test.cjs" \
+  248c4c533a4abfbbb2ae6a29310d9481dc274fe3c7b470ddb9554146445941ae "$state/frontend-work/tests/professionals-contract.test.cjs" \
   1c33c5dd2eec461c3601db0aa1fbcefae5661d732d745df89f20692231119381 "$state/frontend-work/tests/arrival-guide.test.cjs" \
+  2cc23ae28e6d0dfadf83cad9b76b6e458cd499b129fb745415a9f86b301d750d "$state/frontend-work/tests/shared-shortlists.test.cjs" \
   | sha256sum --check --status || die EXACT_PACKAGE_AND_TEST_PINS_REQUIRED
 
 prepare=(--label "$label=$run_key" --user "$uids" --read-only --cap-drop ALL --security-opt no-new-privileges:true
@@ -236,16 +237,16 @@ with Path(sys.argv[1]).open('rb') as log:
     body = log.read(131072)
 native = int(sys.argv[2])
 if native:
-    failures = sorted({int(index) for index in re.findall(rb'(?m)^not ok ([1-9]|1[0-6]) - ', body)})
+    failures = sorted({int(index) for index in re.findall(rb'(?m)^not ok ([1-9]|1[0-8]) - ', body)})
     print(f'NETWORK_LIVE_SHARE_PROFESSIONALS_FAILURE native={native} failed_indices='
           + (','.join(map(str, failures)) or 'none'))
     sys.exit(0)
 lines = body.splitlines()
-for row in (b'# tests 16', b'# pass 16', b'# fail 0', b'# skipped 0', b'# todo 0'):
+for row in (b'# tests 18', b'# pass 18', b'# fail 0', b'# skipped 0', b'# todo 0'):
     assert lines.count(row) == 1
 hero = b'professional landing leads with member signup in both languages and keeps provider applications separate'
 assert sum(line.startswith(b'ok ') and line.endswith(hero) for line in lines) == 1
-print('NETWORK_LIVE_SHARE_PROFESSIONALS_UNIT native=0 tests=16 pass=16 bilingual_hero=pass')
+print('SHARED_SHORTLIST_AUTH_UNIT native=0 tests=18 pass=18 bilingual_hero=pass')
 PY
 [[ "$professionals_exit" == 0 ]] || die OFFLINE_PROFESSIONALS_CONTRACTS_FAILED
 if ! bounded 120s docker run "${prepare[@]}" --network none --workdir /work \
@@ -263,6 +264,24 @@ assert path.stat().st_size <= 32768
 lines = path.read_bytes().splitlines()
 assert all(lines.count(line) == 1 for line in (b'# tests 7', b'# pass 7', b'# fail 0', b'# skipped 0', b'# todo 0'))
 print('STAY_ARRIVAL_FRONTEND_CONTRACTS native=0 tests=7 pass=7')
+PY
+if ! bounded 120s docker run "${prepare[@]}" --network none --workdir /work \
+  --mount "type=bind,src=$state/frontend-work,dst=/work,readonly" "$node_image" \
+  env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp CI=true \
+  node --test --test-reporter=tap tests/shared-shortlists.test.cjs \
+  >"$state/shortlist-contracts.log" 2>&1; then
+  die OFFLINE_SHARED_SHORTLIST_CONTRACTS_FAILED
+fi
+python3 -I -B - "$state/shortlist-contracts.log" <<'PY' || die OFFLINE_SHARED_SHORTLIST_RESULT_REQUIRED
+from pathlib import Path
+import sys
+path = Path(sys.argv[1])
+count = 7
+assert path.stat().st_size <= 32768
+lines = path.read_bytes().splitlines()
+expected = (f'# tests {count}'.encode(), f'# pass {count}'.encode(), b'# fail 0', b'# skipped 0', b'# todo 0')
+assert all(lines.count(line) == 1 for line in expected)
+print(f'SHARED_SHORTLIST_FRONTEND_CONTRACTS native=0 tests={count} pass={count}')
 PY
 if ! bounded 360s docker run "${prepare[@]}" --network none --workdir /work \
   --mount "type=bind,src=$state/frontend-work,dst=/work" "$node_image" \
@@ -360,7 +379,7 @@ bounded 90s docker run -i "${runtime[@]}" --memory 1g --memory-swap 1g --workdir
   --tmpfs /tmp:rw,exec,size=64m \
   --env SEARCH_FILTER_TEST_DATABASE_URL=postgresql+psycopg2://postgres@127.0.0.1:55449/ildr_platform_test_20261025 \
   --mount "type=bind,src=$backend,dst=/application,readonly" \
-  "$app_image" /usr/local/bin/python -I -B - >"$state/arrival-backend.log" 2>&1 <<'PY' || test_exit=$?
+  "$app_image" /usr/local/bin/python -I -B - >"$state/shortlist-backend.log" 2>&1 <<'PY' || test_exit=$?
 from importlib.util import module_from_spec, spec_from_file_location
 from io import StringIO
 import os
@@ -373,36 +392,41 @@ app = Path('/application')
 assert os.statvfs(app).f_flag & os.ST_RDONLY
 assert {interface.name for interface in Path('/sys/class/net').iterdir()} == {'lo'}
 sys.path.insert(0, str(app))
-spec = spec_from_file_location('arrival_guide_tests', app / 'tests/test_arrival_guide.py')
-tests = module_from_spec(spec)
-spec.loader.exec_module(tests)
-result = unittest.TextTestRunner(stream=StringIO()).run(unittest.defaultTestLoader.loadTestsFromModule(tests))
-failed = [getattr(test, '_testMethodName', 'setup_or_teardown') for test, _ in result.failures + result.errors]
-valid = all(re.fullmatch(r'[a-z0-9_]{1,100}', name) for name in failed)
-print(f'STAY_ARRIVAL_BACKEND_CONTRACTS tests={result.testsRun} failed={len(failed)} skipped={len(result.skipped)} '
-      f'methods={",".join(failed) if failed and valid else "none"}')
-assert result.testsRun == 7 and result.wasSuccessful() and not result.skipped and not result.expectedFailures
+for name, marker, count in (
+    ('arrival_guide', 'STAY_ARRIVAL', 7),
+    ('shortlists', 'SHARED_SHORTLIST', 6),
+):
+    spec = spec_from_file_location(name + '_tests', app / f'tests/test_{name}.py')
+    tests = module_from_spec(spec)
+    spec.loader.exec_module(tests)
+    result = unittest.TextTestRunner(stream=StringIO()).run(unittest.defaultTestLoader.loadTestsFromModule(tests))
+    failed = [getattr(test, '_testMethodName', 'setup_or_teardown') for test, _ in result.failures + result.errors]
+    valid = all(re.fullmatch(r'[a-z0-9_]{1,100}', item) for item in failed)
+    print(f'{marker}_BACKEND_CONTRACTS tests={result.testsRun} failed={len(failed)} skipped={len(result.skipped)} '
+          f'methods={",".join(failed) if failed and valid else "none"}')
+    assert result.testsRun == count and result.wasSuccessful() and not result.skipped and not result.expectedFailures
 PY
-python3 -I -B - "$state/arrival-backend.log" <<'PY' || die STAY_GUIDE_BACKEND_RESULT_INVALID
+python3 -I -B - "$state/shortlist-backend.log" <<'PY' || die SHARED_SHORTLIST_BACKEND_RESULT_INVALID
 import re, sys
 from pathlib import Path
 path = Path(sys.argv[1])
 assert path.stat().st_size <= 131072
-pattern = rb'STAY_ARRIVAL_BACKEND_CONTRACTS tests=[0-9]+ failed=[0-9]+ skipped=[0-9]+ methods=[a-z0-9_,]+'
+pattern = rb'(?:STAY_ARRIVAL|SHARED_SHORTLIST)_BACKEND_CONTRACTS tests=[0-9]+ failed=[0-9]+ skipped=[0-9]+ methods=[a-z0-9_,]+'
 matches = [line for line in path.read_bytes().splitlines() if re.fullmatch(pattern, line)]
-assert len(matches) == 1
-print(matches[0].decode('ascii'))
+assert 1 <= len(matches) <= 2
+for line in matches:
+    print(line.decode('ascii'))
 PY
-[[ "$test_exit" == 0 ]] || die STAY_GUIDE_DISPOSABLE_BACKEND_TEST_FAILED
+[[ "$test_exit" == 0 ]] || die SHARED_SHORTLIST_DISPOSABLE_BACKEND_TEST_FAILED
 
 api=$(bounded 25s docker create "${runtime[@]}" --memory 2g --memory-swap 2g \
   --tmpfs /tmp:rw,exec,size=128m --env "ILDR_BROWSER_CI_NONCE=$nonce" \
-  --env "ILDR_STAY_GUIDE_APP_COMMIT=$backend_commit" --env "ILDR_STAY_GUIDE_APP_TREE=$backend_tree" \
-  --env "ILDR_STAY_GUIDE_MIGRATION=$migration_head" \
+  --env "ILDR_SHORTLIST_APP_COMMIT=$backend_commit" --env "ILDR_SHORTLIST_APP_TREE=$backend_tree" \
+  --env "ILDR_SHORTLIST_MIGRATION=$migration_head" \
   --mount "type=bind,src=$backend,dst=/application,readonly" \
   --mount "type=bind,src=$tools,dst=/tools,readonly" \
   --mount "type=bind,src=$state/fixtures,dst=/browser-fixtures" \
-  "$app_image" /usr/local/bin/python -I -B /tools/serve_stay_arrival_fixture.py) || die API_CREATE_FAILED
+  "$app_image" /usr/local/bin/python -I -B /tools/serve_shortlists_fixture.py) || die API_CREATE_FAILED
 owned "$api" && bounded 25s docker start "$api" >/dev/null || die API_START_FAILED
 dashboard=$(bounded 25s docker create "${runtime[@]}" --memory 512m --memory-swap 512m \
   --mount "type=bind,src=$state/frontend-work/apps/dashboard/dist,dst=/dashboard-dist,readonly" \
@@ -426,7 +450,7 @@ assert len(reports)<=1
 if reports:
     value=json.loads(reports[0]); assert set(value)=={'stage','error_type','fixture_line'}
     assert value['stage'] in {'checkout','claim_database','configure_application','load_application','bootstrap_database',
-        'apply_alembic','seed_accounts','seed_lead','seed_stays','write_fixture','serve_application'}
+        'apply_alembic','seed_accounts','seed_lead','seed_shortlists','write_fixture','serve_application'}
     assert re.fullmatch(r'[A-Za-z][A-Za-z0-9_]{0,62}',value['error_type'])
     assert value['fixture_line'] is None or type(value['fixture_line']) is int and 0<value['fixture_line']<=1000
     print(prefix.decode()+json.dumps(value,sort_keys=True,separators=(',',':')))
@@ -443,7 +467,7 @@ browser=$(bounded 25s docker create "${runtime[@]}" --memory 2g --memory-swap 2g
   --env PLAYWRIGHT_BROWSERS_PATH=/ms-playwright --env ILDR_BROWSER_FIXTURES=/browser-fixtures/fixtures.json \
   --mount "type=bind,src=$state/browser-run,dst=/rehearsal,readonly" \
   --mount "type=bind,src=$state/fixtures,dst=/browser-fixtures,readonly" \
-  "$browser_image" node /rehearsal/run-stay-arrival-guide.mjs) || die BROWSER_CREATE_FAILED
+  "$browser_image" node /rehearsal/run-shared-shortlists.mjs) || die BROWSER_CREATE_FAILED
 owned "$browser" || die OWNED_BROWSER_REQUIRED
 client_exit=0
 bounded 240s docker start --attach "$browser" >"$state/browser.log" 2>&1 || client_exit=$?
@@ -455,7 +479,7 @@ python3 -I -B - "$state/browser.log" <<'PY'
 from pathlib import Path
 import json,re,sys
 path=Path(sys.argv[1]); assert path.stat().st_size <= 131072
-prefix=b'STAY_ARRIVAL_BROWSER '
+prefix=b'SHARED_SHORTLIST_BROWSER '
 lines=path.read_bytes().splitlines()
 matches=[line[len(prefix):] for line in lines if line.startswith(prefix)]
 assert len(matches)==1 and len(matches[0])<=8192
@@ -466,16 +490,10 @@ def safe(value):
     return value is None or type(value) in (bool,int)
 data=json.loads(matches[0]); assert safe(data)
 print(prefix.decode()+json.dumps(data,sort_keys=True,separators=(',',':')))
-geo_prefix=b'STAY_ARRIVAL_GEOMETRY '
-for line in lines:
-    if line.startswith(geo_prefix):
-        geometry=json.loads(line[len(geo_prefix):]); assert safe(geometry)
-        assert set(geometry)=={'viewport','document','body','main','guide','filters'}
-        print(geo_prefix.decode()+json.dumps(geometry,sort_keys=True,separators=(',',':')))
 assert data['status']=='PASS'
 assert set(data)=={'status','checks'}
-assert data['checks']==['owner_bilingual_edit','role_dates_and_response_privacy',
-                        'spanish_mobile_guest_read_close_and_expiry','stale_write_denied_and_clear_revokes']
+assert data['checks']==['browser_create_public_property_and_shared_fields','exact_grant_login_handoff_and_stranger_denial',
+                        'spanish_mobile_assigned_realtor_collaboration','stale_edit_denied_and_revocation_blocks_link']
 PY
 [[ "$client_exit" == 0 && "$container_state" == '0 false false' ]] || die NATIVE_BROWSER_FAILED
 
@@ -486,5 +504,5 @@ api_state=$(bounded 15s docker inspect --format '{{.State.ExitCode}} {{.State.Ru
 printf 'BROWSER_API_FIXTURE_SHUTDOWN state=%s login_file=absent\n' "$api_state"
 backend_status=$(git -C "$backend" status --porcelain=v1 --untracked-files=all) || die API_SOURCE_CHANGED
 [[ -z "$backend_status" ]] || die API_SOURCE_CHANGED
-printf 'STAY_ARRIVAL_ACCEPTANCE operations=%s frontend=%s frontend_tree=%s backend=%s backend_tree=%s migration=%s postgres_version_num=170006 run=%s attempt=1\n' \
+printf 'SHARED_SHORTLIST_ACCEPTANCE operations=%s frontend=%s frontend_tree=%s backend=%s backend_tree=%s migration=%s postgres_version_num=170006 run=%s attempt=1\n' \
   "$GITHUB_SHA" "$frontend_commit" "$frontend_tree" "$backend_commit" "$backend_tree" "$migration_head" "$GITHUB_RUN_ID"
