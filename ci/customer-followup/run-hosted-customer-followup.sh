@@ -3,26 +3,30 @@ set -euo pipefail
 die() { printf 'CUSTOMER_FOLLOWUP_REFUSED %s\n' "$1" >&2; exit 1; }
 bounded() { timeout --kill-after=8s "$@"; }
 
-[[ $# == 4 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api ]] || die CI_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-customer-followup-20261116 && ${GITHUB_RUN_ATTEMPT:-} == 1 &&
+[[ $# == 5 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api ]] || die CI_REQUIRED
+[[ ${GITHUB_REF:-} == refs/heads/codex-ci-post-trade-communications-20261117 && ${GITHUB_RUN_ATTEMPT:-} == 1 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 [[ ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 ]] || die HOSTED_LINUX_REQUIRED
-ops="$1"; application="$2"; prior="$3"; recipe="$4"
+ops="$1"; application="$2"; prior="$3"; recipe="$4"; legacy="$5"
 [[ "$ops" == "$GITHUB_WORKSPACE/followup-ops" && "$application" == "$GITHUB_WORKSPACE/followup-app" &&
-   "$prior" == "$GITHUB_WORKSPACE/communications-recipe" && "$recipe" == "$GITHUB_WORKSPACE/migration-recipe" ]] \
+   "$prior" == "$GITHUB_WORKSPACE/communications-recipe" && "$recipe" == "$GITHUB_WORKSPACE/migration-recipe" &&
+   "$legacy" == "$GITHUB_WORKSPACE/legacy-inquiry-recipe" ]] \
   || die EXACT_CHECKOUT_PATHS_REQUIRED
-for checkout in "$ops" "$application" "$prior" "$recipe"; do
+for checkout in "$ops" "$application" "$prior" "$recipe" "$legacy"; do
   [[ $(realpath "$checkout") == "$checkout" && -z $(git -C "$checkout" status --porcelain=v1 --untracked-files=all) ]] \
     || die EXACT_CLEAN_CHECKOUTS_REQUIRED
 done
 app_commit=$(git -C "$application" rev-parse HEAD)
 app_tree=$(git -C "$application" rev-parse 'HEAD^{tree}')
-[[ "$app_commit" == 08c78f58cf4052a267480a8c27a406c7f8afaf2c && "$app_tree" == ad70125fd25bb57e8a830ad3ae3dd25e3f259ed4 &&
-   $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" show -s --format=%P HEAD) == "$app_commit" &&
+[[ "$app_commit" == c5ac614398fae413d231c28a51e703bb297e0bb9 && "$app_tree" == 803196ebd0961373c1ce41fe1dfa971aecc5cc9c &&
+   $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" show -s --format=%P HEAD) == f1e44b39f838ea5d382ecaf4d88c36315f0e59ad &&
    ! -e "$application/.env" && ! -L "$application/.env" ]] || die EXACT_IMMUTABLE_PRODUCT_REQUIRED
+[[ $(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) == $'.github/workflows/customer-followup.yml\nci/customer-followup/run-hosted-customer-followup.sh\nci/customer-followup/verify-customer-followup.py' ]] ||
+  die EXACT_OPERATIONS_DELTA_REQUIRED
 [[ $(git -C "$prior" rev-parse HEAD) == e660040e0c514aca3f7f5b7d7a5007e4fdc596c4 &&
    $(git -C "$prior" rev-parse 'HEAD^{tree}') == 4e230dcfd86ad1a3353ca3b30efe4a425e60f884 &&
-   $(git -C "$recipe" rev-parse HEAD) == c193a925ba57ea2d67ea48c44e5262817885c8a2 ]] || die EXACT_ACCEPTED_RECIPES_REQUIRED
+   $(git -C "$recipe" rev-parse HEAD) == c193a925ba57ea2d67ea48c44e5262817885c8a2 &&
+   $(git -C "$legacy" rev-parse HEAD) == 2a9ecd58a8f22c11476f268bacd9b1c410c782a3 ]] || die EXACT_ACCEPTED_RECIPES_REQUIRED
 prior_tools="$prior/ci/browser"
 tools="$ops/ci/customer-followup"
 dockerfile="$recipe/ci/migration/services163.Dockerfile"
@@ -31,6 +35,7 @@ printf '%s  %s\n' \
   e546d8c5668b87ef28e604107bbb330e6f4b3873cf0208b4d24ca378bd0851f9 "$dockerfile" \
   31d9792c4fc11f924af0b0ab2db3247f77eb083c1274fab94fb99c75197db60b "$prior_tools/test_cumulative_communications_acceptance.py" \
   fd7079170b9307ef4d523a3692b83bba2490bf16b7eb26036e4eb718a00edba7 "$prior_tools/serve_cumulative_communications_fixture.py" \
+  f29933d32dae31449fe9f56ed3e63946ed302e71fa7184a7117e8fda9a15ebfd "$legacy/ci/legacy-inquiry/run-legacy-inquiry-tests.py" \
   | sha256sum --check --status || die ACCEPTED_RECIPE_HASH_CHANGED
 
 umask 077
@@ -42,7 +47,7 @@ run_key="$GITHUB_RUN_ID-$nonce"
 label=org.ilovedrrealty.customer-followup
 image="ildr-customer-followup:$run_key"
 python_digest=sha256:673719e071ecf27434fd2635bbd8d00f49f4fdd81f243143438a42ced8bedf60
-postgres='docker.io/library/postgres:17@sha256:3b0cda93be7c8dba2ed484d19393d93845dc3dafb88973e248ba8e6d99d784e1'
+postgres='docker.io/library/postgres:17.6@sha256:b86568d3e0fe1dfaeff52714f9da36f206a30e4c49131b82bf96982d78627409'
 database=ildr_platform_test_20261025
 pg=''
 
@@ -116,10 +121,11 @@ test_container=$(bounded 25s docker create --label "$label=$run_key" --network "
   --env "SEARCH_FILTER_TEST_DATABASE_URL=postgresql+psycopg2://postgres@127.0.0.1:55449/$database" \
   --mount "type=bind,src=$application,dst=/application,readonly" --mount "type=bind,src=$tools,dst=/tools,readonly" \
   --mount "type=bind,src=$prior_tools,dst=/prior,readonly" \
+  --mount "type=bind,src=$legacy/ci/legacy-inquiry,dst=/legacy,readonly" \
   "$image" /usr/local/bin/python -I -B /tools/verify-customer-followup.py) || die TEST_CONTAINER_CREATE_FAILED
 owned "$test_container" || die OWNED_TEST_CONTAINER_REQUIRED
 test_exit=0
-bounded 120s docker start --attach "$test_container" >"$state/test.log" 2>&1 || test_exit=$?
+bounded 300s docker start --attach "$test_container" >"$state/test.log" 2>&1 || test_exit=$?
 test_state=$(bounded 15s docker inspect --format '{{.State.ExitCode}} {{.State.Running}} {{.State.OOMKilled}}' "$test_container")
 [[ "$test_state" =~ ^[0-9]+\ (true|false)\ (true|false)$ ]] || die NATIVE_TEST_STATE_REQUIRED
 printf 'CUSTOMER_FOLLOWUP_NATIVE client=%s state=%s\n' "$test_exit" "$test_state"
@@ -140,19 +146,23 @@ if report.get('status') == 'FAIL':
     assert all(isinstance(value, str) and re.fullmatch(r'[A-Za-z0-9_]{1,90}', value) for value in report.values())
 else:
     assert report == {
-        'status': 'PASS', 'application_commit': sys.argv[2], 'application_tree': sys.argv[3], 'alembic_head': 'f4b27d6e913c',
+        'status': 'PASS', 'application_commit': sys.argv[2], 'application_tree': sys.argv[3], 'alembic_head': 'a4e72d1c718b',
         'event_kinds': ['signup', 'buyer_interest', 'seller_interest', 'rental_interest', 'property_inquiry'],
         'primary_owner_acceptances': 20, 'primary_customer_acceptances': 5, 'owner_only_guard_case_acceptances': 12,
         'accepted_mock_provider_requests': 37, 'crm_rows_skipped': 28, 'customer_locales': ['en', 'es'],
         'external_transport_attempts': 0, 'real_inbox_delivery_verified': False,
         'customer_link_acceptances': {'en': 2, 'es': 3}, 'team_notices_checked': 32,
         'exact_public_whatsapp_url': True, 'frontend_built': False,
+        'candidate_contracts': {'customer_delivery': 18, 'lead_delivery': 52, 'owner_leads': 8,
+                                'property_inquiry': 10, 'legacy_rollout': 1},
+        'candidate_contracts_passed': 89, 'triggered_sms_or_automatic_whatsapp': False,
+        'postgres_version_num': 170006,
     }
 print(prefix.decode() + json.dumps(report, sort_keys=True, separators=(',', ':')))
 assert report['status'] == 'PASS'
 PY
 [[ "$test_exit" == 0 && "$test_state" == '0 false false' ]] || die NATIVE_TEST_FAILED
-for source in "$application" "$prior" "$recipe"; do
+for source in "$application" "$prior" "$recipe" "$legacy"; do
   [[ -z $(git -C "$source" status --porcelain=v1 --untracked-files=all) ]] || die MOUNTED_SOURCE_CHANGED
 done
 printf 'CUSTOMER_FOLLOWUP_ACCEPTANCE commit=%s application=%s tree=%s run=%s attempt=1\n' \
