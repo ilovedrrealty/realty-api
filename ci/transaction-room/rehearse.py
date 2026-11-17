@@ -405,14 +405,28 @@ def verify_full_restore(nonce):
     for database, label in ((before, "source"), (after, "target")):
         stage = f"restore_{label}_identity"
         check_database(database, nonce, RELEASE_HEAD)
-        stage = f"restore_{label}_catalog"
-        catalog(database, floorplans=True)
         stage = f"restore_{label}_state"
         snapshots.append(full_archive_state(database))
     source, restored = snapshots
-    for component, expected in source.items():
-        stage = f"restore_{component}"
-        check(restored[component] == expected)
+    differing = [component for component in source if restored[component] != source[component]]
+    for component in differing:
+        expected, actual = source[component], restored[component]
+        missing, added = sorted(set(expected) - set(actual)), sorted(set(actual) - set(expected))
+        key = (missing or added or expected)[0]
+        object_name = {
+            "columns": lambda: f"{key[0]}.{key[2]}",
+            "constraints": lambda: f"{key[0]}.{key[1]}",
+            "indexes": lambda: f"{key[0]}.{key[1]}",
+        }.get(component, lambda: str(key[0]))()
+        if not re.fullmatch(r"[A-Za-z0-9_.]{1,140}", object_name):
+            object_name = "unclassified"
+        print(f"INTEGRATED_PUBLIC_ARCHIVE_DIFF {component} removed={len(missing)} "
+              f"added={len(added)} object={object_name}")
+    stage = f"restore_{differing[0]}" if differing else "restore_target_catalog"
+    check(not differing)
+    for database, label in ((before, "source"), (after, "target")):
+        stage = f"restore_{label}_catalog"
+        catalog(database, floorplans=True)
     tables = len(source["tables"])
     shape = sha256(json.dumps(source, separators=(",", ":")).encode()).hexdigest()
     print(f"INTEGRATED_FULL_ARCHIVE_RESTORE tables={tables} schema_and_rows_sha256={shape} exact_floor_plans=2")

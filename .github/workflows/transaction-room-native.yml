@@ -2,7 +2,7 @@ name: Isolated integrated application schema and restore rehearsal
 
 on:
   push:
-    branches: [codex-ci-integrated-release-native-20261117-v4]
+    branches: [codex-ci-integrated-release-native-20261117-v5]
 
 permissions:
   contents: read
