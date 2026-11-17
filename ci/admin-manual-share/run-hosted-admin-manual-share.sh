@@ -8,7 +8,7 @@ bounded() { timeout --kill-after=8s "$@"; }
 
 [[ $# == 4 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api ]] || die CI_REQUIRED
 [[ ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 && ${GITHUB_RUN_ATTEMPT:-} == 1 ]] || die STANDARD_LINUX_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-transaction-room-browser-20261117-v2 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
+[[ ${GITHUB_REF:-} == refs/heads/codex-ci-reviewed-service-matches-browser-20261117 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 
 ops="$1"; frontend="$2"; backend="$3"; migration="$4"
 [[ "$ops" == "$GITHUB_WORKSPACE/browser-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-base" &&
@@ -18,36 +18,34 @@ for checkout in "$ops" "$frontend" "$backend" "$migration"; do
   checkout_status=$(git -C "$checkout" status --porcelain=v1 --untracked-files=all) || die CLEAN_CHECKOUT_REQUIRED
   [[ $(realpath "$checkout") == "$checkout" && -z "$checkout_status" ]] || die CLEAN_CHECKOUT_REQUIRED
 done
-[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == a62c8301bfa75fcd03bd3a717cdb7fdc3da51e45 ]] ||
+[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == be3ef310e967b9d79a947562a4888884f0812edb ]] ||
   die EXACT_OPERATIONS_PARENT_REQUIRED
 operations_delta=$(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) || die EXACT_OPERATIONS_DELTA_REQUIRED
-[[ "$operations_delta" == $'.github/workflows/admin-manual-share.yml\nci/admin-manual-share/run-hosted-admin-manual-share.sh\nci/admin-manual-share/run-transaction-room.mjs' ]] ||
+[[ "$operations_delta" == $'.github/workflows/admin-manual-share.yml\nci/admin-manual-share/run-hosted-admin-manual-share.sh\nci/admin-manual-share/run-reviewed-service-matches.mjs\nci/admin-manual-share/serve_reviewed_service_matches_fixture.py' ]] ||
   die EXACT_OPERATIONS_DELTA_REQUIRED
-frontend_commit=764a3a6b126e9d4d4bce93bffe2a2ca8c553da13
-frontend_tree=629b2fc2f880dd4d4d2a1b9229eb1b9cd6e2950d
+frontend_commit=64899948056a2570b91ab62697453721828ee334
+frontend_tree=048989a516ad758030bfd1320e1fc01dc2d085b5
 frontend_paths=538
-frontend_rooms_test_sha=61fa6fb1fad2613bab99bd3da5e62740b8a630b1a9a57b2b7b75200829100a65
-frontend_documents_test_sha=afb137b361cfe9527b4f6cb2d865e1489f649cdebe291ced8e77166ea92764db
-frontend_test_count=10
-backend_commit=939723e88c224be89dbb1705cfc282de2ac1a6ef
-backend_tree=65c0ef2f19ee459745fb55fafa444b9f04e832cc
+frontend_service_test_sha=1c350052e9fc9cad0051bd68971abccefa1e44c50c573c5ebdea7bff17ce340e
+frontend_rebook_test_sha=d50c340c29b872c205d636c000a6047d8bcf15865fdc5fc9e36a53314c6fa37a
+frontend_favorites_test_sha=897ea9ed11f6e74ecfdc8bf76a0e7c81aa173119843af651703696bdee478b7a
+frontend_test_count=31
+backend_commit=ae63b4a9d79877b77cdd78248b6a228738588a2f
+backend_tree=4dd47c73bf001841a855328136a628b74610f587
 migration_head=de248ab5c9f3
-browser_failure_stages='fixture,auth,scope,lead_open,room_create,invitation_create,invitation_accept,'\
-'task_create,task_update,milestone_create,milestone_update,buyer_room,pdf_upload,png_upload,'\
-'staff_document_panel,pdf_review,png_review,buyer_download,withheld,professional_download,'\
-'staff_audit,member_audit,revoke,mobile_denied'
+browser_failure_stages='fixture,auth,scope,owner_entry,realtor_entry,owner_discovery,realtor_discovery,'\
+'owner_filter_reset,owner_create,realtor_create,received_north,received_english,unassigned_received_scope'
 browser_checks=(
-  realtor_creates_from_assigned_lead
-  verified_professional_accepts_invitation
-  task_and_closing_milestone_changed
-  buyer_uploads_pdf_and_png_as_exact_versions
-  staff_reviews_exact_version_and_explicit_audience
-  permitted_downloads_preserve_exact_bytes
-  unassigned_buyer_withheld_and_revoked_professional_denied
-  staff_only_document_audit_and_mobile_room
+  foreign_and_unassigned_sources_denied
+  reviewed_area_language_class_and_held_exclusion
+  criteria_and_mode_clear_prior_selection
+  owner_reviews_and_sends_exact_private_request
+  spanish_assigned_realtor_sends_exact_private_request
+  selected_providers_receive_only_their_own_scoped_brief
 )
 [[ "$frontend_commit" =~ ^[a-f0-9]{40}$ && "$frontend_tree" =~ ^[a-f0-9]{40}$ &&
-   "$frontend_rooms_test_sha" =~ ^[a-f0-9]{64}$ && "$frontend_documents_test_sha" =~ ^[a-f0-9]{64}$ &&
+   "$frontend_service_test_sha" =~ ^[a-f0-9]{64}$ && "$frontend_rebook_test_sha" =~ ^[a-f0-9]{64}$ &&
+   "$frontend_favorites_test_sha" =~ ^[a-f0-9]{64}$ &&
    "$frontend_paths" =~ ^[1-9][0-9]{2,3}$ &&
    "$frontend_test_count" =~ ^[1-9][0-9]?$ ]] || die FRONTEND_PINS_INCOMPLETE
 [[ "$browser_failure_stages" =~ ^[a-z][a-z0-9_]*(,[a-z][a-z0-9_]*)+$ ]] || die BROWSER_PINS_INCOMPLETE
@@ -60,9 +58,8 @@ browser_checks=(
 
 tools="$ops/ci/admin-manual-share"
 dockerfile="$migration/ci/migration/services163.Dockerfile"
-for file in serve_admin_share_fixture.py serve_dashboard_fixture.mjs serve_editorial_fixture.py \
-  serve_development_inventory_fixture.py serve_seller_valuation_fixture.py serve_listing_performance_fixture.py \
-  serve_transaction_room_fixture.py run-transaction-room.mjs; do
+for file in serve_admin_share_fixture.py serve_dashboard_fixture.mjs \
+  serve_reviewed_service_matches_fixture.py run-reviewed-service-matches.mjs; do
   [[ -f "$tools/$file" && ! -L "$tools/$file" ]] || die EXACT_FIXTURE_SOURCE_REQUIRED
 done
 printf '%s  %s\n' e546d8c5668b87ef28e604107bbb330e6f4b3873cf0208b4d24ca378bd0851f9 "$dockerfile" \
@@ -138,7 +135,7 @@ trap cleanup EXIT
 
 mkdir "$state/frontend-work" "$state/fixtures" "$state/browser-run" "$state/python-context"
 cp "$backend/requirements.txt" "$state/python-context/requirements.txt"
-cp "$tools/run-transaction-room.mjs" "$state/browser-run/"
+cp "$tools/run-reviewed-service-matches.mjs" "$state/browser-run/"
 
 # Public, pinned dependency preparation. No app or browser process is running yet.
 for image in "$node_image" "$python_image" "$postgres_image" "$browser_image"; do
@@ -170,8 +167,9 @@ verify_frontend_files || die EXACT_ARCHIVED_FRONTEND_REQUIRED
 printf '%s  %s\n' \
   8df3c4c580c65694bc727488fc0ec02d88ab1577e5fa16c509f4897b58e60f33 "$state/frontend-work/package-lock.json" \
   1126aeb69e32b34394cca03ac440848f7b88b339042496cb6722a1781a204337 "$state/frontend-work/apps/dashboard/package.json" \
-  "$frontend_rooms_test_sha" "$state/frontend-work/tests/transaction-rooms.test.cjs" \
-  "$frontend_documents_test_sha" "$state/frontend-work/tests/transaction-documents.test.cjs" \
+  "$frontend_service_test_sha" "$state/frontend-work/tests/service-workflow.test.cjs" \
+  "$frontend_rebook_test_sha" "$state/frontend-work/tests/service-rebook.test.cjs" \
+  "$frontend_favorites_test_sha" "$state/frontend-work/tests/service-favorites.test.cjs" \
   | sha256sum --check --status || die EXACT_PACKAGE_AND_TEST_PINS_REQUIRED
 
 prepare=(--label "$label=$run_key" --user "$uids" --read-only --cap-drop ALL --security-opt no-new-privileges:true
@@ -213,11 +211,11 @@ elif re.search(rb'(?m)^npm (?:error|ERR!) network(?:[ \t\r]|$)', tail):
     summary = 'npm_network_summary'
 else:
     summary = 'unclassified_install_failure'
-print(f'TRANSACTION_ROOM_INSTALL native={native} summary={summary} codes={codes}')
+print(f'REVIEWED_SERVICE_MATCHES_INSTALL native={native} summary={summary} codes={codes}')
 PY
   die LOCKED_FRONTEND_INSTALL_FAILED
 fi
-printf 'TRANSACTION_ROOM_INSTALL native=0 summary=success codes=none\n'
+printf 'REVIEWED_SERVICE_MATCHES_INSTALL native=0 summary=success codes=none\n'
 verify_frontend_files || die INSTALLED_FRONTEND_SOURCE_CHANGED
 if ! bounded 360s docker run "${prepare[@]}" --network none --workdir /work \
   --mount "type=bind,src=$state/frontend-work,dst=/work" "$node_image" \
@@ -226,7 +224,7 @@ if ! bounded 360s docker run "${prepare[@]}" --network none --workdir /work \
   npm_config_update_notifier=false npm_config_audit=false npm_config_fund=false \
   VITE_API_URL=http://127.0.0.1:8000 VITE_LANDING_URL=http://127.0.0.1:8917 \
   VITE_GOOGLE_CLIENT_ID=synthetic-ci.apps.googleusercontent.com sh -c 'node --test --test-reporter=tap \
-    tests/transaction-rooms.test.cjs tests/transaction-documents.test.cjs && npm run build --workspace=dashboard' \
+    tests/service-workflow.test.cjs tests/service-rebook.test.cjs tests/service-favorites.test.cjs && npm run build --workspace=dashboard' \
     >"$state/dashboard-build.log" 2>&1; then
   python3 -I -B - "$state/dashboard-build.log" <<'PY'
 import re
@@ -243,7 +241,7 @@ PY
   die DASHBOARD_BUILD_FAILED
 fi
 
-python3 -I -B - "$state/dashboard-build.log" "$frontend_test_count" <<'PY' || die TRANSACTION_ROOM_FRONTEND_RESULT_REQUIRED
+python3 -I -B - "$state/dashboard-build.log" "$frontend_test_count" <<'PY' || die REVIEWED_SERVICE_MATCHES_FRONTEND_RESULT_REQUIRED
 import sys
 from pathlib import Path
 path = Path(sys.argv[1])
@@ -252,7 +250,7 @@ count = int(sys.argv[2])
 lines = path.read_bytes().splitlines()
 for row in (f'# tests {count}'.encode(), f'# pass {count}'.encode(), b'# fail 0', b'# skipped 0', b'# todo 0'):
     assert lines.count(row) == 1
-print(f'TRANSACTION_ROOM_FRONTEND_CONTRACTS native=0 tests={count} pass={count} typecheck=success build=success')
+print(f'REVIEWED_SERVICE_MATCHES_FRONTEND_CONTRACTS native=0 tests={count} pass={count} typecheck=success build=success')
 PY
 verify_frontend_files || die FRONTEND_SOURCE_CHANGED
 
@@ -318,12 +316,12 @@ runtime=(--label "$label=$run_key" --network "container:$pg" --user "$uids" --re
 
 api=$(bounded 25s docker create "${runtime[@]}" --memory 2g --memory-swap 2g \
   --tmpfs /tmp:rw,exec,size=128m --env "ILDR_BROWSER_CI_NONCE=$nonce" \
-  --env "ILDR_TRANSACTION_APP_COMMIT=$backend_commit" --env "ILDR_TRANSACTION_APP_TREE=$backend_tree" \
-  --env "ILDR_TRANSACTION_MIGRATION=$migration_head" \
+  --env "ILDR_MATCH_APP_COMMIT=$backend_commit" --env "ILDR_MATCH_APP_TREE=$backend_tree" \
+  --env "ILDR_MATCH_MIGRATION=$migration_head" \
   --mount "type=bind,src=$backend,dst=/application,readonly" \
   --mount "type=bind,src=$tools,dst=/tools,readonly" \
   --mount "type=bind,src=$state/fixtures,dst=/browser-fixtures" \
-  "$app_image" /usr/local/bin/python -I -B /tools/serve_transaction_room_fixture.py) || die API_CREATE_FAILED
+  "$app_image" /usr/local/bin/python -I -B /tools/serve_reviewed_service_matches_fixture.py) || die API_CREATE_FAILED
 owned "$api" && bounded 25s docker start "$api" >/dev/null || die API_START_FAILED
 dashboard=$(bounded 25s docker create "${runtime[@]}" --memory 512m --memory-swap 512m \
   --mount "type=bind,src=$state/frontend-work/apps/dashboard/dist,dst=/dashboard-dist,readonly" \
@@ -347,7 +345,7 @@ assert len(reports)<=1
 if reports:
     value=json.loads(reports[0]); assert set(value)=={'stage','error_type','fixture_line','sqlstate'}
     assert value['stage'] in {'checkout','claim_database','configure_application','load_application','bootstrap_database',
-        'apply_alembic','seed_accounts','seed_lead','seed_valuation','seed_performance','seed_transaction_room',
+        'apply_alembic','seed_accounts','seed_lead','seed_service_matching',
         'write_fixture','serve_application'}
     assert re.fullmatch(r'[A-Za-z][A-Za-z0-9_]{0,62}',value['error_type'])
     assert value['fixture_line'] is None or type(value['fixture_line']) is int and 0<value['fixture_line']<=1000
@@ -366,7 +364,7 @@ browser=$(bounded 25s docker create "${runtime[@]}" --memory 2g --memory-swap 2g
   --env PLAYWRIGHT_BROWSERS_PATH=/ms-playwright --env ILDR_BROWSER_FIXTURES=/browser-fixtures/fixtures.json \
   --mount "type=bind,src=$state/browser-run,dst=/rehearsal,readonly" \
   --mount "type=bind,src=$state/fixtures,dst=/browser-fixtures,readonly" \
-  "$browser_image" node /rehearsal/run-transaction-room.mjs) || die BROWSER_CREATE_FAILED
+  "$browser_image" node /rehearsal/run-reviewed-service-matches.mjs) || die BROWSER_CREATE_FAILED
 owned "$browser" || die OWNED_BROWSER_REQUIRED
 client_exit=0
 bounded 300s docker start --attach "$browser" >"$state/browser.log" 2>&1 || client_exit=$?
@@ -374,7 +372,7 @@ container_state=$(bounded 15s docker inspect --format '{{.State.ExitCode}} {{.St
 [[ "$container_state" =~ ^[0-9]+\ (true|false)\ (true|false)$ ]] || die BROWSER_NATIVE_STATE_REQUIRED
 printf 'BROWSER_REHEARSAL_NATIVE client=%s state=%s\n' "$client_exit" "$container_state"
 
-python3 -I -B - "$state/browser.log" "$browser_failure_stages" "${browser_checks[@]}" <<'PY' || die TRANSACTION_ROOM_BROWSER_RESULT_REQUIRED
+python3 -I -B - "$state/browser.log" "$browser_failure_stages" "${browser_checks[@]}" <<'PY' || die REVIEWED_SERVICE_MATCHES_BROWSER_RESULT_REQUIRED
 from pathlib import Path
 import json
 import re
@@ -384,7 +382,7 @@ path = Path(sys.argv[1])
 assert path.stat().st_size <= 131072
 lines = path.read_bytes().splitlines()
 allowed_stages = set(sys.argv[2].split(','))
-failure = b'TRANSACTION_ROOM_BROWSER_FAILURE '
+failure = b'REVIEWED_SERVICE_MATCHES_BROWSER_FAILURE '
 failures = [line[len(failure):] for line in lines if line.startswith(failure)]
 assert len(failures) <= 1
 if failures:
@@ -393,7 +391,7 @@ if failures:
     print(failure.decode('ascii') + failures[0].decode('ascii'))
     raise SystemExit(1)
 
-prefix = b'TRANSACTION_ROOM_BROWSER '
+prefix = b'REVIEWED_SERVICE_MATCHES_BROWSER '
 matches = [line[len(prefix):] for line in lines if line.startswith(prefix)]
 assert len(matches) == 1 and len(matches[0]) <= 8192
 value = json.loads(matches[0])
@@ -409,5 +407,5 @@ api_state=$(bounded 15s docker inspect --format '{{.State.ExitCode}} {{.State.Ru
 printf 'BROWSER_API_FIXTURE_SHUTDOWN state=%s login_file=absent\n' "$api_state"
 backend_status=$(git -C "$backend" status --porcelain=v1 --untracked-files=all) || die API_SOURCE_CHANGED
 [[ -z "$backend_status" ]] || die API_SOURCE_CHANGED
-printf 'TRANSACTION_ROOM_ACCEPTANCE operations=%s frontend=%s frontend_tree=%s backend=%s backend_tree=%s migration=%s postgres_version_num=%s run=%s attempt=1\n' \
+printf 'REVIEWED_SERVICE_MATCHES_ACCEPTANCE operations=%s frontend=%s frontend_tree=%s backend=%s backend_tree=%s migration=%s postgres_version_num=%s run=%s attempt=1\n' \
   "$GITHUB_SHA" "$frontend_commit" "$frontend_tree" "$backend_commit" "$backend_tree" "$migration_head" "$postgres_version_num" "$GITHUB_RUN_ID"
