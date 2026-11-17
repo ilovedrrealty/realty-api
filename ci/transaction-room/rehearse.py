@@ -382,19 +382,30 @@ def full_archive_state(database):
             check(len(payload) == byte_count and sha256(payload).hexdigest() == checksum)
             files.append((slot, checksum, byte_count, approved))
         check(files[0][1] != files[1][1])
-    shape = sha256(json.dumps((tables, definitions, counts, files), separators=(",", ":")).encode()).hexdigest()
-    return len(tables), shape, files
+    return {
+        "tables": tables, "counts": counts, "columns": definitions[0], "constraints": definitions[1],
+        "indexes": definitions[2], "triggers": definitions[3], "views": definitions[4],
+        "grants": definitions[5], "media": files,
+    }
 
 
 def verify_full_restore(nonce):
     global stage
-    stage = "catalog"
     before, after = f"ildr_integration_fresh_{nonce}", f"ildr_integration_restore_{nonce}"
-    for database in (before, after):
+    snapshots = []
+    for database, label in ((before, "source"), (after, "target")):
+        stage = f"restore_{label}_identity"
         check_database(database, nonce, RELEASE_HEAD)
+        stage = f"restore_{label}_catalog"
         catalog(database, floorplans=True)
-    tables, shape, original_files = full_archive_state(before)
-    check((tables, shape, original_files) == full_archive_state(after))
+        stage = f"restore_{label}_state"
+        snapshots.append(full_archive_state(database))
+    source, restored = snapshots
+    for component, expected in source.items():
+        stage = f"restore_{component}"
+        check(restored[component] == expected)
+    tables = len(source["tables"])
+    shape = sha256(json.dumps(source, separators=(",", ":")).encode()).hexdigest()
     print(f"INTEGRATED_FULL_ARCHIVE_RESTORE tables={tables} schema_and_rows_sha256={shape} exact_floor_plans=2")
 
 

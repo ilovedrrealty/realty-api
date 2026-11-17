@@ -7,7 +7,7 @@ bounded() { timeout --kill-after=8s "$@"; }
 
 [[ ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 &&
-   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-integrated-release-native-20261117-v2 &&
+   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-integrated-release-native-20261117-v3 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_HOSTED_EVENT_REQUIRED
 
 ops="$GITHUB_WORKSPACE/rehearsal-ops"
@@ -25,9 +25,9 @@ for checkout in "$ops" "$backend" "$baseline" "$relay"; do
      ! -e "$checkout/.env" && ! -L "$checkout/.env" ]] || die CLEAN_CHECKOUT_REQUIRED
 done
 [[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" &&
-   $(git -C "$ops" rev-parse 'HEAD^') == 41c2b8206f9a6360cdc75bf4a21561d0c2f43a34 ]] || die EXACT_OPERATIONS_REQUIRED
+   $(git -C "$ops" rev-parse 'HEAD^') == 64b2a1ce9d7c739200c67f6bb704f4e03db1d57f ]] || die EXACT_OPERATIONS_REQUIRED
 operations_delta=$(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) || die EXACT_OPERATIONS_REQUIRED
-[[ "$operations_delta" == $'.github/workflows/transaction-room-native.yml\nci/transaction-room/run-hosted-native.sh' ]] ||
+[[ "$operations_delta" == $'.github/workflows/transaction-room-native.yml\nci/transaction-room/rehearse.py\nci/transaction-room/run-hosted-native.sh' ]] ||
   die EXACT_OPERATIONS_REQUIRED
 [[ $(git -C "$backend" rev-parse HEAD) == "$candidate_commit" &&
    $(git -C "$backend" rev-parse 'HEAD^{tree}') == "$candidate_tree" &&
@@ -161,7 +161,8 @@ import re, sys
 path = Path(sys.argv[1])
 mode, native = sys.argv[2:]
 raw = path.read_bytes() if path.stat().st_size <= 131072 else b""
-stages = rb"(?:checkout|disposable_db|bootstrap|migrate_baseline|migrate_floorplans|catalog|restore_seed|tests|test_cleanup)"
+stages = (rb"(?:checkout|disposable_db|bootstrap|migrate_baseline|migrate_floorplans|catalog|restore_seed|tests|test_cleanup"
+          rb"|restore_(?:source|target)_(?:identity|catalog|state)|restore_(?:tables|counts|columns|constraints|indexes|triggers|views|grants|media))")
 pass_line = re.compile(rb"TRANSACTION_ROOM_NATIVE " + mode.encode() +
     rb" head=(?:[0-9a-f]{12}|none) private_tables=[0-9]{1,2} shape=(?:[0-9a-f]{64}|none) tests=[0-9]{1,2} pass=[0-9]{1,2}")
 error_line = re.compile(rb"TRANSACTION_ROOM_NATIVE_FAILURE " + mode.encode() + rb" stage=" + stages +
