@@ -1,8 +1,8 @@
-name: Isolated property viewing itinerary rehearsal
+name: Isolated bilingual editorial lifecycle rehearsal
 
 on:
   push:
-    branches: [codex-ci-property-viewings-20261117-v2]
+    branches: [codex-ci-editorial-20261117]
 
 permissions:
   contents: read
@@ -31,17 +31,17 @@ jobs:
           path: browser-ops
           fetch-depth: 2
           persist-credentials: false
-      - name: Read exact property viewing frontend and login handoff
+      - name: Read exact Admin editorial and public reading frontend
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: ilovedrrealty/iLoveDRRealty
-          ref: 904db1e7d146e7211ab3c69fada163750d47f325
+          ref: f628e36eebd93eaef3a8193c74b2f6b1c5d3cc74
           path: frontend-base
           persist-credentials: false
       - name: Read exact backend application
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 703158f0df31ed2abfae762688f2d8c15c46e274
+          ref: 483cb04f149a003dfca35fdd6b19ec43f942d127
           path: browser-backend
           persist-credentials: false
       - name: Read accepted migration dependency recipe
@@ -50,7 +50,7 @@ jobs:
           ref: c193a925ba57ea2d67ea48c44e5262817885c8a2
           path: migration-relay
           persist-credentials: false
-      - name: Verify two-property itineraries, assignment and bilingual scheduling
+      - name: Verify private drafts and bilingual review, publication and withdrawal
         shell: bash
         run: |
           set -euo pipefail
