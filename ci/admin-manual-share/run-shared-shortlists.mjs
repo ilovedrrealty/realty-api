@@ -151,9 +151,12 @@ async function main() {
     })
     checks.push('browser_create_public_property_and_shared_fields')
 
-    step = 'buyer_enter_share_fields'
+    step = 'buyer_created_detail'
+    await page.getByRole('heading', { name: title, exact: true }).waitFor()
+    step = 'buyer_enter_recipient_code'
     await page.getByLabel('Recipient account code', { exact: true }).fill('#' + String(fixture.realtorCode).padStart(7, '0'))
-    await page.getByLabel('Access duration', { exact: true }).selectOption('7')
+    step = 'buyer_select_share_expiry'
+    await page.getByRole('combobox', { name: /^Access duration/ }).selectOption('7')
     step = 'buyer_share_review'
     await page.getByRole('button', { name: 'Review share', exact: true }).click()
     const sharePromise = page.waitForResponse(response => fromApi(response, ownerPath + '/share', 'POST'))
