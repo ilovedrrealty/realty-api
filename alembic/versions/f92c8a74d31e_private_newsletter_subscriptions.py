@@ -16,6 +16,7 @@ def upgrade():
         status TEXT NOT NULL DEFAULT 'pending',
         consent_at TIMESTAMPTZ NOT NULL,
         confirmation_nonce UUID,
+        confirmation_payload JSONB,
         confirmation_expires_at TIMESTAMPTZ,
         last_attempt_at TIMESTAMPTZ,
         provider_accepted_at TIMESTAMPTZ,

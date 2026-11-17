@@ -55,18 +55,22 @@ def action_token(row_id, action, nonce=None):
     return f"{row_id}.{signature}"
 
 
-def send_confirmation(email, language, row_id, nonce, page):
+def confirmation_message(email, language, row_id, nonce, page):
     confirm = escape(page + "#confirm=" + action_token(row_id, "confirm", nonce), quote=True)
     unsubscribe = escape(page + "#unsubscribe=" + action_token(row_id, "unsubscribe"), quote=True)
     subject, instructions, confirm_label, cancel_label = COPY[language]
     html = (f'<p>{instructions}</p><p><a href="{confirm}">{confirm_label}</a></p>'
             f'<p><a href="{unsubscribe}">{cancel_label}</a></p>')
+    return {"from": settings.email_from, "to": [email], "subject": subject, "html": html}
+
+
+def send_confirmation(payload, nonce):
     try:
         result = httpx.post(
             "https://api.resend.com/emails",
             headers={"Authorization": f"Bearer {settings.resend_api_key}",
                      "Idempotency-Key": f"ildr-newsletter-confirm-{nonce}"},
-            json={"from": settings.email_from, "to": [email], "subject": subject, "html": html},
+            json=payload,
             timeout=TRANSPORT,
         )
         provider_id = result.json().get("id") if result.is_success else None
@@ -80,7 +84,6 @@ def send_confirmation(email, language, row_id, nonce, page):
 def subscribe(db, *, email, language):
     if not settings.resend_api_key:
         raise ConfirmationUnavailable()
-    page = newsletter_page()
     email = email.casefold()
     now = now_utc()
     db.execute(insert(NewsletterSubscription).values(
@@ -102,17 +105,21 @@ def subscribe(db, *, email, language):
         row.consent_at = now
         row.confirmation_nonce = uuid4()
         row.confirmation_expires_at = now + CONFIRMATION_LIFETIME
+        row.confirmation_payload = confirmation_message(
+            row.email, row.language, row.id, row.confirmation_nonce, newsletter_page(),
+        )
         row.provider_accepted_at = None
     if row.provider_accepted_at is not None:
         db.commit()
         return
     row.last_attempt_at = now
-    selected = (row.email, row.language, row.id, row.confirmation_nonce, page)
+    payload, row_id, nonce = row.confirmation_payload, row.id, row.confirmation_nonce
+    if not isinstance(payload, dict):
+        raise ConfirmationUnavailable()
     db.commit()
     # Stable payload and provider key allow repeat requests after an uncertain
     # result without sending two messages during the same confirmation window.
-    send_confirmation(*selected)
-    _, _, row_id, nonce, _ = selected
+    send_confirmation(payload, nonce)
     db.execute(update(NewsletterSubscription).where(
         NewsletterSubscription.id == row_id, NewsletterSubscription.confirmation_nonce == nonce,
     ).values(provider_accepted_at=now_utc()))
@@ -142,6 +149,7 @@ def finish(db, *, action, token):
         row.status = "unsubscribed"
         row.unsubscribed_at = now
         row.confirmation_nonce = None
+        row.confirmation_payload = None
         row.confirmation_expires_at = None
         row.provider_accepted_at = None
     status = row.status

@@ -54,8 +54,10 @@ class NewsletterTest(unittest.TestCase):
         self.assertEqual(self.read().status, "pending")
         self.assertEqual(self.call("subscribe", fields).status_code, 202)
         self.assertEqual(self.mail.call_count, 1)
-        _, lang, row_id, nonce, page = self.mail.call_args.args
-        self.assertEqual((lang, page), ("es", "http://127.0.0.1:8917/newsletter/"))
+        payload, nonce = self.mail.call_args.args
+        row_id = self.read().id
+        self.assertEqual(payload["subject"], newsletter.COPY["es"][0])
+        self.assertIn("http://127.0.0.1:8917/newsletter/#confirm=", payload["html"])
         confirm = newsletter.action_token(row_id, "confirm", nonce)
         leave = newsletter.action_token(row_id, "unsubscribe")
         self.assertEqual(len(confirm), 101)
@@ -78,9 +80,14 @@ class NewsletterTest(unittest.TestCase):
         self.assertEqual(self.mail.call_count, 1)
         self.now += timedelta(minutes=6)
         self.mail.side_effect = None
+        settings.landing_url = "http://localhost:7777"
+        sender = patch.object(settings, "email_from", "changed@example.com")
+        sender.start()
+        self.addCleanup(sender.stop)
         self.assertEqual(self.call("subscribe", dict(values, language="es")).status_code, 202)
         self.assertEqual(self.mail.call_args.args, first)
-        _, _, row_id, nonce, _ = first
+        _, nonce = first
+        row_id = self.read().id
         self.now += timedelta(hours=21)
         self.assertEqual(self.call("confirm", {"token": newsletter.action_token(row_id, "confirm", nonce)}).status_code, 400)
 
@@ -100,7 +107,10 @@ class NewsletterTest(unittest.TestCase):
         response = SimpleNamespace(is_success=True, json=lambda: {"id": "synthetic-accepted"})
         with patch.object(newsletter.httpx, "post", return_value=response) as provider:
             for locale in ("en", "es"):
-                implementation(self.email, locale, identifier, nonce, "https://example.com/newsletter/")
+                message = newsletter.confirmation_message(
+                    self.email, locale, identifier, nonce, "https://example.com/newsletter/",
+                )
+                implementation(message, nonce)
                 request = provider.call_args
                 self.assertEqual(request.args, ("https://api.resend.com/emails",))
                 self.assertEqual(request.kwargs["headers"]["Idempotency-Key"], f"ildr-newsletter-confirm-{nonce}")
@@ -111,4 +121,4 @@ class NewsletterTest(unittest.TestCase):
                 self.assertIn("#unsubscribe=" + newsletter.action_token(identifier, "unsubscribe"), payload["html"])
             provider.return_value = SimpleNamespace(is_success=True, json=lambda: {})
             with self.assertRaises(newsletter.ConfirmationUnavailable):
-                implementation(self.email, "en", identifier, nonce, "https://example.com/newsletter/")
+                implementation(message, nonce)
