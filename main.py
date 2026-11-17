@@ -12,6 +12,20 @@ from config import settings
 from database import SessionLocal
 from utils.limiter import limiter
 from routes import research_workspaces, trade_contacts
+from routes import arrival_guide
+from routes import shortlists
+from routes import viewings
+from routes import editorial
+from routes import market_reports
+from routes import development_inventory, listing_floor_plans
+from routes import seller_valuation
+from routes import listing_performance
+from routes import transaction_room
+from routes import transaction_documents
+from routes import property_network
+from routes import service_workflow
+from routes import service_referral
+from routes import analytics, lead_delivery as lead_delivery_routes, property_management, location_review, owner_leads
 
 # Import all models so Base.metadata knows about them before create_all
 import models  # noqa: F401
@@ -132,9 +146,14 @@ async def _payout_cron() -> None:
 async def lifespan(app: FastAPI):
     cleanup_task = asyncio.create_task(_cleanup_pending_users())
     payout_task = asyncio.create_task(_payout_cron())
-    yield
-    cleanup_task.cancel()
-    payout_task.cancel()
+    from services.lead_delivery import worker_loop
+    delivery_task = asyncio.create_task(worker_loop(SessionLocal))
+    try:
+        yield
+    finally:
+        for task in (cleanup_task, payout_task, delivery_task):
+            task.cancel()
+        await asyncio.gather(cleanup_task, payout_task, delivery_task, return_exceptions=True)
 
 
 app = FastAPI(title="I Love DR Realty API", lifespan=lifespan)
@@ -153,7 +172,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"],
 )
 
@@ -176,12 +195,31 @@ app.include_router(leads.router)
 app.include_router(inquiries.router)
 app.include_router(saved_homes.router)
 app.include_router(bookings.router)
+app.include_router(arrival_guide.router)
+app.include_router(shortlists.router)
+app.include_router(viewings.router)
+app.include_router(editorial.router)
+app.include_router(market_reports.router)
+app.include_router(development_inventory.router)
+app.include_router(listing_floor_plans.router)
+app.include_router(seller_valuation.router)
+app.include_router(listing_performance.router)
+app.include_router(transaction_room.router)
+app.include_router(transaction_documents.router)
 app.include_router(chat.router)
 app.include_router(webhooks.router)
 app.include_router(stats.router)
 app.include_router(professionals.router)
 app.include_router(research_workspaces.router)
 app.include_router(trade_contacts.router)
+app.include_router(analytics.router)
+app.include_router(lead_delivery_routes.router)
+app.include_router(property_management.router)
+app.include_router(property_network.router)
+app.include_router(service_workflow.router)
+app.include_router(service_referral.router)
+app.include_router(location_review.router)
+app.include_router(owner_leads.router)
 app.include_router(website_settings.router)
 
 

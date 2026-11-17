@@ -18,6 +18,7 @@ from database import Base
 import models
 from models.listing import Listing
 from models.listing_event import ListingEvent
+from models.listing_location_review import ListingLocationReview
 from models.user import User
 from utils import bulk_import
 
@@ -116,14 +117,17 @@ class LocationImportTests(unittest.TestCase):
                 "assigned_agent_id": str(self.admin_code), "source_ref": "synthetic-" + uuid4().hex,
                 "photo_urls": "https://example.com/synthetic-input.jpg", **changes}
 
-    def test_explicit_pair_and_maps_url_round_trip_with_existing_photo_import(self):
+    def test_explicit_pair_and_maps_url_are_private_evidence_with_existing_photo_import(self):
         row = self.row(maps_url="https://www.google.com/maps/@19.75,-70.41,15z", latitude="19.7543000", longitude="-70.4125000")
         result = bulk_import._import_row(self.db, row, self.admin_id)
         self.assertEqual(result["status"], "succeeded", result)
         self.db.commit(); self.db.expire_all()
         saved = self.db.get(Listing, UUID(result["listing_id"]))
-        self.assertEqual(saved.maps_url, row["maps_url"])
-        self.assertEqual((saved.latitude, saved.longitude), (Decimal(row["latitude"]), Decimal(row["longitude"])))
+        self.assertEqual((saved.maps_url, saved.latitude, saved.longitude), (None, None, None))
+        review = self.db.get(ListingLocationReview, saved.id)
+        self.assertEqual((review.review_status, review.public_precision), ("unreviewed", "area"))
+        self.assertEqual(review.maps_url, row["maps_url"])
+        self.assertEqual((review.latitude, review.longitude), (Decimal(row["latitude"]), Decimal(row["longitude"])))
         self.assertEqual(saved.images, ["https://example.com/synthetic-property-photo.jpg"])
         self.assertEqual(self.db.query(ListingEvent).count(), 1)
         self.download.assert_called_once(); self.upload.assert_called_once()
@@ -139,7 +143,13 @@ class LocationImportTests(unittest.TestCase):
             self.db.commit(); self.db.expire_all()
             saved = self.db.get(Listing, UUID(result["listing_id"]))
             self.assertIsNone(saved.latitude); self.assertIsNone(saved.longitude)
-            self.assertEqual(saved.maps_url, fields.get("maps_url"))
+            self.assertIsNone(saved.maps_url)
+            review = self.db.get(ListingLocationReview, saved.id)
+            if fields.get("maps_url"):
+                self.assertEqual(review.maps_url, fields["maps_url"])
+                self.assertEqual((review.latitude, review.longitude), (None, None))
+            else:
+                self.assertIsNone(review)
 
     def test_invalid_locations_fail_before_download_upload_or_listing_event_side_effects(self):
         for changes in ({"latitude": "19.7"}, {"longitude": "-70.4"}, {"latitude": "NaN", "longitude": "-70"},
@@ -162,7 +172,10 @@ class LocationImportTests(unittest.TestCase):
         self.assertEqual(skipped["status"], "skipped")
         self.db.expire_all()
         saved = self.db.get(Listing, UUID(result["listing_id"]))
-        self.assertEqual((saved.maps_url, saved.latitude, saved.longitude), (original["maps_url"], Decimal(original["latitude"]), Decimal(original["longitude"])))
+        self.assertEqual((saved.maps_url, saved.latitude, saved.longitude), (None, None, None))
+        review = self.db.get(ListingLocationReview, saved.id)
+        self.assertEqual((review.maps_url, review.latitude, review.longitude, review.version),
+            (original["maps_url"], Decimal(original["latitude"]), Decimal(original["longitude"]), 1))
         self.assertEqual(self.db.query(Listing).count(), 1)
         self.download.assert_not_called(); self.upload.assert_not_called()
 

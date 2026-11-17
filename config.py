@@ -15,9 +15,13 @@ class Settings(BaseSettings):
     supabase_url: str = ""
     supabase_service_key: str = ""
     storage_bucket: str = "listing-images"
+    transaction_document_bucket: str = ""
     ghl_api_key: str = ""
     ghl_location_id: str = ""
     ghl_enabled: bool = False
+    lead_delivery_enabled: bool = False
+    customer_messages_enabled: bool = False
+    property_inquiry_require_consent: bool = False
     ghl_webhook_secret: str = ""
     notify_email: str = ""  # set to ilovedrrealty@gmail.com in Railway
     paypal_client_id: str = ""

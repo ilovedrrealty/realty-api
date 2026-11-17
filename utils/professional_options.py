@@ -33,6 +33,35 @@ CATEGORIES = [
     option("solar_energy", "Solar energy", "Energía solar"),
     option("internet_utilities", "Internet and utilities", "Internet y servicios básicos"),
     option("other_services", "Other property services", "Otros servicios inmobiliarios"),
+    option("handyman", "Handyman and general repairs", "Mantenimiento general y reparaciones"),
+    option("painting", "Painting", "Pintura"),
+    option("roofing_waterproofing", "Roofing and waterproofing", "Techos e impermeabilización"),
+    option("pest_control", "Pest control", "Control de plagas"),
+    option("appliance_repair", "Appliance repair", "Reparación de electrodomésticos"),
+    option("carpentry_cabinetry", "Carpentry and cabinetry", "Carpintería y ebanistería"),
+    option("metalwork_welding", "Metalwork and welding", "Herrería y soldadura"),
+    option("flooring_tiling", "Flooring and tile", "Pisos y revestimientos"),
+    option("water_systems", "Pumps, cisterns and water treatment", "Bombas, cisternas y tratamiento de agua"),
+    option("septic_drainage", "Septic systems and drainage", "Sistemas sépticos y drenaje"),
+    option("backup_power", "Inverters, batteries and generators", "Inversores, baterías y generadores"),
+    option("smart_property", "Access control and property technology", "Control de acceso y tecnología para inmuebles"),
+    option("fire_safety", "Fire protection and safety equipment", "Protección contra incendios y equipos de seguridad"),
+    option("waste_removal", "Waste and construction-debris removal", "Retiro de residuos y escombros"),
+    option("property_media", "Property photography, video and staging", "Fotografía, video y preparación de inmuebles"),
+    option("agricultural_services", "Agricultural property services", "Servicios para propiedades agropecuarias"),
+]
+# Network context only: these options do not extend Listing.type or change auth roles.
+PROPERTY_CLASSES = [
+    option("house_villa", "House or villa", "Casa o villa"),
+    option("apartment_condominium", "Apartment or condominium", "Apartamento o condominio"),
+    option("multiunit_building", "Multi-unit building or association", "Edificio de varias unidades o asociación"),
+    option("vacation_rental", "Vacation rental", "Alquiler vacacional"),
+    option("hotel_hospitality", "Hotel, guesthouse or resort", "Hotel, casa de huéspedes o complejo turístico"),
+    option("office", "Office", "Oficina"),
+    option("retail_restaurant", "Retail space or restaurant", "Local comercial o restaurante"),
+    option("warehouse_industrial", "Warehouse or industrial property", "Almacén o inmueble industrial"),
+    option("farm_rural", "Farm or rural property", "Finca o propiedad rural"),
+    option("vacant_land", "Vacant development land", "Terreno sin desarrollar"),
 ]
 AREAS = [
     option("nationwide", "Dominican Republic — nationwide", "República Dominicana — todo el país"),
@@ -60,6 +89,7 @@ LANGUAGES = [option("es", "Spanish", "Español"), option("en", "English", "Ingl�
              option("it", "Italian", "Italiano"), option("pt", "Portuguese", "Portugués"),
              option("ru", "Russian", "Ruso"), option("other", "Other", "Otro")]
 CATEGORY_IDS = frozenset(item["id"] for item in CATEGORIES)
+PROPERTY_CLASS_IDS = frozenset(item["id"] for item in PROPERTY_CLASSES)
 AREA_IDS = frozenset(item["id"] for item in AREAS)
 LANGUAGE_IDS = frozenset(item["id"] for item in LANGUAGES)
 AREA_CHILDREN = {"north_coast": {"puerto_plata", "sosua", "cabarete", "cabrera"},

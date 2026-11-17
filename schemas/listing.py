@@ -1,8 +1,10 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_serializer, model_validator
 from typing import Annotated, Optional, List, Literal
 from decimal import Decimal
 from datetime import datetime
 import uuid
+
+from schemas.listing_room_tour import RoomPhotoTour
 
 Bathrooms = Annotated[float, Field(ge=0, multiple_of=0.5)]
 
@@ -60,6 +62,13 @@ class ListingCreate(BaseModel):
 
 
 class ListingUpdate(BaseModel):
+    @model_validator(mode="before")
+    @classmethod
+    def separate_room_tour_submission(cls, data):
+        if isinstance(data, dict) and "room_photo_tour" in data:
+            raise ValueError("Submit the room photo tour separately for review")
+        return data
+
     title: Optional[str] = None
     description: Optional[str] = None
     description_es: Optional[str] = None
@@ -208,6 +217,43 @@ class ListingPageResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class PublicListingResponse(ListingResponse):
+    location_precision: Literal["exact", "area", "hidden"] = "exact"
+    location_verified: bool = False
+
+
+class PublicListingDetailResponse(PublicListingResponse):
+    room_photo_tour: RoomPhotoTour | None = None
+
+
+class ListingRoomTourUpdate(BaseModel):
+    model_config = {"extra": "forbid"}
+
+    room_photo_tour: RoomPhotoTour | None
+
+
+class ListingRoomTourEditorResponse(BaseModel):
+    listing_id: uuid.UUID
+    images: list[str]
+    room_photo_tour: RoomPhotoTour | None
+    pending_review: Literal["none", "room_photo_tour", "other"]
+
+
+class SpatialSearchCoverage(BaseModel):
+    spatial_excluded_unlocated: Optional[int] = Field(default=None, ge=0)
+
+    @model_serializer(mode="wrap")
+    def omit_inactive_spatial_coverage(self, serialize):
+        result = serialize(self)
+        if self.spatial_excluded_unlocated is None:
+            result.pop("spatial_excluded_unlocated", None)
+        return result
+
+
+class PublicListingPageResponse(ListingPageResponse, SpatialSearchCoverage):
+    items: List[PublicListingResponse]
+
+
 class ListingFilterOption(BaseModel):
     value: str
     count: int = Field(ge=0)
@@ -228,6 +274,7 @@ class ListingMapPoint(BaseModel):
     currency: str
     transaction: str
     price_period: Optional[Literal["month", "day"]] = None
+    location_verified: bool = False
 
 
 class ListingMapArea(BaseModel):
@@ -242,7 +289,7 @@ class ListingMapBounds(BaseModel):
     east: float
 
 
-class ListingMapResponse(BaseModel):
+class ListingMapResponse(SpatialSearchCoverage):
     items: List[ListingMapPoint]
     total: int = Field(ge=0)
     mapped_total: int = Field(ge=0)

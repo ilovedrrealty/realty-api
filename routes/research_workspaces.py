@@ -90,7 +90,11 @@ def save_workspace(request: Request, response: Response, workspace_id: UUID, bod
     if row.version != body.expected_version:
         raise HTTPException(409, "This workspace changed in another tab. Reload it before saving.")
     row.title = body.title
-    row.data = body.model_dump(mode="json", exclude={"expected_version"})
+    data = body.model_dump(mode="json", exclude={"expected_version"})
+    # Existing clients may save an edited checklist without the worksheet field.
+    if "purchase_costs" not in body.model_fields_set:
+        data["purchase_costs"] = row.data.get("purchase_costs", [])
+    row.data = data
     row.version += 1
     row.updated_at = datetime.now(timezone.utc)
     db.commit()
