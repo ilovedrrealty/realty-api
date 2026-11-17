@@ -8,7 +8,7 @@ bounded() { timeout --kill-after=8s "$@"; }
 
 [[ $# == 4 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api ]] || die CI_REQUIRED
 [[ ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 && ${GITHUB_RUN_ATTEMPT:-} == 1 ]] || die STANDARD_LINUX_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-development-browser-20261117-v5 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
+[[ ${GITHUB_REF:-} == refs/heads/codex-ci-seller-valuation-browser-20261117 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 
 ops="$1"; frontend="$2"; backend="$3"; migration="$4"
 [[ "$ops" == "$GITHUB_WORKSPACE/browser-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-base" &&
@@ -18,13 +18,13 @@ for checkout in "$ops" "$frontend" "$backend" "$migration"; do
   checkout_status=$(git -C "$checkout" status --porcelain=v1 --untracked-files=all) || die CLEAN_CHECKOUT_REQUIRED
   [[ $(realpath "$checkout") == "$checkout" && -z "$checkout_status" ]] || die CLEAN_CHECKOUT_REQUIRED
 done
-[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == fd407122dd6a91633e15c0ac045dc89f0f23c4ad ]] ||
+[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == ddaa99609b6eed3943eb143e6a7ebbefa7235e62 ]] ||
   die EXACT_OPERATIONS_PARENT_REQUIRED
-frontend_commit=954b79f7c01e85a57230165eae82d741d88e3e73
-frontend_tree=7767d3072952015f87e0d405a9c2290c133c6342
-backend_commit=8f679b0bceefbf5b5f2565a5412746109d0f18e1
-backend_tree=dc9b1789871c72829356215746fcd39a8891d7db
-migration_head=fad71e03c6b9
+frontend_commit=35f6380f8a3046cd1b3e8768f4207e8b2c31be3c
+frontend_tree=c52b762985864e63931adc2b022fa14e3a427332
+backend_commit=8936bec9f42f2affed00cea7cf952f49535898bb
+backend_tree=ff89fa613e001bbc5564e8da9ea778ada69329c1
+migration_head=17d8b2c40aa6
 [[ $(git -C "$frontend" rev-parse HEAD) == "$frontend_commit" &&
    $(git -C "$frontend" rev-parse 'HEAD^{tree}') == "$frontend_tree" ]] || die EXACT_FRONTEND_REQUIRED
 [[ $(git -C "$backend" rev-parse HEAD) == "$backend_commit" &&
@@ -35,7 +35,8 @@ migration_head=fad71e03c6b9
 tools="$ops/ci/admin-manual-share"
 dockerfile="$migration/ci/migration/services163.Dockerfile"
 for file in serve_admin_share_fixture.py serve_dashboard_fixture.mjs serve_editorial_fixture.py run-editorial.mjs \
-  serve_development_inventory_fixture.py run-development-inventory.mjs; do
+  serve_development_inventory_fixture.py run-development-inventory.mjs \
+  serve_seller_valuation_fixture.py run-seller-valuation.mjs; do
   [[ -f "$tools/$file" && ! -L "$tools/$file" ]] || die EXACT_FIXTURE_SOURCE_REQUIRED
 done
 printf '%s  %s\n' e546d8c5668b87ef28e604107bbb330e6f4b3873cf0208b4d24ca378bd0851f9 "$dockerfile" \
@@ -111,7 +112,7 @@ trap cleanup EXIT
 
 mkdir "$state/frontend-work" "$state/fixtures" "$state/browser-run" "$state/python-context"
 cp "$backend/requirements.txt" "$state/python-context/requirements.txt"
-cp "$tools/run-editorial.mjs" "$tools/run-development-inventory.mjs" "$state/browser-run/"
+cp "$tools/run-editorial.mjs" "$tools/run-development-inventory.mjs" "$tools/run-seller-valuation.mjs" "$state/browser-run/"
 
 # Public, pinned dependency preparation. No app or browser process is running yet.
 for image in "$node_image" "$python_image" "$postgres_image" "$browser_image"; do
@@ -129,7 +130,7 @@ from pathlib import Path
 import subprocess, sys
 source, copy = map(Path, sys.argv[1:])
 files = subprocess.check_output(['git', '-C', str(source), 'ls-tree', '-rz', 'HEAD']).split(b'\0')
-assert len(files) == 509 and not files[-1]
+assert len(files) == 521 and not files[-1]
 for entry in filter(None, files):
     metadata, name = entry.split(b'\t', 1)
     mode, kind, object_id = metadata.split()
@@ -156,6 +157,9 @@ printf '%s  %s\n' \
   d1b8cb1067b6a9ed1e9e1f6bf46f3d52ee3301647fb43f344dd53fd96df4dfad "$state/frontend-work/tests/development-inventory-admin.test.cjs" \
   b367b59edc076a336b2aa0115cacc61b1d2b40e63c3f65e2b42eccff574729b6 "$state/frontend-work/tests/development-inventory-admin-fields.test.cjs" \
   f2ccbdce0958f0fc1cf53e434eb25613ce3869e431142d02e662f0a8e6e42e07 "$state/frontend-work/tests/development-inventory-public.test.cjs" \
+  abc08dfc11671b1615878dd2d6c39c234832e028484d9a648ad5dea547cb7f79 "$state/frontend-work/tests/seller-valuation-intake.test.cjs" \
+  c07f09b2569133676568d6fd75a4d200e76592a8616f323d35eac7894d1d8c00 "$state/frontend-work/tests/seller-valuation-workspace.test.cjs" \
+  982911057c9932efe84b31e416c32962372073059b889a80c2f0083f559155da "$state/frontend-work/tests/lead-tracking.test.cjs" \
   | sha256sum --check --status || die EXACT_PACKAGE_AND_TEST_PINS_REQUIRED
 
 prepare=(--label "$label=$run_key" --user "$uids" --read-only --cap-drop ALL --security-opt no-new-privileges:true
@@ -366,6 +370,24 @@ expected = (f'# tests {count}'.encode(), f'# pass {count}'.encode(), b'# fail 0'
 assert all(lines.count(line) == 1 for line in expected)
 print(f'DEVELOPMENT_INVENTORY_FRONTEND_CONTRACTS native=0 tests={count} pass={count}')
 PY
+if ! bounded 120s docker run "${prepare[@]}" --network none --workdir /work \
+  --mount "type=bind,src=$state/frontend-work,dst=/work,readonly" "$node_image" \
+  env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp CI=true \
+  node --test --test-reporter=tap tests/seller-valuation-intake.test.cjs tests/seller-valuation-workspace.test.cjs \
+    tests/lead-tracking.test.cjs >"$state/seller-valuation-contracts.log" 2>&1; then
+  die OFFLINE_SELLER_VALUATION_CONTRACTS_FAILED
+fi
+python3 -I -B - "$state/seller-valuation-contracts.log" <<'PY' || die OFFLINE_SELLER_VALUATION_CONTRACT_RESULT_REQUIRED
+from pathlib import Path
+import sys
+path = Path(sys.argv[1])
+count = 22
+assert path.stat().st_size <= 65536
+lines = path.read_bytes().splitlines()
+expected = (f'# tests {count}'.encode(), f'# pass {count}'.encode(), b'# fail 0', b'# skipped 0', b'# todo 0')
+assert all(lines.count(line) == 1 for line in expected)
+print(f'SELLER_VALUATION_FRONTEND_CONTRACTS native=0 tests={count} pass={count}')
+PY
 if ! bounded 360s docker run "${prepare[@]}" --network none --workdir /work \
   --mount "type=bind,src=$state/frontend-work,dst=/work" "$node_image" \
   env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp CI=true NODE_OPTIONS=--max-old-space-size=1536 \
@@ -483,6 +505,8 @@ for name, marker, count in (
     ('listing_search', 'SPATIAL_SEARCH', 19),
     ('search_geometry', 'SPATIAL_GEOMETRY', 3),
     ('development_inventory', 'DEVELOPMENT_INVENTORY', 8),
+    ('lead_tracking', 'LEAD_TRACKING', 17),
+    ('seller_valuation_workspace', 'SELLER_VALUATION', 6),
 ):
     spec = spec_from_file_location(name + '_tests', app / f'tests/test_{name}.py')
     tests = module_from_spec(spec)
@@ -499,9 +523,9 @@ import re, sys
 from pathlib import Path
 path = Path(sys.argv[1])
 assert path.stat().st_size <= 131072
-pattern = rb'(?:STAY_ARRIVAL|SHARED_SHORTLIST|PROPERTY_VIEWINGS|EDITORIAL|SPATIAL_SEARCH|SPATIAL_GEOMETRY|DEVELOPMENT_INVENTORY)_BACKEND_CONTRACTS tests=[0-9]+ failed=[0-9]+ skipped=[0-9]+ methods=[a-z0-9_,]+'
+pattern = rb'(?:STAY_ARRIVAL|SHARED_SHORTLIST|PROPERTY_VIEWINGS|EDITORIAL|SPATIAL_SEARCH|SPATIAL_GEOMETRY|DEVELOPMENT_INVENTORY|LEAD_TRACKING|SELLER_VALUATION)_BACKEND_CONTRACTS tests=[0-9]+ failed=[0-9]+ skipped=[0-9]+ methods=[a-z0-9_,]+'
 matches = [line for line in path.read_bytes().splitlines() if re.fullmatch(pattern, line)]
-assert 1 <= len(matches) <= 7
+assert 1 <= len(matches) <= 9
 for line in matches:
     print(line.decode('ascii'))
 PY
@@ -509,12 +533,12 @@ PY
 
 api=$(bounded 25s docker create "${runtime[@]}" --memory 2g --memory-swap 2g \
   --tmpfs /tmp:rw,exec,size=128m --env "ILDR_BROWSER_CI_NONCE=$nonce" \
-  --env "ILDR_DEVELOPMENT_APP_COMMIT=$backend_commit" --env "ILDR_DEVELOPMENT_APP_TREE=$backend_tree" \
-  --env "ILDR_DEVELOPMENT_MIGRATION=$migration_head" \
+  --env "ILDR_VALUATION_APP_COMMIT=$backend_commit" --env "ILDR_VALUATION_APP_TREE=$backend_tree" \
+  --env "ILDR_VALUATION_MIGRATION=$migration_head" \
   --mount "type=bind,src=$backend,dst=/application,readonly" \
   --mount "type=bind,src=$tools,dst=/tools,readonly" \
   --mount "type=bind,src=$state/fixtures,dst=/browser-fixtures" \
-  "$app_image" /usr/local/bin/python -I -B /tools/serve_development_inventory_fixture.py) || die API_CREATE_FAILED
+  "$app_image" /usr/local/bin/python -I -B /tools/serve_seller_valuation_fixture.py) || die API_CREATE_FAILED
 owned "$api" && bounded 25s docker start "$api" >/dev/null || die API_START_FAILED
 dashboard=$(bounded 25s docker create "${runtime[@]}" --memory 512m --memory-swap 512m \
   --mount "type=bind,src=$state/frontend-work/apps/dashboard/dist,dst=/dashboard-dist,readonly" \
@@ -538,7 +562,7 @@ assert len(reports)<=1
 if reports:
     value=json.loads(reports[0]); assert set(value)=={'stage','error_type','fixture_line'}
     assert value['stage'] in {'checkout','claim_database','configure_application','load_application','bootstrap_database',
-        'apply_alembic','seed_accounts','seed_lead','write_fixture','serve_application'}
+        'apply_alembic','seed_accounts','seed_lead','seed_valuation','write_fixture','serve_application'}
     assert re.fullmatch(r'[A-Za-z][A-Za-z0-9_]{0,62}',value['error_type'])
     assert value['fixture_line'] is None or type(value['fixture_line']) is int and 0<value['fixture_line']<=1000
     print(prefix.decode()+json.dumps(value,sort_keys=True,separators=(',',':')))
@@ -555,7 +579,7 @@ browser=$(bounded 25s docker create "${runtime[@]}" --memory 2g --memory-swap 2g
   --env PLAYWRIGHT_BROWSERS_PATH=/ms-playwright --env ILDR_BROWSER_FIXTURES=/browser-fixtures/fixtures.json \
   --mount "type=bind,src=$state/browser-run,dst=/rehearsal,readonly" \
   --mount "type=bind,src=$state/fixtures,dst=/browser-fixtures,readonly" \
-  "$browser_image" /bin/sh -ec 'node /rehearsal/run-development-inventory.mjs; node /rehearsal/run-editorial.mjs') || die BROWSER_CREATE_FAILED
+  "$browser_image" /bin/sh -ec 'node /rehearsal/run-seller-valuation.mjs; node /rehearsal/run-development-inventory.mjs; node /rehearsal/run-editorial.mjs') || die BROWSER_CREATE_FAILED
 owned "$browser" || die OWNED_BROWSER_REQUIRED
 client_exit=0
 bounded 240s docker start --attach "$browser" >"$state/browser.log" 2>&1 || client_exit=$?
@@ -573,6 +597,14 @@ def safe(value):
     if isinstance(value,str): return re.fullmatch(r'[a-zA-Z0-9_ -]{1,120}',value) is not None
     return value is None or type(value) in (bool,int)
 expected={
+    b'SELLER_VALUATION_BROWSER ': [
+        'unrelated_staff_and_anonymous_denied',
+        'admin_enters_normal_seller_detail_and_saves_facts',
+        'assigned_realtor_captures_asking_snapshot',
+        'assigned_realtor_records_and_verifies_sold_evidence',
+        'reviewed_range_distinguishes_asking_and_verified_sold',
+        'private_follow_up_completed_and_report_preserved',
+    ],
     b'DEVELOPMENT_INVENTORY_BROWSER ': [
         'exact_synthetic_admin_buyer_and_write_scope',
         'desktop_listing_action_creates_private_bilingual_inventory',
@@ -607,5 +639,5 @@ api_state=$(bounded 15s docker inspect --format '{{.State.ExitCode}} {{.State.Ru
 printf 'BROWSER_API_FIXTURE_SHUTDOWN state=%s login_file=absent\n' "$api_state"
 backend_status=$(git -C "$backend" status --porcelain=v1 --untracked-files=all) || die API_SOURCE_CHANGED
 [[ -z "$backend_status" ]] || die API_SOURCE_CHANGED
-printf 'DEVELOPMENT_INVENTORY_ACCEPTANCE operations=%s frontend=%s frontend_tree=%s backend=%s backend_tree=%s migration=%s postgres_version_num=170006 run=%s attempt=1\n' \
+printf 'SELLER_VALUATION_ACCEPTANCE operations=%s frontend=%s frontend_tree=%s backend=%s backend_tree=%s migration=%s postgres_version_num=170006 run=%s attempt=1\n' \
   "$GITHUB_SHA" "$frontend_commit" "$frontend_tree" "$backend_commit" "$backend_tree" "$migration_head" "$GITHUB_RUN_ID"
