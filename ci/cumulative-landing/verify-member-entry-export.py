@@ -68,7 +68,8 @@ def inspect(output):
     assert article_inventory(output, "article") == expected
     assert article_inventory(output, "es/article") == expected
     assert "Property Services Directory" in read("/professionals/")
-    for route in ("/", "/search/", "/blog/", "/login/", "/signup/", "/verify/", LISTING):
+    assert "<title>Log In" in read("/login/")
+    for route in ("/", "/search/", "/blog/", "/signup/", "/verify/", LISTING):
         read(route)
 
     spanish = RouteMetadata(read(SPANISH_LANDING))
@@ -102,7 +103,7 @@ def inspect(output):
         en_url, es_url = BASE + f"/article/{slug}/", BASE + f"/es/article/{slug}/"
         assert {("en", en_url), ("es", es_url)} <= entries[en_url]
         assert {("en", en_url), ("es", es_url)} <= entries[es_url]
-    print("MEMBER_LANDING_ROUTES professionals=pass spanish_landing=pass english_articles=12 spanish_articles=12 "
+    print("MEMBER_LANDING_ROUTES professionals=pass login=pass spanish_landing=pass english_articles=12 spanish_articles=12 "
           "sitemap_indexed_pairs=3 sitemap_staged_excluded_pairs=9")
 
 

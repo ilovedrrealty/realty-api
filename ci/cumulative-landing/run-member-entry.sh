@@ -7,15 +7,15 @@ bounded() { timeout --kill-after=8s "$@"; }
 [[ $# == 3 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 &&
    ${GITHUB_RUN_ATTEMPT:-} == 1 ]] || die HOST_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-network-member-entry-landing-20261116 &&
+[[ ${GITHUB_REF:-} == refs/heads/codex-ci-shared-shortlists-landing-20261117 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 
 ops="$1"; fixture="$2"; frontend="$3"
-parent=f7bc3fca56fedc5153f205d94e7b5e225483bb0f
+parent=59ad9e2dce7714302adad0cdda197bf6de46f041
 fixture_commit=441efdc288c3a38b8607c816c684abec080d83ad
 fixture_tree=6c01c7577e343d5e2542d4f8a84cbc0f103e4b5d
-frontend_commit=5d883b25744152f1cafbd659f1bc63b24b57e40b
-frontend_tree=fc0146d3424fddf5ceeb54f134acbed198aa5434
+frontend_commit=b7daf320ceb1e813d5a4b07238bbf102b13a29b5
+frontend_tree=9c21d0c1c506c52530455076a11bce7ea7c2ce68
 [[ "$ops" == "$GITHUB_WORKSPACE/member-landing-ops" && "$fixture" == "$GITHUB_WORKSPACE/member-landing-fixture" &&
    "$frontend" == "$GITHUB_WORKSPACE/member-landing-source" ]] || die EXACT_CHECKOUT_PATHS_REQUIRED
 for checkout in "$ops" "$fixture" "$frontend"; do
@@ -78,7 +78,7 @@ import subprocess, sys
 source, archived = map(Path, sys.argv[1:])
 files = subprocess.check_output(['git', '-C', str(source), 'ls-tree', '-rz', 'HEAD']).split(b'\0')
 files = [entry for entry in files if entry]
-assert len(files) == 473
+assert len(files) == 480
 for entry in files:
     metadata, name = entry.split(b'\t', 1)
     mode, kind, object_id = metadata.split()

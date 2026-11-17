@@ -1,8 +1,8 @@
-name: Exact property network landing and Spanish export rehearsal
+name: Exact shortlist landing and Spanish export rehearsal
 
 on:
   push:
-    branches: [codex-ci-network-member-entry-landing-20261116]
+    branches: [codex-ci-shared-shortlists-landing-20261117]
 
 permissions:
   contents: read
@@ -37,7 +37,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: ilovedrrealty/iLoveDRRealty
-          ref: 5d883b25744152f1cafbd659f1bc63b24b57e40b
+          ref: b7daf320ceb1e813d5a4b07238bbf102b13a29b5
           path: member-landing-source
           persist-credentials: false
       - name: Verify exact static export and Spanish route parity
