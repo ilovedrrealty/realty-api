@@ -1,8 +1,8 @@
-name: Isolated transaction room Dashboard rehearsal
+name: Isolated transaction task evidence Dashboard rehearsal
 
 on:
   push:
-    branches: [codex-ci-transaction-room-browser-20261117-v2]
+    branches: [codex-ci-transaction-task-evidence-browser-20261117]
 
 permissions:
   contents: read
@@ -31,17 +31,17 @@ jobs:
           path: browser-ops
           fetch-depth: 2
           persist-credentials: false
-      - name: Read exact transaction room frontend
+      - name: Read exact transaction task evidence frontend
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: ilovedrrealty/iLoveDRRealty
-          ref: 764a3a6b126e9d4d4bce93bffe2a2ca8c553da13
+          ref: 7de7bc27e894263f6f00589dd0e24d3f2d9d1dfa
           path: frontend-base
           persist-credentials: false
       - name: Read exact backend application
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 939723e88c224be89dbb1705cfc282de2ac1a6ef
+          ref: f10409cd12be49718505876125e429c0b0e4b62d
           path: browser-backend
           persist-credentials: false
       - name: Read accepted migration dependency recipe
@@ -50,7 +50,7 @@ jobs:
           ref: c193a925ba57ea2d67ea48c44e5262817885c8a2
           path: migration-relay
           persist-credentials: false
-      - name: Verify transaction room from the normal dashboards
+      - name: Verify named review evidence from the normal dashboards
         shell: bash
         run: |
           set -euo pipefail

@@ -8,7 +8,7 @@ bounded() { timeout --kill-after=8s "$@"; }
 
 [[ $# == 4 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api ]] || die CI_REQUIRED
 [[ ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 && ${GITHUB_RUN_ATTEMPT:-} == 1 ]] || die STANDARD_LINUX_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-transaction-room-browser-20261117-v2 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
+[[ ${GITHUB_REF:-} == refs/heads/codex-ci-transaction-task-evidence-browser-20261117 && ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 
 ops="$1"; frontend="$2"; backend="$3"; migration="$4"
 [[ "$ops" == "$GITHUB_WORKSPACE/browser-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-base" &&
@@ -18,24 +18,25 @@ for checkout in "$ops" "$frontend" "$backend" "$migration"; do
   checkout_status=$(git -C "$checkout" status --porcelain=v1 --untracked-files=all) || die CLEAN_CHECKOUT_REQUIRED
   [[ $(realpath "$checkout") == "$checkout" && -z "$checkout_status" ]] || die CLEAN_CHECKOUT_REQUIRED
 done
-[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == a62c8301bfa75fcd03bd3a717cdb7fdc3da51e45 ]] ||
+[[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" rev-parse HEAD^) == be3ef310e967b9d79a947562a4888884f0812edb ]] ||
   die EXACT_OPERATIONS_PARENT_REQUIRED
 operations_delta=$(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) || die EXACT_OPERATIONS_DELTA_REQUIRED
-[[ "$operations_delta" == $'.github/workflows/admin-manual-share.yml\nci/admin-manual-share/run-hosted-admin-manual-share.sh\nci/admin-manual-share/run-transaction-room.mjs' ]] ||
+[[ "$operations_delta" == $'.github/workflows/admin-manual-share.yml\nci/admin-manual-share/run-hosted-admin-manual-share.sh\nci/admin-manual-share/run-transaction-room.mjs\nci/admin-manual-share/serve_transaction_room_fixture.py' ]] ||
   die EXACT_OPERATIONS_DELTA_REQUIRED
-frontend_commit=764a3a6b126e9d4d4bce93bffe2a2ca8c553da13
-frontend_tree=629b2fc2f880dd4d4d2a1b9229eb1b9cd6e2950d
-frontend_paths=538
-frontend_rooms_test_sha=61fa6fb1fad2613bab99bd3da5e62740b8a630b1a9a57b2b7b75200829100a65
+frontend_commit=7de7bc27e894263f6f00589dd0e24d3f2d9d1dfa
+frontend_tree=f01a732a2f0f736a1bcb1b00373b7faf731ce9ac
+frontend_paths=552
+frontend_rooms_test_sha=400b2ab42018251663efcfa7851f3e26c07a65fea827fe64537958405e52b0b5
 frontend_documents_test_sha=afb137b361cfe9527b4f6cb2d865e1489f649cdebe291ced8e77166ea92764db
-frontend_test_count=10
-backend_commit=939723e88c224be89dbb1705cfc282de2ac1a6ef
-backend_tree=65c0ef2f19ee459745fb55fafa444b9f04e832cc
-migration_head=de248ab5c9f3
+frontend_test_count=12
+backend_commit=f10409cd12be49718505876125e429c0b0e4b62d
+backend_tree=ff48d7d0283fd14ef8037ece7313c9f8299ee3d0
+migration_head=21f2fe166874
 browser_failure_stages='fixture,auth,scope,lead_open,room_create,invitation_create,invitation_accept,'\
 'task_create,task_update,milestone_create,milestone_update,buyer_room,pdf_upload,png_upload,'\
 'staff_document_panel,pdf_review,png_review,buyer_download,withheld,professional_download,'\
-'staff_audit,member_audit,revoke,mobile_denied'
+'evidence_grant,evidence_assign,evidence_scope,evidence_focus,evidence_download,evidence_finish,'\
+'staff_audit,member_audit,revoke,mobile_denied,evidence_historical'
 browser_checks=(
   realtor_creates_from_assigned_lead
   verified_professional_accepts_invitation
@@ -43,8 +44,11 @@ browser_checks=(
   buyer_uploads_pdf_and_png_as_exact_versions
   staff_reviews_exact_version_and_explicit_audience
   permitted_downloads_preserve_exact_bytes
+  named_evidence_kept_private_from_other_members
+  reviewer_focused_exact_version_and_finished_on_mobile
   unassigned_buyer_withheld_and_revoked_professional_denied
   staff_only_document_audit_and_mobile_room
+  revoked_reviewer_receipt_retained_and_ordinary_task_unchanged
 )
 [[ "$frontend_commit" =~ ^[a-f0-9]{40}$ && "$frontend_tree" =~ ^[a-f0-9]{40}$ &&
    "$frontend_rooms_test_sha" =~ ^[a-f0-9]{64}$ && "$frontend_documents_test_sha" =~ ^[a-f0-9]{64}$ &&
@@ -409,5 +413,5 @@ api_state=$(bounded 15s docker inspect --format '{{.State.ExitCode}} {{.State.Ru
 printf 'BROWSER_API_FIXTURE_SHUTDOWN state=%s login_file=absent\n' "$api_state"
 backend_status=$(git -C "$backend" status --porcelain=v1 --untracked-files=all) || die API_SOURCE_CHANGED
 [[ -z "$backend_status" ]] || die API_SOURCE_CHANGED
-printf 'TRANSACTION_ROOM_ACCEPTANCE operations=%s frontend=%s frontend_tree=%s backend=%s backend_tree=%s migration=%s postgres_version_num=%s run=%s attempt=1\n' \
+printf 'TRANSACTION_TASK_EVIDENCE_ACCEPTANCE operations=%s frontend=%s frontend_tree=%s backend=%s backend_tree=%s migration=%s postgres_version_num=%s run=%s attempt=1\n' \
   "$GITHUB_SHA" "$frontend_commit" "$frontend_tree" "$backend_commit" "$backend_tree" "$migration_head" "$postgres_version_num" "$GITHUB_RUN_ID"

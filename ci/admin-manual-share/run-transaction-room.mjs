@@ -7,7 +7,10 @@ const fixturePath = '/browser-fixtures/fixtures.json'
 const roomTitle = 'Synthetic Villa Closing'
 const documentTitle = 'Synthetic purchase packet'
 const professionalName = 'Browser Closing Professional'
+const otherProfessionalName = 'Browser Other Closing Professional'
 const taskTitle = 'Check the synthetic deed'
+const evidenceTaskTitle = 'Review the synthetic attachment'
+const evidenceLinkTitle = documentTitle + ' · Version 2'
 const milestoneTitle = 'Synthetic title review'
 const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/
 let step = 'fixture'
@@ -36,9 +39,12 @@ async function getFixture() {
   const raw = JSON.parse(await readFile(fixturePath, 'utf8'))
   check(uuid.test(raw.shareLeadId) && uuid.test(raw.foreignLeadId) && raw.shareLeadId !== raw.foreignLeadId
     && Number.isSafeInteger(raw.transactionProfessionalCode) && raw.transactionProfessionalCode > 0
+    && Number.isSafeInteger(raw.transactionOtherProfessionalCode) && raw.transactionOtherProfessionalCode > 0
+    && raw.transactionOtherProfessionalCode !== raw.transactionProfessionalCode
     && /^[A-Za-z0-9+/=]{65,512}$/.test(raw.transactionPng), 'EXACT_FIXTURE_DATA_REQUIRED')
   for (const [account, expected] of [[raw.accounts.realtor, 'browser-realtor@example.com'],
     [raw.accounts.buyer, 'browser-buyer@example.com'], [raw.transactionProfessional, 'browser-closing-professional@example.com'],
+    [raw.transactionOtherProfessional, 'browser-closing-other@example.com'],
     [raw.transactionUnassigned, 'browser-unassigned-closing@example.com']]) {
     check(account?.email === expected && /^[A-Za-z0-9_-]{32}$/.test(account.password), 'SYNTHETIC_CREDENTIAL_SHAPE_REQUIRED')
   }
@@ -189,15 +195,16 @@ async function buildRoom(staff, fixture) {
   return { page, path, id: room.id }
 }
 
-async function invite(staff, professional, room, fixture) {
+async function invite(staff, professional, room, code, name) {
   step = 'invitation_create'
+  await refreshRoom(room.page, room.path)
   const members = await section(room.page, 'Members')
   await button(members, 'Invite a professional').click()
   const editor = dialog(room.page, 'Invite a professional')
-  await editor.getByRole('textbox').fill(String(fixture.transactionProfessionalCode))
+  await editor.getByRole('textbox').fill(String(code))
   await action(room.page, 'POST', room.path + '/invitations', 200, button(editor, 'Create invitation'))
   await editor.waitFor({ state: 'hidden' })
-  const pending = (await readRoom(staff, room.path, 'realtor')).members.find(member => member.display_name === professionalName)
+  const pending = (await readRoom(staff, room.path, 'realtor')).members.find(member => member.display_name === name)
   check(uuid.test(pending?.grant_id ?? '') && pending.state === 'pending', 'PENDING_EXACT_INVITATION_REQUIRED')
   await request(professional, room.path, { expected: 404 })
 
@@ -211,7 +218,6 @@ async function invite(staff, professional, room, fixture) {
   await readRoom(professional, room.path, 'professional')
   const member = (await readRoom(staff, room.path, 'realtor')).members.find(item => item.grant_id === pending.grant_id)
   check(member?.state === 'active', 'ACTIVE_EXACT_PROFESSIONAL_REQUIRED')
-  checks.push('verified_professional_accepts_invitation')
   return { page, member }
 }
 
@@ -260,6 +266,7 @@ async function work(staff, room) {
     && state.milestones.some(item => item.id === created.id && item.target_on === target && item.actual_on === today),
   'PERSISTED_TASK_AND_MILESTONE_REQUIRED')
   checks.push('task_and_closing_milestone_changed')
+  return state.tasks.find(item => item.id === createdTask.id)
 }
 
 function documentRow(page) {
@@ -307,30 +314,31 @@ async function uploads(buyer, room, png) {
   const firstPath = versionBase + first.id, latestPath = versionBase + latest.id
   await request(buyer, firstPath + '/download', { expected: 404 })
   checks.push('buyer_uploads_pdf_and_png_as_exact_versions')
-  return { page, first, latest, firstPath, latestPath, pdf, image }
+  return { page, documentId: doc.id, first, latest, firstPath, latestPath, pdf, image }
 }
 
-async function approve(page, version, path, grant) {
+async function approve(page, version, path, { grant = null, shareWithBuyer = false, previouslyApproved = false } = {}) {
   await button(documentRow(page), 'Review version ' + version.number).click()
   const review = dialog(page, 'Review document version')
   await text(review, documentTitle + ' · Version ' + version.number).waitFor()
   const buyer = label(review, 'Allow the buyer to download')
-  if (grant) {
-    await buyer.check()
-    await review.locator('select:has(>option[value="' + grant + '"])').selectOption(grant)
-  } else check(!await buyer.isChecked(), 'STAFF_ONLY_DEFAULT_REQUIRED')
-  await button(review, 'Review approval').click()
-  const response = await action(page, 'POST', path + '/review', 200, button(review, 'Approve version'))
+  check(!await buyer.isChecked(), 'STAFF_ONLY_DEFAULT_REQUIRED')
+  if (shareWithBuyer) await buyer.check()
+  if (grant) await review.locator('select:has(>option[value="' + grant + '"])').selectOption(grant)
+  await button(review, previouslyApproved ? 'Review download access' : 'Review approval').click()
+  const response = await action(page, 'POST', path + '/review', 200,
+    button(review, previouslyApproved ? 'Save download access' : 'Approve version'))
   const patch = response.request().postDataJSON()
   check(patch.status === 'approved' && Number.isSafeInteger(patch.expected_version)
-    && patch.share_with_buyer === Boolean(grant) && patch.professional_grant_id === (grant || null),
+    && patch.share_with_buyer === shareWithBuyer && patch.professional_grant_id === grant,
   'EXACT_REVIEW_SELECTION_REQUIRED')
   await review.waitFor({ state: 'hidden' })
 }
 
-async function verifyBytes(page, path, file) {
+async function verifyBytes(page, path, file, number = 1) {
   const pending = page.waitForEvent('download', { timeout: 12_000 }).catch(() => null)
-  const response = await action(page, 'GET', path + '/download', 200, button(documentRow(page), 'Download version 1'))
+  const response = await action(page, 'GET', path + '/download', 200,
+    button(documentRow(page), 'Download version ' + number))
   check(response.headers()['content-type'] === file.mimeType
     && response.headers()['content-disposition'] === "attachment; filename*=UTF-8''" + encodeURIComponent(file.name)
     && response.headers()['x-content-type-options'] === 'nosniff', 'EXACT_ATTACHMENT_HEADERS_REQUIRED')
@@ -345,6 +353,83 @@ async function verifyBytes(page, path, file) {
     chunks.push(chunk)
   }
   check(Buffer.concat(chunks).equals(file.buffer), 'EXACT_SYNTHETIC_DOWNLOAD_REQUIRED')
+  await download.delete()
+}
+
+async function assignEvidence(staff, room, participant, docs) {
+  step = 'evidence_grant'
+  await refreshRoom(room.page, room.path)
+  await section(room.page, 'Documents')
+  await approve(room.page, docs.latest, docs.latestPath, { grant: participant.member.grant_id, previouslyApproved: true })
+
+  step = 'evidence_assign'
+  await refreshRoom(room.page, room.path)
+  const tasks = await section(room.page, 'Tasks')
+  await button(tasks, 'Add task').click()
+  const editor = dialog(room.page, 'Add task')
+  await label(editor, 'Task title').fill(evidenceTaskTitle)
+  await editor.getByRole('combobox', { name: /^Assigned member/ }).selectOption({ label: professionalName })
+  await editor.getByRole('combobox', { name: /^Document version to review/ }).selectOption({ label: evidenceLinkTitle })
+  const response = await action(room.page, 'POST', room.path + '/tasks', 201, button(editor, 'Save changes'))
+  await editor.waitFor({ state: 'hidden' })
+  const payload = response.request().postDataJSON()
+  check(payload.assignee_user_id === participant.member.user_id && payload.evidence?.document_id === docs.documentId
+    && payload.evidence?.version_id === docs.latest.id, 'EXACT_TASK_EVIDENCE_REQUEST_REQUIRED')
+  const state = await readRoom(staff, room.path, 'realtor')
+  const task = state.tasks.find(item => item.title === evidenceTaskTitle)
+  check(uuid.test(task?.id ?? '') && task.status === 'open' && task.requires_evidence_review
+    && task.evidence?.document_id === docs.documentId && task.evidence.version_id === docs.latest.id
+    && task.evidence.number === 2 && task.evidence.reviewed_at === null, 'EXACT_NAMED_EVIDENCE_TASK_REQUIRED')
+  await button(rowFor(tasks, evidenceTaskTitle), evidenceLinkTitle).waitFor()
+  return task
+}
+
+async function verifyEvidenceDenied(context, page, room, role, task, docs) {
+  const state = await readRoom(context, room.path, role)
+  const visible = state.tasks.find(item => item.id === task.id)
+  check(visible?.evidence === null && !visible.requires_evidence_review, 'PRIVATE_TASK_EVIDENCE_VISIBLE')
+  await request(context, docs.latestPath + '/download', { expected: 404 })
+  await request(context, room.path + '/tasks/' + task.id, {
+    method: 'PATCH', data: { expected_version: state.version, status: 'done' }, expected: 403,
+  })
+  await refreshRoom(page, room.path)
+  const row = rowFor(await section(page, 'Tasks'), evidenceTaskTitle)
+  await text(row, evidenceTaskTitle).waitFor()
+  check(await button(row, evidenceLinkTitle).count() === 0 && await button(row, 'Change task status').count() === 0,
+    'PRIVATE_EVIDENCE_CONTROLS_VISIBLE')
+}
+
+async function finishEvidence(professional, page, room, task, docs) {
+  step = 'evidence_focus'
+  await refreshRoom(page, room.path)
+  const row = rowFor(await section(page, 'Tasks'), evidenceTaskTitle)
+  await button(row, evidenceLinkTitle).click()
+  const focused = page.getByRole('region', { name: 'Documents', exact: true })
+  await button(focused, 'Show all documents in this room').waitFor()
+  await button(documentRow(page), 'Download version 2').waitFor()
+  check(await page.evaluate(() => window.innerWidth === 390 && navigator.maxTouchPoints > 0),
+    'EXACT_MOBILE_EVIDENCE_VIEW_REQUIRED')
+  check(await button(focused, 'Download version 1').count() === 0 && await text(focused, docs.pdf.name).count() === 0,
+    'UNLINKED_VERSION_SHOWN_IN_EVIDENCE_FOCUS')
+
+  step = 'evidence_download'
+  await verifyBytes(page, docs.latestPath, docs.image, 2)
+  step = 'evidence_finish'
+  await section(page, 'Tasks')
+  await button(row, 'Change task status').click()
+  const editor = dialog(page, 'Change task status')
+  await editor.locator('select:has(>option[value="done"])').selectOption('done')
+  const response = await action(page, 'PATCH', room.path + '/tasks/' + task.id, 200, button(editor, 'Save changes'))
+  const payload = response.request().postDataJSON()
+  check(payload.status === 'done' && Number.isSafeInteger(payload.expected_version)
+    && Object.keys(payload).length === 2, 'EXACT_REVIEWER_COMPLETION_REQUIRED')
+  await editor.waitFor({ state: 'hidden' })
+  const done = (await readRoom(professional, room.path, 'professional')).tasks.find(item => item.id === task.id)
+  check(done?.status === 'done' && done.evidence?.version_id === docs.latest.id
+    && done.evidence.reviewer_name === professionalName && Number.isFinite(Date.parse(done.evidence.reviewed_at)),
+  'EXACT_NAMED_REVIEW_RECEIPT_REQUIRED')
+  await text(row, 'Reviewed by ' + professionalName).waitFor()
+  return done.evidence.reviewed_at
 }
 
 async function main() {
@@ -358,6 +443,7 @@ async function main() {
     const staff = await session(browser, fixture.accounts.realtor)
     const buyer = await session(browser, fixture.accounts.buyer, true)
     const professional = await session(browser, fixture.transactionProfessional, true)
+    const otherProfessional = await session(browser, fixture.transactionOtherProfessional, true)
     const unassigned = await session(browser, fixture.transactionUnassigned)
     const anonymous = await session(browser, null)
     step = 'scope'
@@ -368,19 +454,22 @@ async function main() {
     })
 
     const room = await buildRoom(staff, fixture)
-    const participant = await invite(staff, professional, room, fixture)
-    await work(staff, room)
+    const participant = await invite(staff, professional, room, fixture.transactionProfessionalCode, professionalName)
+    const other = await invite(staff, otherProfessional, room, fixture.transactionOtherProfessionalCode, otherProfessionalName)
+    check(other.member.grant_id !== participant.member.grant_id, 'DISTINCT_ACTIVE_PROFESSIONALS_REQUIRED')
+    checks.push('verified_professional_accepts_invitation')
+    const ordinary = await work(staff, room)
     const docs = await uploads(buyer, room, Buffer.from(fixture.transactionPng, 'base64'))
     step = 'staff_document_panel'
     await refreshRoom(room.page, room.path)
     await section(room.page, 'Documents')
     await button(documentRow(room.page), 'Review version 2').waitFor()
     step = 'pdf_review'
-    await approve(room.page, docs.first, docs.firstPath, participant.member.grant_id)
+    await approve(room.page, docs.first, docs.firstPath, { grant: participant.member.grant_id, shareWithBuyer: true })
     step = 'png_review'
     await refreshRoom(room.page, room.path)
     await section(room.page, 'Documents')
-    await approve(room.page, docs.latest, docs.latestPath, null)
+    await approve(room.page, docs.latest, docs.latestPath)
     checks.push('staff_reviews_exact_version_and_explicit_audience')
 
     step = 'buyer_download'
@@ -405,6 +494,14 @@ async function main() {
     await request(professional, docs.latestPath + '/download', { expected: 404 })
     checks.push('permitted_downloads_preserve_exact_bytes')
 
+    const task = await assignEvidence(staff, room, participant, docs)
+    step = 'evidence_scope'
+    await verifyEvidenceDenied(buyer, docs.page, room, 'buyer', task, docs)
+    await verifyEvidenceDenied(otherProfessional, other.page, room, 'professional', task, docs)
+    checks.push('named_evidence_kept_private_from_other_members')
+    const reviewedAt = await finishEvidence(professional, participant.page, room, task, docs)
+    checks.push('reviewer_focused_exact_version_and_finished_on_mobile')
+
     step = 'staff_audit'
     await room.page.bringToFront()
     const history = await section(room.page, 'History')
@@ -424,6 +521,7 @@ async function main() {
     check(viewport.touches > 0 && viewport.right <= viewport.width + 1, 'MOBILE_ROOM_LAYOUT_REQUIRED')
 
     step = 'revoke'
+    await refreshRoom(room.page, room.path)
     const members = await section(room.page, 'Members')
     await button(rowFor(members, professionalName), 'Revoke professional access').click()
     const confirmation = dialog(room.page, 'Revoke professional access')
@@ -432,6 +530,7 @@ async function main() {
       button(confirmation, 'Confirm access removal'))
     await confirmation.waitFor({ state: 'hidden' })
     await request(professional, docs.firstPath + '/download', { expected: 404 })
+    await request(professional, docs.latestPath + '/download', { expected: 404 })
     await request(professional, room.path, { expected: 404 })
     await request(buyer, docs.firstPath + '/download', { bytes: true })
     checks.push('unassigned_buyer_withheld_and_revoked_professional_denied')
@@ -443,6 +542,26 @@ async function main() {
     await text(participant.page, 'This transaction or invitation is unavailable to your account.').waitFor()
     check(await button(participant.page, 'Download version 1').count() === 0, 'REVOKED_CONTROL_VISIBLE')
     checks.push('staff_only_document_audit_and_mobile_room')
+
+    step = 'evidence_historical'
+    const retained = await readRoom(staff, room.path, 'realtor')
+    const completed = retained.tasks.find(item => item.id === task.id)
+    check(completed?.status === 'done' && completed.evidence?.version_id === docs.latest.id
+      && completed.evidence.reviewed_at === reviewedAt && completed.evidence.reviewer_name === professionalName,
+    'REVOKED_REVIEWER_RECEIPT_NOT_RETAINED')
+    const ordinaryAfter = retained.tasks.find(item => item.id === ordinary.id)
+    check(ordinaryAfter?.status === 'done' && ordinaryAfter.version === ordinary.version
+      && ordinaryAfter.due_on === ordinary.due_on && ordinaryAfter.assignee_user_id === ordinary.assignee_user_id
+      && !ordinaryAfter.requires_evidence_review && ordinaryAfter.evidence === null, 'ORDINARY_TASK_CHANGED')
+    const historyAfter = await request(staff, room.path + '/history')
+    check(historyAfter.items.filter(event => event.action === 'task_evidence_reviewed' && event.target_id === task.id
+      && event.actor_role === 'professional').length === 1, 'EXACT_HISTORICAL_REVIEW_EVENT_REQUIRED')
+    await verifyEvidenceDenied(otherProfessional, other.page, room, 'professional', task, docs)
+    await refreshRoom(room.page, room.path)
+    const finalTasks = await section(room.page, 'Tasks')
+    await text(rowFor(finalTasks, evidenceTaskTitle), 'Reviewed by ' + professionalName).waitFor()
+    await text(rowFor(finalTasks, taskTitle), 'Unassigned · Done').waitFor()
+    checks.push('revoked_reviewer_receipt_retained_and_ordinary_task_unchanged')
     console.log('TRANSACTION_ROOM_BROWSER', JSON.stringify({ status: 'PASS', checks }))
   } finally {
     await browser.close()
