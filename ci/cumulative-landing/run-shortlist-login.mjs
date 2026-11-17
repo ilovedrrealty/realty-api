@@ -3,19 +3,27 @@ import path from 'node:path'
 import { randomBytes } from 'node:crypto'
 import { readFile, readdir, realpath, stat } from 'node:fs/promises'
 import { chromium } from 'playwright-core'
+import listingFixture from '/listing-fixture/landing_fixture.cjs'
 
 const host = '127.0.0.1'
 const landing = `http://${host}:8918`
 const api = `http://${host}:8917`
 const dashboard = `http://${host}:4175`
 const exportRoot = '/landing-export'
+const { LISTING_ID: listing, fixtureResponse } = listingFixture
+const listingPath = `/listing/${listing}/`
 const grant = 'b357412c-d096-47d6-8a77-30cf544e8d97'
-const loginPath = `/login/?shortlist=${grant}`
-const destination = `/shortlists?grant=${grant}`
+const shortlist = { loginPath: `/login/?shortlist=${grant}`, destination: `/shortlists?grant=${grant}` }
+const viewing = { loginPath: `/login/?viewing=${listing}`, destination: `/viewings?listing=${listing}` }
+const languages = {
+  en: { locale: 'en-US', signIn: 'Log in', viewingLink: 'Request a viewing' },
+  es: { locale: 'es-DO', signIn: 'Iniciar sesión', viewingLink: 'Solicitar una visita' },
+}
 const email = 'shortlist-login-fixture@example.invalid'
 const password = randomBytes(24).toString('base64url')
 const token = randomBytes(24).toString('base64url')
-const observations = { signedOutReads: 0, signedInReads: 0, rejectedLogin: 0, acceptedLogin: 0, destinationWithCookie: 0 }
+const observations = { signedOutReads: 0, signedInReads: 0, rejectedLogin: 0, acceptedLogin: 0, listingReads: 0 }
+const destinationCounts = new Map([[shortlist.destination, 0], [viewing.destination, 0]])
 const mime = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8', '.json': 'application/json', '.svg': 'image/svg+xml',
@@ -82,6 +90,15 @@ async function serveAuth(request, response) {
   if (key === 'GET /stats/platform') {
     return json(response, 200, { active_listings: 1, registered_users: 1, total_value: 100000, realtors: 0 }, cors)
   }
+  if (key === `GET /listings/${listing}`) {
+    const result = fixtureResponse('GET', request.url, { host: `${host}:8917` }, 8917)
+    const detail = JSON.parse(result.body)
+    check(result.status === 200 && detail.id === listing, 'EXACT_LOOPBACK_LISTING_REQUIRED')
+    observations.listingReads++
+    // The hydrated listing view needs these arrays in addition to the static export input.
+    return json(response, 200, { ...detail, features: [], video_links: [], included_utilities: [], status: 'active' }, cors)
+  }
+  if (key === `POST /listings/${listing}/view`) return json(response, 200, {}, cors)
   return json(response, 404, { detail: 'Outside synthetic auth contract' }, cors)
 }
 
@@ -99,10 +116,10 @@ async function serveExport(request, response) {
 }
 
 function serveDestination(request, response) {
-  if (request.method !== 'GET' || request.url !== destination || !hasCookie(request)) return json(response, 404, {})
-  observations.destinationWithCookie++
+  if (request.method !== 'GET' || !destinationCounts.has(request.url) || !hasCookie(request)) return json(response, 404, {})
+  destinationCounts.set(request.url, destinationCounts.get(request.url) + 1)
   response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' })
-  return response.end('<!doctype html><title>Synthetic shortlist destination</title><h1>Shortlist destination verified</h1>')
+  return response.end('<!doctype html><title>Synthetic dashboard destination</title><h1>Dashboard destination verified</h1>')
 }
 
 async function listen(url, handler, servers) {
@@ -119,6 +136,79 @@ async function listen(url, handler, servers) {
   })
 }
 
+async function verifyLogin(browser, flow, language, verifyRejectedPassword = false) {
+  const { locale, signIn, viewingLink } = languages[language]
+  const context = await browser.newContext({ locale, viewport: { width: 1280, height: 900 }, serviceWorkers: 'block' })
+  try {
+    context.setDefaultTimeout(12_000)
+    await context.route('**/*', route => [landing, api, dashboard].includes(new URL(route.request().url()).origin)
+      ? route.continue() : route.abort('blockedbyclient'))
+    await context.addInitScript(key => {
+      if (!navigator.onLine) Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => true })
+      if (window.location.protocol === 'http:') localStorage.setItem('ildr_lang', key)
+    }, language)
+    const page = await context.newPage()
+    const apiResponse = (method, route, status) => page.waitForResponse(response => response.url() === api + route
+      && response.request().method() === method && response.status() === status)
+    const dashboardURL = dashboard + flow.destination
+    if (flow === viewing) {
+      stage = `viewing_listing_${language}`
+      const detail = apiResponse('GET', `/listings/${listing}`, 200)
+      const exported = await page.goto(landing + listingPath, { waitUntil: 'domcontentloaded' })
+      check(exported?.ok() && page.url() === landing + listingPath, 'ACTUAL_EXPORTED_LISTING_REQUIRED')
+      await detail
+      const link = page.getByRole('link', { name: viewingLink, exact: true })
+      await link.waitFor()
+      check(await link.getAttribute('href') === dashboardURL, 'VIEWING_CTA_DASHBOARD_AND_LISTING_REQUIRED')
+    }
+
+    stage = 'anonymous_login'
+    const unsigned = apiResponse('GET', '/auth/me', 401)
+    const rendered = await page.goto(landing + flow.loginPath, { waitUntil: 'domcontentloaded' })
+    check(rendered?.ok() && page.url() === landing + flow.loginPath, 'LOGIN_DOCUMENT_REQUIRED')
+    await unsigned
+    const formHeading = page.getByRole('heading', { name: signIn, exact: true })
+    await formHeading.waitFor()
+    const panel = formHeading.locator('..')
+    await panel.locator('input[type=email]').fill(email)
+    const passwordControl = panel.locator('input[type=password]')
+    const submit = panel.getByRole('button', { name: signIn, exact: true })
+
+    if (verifyRejectedPassword) {
+      stage = 'wrong_password'
+      await passwordControl.fill('deliberately-incorrect-synthetic-password')
+      const failed = apiResponse('POST', '/auth/login', 401)
+      await submit.click()
+      await failed
+      await page.getByText('Synthetic sign-in rejected', { exact: true }).waitFor()
+      check(page.url() === landing + flow.loginPath && !(await context.cookies(api)).some(cookie => cookie.name === 'ildr_token'),
+        'REJECTED_LOGIN_MUST_STAY_SIGNED_OUT')
+    }
+
+    stage = 'form_login_redirect'
+    await passwordControl.fill(password)
+    const login = apiResponse('POST', '/auth/login', 200)
+    const redirected = page.waitForURL(dashboardURL)
+    await submit.click()
+    await login
+    await redirected
+    const marker = page.getByRole('heading', { name: 'Dashboard destination verified', exact: true })
+    await marker.waitFor()
+    const cookies = (await context.cookies(api)).filter(cookie => cookie.name === 'ildr_token')
+    check(cookies.length === 1 && cookies[0].httpOnly && cookies[0].value === token, 'ACTUAL_HTTPONLY_COOKIE_REQUIRED')
+
+    stage = 'existing_session_redirect'
+    const signed = apiResponse('GET', '/auth/me', 200)
+    const reopened = await page.goto(landing + flow.loginPath, { waitUntil: 'commit' })
+    check(reopened?.ok(), 'LOGIN_REVISIT_REQUIRED')
+    await signed
+    await page.waitForURL(dashboardURL)
+    await marker.waitFor()
+  } finally {
+    await context.close()
+  }
+}
+
 async function main() {
   check(process.platform === 'linux' && process.env.GITHUB_ACTIONS === 'true'
     && process.env.GITHUB_REPOSITORY === 'ilovedrrealty/realty-api'
@@ -129,68 +219,22 @@ async function main() {
     stage = 'static_export'
     check(await realpath(exportRoot + '/login/index.html') === exportRoot + '/login/index.html'
       && (await stat(exportRoot + '/login/index.html')).isFile(), 'EXACT_LOGIN_EXPORT_REQUIRED')
+    check(await realpath(exportRoot + listingPath + 'index.html') === exportRoot + listingPath + 'index.html'
+      && (await stat(exportRoot + listingPath + 'index.html')).isFile(), 'EXACT_LISTING_EXPORT_REQUIRED')
+    check(listing === '10000000-0000-0000-0000-000000000001', 'EXPECTED_SYNTHETIC_LISTING_REQUIRED')
     await listen(landing, serveExport, servers)
     await listen(api, serveAuth, servers)
     await listen(dashboard, serveDestination, servers)
 
     stage = 'browser'
     browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--disable-dev-shm-usage'] })
-    const context = await browser.newContext({ locale: 'en-US', viewport: { width: 1280, height: 900 }, serviceWorkers: 'block' })
-    context.setDefaultTimeout(12_000)
-    await context.route('**/*', route => [landing, api, dashboard].includes(new URL(route.request().url()).origin)
-      ? route.continue() : route.abort('blockedbyclient'))
-    await context.addInitScript(() => {
-      if (!navigator.onLine) Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => true })
-    })
-    const page = await context.newPage()
-    function apiResponse(method, route, status) {
-      return page.waitForResponse(response => response.url() === api + route
-        && response.request().method() === method && response.status() === status)
-    }
-
-    stage = 'anonymous_login'
-    const unsigned = apiResponse('GET', '/auth/me', 401)
-    const rendered = await page.goto(landing + loginPath, { waitUntil: 'domcontentloaded' })
-    check(rendered?.ok() && page.url() === landing + loginPath, 'LOGIN_DOCUMENT_REQUIRED')
-    await unsigned
-    const formHeading = page.getByRole('heading', { name: 'Log in', exact: true })
-    await formHeading.waitFor()
-    const panel = formHeading.locator('..')
-    await panel.locator('input[type=email]').fill(email)
-    const passwordControl = panel.locator('input[type=password]')
-    const submit = panel.getByRole('button', { name: 'Log in', exact: true })
-
-    stage = 'wrong_password'
-    await passwordControl.fill('deliberately-incorrect-synthetic-password')
-    const failed = apiResponse('POST', '/auth/login', 401)
-    await submit.click()
-    await failed
-    await page.getByText('Synthetic sign-in rejected', { exact: true }).waitFor()
-    check(page.url() === landing + loginPath && !(await context.cookies(api)).some(cookie => cookie.name === 'ildr_token'),
-      'REJECTED_LOGIN_MUST_STAY_SIGNED_OUT')
-
-    stage = 'form_login_redirect'
-    await passwordControl.fill(password)
-    const login = apiResponse('POST', '/auth/login', 200)
-    const redirected = page.waitForURL(dashboard + destination)
-    await submit.click()
-    await login
-    await redirected
-    const landingMarker = page.getByRole('heading', { name: 'Shortlist destination verified', exact: true })
-    await landingMarker.waitFor()
-    const cookies = (await context.cookies(api)).filter(cookie => cookie.name === 'ildr_token')
-    check(cookies.length === 1 && cookies[0].httpOnly && cookies[0].value === token, 'ACTUAL_HTTPONLY_COOKIE_REQUIRED')
-
-    stage = 'existing_session_redirect'
-    const signed = apiResponse('GET', '/auth/me', 200)
-    const reopened = await page.goto(landing + loginPath, { waitUntil: 'commit' })
-    check(reopened?.ok(), 'LOGIN_REVISIT_REQUIRED')
-    await signed
-    await page.waitForURL(dashboard + destination)
-    await landingMarker.waitFor()
-    check(observations.signedOutReads >= 1 && observations.signedInReads >= 1
-      && observations.rejectedLogin === 1 && observations.acceptedLogin === 1
-      && observations.destinationWithCookie === 2, 'SERVER_SIDE_SESSION_EVIDENCE_REQUIRED')
+    await verifyLogin(browser, shortlist, 'en', true)
+    await verifyLogin(browser, viewing, 'en')
+    await verifyLogin(browser, viewing, 'es')
+    check(observations.signedOutReads >= 3 && observations.signedInReads >= 3 && observations.listingReads >= 2
+      && observations.rejectedLogin === 1 && observations.acceptedLogin === 3
+      && destinationCounts.get(shortlist.destination) === 2 && destinationCounts.get(viewing.destination) === 4,
+      'SERVER_SIDE_SESSION_EVIDENCE_REQUIRED')
   } finally {
     try { if (browser) await browser.close() } finally {
       await Promise.all(servers.map(server => new Promise(resolve => {
@@ -200,13 +244,14 @@ async function main() {
     }
     check(servers.length === 3 && servers.every(server => !server.listening), 'LOOPBACK_CLEANUP_REQUIRED')
   }
-  console.log('SHORTLIST_LANDING_LOGIN_BROWSER', JSON.stringify({ status: 'PASS', actual_export: true,
+  console.log('VIEWINGS_LANDING_LOGIN_BROWSER', JSON.stringify({ status: 'PASS', actual_export: true,
     synthetic_auth_endpoint: true, real_candidate_backend_in_this_container: false,
-    rejected_password_without_cookie: true, http_only_cookie: true, exact_grant_redirect: true,
-    existing_session_redirect: true, loopback_only: true, fixtures_closed: true }))
+    rejected_password_without_cookie: true, http_only_cookie: true, shortlist_regression: true,
+    viewing_cta_en_es: true, viewing_listing_redirect_en_es: true, existing_session_redirect: true,
+    loopback_only: true, fixtures_closed: true }))
 }
 
 main().catch(() => {
-  console.error(`SHORTLIST_LANDING_LOGIN_FAILED stage=${stage}`)
+  console.error(`VIEWINGS_LANDING_LOGIN_FAILED stage=${stage}`)
   process.exitCode = 1
 })

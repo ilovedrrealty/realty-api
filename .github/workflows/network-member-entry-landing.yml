@@ -1,8 +1,8 @@
-name: Exact shortlist landing login browser rehearsal
+name: Exact property viewing landing login browser rehearsal
 
 on:
   push:
-    branches: [codex-ci-shared-shortlists-landing-login-20261117]
+    branches: [codex-ci-property-viewings-landing-login-20261117]
 
 permissions:
   contents: read
@@ -37,16 +37,16 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: ilovedrrealty/iLoveDRRealty
-          ref: b7daf320ceb1e813d5a4b07238bbf102b13a29b5
+          ref: 99aa4b305991d7017f478e02e0926397ace9a445
           path: member-landing-source
           persist-credentials: false
-      - name: Read the previously verified exact backend source
+      - name: Read the exact candidate backend source for pair identity
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 0ff004a479d2eac690918cf5993934646d91a8cf
+          ref: 703158f0df31ed2abfae762688f2d8c15c46e274
           path: member-landing-backend
           persist-credentials: false
-      - name: Verify exact static export and the landing sign-in handoff in Chromium
+      - name: Verify static export, property viewing and shortlist sign-in in Chromium
         shell: bash
         run: |
           set -euo pipefail

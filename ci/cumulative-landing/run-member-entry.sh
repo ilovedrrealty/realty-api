@@ -7,18 +7,21 @@ bounded() { timeout --kill-after=8s "$@"; }
 [[ $# == 4 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 &&
    ${GITHUB_RUN_ATTEMPT:-} == 1 ]] || die HOST_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-shared-shortlists-landing-login-20261117 &&
+[[ ${GITHUB_REF:-} == refs/heads/codex-ci-property-viewings-landing-login-20261117 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 
 ops="$1"; fixture="$2"; frontend="$3"; backend="$4"
-parent=470ddd25956128fb15082671b770148306865967
+parent=36ea3f1a58905453030454077edb27bf8922937f
 fixture_commit=441efdc288c3a38b8607c816c684abec080d83ad
 fixture_tree=6c01c7577e343d5e2542d4f8a84cbc0f103e4b5d
-frontend_commit=b7daf320ceb1e813d5a4b07238bbf102b13a29b5
-frontend_tree=9c21d0c1c506c52530455076a11bce7ea7c2ce68
-backend_commit=0ff004a479d2eac690918cf5993934646d91a8cf
-backend_tree=6efedf597cdf2ad41d18b758f36377d37331ea0d
-passed_pair_ops=b594024fb365a5958cb3bdbe9a20440de005cce3
+frontend_commit=99aa4b305991d7017f478e02e0926397ace9a445
+frontend_tree=5abbf0115243af45176ed746b6e1e67686fce8e2
+frontend_files=484
+backend_commit=703158f0df31ed2abfae762688f2d8c15c46e274
+backend_tree=2e811241e9fe80c6a53d140225cec134bf8d94ca
+[[ "$frontend_commit" =~ ^[a-f0-9]{40}$ && "$frontend_tree" =~ ^[a-f0-9]{40}$ &&
+   "$backend_commit" =~ ^[a-f0-9]{40}$ && "$backend_tree" =~ ^[a-f0-9]{40}$ &&
+   "$frontend_files" =~ ^[1-9][0-9]{0,3}$ ]] || die G07_EXACT_PAIR_NOT_PINNED
 [[ "$ops" == "$GITHUB_WORKSPACE/member-landing-ops" && "$fixture" == "$GITHUB_WORKSPACE/member-landing-fixture" &&
    "$frontend" == "$GITHUB_WORKSPACE/member-landing-source" &&
    "$backend" == "$GITHUB_WORKSPACE/member-landing-backend" ]] || die EXACT_CHECKOUT_PATHS_REQUIRED
@@ -32,13 +35,13 @@ done
    $(git -C "$frontend" rev-parse 'HEAD^{tree}') == "$frontend_tree" &&
    $(git -C "$backend" rev-parse HEAD) == "$backend_commit" &&
    $(git -C "$backend" rev-parse 'HEAD^{tree}') == "$backend_tree" ]] || die EXACT_CHECKOUTS_REQUIRED
-expected=$'.github/workflows/network-member-entry-landing.yml\nci/cumulative-landing/landing.cjs\nci/cumulative-landing/run-member-entry.sh\nci/cumulative-landing/run-shortlist-login.mjs'
+expected=$'.github/workflows/network-member-entry-landing.yml\nci/cumulative-landing/run-member-entry.sh\nci/cumulative-landing/run-shortlist-login.mjs'
 [[ $(git -C "$ops" diff --name-only "$parent" "$GITHUB_SHA") == "$expected" ]] || die EXACT_OPERATIONS_DELTA_REQUIRED
 tools="$ops/ci/cumulative-landing"
 fixture_tools="$fixture/ci/frontend"
 printf '%s  %s\n' \
   d74afd5e90685485a5a8edb64fa72288b284b1676f3a9db8f5293423479c8842 "$tools/landing.cjs" \
-  d0b1415140774414238d2d3a84a628e478fc95e98ca3433c58e7b2cc7ea46853 "$tools/run-shortlist-login.mjs" \
+  500a8dd9e6527c5e1e7e96fed754cd0914ba93f78d394907804281157716be63 "$tools/run-shortlist-login.mjs" \
   a166dc60598e76b7fdcc3fe2aa5253bc56952b48fd99e4cab5eb4a24523a548e "$fixture_tools/landing_fixture.cjs" \
   0a1abbdbd65a82e67ded20a0603a21fc9321a1b1aa5fd83dbccf1c049ffc4110 "$fixture_tools/landing_fixture.test.cjs" \
   | sha256sum --check --status || die ACCEPTED_TOOL_HASH_MISMATCH
@@ -79,14 +82,14 @@ mkdir "$state/frontend-work" "$state/npm-cache"
 git -C "$frontend" archive --format=tar HEAD | tar -xf - -C "$state/frontend-work" || die FRONTEND_ARCHIVE_FAILED
 
 verify_frontend() {
-  python3 -I -B - "$frontend" "$state/frontend-work" <<'PY'
+  python3 -I -B - "$frontend" "$state/frontend-work" "$frontend_files" <<'PY'
 from hashlib import sha1
 from pathlib import Path
 import subprocess, sys
-source, archived = map(Path, sys.argv[1:])
+source, archived = map(Path, sys.argv[1:3])
 files = subprocess.check_output(['git', '-C', str(source), 'ls-tree', '-rz', 'HEAD']).split(b'\0')
 files = [entry for entry in files if entry]
-assert len(files) == 480
+assert len(files) == int(sys.argv[3])
 for entry in files:
     metadata, name = entry.split(b'\t', 1)
     mode, kind, object_id = metadata.split()
@@ -262,12 +265,13 @@ assert json.loads((target/'package.json').read_bytes())['version'] == '1.64.1'
 PY
 
 browser_exit=0
-bounded 120s docker run --rm --network none --label "$label=$run_key" \
+bounded 180s docker run --rm --network none --label "$label=$run_key" \
   --user "$(id -u):$(id -g)" --read-only --cap-drop ALL --security-opt no-new-privileges:true \
   --memory 2g --memory-swap 2g --pids-limit 256 --cpus 2 --shm-size 384m \
   --tmpfs /tmp:rw,exec,size=192m --workdir /rehearsal \
   --mount "type=bind,src=$state/browser-run,dst=/rehearsal,readonly" \
   --mount "type=bind,src=$state/frontend-work/apps/landing/out,dst=/landing-export,readonly" \
+  --mount "type=bind,src=$fixture_tools,dst=/listing-fixture,readonly" \
   "$browser_image" env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \
   GITHUB_ACTIONS=true GITHUB_REPOSITORY=ilovedrrealty/realty-api node /rehearsal/run-shortlist-login.mjs \
   >"$state/login-browser.log" 2>&1 || browser_exit=$?
@@ -278,22 +282,24 @@ p = Path(sys.argv[1])
 assert p.stat().st_size <= 262144
 lines = p.read_text(encoding='utf-8', errors='replace').splitlines()
 if int(sys.argv[2]):
-    allowed = ('host','static_export','browser','anonymous_login','wrong_password','form_login_redirect',
+    allowed = ('host','static_export','browser','viewing_listing_en','viewing_listing_es',
+               'anonymous_login','wrong_password','form_login_redirect',
                'existing_session_redirect')
-    prefix = 'SHORTLIST_LANDING_LOGIN_FAILED stage='
+    prefix = 'VIEWINGS_LANDING_LOGIN_FAILED stage='
     stage = next((line[len(prefix):] for line in lines if line.startswith(prefix)), None)
     print('MEMBER_LANDING_LOGIN_BROWSER native=' + sys.argv[2] + ' stage=' + (stage if stage in allowed else 'unknown'))
 else:
-    prefix = 'SHORTLIST_LANDING_LOGIN_BROWSER '
+    prefix = 'VIEWINGS_LANDING_LOGIN_BROWSER '
     results = [json.loads(line[len(prefix):]) for line in lines if line.startswith(prefix)]
     assert results == [dict(status='PASS', actual_export=True, synthetic_auth_endpoint=True,
                            real_candidate_backend_in_this_container=False, rejected_password_without_cookie=True,
-                           http_only_cookie=True, exact_grant_redirect=True, existing_session_redirect=True,
+                           http_only_cookie=True, shortlist_regression=True, viewing_cta_en_es=True,
+                           viewing_listing_redirect_en_es=True, existing_session_redirect=True,
                            loopback_only=True, fixtures_closed=True)]
     print('MEMBER_LANDING_LOGIN_BROWSER ' + json.dumps(results[0], sort_keys=True, separators=(',', ':')))
 PY
 [[ "$browser_exit" == 0 ]] || die LANDING_LOGIN_BROWSER_FAILED
-printf 'MEMBER_LANDING_LOGIN_PAIR frontend=%s frontend_tree=%s backend=%s backend_tree=%s prior_pair_ops=%s\n' \
-  "$frontend_commit" "$frontend_tree" "$backend_commit" "$backend_tree" "$passed_pair_ops"
+printf 'MEMBER_LANDING_LOGIN_PAIR frontend=%s frontend_tree=%s backend=%s backend_tree=%s g06_regression_ops=%s\n' \
+  "$frontend_commit" "$frontend_tree" "$backend_commit" "$backend_tree" "$parent"
 printf 'MEMBER_LANDING_ACCEPTANCE operations=%s frontend=%s tree=%s fixture=%s run=%s attempt=1\n' \
   "$GITHUB_SHA" "$frontend_commit" "$frontend_tree" "$fixture_commit" "$GITHUB_RUN_ID"
