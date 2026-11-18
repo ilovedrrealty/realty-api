@@ -2,7 +2,7 @@ name: Isolated mobile bilingual newsletter browser journey
 
 on:
   push:
-    branches: [codex-ci-newsletter-browser-20261117-v4]
+    branches: [codex-ci-live-newsletter-browser-20261118]
 
 permissions:
   contents: read
@@ -31,19 +31,13 @@ jobs:
           path: build-ops
           fetch-depth: 2
           persist-credentials: false
-      - name: Read exact previous integrated frontend
+      - name: Read exact reviewed narrow newsletter frontend
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: ilovedrrealty/iLoveDRRealty
-          ref: 99bc8d4c0ee4f3f0b72cf174530971f6a35f0ab3
-          path: frontend-base
-          persist-credentials: false
-      - name: Read exact deployed frontend parent
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          repository: ilovedrrealty/iLoveDRRealty
-          ref: b5df6a9321365e827c01df556c09b8808151e59a
-          path: frontend-live
+          ref: 82c83977ee27503ba7ee80c92190561e58302ba5
+          path: frontend-source
+          fetch-depth: 3
           persist-credentials: false
       - name: Read accepted static export fixture and server
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -54,7 +48,7 @@ jobs:
       - name: Read exact newsletter backend
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 365eef9962ab5938a614348d3cb95d8aea3c0ba1
+          ref: c3c4ac8d0371941b0bfa2d086ade8752c42585c9
           path: browser-backend
           persist-credentials: false
       - name: Read accepted Python dependency recipe
@@ -63,12 +57,12 @@ jobs:
           ref: c193a925ba57ea2d67ea48c44e5262817885c8a2
           path: migration-relay
           persist-credentials: false
-      - name: Reconstruct actual static frontend and exercise the two synthetic mobile journeys
+      - name: Build exact static frontend and exercise the two synthetic mobile journeys
         shell: bash
         run: |
           set -euo pipefail
           [[ "$RUNNER_ENVIRONMENT" == github-hosted && "$RUNNER_OS" == Linux && "$RUNNER_ARCH" == X64 ]]
           bash --noprofile --norc -n "$GITHUB_WORKSPACE/build-ops/ci/newsletter-browser/run-hosted-newsletter-browser.sh"
           exec bash --noprofile --norc "$GITHUB_WORKSPACE/build-ops/ci/newsletter-browser/run-hosted-newsletter-browser.sh" \
-            "$GITHUB_WORKSPACE/build-ops" "$GITHUB_WORKSPACE/frontend-base" "$GITHUB_WORKSPACE/frontend-live" \
+            "$GITHUB_WORKSPACE/build-ops" "$GITHUB_WORKSPACE/frontend-source" \
             "$GITHUB_WORKSPACE/landing-relay" "$GITHUB_WORKSPACE/browser-backend" "$GITHUB_WORKSPACE/migration-relay"

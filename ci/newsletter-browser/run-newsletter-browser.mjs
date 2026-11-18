@@ -13,6 +13,8 @@ const copy = {
     heading: 'Newsletter preferences', confirm: 'Confirm subscription', unsubscribe: 'Unsubscribe',
     subscribed: 'Your newsletter subscription is confirmed.', unsubscribed: 'You’re unsubscribed from the newsletter.',
     invalid: 'This link is invalid or has expired. Use the link from your most recent newsletter email.',
+    working: 'Updating your preference…',
+    unsubscribeNote: 'Confirm that you want to stop receiving the I Love DR Realty newsletter.',
   },
   es: {
     email: 'Correo electrónico', consent: 'Acepto recibir por correo electrónico novedades inmobiliarias y guías de I Love DR Realty. Puedo cancelar mi suscripción en cualquier momento.',
@@ -20,6 +22,8 @@ const copy = {
     heading: 'Preferencias del boletín', confirm: 'Confirmar suscripción', unsubscribe: 'Cancelar suscripción',
     subscribed: 'Confirmamos tu suscripción al boletín.', unsubscribed: 'Cancelamos tu suscripción al boletín.',
     invalid: 'Este enlace no es válido o ha vencido. Usa el enlace de tu correo más reciente del boletín.',
+    working: 'Actualizando tu preferencia…',
+    unsubscribeNote: 'Confirma que quieres dejar de recibir el boletín de I Love DR Realty.',
   },
 }
 const checks = []
@@ -143,6 +147,9 @@ async function newMobile(lang, actionPage) {
     if (window.location.origin === origin) localStorage.setItem('ildr_lang', locale)
   }, { locale: lang, origin: ORIGIN })
   const events = { posts: [], external: 0, localRefused: 0, errors: 0 }
+  const hold = { armed: false }
+  hold.ready = new Promise(resolve => { hold.capture = resolve })
+  hold.released = new Promise(resolve => { hold.release = resolve })
   await context.route('**/*', async route => {
     const request = route.request()
     const url = new URL(request.url())
@@ -164,6 +171,13 @@ async function newMobile(lang, actionPage) {
       assert.equal(headers.referer, undefined)
       assert.equal(headers['content-type'], 'application/json')
       events.posts.push({ path: url.pathname, body: request.postDataJSON() })
+      if (actionPage && hold.armed && url.pathname === '/newsletter/confirm') {
+        hold.armed = false
+        const response = await route.fetch({ maxRedirects: 0, timeout: 15000 })
+        hold.capture(response)
+        await hold.released
+        return route.fulfill({ response })
+      }
     }
     return route.continue()
   })
@@ -182,20 +196,20 @@ async function newMobile(lang, actionPage) {
       pageErrorEvidence.push({ kind, document, surface: actionPage ? 'action' : 'signup', code })
     }
   })
-  return { context, page, events, actionPage }
+  return { context, page, events, actionPage, hold }
 }
 
 async function openAction(test, lang, url, action, status, mailCount) {
   const { page, context, events } = test
   const before = events.posts.length
-  // A fresh document matters: same-document fragment navigation intentionally
-  // does not reinitialize the component's one-use in-memory action token.
-  await page.goto('about:blank')
+  const sameDocument = page.url() === ORIGIN + '/newsletter/'
   const response = await page.goto(url, { waitUntil: 'networkidle' })
-  assert.equal(response.status(), 200)
+  if (sameDocument) assert.equal(response, null)
+  else assert.equal(response.status(), 200)
   await page.getByRole('heading', { name: copy[lang].heading, exact: true }).waitFor()
   const button = page.getByRole('button', { name: copy[lang][action], exact: true })
   await button.waitFor()
+  await page.waitForFunction(() => window.location.hash === '' && window.location.search === '')
   assert.ok(await button.isEnabled())
   assert.equal(page.url(), ORIGIN + '/newsletter/')
   assert.equal(events.posts.length, before)
@@ -301,16 +315,46 @@ try {
     const confirm = await openAction(action, lang, delivery.confirm, 'confirm', 'pending', mailCount)
     await clickAction(action, lang, confirm, 'confirm', 'subscribed', mailCount)
     const confirmAgain = await openAction(action, lang, delivery.confirm, 'confirm', 'subscribed', mailCount)
-    await clickAction(action, lang, confirmAgain, 'confirm', 'subscribed', mailCount)
+    action.hold.armed = true
+    const repeatedResponse = action.page.waitForResponse(value => value.url() === API + '/newsletter/confirm'
+      && value.request().method() === 'POST')
+    await confirmAgain.click()
+    let heldTimer
+    let heldResponse
+    try {
+      heldResponse = await Promise.race([action.hold.ready,
+        new Promise((_, reject) => { heldTimer = setTimeout(() => reject(new Error('Held response deadline')), 15000) })])
+    } finally {
+      clearTimeout(heldTimer)
+    }
+    await safeResponse(heldResponse, 200, { status: 'subscribed' })
+    await expectRow(action.context, lang, 'subscribed', mailCount)
+    const pendingPosts = action.events.posts.length
+    assert.equal(pendingPosts, 2)
+    const secondLink = await action.page.goto(delivery.unsubscribe, { waitUntil: 'commit' })
+    assert.equal(secondLink, null)
+    await action.page.waitForFunction(() => window.location.hash === '' && window.location.search === '')
+    await action.page.getByText(copy[lang].unsubscribeNote, { exact: true }).waitFor()
+    const working = action.page.getByRole('button', { name: copy[lang].working, exact: true })
+    assert.ok(await working.isDisabled())
+    assert.equal(action.events.posts.length, pendingPosts)
+    action.hold.release()
+    await safeResponse(await repeatedResponse, 200, { status: 'subscribed' })
+    const retainedUnsubscribe = action.page.getByRole('button', { name: copy[lang].unsubscribe, exact: true })
+    await retainedUnsubscribe.waitFor()
+    assert.ok(await retainedUnsubscribe.isEnabled())
+    assert.equal(await action.page.getByRole('status').count(), 0)
+    assert.equal(action.events.posts.length, pendingPosts)
     checks.push('mobile_' + lang + '_real_email_link_requires_human_confirmation')
     checks.push('mobile_' + lang + '_confirmation_repeat_is_idempotent')
+    checks.push('mobile_' + lang + '_same_document_links_are_consumed_and_scrubbed')
+    checks.push('mobile_' + lang + '_inflight_old_response_preserves_new_action')
 
     advance('unsubscribe_' + lang)
     const unsubscribeGet = await action.context.request.get(API + '/newsletter/unsubscribe')
     assert.equal(unsubscribeGet.status(), 405)
     await expectRow(action.context, lang, 'subscribed', mailCount)
-    const unsubscribe = await openAction(action, lang, delivery.unsubscribe, 'unsubscribe', 'subscribed', mailCount)
-    await clickAction(action, lang, unsubscribe, 'unsubscribe', 'unsubscribed', mailCount)
+    await clickAction(action, lang, retainedUnsubscribe, 'unsubscribe', 'unsubscribed', mailCount)
     const unsubscribeAgain = await openAction(action, lang, delivery.unsubscribe, 'unsubscribe', 'unsubscribed', mailCount)
     await clickAction(action, lang, unsubscribeAgain, 'unsubscribe', 'unsubscribed', mailCount)
     checks.push('mobile_' + lang + '_unsubscribe_get_no_effect_explicit_action_required')
@@ -352,11 +396,11 @@ try {
   advance('browser_teardown')
   await browser.close()
   browser = undefined
-  assert.equal(checks.length, 16)
+  assert.equal(checks.length, 20)
   console.log('NEWSLETTER_BROWSER_ACCEPTANCE ' + JSON.stringify({
     checks, viewport: 390, locales: ['en', 'es'], mail_messages: 2, live_messages: 0,
-    application: '365eef9962ab5938a614348d3cb95d8aea3c0ba1',
-    frontend: '4d0a99e0bef524fe00eab5f2c0916d91768a4efb',
+    application: 'c3c4ac8d0371941b0bfa2d086ade8752c42585c9',
+    frontend: '82c83977ee27503ba7ee80c92190561e58302ba5',
     authoritative_rows: 2, final_status: 'unsubscribed', action_external_requests: 0,
     browser_stale_confirmation_body_observed: false, independent_stale_confirmation_json: true,
   }))
