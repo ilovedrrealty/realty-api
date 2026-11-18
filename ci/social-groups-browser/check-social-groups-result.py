@@ -22,21 +22,39 @@ for line in lines:
     if line.startswith(b"SOCIAL_GROUPS_ENTRY_DIAGNOSTIC "):
         assert mode == "browser" and len(line) <= 8192 and not diagnostics
         value = json.loads(line.split(b" ", 1)[1])
-        assert set(value) == {"phase", "failure_type", "surface", "ready_state", "census_available", "counts", "page_errors", "page_error_types", "responses"}
+        assert set(value) == {"phase", "last_await", "failed_await", "pending_awaits", "ui_errors", "failure_type", "surface", "ready_state", "census_available", "counts", "page_errors", "page_error_types", "responses"}
         assert value["phase"] in {"setup_fixture", "setup_browser", "setup_owner_session", "setup_member_session",
             "setup_professional_session", "setup_admin_session", "entry_document", "entry_presence", "entry_menu", "entry_network_navigation",
-            "entry_network_heading", "entry_groups_navigation", "entry_groups_heading"}
+            "entry_network_heading", "entry_groups_navigation", "entry_groups_heading",
+            "G01_private_create", "G01_name", "G01_description", "G01_area", "G01_alias", "G01_defaults", "G01_geometry",
+            "G01_draft_cancel", "G01_submit", "G01_created_header", "G01_settings_tab", "G01_image_upload", "G01_image_save",
+            "G01_header_image", "G01_back_index", "G01_index_geometry", "G01_reopen", "G01_detail_geometry",
+            "G02_direct_invitation", "G03_private_photos_comments", "G04_roles_moderation", "G05_fragment_invitation",
+            "G06_discovery_requests", "G07_publication_draft_version", "G08_open_join_leave_scope", "G09_withdrawal",
+            "G10_history_unblock", "G11_archive_revoke", "G12_uncertain_auth_loss"}
+        waits = {"none", "response_json", "write_response", "write_action", "foreground_front", "foreground_presence",
+            "open_group_control", "open_group_heading", "tab_control", "header_response", "header_control",
+            "geometry_viewport", "geometry_measure", "inbox_filter", "member_code_field", "alias_field",
+            "membership_adoption", "role_field", "role_adoption", "feed_response", "feed_control", "post_field",
+            "post_adoption", "post_image", "held_ready", "held_release", "settings_field", "settings_adoption",
+            "back_control", "back_heading", "create_header", "header_image"}
+        assert value["last_await"] in waits and value["failed_await"] in waits
+        assert isinstance(value["pending_awaits"], list) and len(value["pending_awaits"]) <= 12
+        assert len(set(value["pending_awaits"])) == len(value["pending_awaits"]) and set(value["pending_awaits"]) <= waits - {"none"}
+        assert set(value["ui_errors"]) == {"error_access", "error_conflict", "error_unknown", "error_unavailable", "error_fields"}
         assert value["failure_type"] in {"TimeoutError", "TypeError", "ReferenceError", "SyntaxError", "Error", "Failure", "other"}
         assert value["surface"] in {"unavailable", "dashboard_root", "property_network", "dashboard_other", "landing", "blank", "other"}
         assert value["ready_state"] in {"unavailable", "loading", "interactive", "complete"} and type(value["census_available"]) is bool
-        assert set(value["counts"]) == {"menu_buttons", "sidebars", "network_navigation", "network_headings", "groups_navigation", "groups_headings"}
+        assert set(value["counts"]) == {"menu_buttons", "sidebars", "network_navigation", "network_headings", "groups_navigation", "groups_headings",
+            "create_forms", "group_headers", "settings_headings", "header_images"}
         assert set(value["page_error_types"]) == {"Error", "TypeError", "ReferenceError", "SyntaxError", "RangeError", "other"}
-        assert all(type(count) is int and 0 <= count <= 999 for count in [value["page_errors"], *value["counts"].values(), *value["page_error_types"].values()])
+        assert all(type(count) is int and 0 <= count <= 999 for count in [value["page_errors"], *value["counts"].values(), *value["page_error_types"].values(), *value["ui_errors"].values()])
         assert isinstance(value["responses"], list) and len(value["responses"]) <= 36
         identities = set()
         for response in value["responses"]:
             assert set(response) == {"name", "status", "count"}
-            assert response["name"] in {"auth_me", "professional_options", "groups", "dashboard_document", "dashboard_script", "dashboard_stylesheet"}
+            assert response["name"] in {"auth_me", "professional_options", "groups", "dashboard_document", "dashboard_script", "dashboard_stylesheet",
+                "group_create", "group_edit", "group_header", "group_media_upload", "group_media_read"}
             assert type(response["status"]) is int and 100 <= response["status"] <= 599
             assert type(response["count"]) is int and 1 <= response["count"] <= 999
             identity = (response["name"], response["status"])

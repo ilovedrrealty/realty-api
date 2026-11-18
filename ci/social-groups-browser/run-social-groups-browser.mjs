@@ -14,18 +14,30 @@ let automaticAccepts = 0, tokenLeaks = 0, humanAcceptBudget = 0, linkAcceptReque
 let entryPage = null, entryCopy = null, entryInProgress = true
 const responseCounts = new Map()
 const errorTypes = { Error: 0, TypeError: 0, ReferenceError: 0, SyntaxError: 0, RangeError: 0, other: 0 }
+const pendingAwaits = new Set()
+let lastAwait = 'none', failedAwait = 'none'
+let diagnosticCopies = {}
 class Failure extends Error {}
 const check = (value, reason) => { if (!value) throw new Failure(reason) }
 function advance(value) {
   stage = value; clearTimeout(timer); console.log('SOCIAL_GROUPS_BROWSER_STAGE ' + value)
-  timer = setTimeout(() => { console.log('SOCIAL_GROUPS_BROWSER_FAILURE ' + stage + ' STAGE_DEADLINE'); process.exit(1) }, 60000)
+  timer = setTimeout(async () => {
+    await entryDiagnostic(new Error('STAGE_DEADLINE'))
+    console.log('SOCIAL_GROUPS_BROWSER_FAILURE ' + stage + ' STAGE_DEADLINE'); process.exit(1)
+  }, 60000)
+}
+async function observed(name, task) {
+  lastAwait = name; pendingAwaits.add(name)
+  try { return await task() }
+  catch (cause) { if (failedAwait === 'none') failedAwait = name; throw cause }
+  finally { pendingAwaits.delete(name) }
 }
 async function bounded(promise) {
   let deadline
   try { return await Promise.race([promise, new Promise((_, reject) => { deadline = setTimeout(() => reject(new Failure('BODY_DEADLINE')), 15000) })]) }
   finally { clearTimeout(deadline) }
 }
-const json = response => bounded(response.json())
+const json = response => observed('response_json', () => bounded(response.json()))
 const button = (surface, name) => surface.getByRole('button', { name, exact: true })
 const pathIs = (response, path, method) => new URL(response.url()).origin === api
   && new URL(response.url()).pathname === path && (!method || response.request().method() === method)
@@ -56,8 +68,12 @@ async function session(locale, account, role, storageState) {
   }))
   context.on('response', response => {
     const url = new URL(response.url()), resource = response.request().resourceType()
-    const name = url.origin === api ? ({ '/auth/me': 'auth_me', '/professionals/options': 'professional_options',
-      [`${prefix}/groups`]: 'groups' })[url.pathname] : url.origin === dashboard
+    const method = response.request().method(), path = url.pathname
+    const name = url.origin === api ? ({ '/auth/me': 'auth_me', '/professionals/options': 'professional_options' })[path]
+      ?? (path === `${prefix}/groups` ? method === 'POST' ? 'group_create' : 'groups'
+        : /^\/property-network\/groups\/[a-f0-9-]+$/.test(path) ? method === 'PUT' ? 'group_edit' : 'group_header'
+          : /^\/property-network\/groups\/[a-f0-9-]+\/media$/.test(path) ? 'group_media_upload'
+            : /^\/property-network\/group-media\/[a-f0-9-]+$/.test(path) ? 'group_media_read' : null) : url.origin === dashboard
       ? resource === 'document' ? 'dashboard_document' : resource === 'script' ? 'dashboard_script' : resource === 'stylesheet' ? 'dashboard_stylesheet' : null : null
     if (name) {
       const key = name + ':' + response.status()
@@ -106,14 +122,16 @@ async function session(locale, account, role, storageState) {
 }
 async function write(page, path, perform, method = 'POST', expected = [200, 201]) {
   await foreground(page)
-  const [response] = await Promise.all([page.waitForResponse(value => pathIs(value, path, method)), perform()])
+  const [response] = await Promise.all([observed('write_response', () => page.waitForResponse(value => pathIs(value, path, method))),
+    observed('write_action', perform)])
   check(expected.includes(response.status()), 'ACTUAL_ACTION_STATUS_REQUIRED'); noStore(response)
   const req = response.request()
   return { response, value: await json(response), input: (req.headers()['content-type'] || '').startsWith('application/json') ? req.postDataJSON() : null }
 }
 async function foreground(page) {
-  await page.bringToFront()
-  await page.waitForFunction(() => document.visibilityState === 'visible' && navigator.onLine)
+  entryPage = page
+  await observed('foreground_front', () => page.bringToFront())
+  await observed('foreground_presence', () => page.waitForFunction(() => document.visibilityState === 'visible' && navigator.onLine))
 }
 async function menuGroups(context, copy, role) {
   const page = await context.newPage()
@@ -147,7 +165,9 @@ async function menuGroups(context, copy, role) {
   return page
 }
 async function entryDiagnostic(cause) {
-  const counts = { menu_buttons: 0, sidebars: 0, network_navigation: 0, network_headings: 0, groups_navigation: 0, groups_headings: 0 }
+  const counts = { menu_buttons: 0, sidebars: 0, network_navigation: 0, network_headings: 0, groups_navigation: 0, groups_headings: 0,
+    create_forms: 0, group_headers: 0, settings_headings: 0, header_images: 0 }
+  const uiErrors = { error_access: 0, error_conflict: 0, error_unknown: 0, error_unavailable: 0, error_fields: 0 }
   let surface = 'unavailable', readyState = 'unavailable', censusAvailable = false
   if (entryPage && !entryPage.isClosed()) {
     const url = new URL(entryPage.url())
@@ -155,13 +175,20 @@ async function entryDiagnostic(cause) {
       : url.origin === landing ? 'landing' : url.href === 'about:blank' ? 'blank' : 'other'
     const census = async () => {
       readyState = await entryPage.evaluate(() => document.readyState)
+      const language = await entryPage.evaluate(() => localStorage.getItem('ildr_lang') === 'es' ? 'es' : 'en')
+      const copy = diagnosticCopies[language] ?? entryCopy
       const locators = [entryPage.locator('button:has(svg.lucide-menu)'), entryPage.locator('aside'),
-        button(entryPage.locator('aside'), entryCopy.nav['property-network']),
-        entryPage.getByRole('heading', { name: entryCopy.network.heading, exact: true }),
-        button(entryPage.getByRole('navigation', { name: entryCopy.network.main_tabs, exact: true }), entryCopy.network.main.groups),
-        entryPage.getByRole('heading', { name: entryCopy.network.groups.title, exact: true })]
+        button(entryPage.locator('aside'), copy.nav['property-network']),
+        entryPage.getByRole('heading', { name: copy.network.heading, exact: true }),
+        button(entryPage.getByRole('navigation', { name: copy.network.main_tabs, exact: true }), copy.network.main.groups),
+        entryPage.getByRole('heading', { name: copy.network.groups.title, exact: true }),
+        entryPage.getByRole('heading', { name: copy.network.groups.views.create, exact: true }).locator('..').locator('form'),
+        entryPage.locator('header h2'), entryPage.getByRole('heading', { level: 3, name: copy.network.groups.tabs.settings, exact: true }),
+        entryPage.locator('header img[src^="blob:"]')]
       const values = await Promise.all(locators.map(locator => locator.count()))
       Object.keys(counts).forEach((key, index) => { counts[key] = Math.min(999, values[index]) })
+      const errors = await Promise.all(Object.keys(uiErrors).map(key => entryPage.getByRole('alert').filter({ hasText: copy.network[key] }).count()))
+      Object.keys(uiErrors).forEach((key, index) => { uiErrors[key] = Math.min(999, errors[index]) })
       censusAvailable = true
     }
     let timeout
@@ -173,7 +200,8 @@ async function entryDiagnostic(cause) {
   const responses = [...responseCounts].sort(([a], [b]) => a.localeCompare(b)).slice(0, 36).map(([key, count]) => {
     const [name, status] = key.split(':'); return { name, status: Number(status), count }
   })
-  console.log('SOCIAL_GROUPS_ENTRY_DIAGNOSTIC ' + JSON.stringify({ phase: stage, failure_type: failureType, surface,
+  console.log('SOCIAL_GROUPS_ENTRY_DIAGNOSTIC ' + JSON.stringify({ phase: stage, last_await: lastAwait,
+    failed_await: failedAwait, pending_awaits: [...pendingAwaits].sort(), ui_errors: uiErrors, failure_type: failureType, surface,
     ready_state: readyState, census_available: censusAvailable, counts, page_errors: Math.min(999, pageErrors),
     page_error_types: Object.fromEntries(Object.entries(errorTypes).map(([key, count]) => [key, Math.min(999, count)])), responses }))
 }
@@ -182,26 +210,28 @@ function workspace(page, facts) {
 }
 async function openGroup(page, copy, facts) {
   const card = page.getByRole('heading', { name: facts.groupName, exact: true }).locator('xpath=ancestor::article[1]')
-  await button(card, copy.network.groups.open).click()
-  await page.getByRole('heading', { name: facts.groupName, exact: true, level: 2 }).waitFor()
+  await observed('open_group_control', () => button(card, copy.network.groups.open).click())
+  await observed('open_group_heading', () => page.getByRole('heading', { name: facts.groupName, exact: true, level: 2 }).waitFor())
   return workspace(page, facts)
 }
 async function tab(page, copy, facts, name) {
   await foreground(page)
-  await button(workspace(page, facts).getByRole('navigation', { name: copy.network.groups.workspace_tabs, exact: true }), copy.network.groups.tabs[name]).click()
+  entryCopy = copy
+  await observed('tab_control', () => button(workspace(page, facts).getByRole('navigation', { name: copy.network.groups.workspace_tabs, exact: true }), copy.network.groups.tabs[name]).click())
 }
 async function refreshHeader(page, copy, facts, expected = 200) {
   await foreground(page)
+  entryCopy = copy
   const name = copy.network.refresh
-  const [response] = await Promise.all([page.waitForResponse(value => pathIs(value, groupPath(facts.groupId), 'GET')),
-    button(workspace(page, facts), name).first().click()])
+  const [response] = await Promise.all([observed('header_response', () => page.waitForResponse(value => pathIs(value, groupPath(facts.groupId), 'GET'))),
+    observed('header_control', () => button(workspace(page, facts), name).first().click())])
   check(response.status() === expected, 'ACTUAL_HEADER_RECHECK_REQUIRED'); noStore(response)
   return expected === 200 ? json(response) : null
 }
 async function geometry(page, label, widths = [320, 390, 1366]) {
   for (const width of widths) {
-    await page.setViewportSize({ width, height: 844 })
-    const value = await page.evaluate(() => ({ width: innerWidth, document: document.documentElement.scrollWidth }))
+    await observed('geometry_viewport', () => page.setViewportSize({ width, height: 844 }))
+    const value = await observed('geometry_measure', () => page.evaluate(() => ({ width: innerWidth, document: document.documentElement.scrollWidth })))
     check(value.width === width && value.document <= width + 1, 'WHOLE_PAGE_OVERFLOW')
     geometries.push({ label, width }); console.log('SOCIAL_GROUPS_BROWSER_GEOMETRY ' + JSON.stringify({ label, ...value }))
   }
@@ -223,12 +253,12 @@ async function confirm(page, perform) {
 async function ownInbox(page, copy) {
   await foreground(page)
   await button(page.getByRole('navigation', { name: copy.network.groups.views_label, exact: true }), copy.network.groups.views.invitations).click()
-  await inlineField(page, copy.network.groups.membership_filter, 'select').waitFor()
+  await observed('inbox_filter', () => inlineField(page, copy.network.groups.membership_filter, 'select').waitFor())
 }
 async function inviteMember(page, copy, facts, code) {
   await tab(page, copy, facts, 'members')
   const form = page.getByRole('heading', { name: copy.network.groups.direct_invite, exact: true }).locator('..')
-  await form.getByLabel(copy.network.groups.member_code, { exact: true }).fill(String(code))
+  await observed('member_code_field', () => form.getByLabel(copy.network.groups.member_code, { exact: true }).fill(String(code)))
   const result = await write(page, `${groupPath(facts.groupId)}/members/${code}/actions`, () => button(form, copy.network.groups.invite).click())
   check(result.value.operation === 'invite' && result.value.current.state === 'invited', 'REAL_DIRECT_INVITATION_REQUIRED')
   return result.value
@@ -236,32 +266,32 @@ async function inviteMember(page, copy, facts, code) {
 async function acceptInbox(page, copy, facts, alias) {
   await foreground(page)
   const card = page.getByRole('heading', { name: facts.groupName, exact: true }).locator('..')
-  await card.getByLabel(copy.network.groups.member_alias, { exact: true }).fill(alias)
+  await observed('alias_field', () => card.getByLabel(copy.network.groups.member_alias, { exact: true }).fill(alias))
   const result = await write(page, `${groupPath(facts.groupId)}/membership/actions`, () => button(card, copy.network.groups.accept_invite).click())
   check(result.value.operation === 'accept_invite' && result.value.current.state === 'active', 'EXPLICIT_ALIAS_ACCEPTANCE_REQUIRED')
-  await button(card, copy.network.groups.accept_invite).waitFor({ state: 'hidden' })
+  await observed('membership_adoption', () => button(card, copy.network.groups.accept_invite).waitFor({ state: 'hidden' }))
   return result.value
 }
 async function changeRole(page, copy, facts, code, role) {
   const row = memberRow(page, copy, code)
-  await inlineField(row, copy.network.groups.change_role, 'select').selectOption(role)
+  await observed('role_field', () => inlineField(row, copy.network.groups.change_role, 'select').selectOption(role))
   const result = await write(page, `${groupPath(facts.groupId)}/members/${code}/actions`, () => button(row, copy.network.groups.save_role).click())
   check(result.value.operation === 'set_role' && result.value.current.role === role, 'REAL_GROUP_ROLE_REQUIRED')
-  await row.getByText(new RegExp('^' + quote(copy.network.groups.roles[role]) + ' ·')).waitFor()
+  await observed('role_adoption', () => row.getByText(new RegExp('^' + quote(copy.network.groups.roles[role]) + ' ·')).waitFor())
   return result.value
 }
 function postCard(page, body) { return page.getByText(body, { exact: true }).locator('xpath=ancestor::article[1]') }
 async function refreshFeed(page, copy, facts) {
   const panel = page.getByRole('heading', { name: copy.network.groups.feed_title, exact: true }).locator('..')
-  const [response] = await Promise.all([page.waitForResponse(value => pathIs(value, `${groupPath(facts.groupId)}/posts`, 'GET')),
-    button(panel, copy.network.refresh).first().click()])
+  const [response] = await Promise.all([observed('feed_response', () => page.waitForResponse(value => pathIs(value, `${groupPath(facts.groupId)}/posts`, 'GET'))),
+    observed('feed_control', () => button(panel, copy.network.refresh).first().click())])
   check(response.status() === 200, 'ACTUAL_FEED_REFRESH_REQUIRED'); noStore(response)
 }
 async function createPost(page, copy, facts, body, photoPath) {
   await foreground(page)
   const panel = page.getByRole('heading', { name: copy.network.groups.feed_title, exact: true }).locator('..')
   const form = panel.locator('form').first()
-  await inlineField(form, copy.network.groups.write_post, 'textarea').fill(body)
+  await observed('post_field', () => inlineField(form, copy.network.groups.write_post, 'textarea').fill(body))
   let media = null
   if (photoPath) {
     const uploaded = await write(page, `${groupPath(facts.groupId)}/media`, () => form.locator('input[type=file]').setInputFiles(photoPath))
@@ -270,8 +300,8 @@ async function createPost(page, copy, facts, body, photoPath) {
   }
   const result = await write(page, `${groupPath(facts.groupId)}/posts`, () => button(form, copy.network.groups.publish_post).click())
   check(result.value.operation === 'post_create' && result.input.expected_group_version >= 1, 'BOUND_GROUP_VERSION_REQUIRED')
-  await postCard(page, body).waitFor()
-  if (media) await postCard(page, body).getByRole('img', { name: copy.network.groups.photo_alt, exact: true }).waitFor()
+  await observed('post_adoption', () => postCard(page, body).waitFor())
+  if (media) await observed('post_image', () => postCard(page, body).getByRole('img', { name: copy.network.groups.photo_alt, exact: true }).waitFor())
   return { post: result.value.current, media }
 }
 async function hold(page, path, method, predicate, mode = 'response') {
@@ -299,8 +329,8 @@ async function hold(page, path, method, predicate, mode = 'response') {
   }
   const matcher = url => url.origin === api && url.pathname === path
   await page.route(matcher, handler)
-  return { ready: async () => { await bounded(readyPromise); return captured },
-    release: async () => { release(); await bounded(finishedPromise); await page.unroute(matcher, handler) } }
+  return { ready: async () => { await observed('held_ready', () => bounded(readyPromise)); return captured },
+    release: async () => { release(); await observed('held_release', () => bounded(finishedPromise)); await page.unroute(matcher, handler) } }
 }
 
 // The finite normal journeys below operate only on the fixture's one group.
@@ -309,19 +339,19 @@ async function settings(page, copy, facts, changes, acknowledge = false) {
   const form = page.getByRole('heading', { name: copy.network.groups.tabs.settings, exact: true }).locator('..').locator('form')
   for (const [key, value] of Object.entries(changes)) {
     const field = inlineField(form, copy.network.groups[key], key === 'description' ? 'textarea' : 'select')
-    if (key === 'description') await field.fill(value)
-    else await field.selectOption(value)
+    if (key === 'description') await observed('settings_field', () => field.fill(value))
+    else await observed('settings_field', () => field.selectOption(value))
   }
   if (acknowledge) await form.getByLabel(copy.network.groups.publication_acknowledge, { exact: true }).check()
   const result = await write(page, groupPath(facts.groupId), () => button(form, copy.network.groups.save_settings).click(), 'PUT')
   check(result.value.operation === 'group_edit', 'REAL_SETTINGS_RECEIPT_REQUIRED')
-  await form.locator('fieldset:not([disabled])').waitFor()
+  await observed('settings_adoption', () => form.locator('fieldset:not([disabled])').waitFor())
   check(await button(form, copy.network.groups.save_settings).isDisabled(), 'SETTINGS_MUST_ADOPT_SAVED_BASELINE')
   return result.value.current
 }
 async function backIndex(page, copy) {
-  await button(page, copy.network.groups.back).click()
-  await page.getByRole('heading', { name: copy.network.groups.title, exact: true }).waitFor()
+  await observed('back_control', () => button(page, copy.network.groups.back).click())
+  await observed('back_heading', () => page.getByRole('heading', { name: copy.network.groups.title, exact: true }).waitFor())
 }
 async function rosterAction(page, copy, facts, code, action, expectedState, needsConfirm = false) {
   const row = memberRow(page, copy, code)
@@ -335,7 +365,7 @@ async function rosterAction(page, copy, facts, code, action, expectedState, need
 }
 async function ownAction(page, copy, facts, name, action, state, alias, needsConfirm = false) {
   await foreground(page)
-  if (alias) await workspace(page, facts).getByLabel(copy.network.groups.member_alias, { exact: true }).fill(alias)
+  if (alias) await observed('alias_field', () => workspace(page, facts).getByLabel(copy.network.groups.member_alias, { exact: true }).fill(alias))
   const click = () => button(workspace(page, facts), copy.network.groups[name]).click()
   const result = await write(page, `${groupPath(facts.groupId)}/membership/actions`, () => needsConfirm ? confirm(page, click) : click())
   check(result.value.operation === action && result.value.current.state === state, 'REAL_OWN_MEMBERSHIP_REQUIRED')
@@ -363,6 +393,7 @@ try {
   const fixture = JSON.parse(await readFile(process.env.ILDR_BROWSER_FIXTURES, 'utf8'))
   check(fixture.scope === 'social-groups-only', 'EXACT_FIXTURE_SCOPE_REQUIRED')
   const en = JSON.parse(await readFile('/browser-run/en.json', 'utf8')), es = JSON.parse(await readFile('/browser-run/es.json', 'utf8'))
+  diagnosticCopies = { en, es }
   const facts = { ...fixture.facts }, g = en.network.groups, s = es.network.groups
   advance('setup_browser')
   browser = await chromium.launch({ headless: true })
@@ -405,14 +436,26 @@ try {
   const created = await write(ownerPage, `${prefix}/groups`, () => button(create, g.create).click())
   check(created.value.operation === 'group_create' && created.value.current.visibility === 'private', 'REAL_PRIVATE_CREATE_REQUIRED')
   facts.groupId = created.value.target_id
-  await ownerPage.getByRole('heading', { name: facts.groupName, level: 2, exact: true }).waitFor()
+  advance('G01_created_header')
+  await observed('create_header', () => ownerPage.getByRole('heading', { name: facts.groupName, level: 2, exact: true }).waitFor())
+  advance('G01_settings_tab')
   await tab(ownerPage, en, facts, 'settings')
+  advance('G01_image_upload')
   const imageUpload = await write(ownerPage, `${groupPath(facts.groupId)}/media`, () => ownerPage.getByLabel(g.group_image, { exact: true }).setInputFiles(fixture.files.photo))
   check(imageUpload.value.current.kind === 'group_image', 'ACTUAL_GROUP_IMAGE_REQUIRED')
   const imageId = imageUpload.value.target_id
+  advance('G01_image_save')
   await write(ownerPage, groupPath(facts.groupId), () => button(ownerPage, g.save_settings).click(), 'PUT')
-  await workspace(ownerPage, facts).locator('header img').waitFor()
-  await backIndex(ownerPage, en); await geometry(ownerPage, 'en_index'); await openGroup(ownerPage, en, facts); await geometry(ownerPage, 'en_detail')
+  advance('G01_header_image')
+  await observed('header_image', () => workspace(ownerPage, facts).locator('header img').waitFor())
+  advance('G01_back_index')
+  await backIndex(ownerPage, en)
+  advance('G01_index_geometry')
+  await geometry(ownerPage, 'en_index')
+  advance('G01_reopen')
+  await openGroup(ownerPage, en, facts)
+  advance('G01_detail_geometry')
+  await geometry(ownerPage, 'en_detail')
 
   advance('G02_direct_invitation')
   await inviteMember(ownerPage, en, facts, fixture.codes.member)
@@ -665,7 +708,7 @@ try {
     locales: ['en', 'es'], page_errors: pageErrors, external_writes: externalWrites, tracking_requests: trackingRequests,
     automatic_accepts: automaticAccepts, token_leaks: tokenLeaks }))
 } catch (cause) {
-  if (entryInProgress) await entryDiagnostic(cause)
+  await entryDiagnostic(cause)
   console.log('SOCIAL_GROUPS_BROWSER_FAILURE ' + stage + ' ' + (cause instanceof Failure ? cause.message : 'LOCATOR_OR_EVENT_DEADLINE'))
   process.exitCode = 1
 } finally {
