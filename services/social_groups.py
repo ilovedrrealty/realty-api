@@ -84,8 +84,9 @@ def _require_write(db, group):
         raise HTTPException(409, "This group is closed for new activity")
 
 
-def _require_member(db, user, group):
-    _require_write(db, group)
+def _require_member(db, user, group, *, allow_closed=False):
+    if not allow_closed:
+        _require_write(db, group)
     row = _member(db, group, user.id)
     if not _role(db, user, group) or (row and row.state == "blocked") or _blocked(db, user.id, group.owner_id):
         unavailable()
@@ -160,6 +161,7 @@ def group_view(db, user, group):
     writable = group.status == "active" and _owner_active(db, group)
     can_feed = bool(role or user.role == "admin" or (writable and group.visibility == "network"))
     managers = role in {"owner", "admin"}
+    unblocked_manager = bool(role and not _blocked(db, user.id, group.owner_id))
     image = db.get(Media, group.image_media_id) if group.image_media_id else None
     count = db.query(Membership).join(User, User.id == Membership.user_id).filter(
         Membership.group_id == group.id, Membership.state == "active", User.status == "active", User.email_verified.is_(True)).count() + 1
@@ -175,6 +177,8 @@ def group_view(db, user, group):
             "image": media_view(image) if image and can_feed else None, "publication_summary": summary,
             "can_read_feed": can_feed, "can_read_members": bool(role or user.role == "admin"),
             "can_manage": managers and writable, "can_moderate": _can_moderate(db, user, group),
+            "can_revoke_access": unblocked_manager and role in {"owner", "admin", "moderator"},
+            "can_revoke_links": unblocked_manager and managers,
             "can_post": bool(role and writable), "can_join": not role and writable and _state(member) not in {"blocked", "invited", "requested"},
             "can_publish": role == "owner" and writable, "can_archive": role == "owner" or user.role == "admin",
             "created_at": group.created_at, "updated_at": group.updated_at}
@@ -424,12 +428,16 @@ def manage_member(db, user, identity, code, body):
                      "decline_member" if body.action == "decline" else body.action, f"{identity}:{code}")
     if replay:
         return replay
-    _require_member(db, user, group)
+    row = db.query(Membership).filter_by(group_id=identity, user_id=hint.id).populate_existing().with_for_update().first()
+    ranks = {"member": 1, "moderator": 2, "admin": 3}
+    demoting = (body.action == "set_role" and row is not None and row.state == "active"
+                and ranks[body.role] < ranks[row.role])
+    revoke_only = body.action in {"remove", "block", "revoke_invite"} or demoting
+    _require_member(db, user, group, allow_closed=revoke_only)
     role = _role(db, user, group)
     target = db.get(User, hint.id)
     if role not in {"owner", "admin", "moderator"} or target.id in {user.id, group.owner_id}:
         raise HTTPException(403, "This member action is unavailable")
-    row = db.query(Membership).filter_by(group_id=identity, user_id=target.id).populate_existing().with_for_update().first()
     _version(row, body.expected_membership_version)
     state = _state(row)
     if row and row.role == "admin" and role != "owner" or row and row.role == "moderator" and role == "moderator":
@@ -531,7 +539,7 @@ def revoke_link(db, user, identity, link_id, body):
     replay = _replay(db, user, body, "link_revoke", link_id)
     if replay:
         return replay
-    _require_member(db, user, group)
+    _require_member(db, user, group, allow_closed=True)
     if not _can_manage(db, user, group):
         raise HTTPException(403, "Only group administrators can revoke invitation links")
     row = db.query(Link).filter_by(id=link_id, group_id=identity).populate_existing().with_for_update().first()

@@ -474,3 +474,83 @@ class SocialGroupsTest(unittest.TestCase):
             if closure == "owner_suspended":
                 self.users["owner"].status = "active"
                 self.db.commit()
+
+    def test_closed_group_managers_can_revoke_private_access_without_new_grants(self):
+        from PIL import Image
+        from models.user import User
+        waiting = User(id=uuid4(), email=f"groups-waiting-{self.marker}@example.com", password_hash="synthetic-not-used",
+                       role="buyer", status="active", email_verified=True, display_name="Synthetic waiting member")
+        self.db.add(waiting)
+        self.db.commit()
+        image = BytesIO()
+        Image.new("RGB", (2, 2), "white").save(image, "PNG")
+        for closure in ("archived", "owner_suspended"):
+            group_id, current = self.group(visibility="network")
+            self.invite(group_id)
+            administrator = self.accept(group_id)
+            administrator = self.service.manage_member(self.db, self.users["owner"], group_id, self.users["member"].user_code,
+                ManageMember(submission_id=uuid4(), expected_membership_version=administrator["version"], action="set_role", role="admin"))["current"]
+            self.invite(group_id, actor="other")
+            moderator = self.accept(group_id, actor="other")
+            moderator = self.service.manage_member(self.db, self.users["owner"], group_id, self.users["other"].user_code,
+                ManageMember(submission_id=uuid4(), expected_membership_version=moderator["version"], action="set_role", role="moderator"))["current"]
+            self.invite(group_id, actor="third")
+            regular = self.accept(group_id, actor="third")
+            pending = self.invite(group_id, actor="platform")
+            requested = self.service.own_membership_action(self.db, waiting, group_id, MembershipAction(
+                submission_id=uuid4(), expected_membership_version=0, action="request", member_alias="Waiting alias"))["current"]
+            current = self.edit(group_id, current, visibility="private")
+            token, link = self.link(group_id)
+            unused_token, unused_link = self.link(group_id)
+            with patch.object(self.service.storage, "store_image"):
+                photo = self.service.upload_media(self.db, self.users["third"], group_id, "post", uuid4(), image.getvalue())["current"]
+            self.service.create_post(self.db, self.users["third"], group_id,
+                GroupPostCreate(submission_id=uuid4(), body="Retained private photo", media_ids=[photo["id"]]))
+            if closure == "archived":
+                self.service.archive(self.db, self.users["owner"], group_id,
+                    ArchiveGroup(submission_id=uuid4(), expected_version=current["version"], action="archive"))
+            else:
+                self.users["owner"].status = "suspended"
+                self.db.commit()
+            admin = self.users["member"]
+            capabilities = self.service.group_view(self.db, admin, self.service.group_for(self.db, admin, group_id))
+            self.assertTrue(capabilities["can_revoke_access"] and capabilities["can_revoke_links"])
+            self.assertFalse(capabilities["can_manage"] or capabilities["can_post"] or capabilities["can_publish"])
+            removed = self.service.manage_member(self.db, self.users["other"], group_id, self.users["third"].user_code,
+                ManageMember(submission_id=uuid4(), expected_membership_version=regular["version"], action="remove"))["current"]
+            with patch.object(self.service.storage, "read_image") as read:
+                self.assert_unavailable(lambda: self.service.media_bytes(self.db, self.users["third"], UUID(photo["id"])))
+                read.assert_not_called()
+            blocked = self.service.manage_member(self.db, self.users["other"], group_id, self.users["third"].user_code,
+                ManageMember(submission_id=uuid4(), expected_membership_version=removed["version"], action="block"))["current"]
+            demoted = self.service.manage_member(self.db, admin, group_id, self.users["other"].user_code,
+                ManageMember(submission_id=uuid4(), expected_membership_version=moderator["version"], action="set_role", role="member"))["current"]
+            self.assertEqual(demoted["role"], "member")
+            self.assertFalse(self.service.group_view(self.db, self.users["other"],
+                self.service.group_for(self.db, self.users["other"], group_id))["can_revoke_access"])
+            self.assert_unavailable(lambda: self.service.manage_member(self.db, self.users["other"], group_id, self.users["third"].user_code,
+                ManageMember(submission_id=uuid4(), expected_membership_version=blocked["version"], action="remove")))
+            revoked = self.service.manage_member(self.db, admin, group_id, self.users["platform"].user_code,
+                ManageMember(submission_id=uuid4(), expected_membership_version=pending["version"], action="revoke_invite"))["current"]
+            self.assertEqual(revoked["state"], "cancelled")
+            self.service.revoke_link(self.db, admin, group_id, UUID(link["id"]),
+                RevokeInviteLink(submission_id=uuid4(), expected_version=link["version"]))
+            self.assert_unavailable(lambda: self.service.resolve_link(self.db, waiting, ResolveInvite(token=token)))
+            self.assert_unavailable(lambda: self.service.accept_link(self.db, waiting,
+                AcceptInvite(token=unused_token, submission_id=uuid4(), member_alias="New link member")))
+            for body, code in (
+                (ManageMember(submission_id=uuid4(), expected_membership_version=requested["version"], action="approve"), waiting.user_code),
+                (ManageMember(submission_id=uuid4(), expected_membership_version=demoted["version"], action="set_role", role="moderator"), self.users["other"].user_code),
+                (ManageMember(submission_id=uuid4(), expected_membership_version=requested["version"], action="invite"), waiting.user_code),
+            ):
+                with self.assertRaises(HTTPException) as denied:
+                    self.service.manage_member(self.db, admin, group_id, code, body)
+                self.assertEqual(denied.exception.status_code, 409)
+                self.db.rollback()
+            self.assert_unavailable(lambda: self.service.manage_member(self.db, admin, group_id, self.users["owner"].user_code,
+                ManageMember(submission_id=uuid4(), expected_membership_version=0, action="remove")))
+            from models.social_groups import NetworkGroupInviteLink
+            self.assertEqual(self.db.get(NetworkGroupInviteLink, UUID(unused_link["id"])).use_count, 0)
+            if closure == "owner_suspended":
+                self.users["owner"].status = "active"
+                self.db.commit()
