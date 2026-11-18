@@ -7,6 +7,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, StrictBool, field_validator, model_validator
 from schemas.website_settings import validate_public_https_url
+from schemas.professional_google import ProfessionalGoogleFields
 from utils.professional_options import CATEGORY_IDS, AREA_IDS, LANGUAGE_IDS
 
 ReviewStatus = Literal["draft", "pending", "approved", "rejected"]
@@ -29,7 +30,7 @@ class Descriptions(StrictModel):
         return value.strip()
 
 
-class ProfessionalDraft(StrictModel):
+class ProfessionalDraft(ProfessionalGoogleFields):
     business_name: str = Field(default="", max_length=120)
     contact_name: str = Field(default="", max_length=100)
     category_ids: list[str] = Field(default_factory=list, max_length=8)
@@ -128,7 +129,7 @@ class ReviewBody(VersionBody):
     note: str = Field(default="", max_length=2000)
 
 
-class PublicProfessional(StrictModel):
+class PublicProfessional(ProfessionalGoogleFields):
     id: UUID
     business_name: str
     contact_name: str

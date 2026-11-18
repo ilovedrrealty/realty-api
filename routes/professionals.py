@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 NO_STORE = {"Cache-Control": "no-store", "Pragma": "no-cache"}
 MULTIPART_LIMIT_DETAIL = "Professional upload exceeds the size limit"
 PUBLIC_FIELDS = ("business_name", "contact_name", "category_ids", "custom_services", "service_area_ids", "descriptions", "languages",
-                 "public_phone", "public_email", "public_whatsapp", "website_url", "photo_url")
+                 "public_phone", "public_email", "public_whatsapp", "website_url", "photo_url", "google_profile_url", "google_maps_embed_url")
 
 
 class NoStoreRoute(APIRoute):
@@ -89,7 +89,8 @@ router = APIRouter(tags=["professionals"], route_class=NoStoreRoute)
 def _public(row):
     if not row.published_data or not row.published_at:
         return None
-    return {"id": row.id, **{key: deepcopy(row.published_data.get(key, []) if key == "custom_services" else row.published_data[key]) for key in PUBLIC_FIELDS}, "approved_at": row.published_at}
+    snapshot = {"custom_services": [], "google_profile_url": "", "google_maps_embed_url": "", **row.published_data}
+    return {"id": row.id, **{key: deepcopy(snapshot[key]) for key in PUBLIC_FIELDS}, "approved_at": row.published_at}
 
 
 def _owned(row):

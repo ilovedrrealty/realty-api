@@ -497,16 +497,23 @@ class ProfessionalTests(unittest.TestCase):
         approved = self.publish()
         with Session(self.engine) as db:
             row = db.get(ProfessionalProfile, approved["id"])
-            row.draft_data = {key: value for key, value in row.draft_data.items() if key != "custom_services"}
-            row.published_data = {key: value for key, value in row.published_data.items() if key != "custom_services"}
+            missing = {"custom_services", "google_profile_url", "google_maps_embed_url"}
+            row.draft_data = {key: value for key, value in row.draft_data.items() if key not in missing}
+            row.published_data = {key: value for key, value in row.published_data.items() if key not in missing}
             db.commit()
         public = self.call("GET", f"/professionals/{approved['id']}", "other")
         self.assertEqual(public["custom_services"], [])
+        self.assertEqual((public["google_profile_url"], public["google_maps_embed_url"]), ("", ""))
         self.assertEqual(self.call("GET", "/professional-profile")["draft"]["custom_services"], [])
         summary = self.call("GET", "/admin/professionals", "admin")["items"][0]
         self.assertEqual(summary["custom_services"], [])
         self.assertEqual(summary["management_type"], "account_owned")
         self.assertEqual(summary["version"], approved["version"])
+        with Session(self.engine) as db:
+            row = db.get(ProfessionalProfile, approved["id"])
+            self.assertTrue(missing.isdisjoint(row.draft_data))
+            self.assertTrue(missing.isdisjoint(row.published_data))
+            self.assertEqual(row.version, approved["version"])
 
     def test_managed_photo_assets_are_profile_scoped_immutable_and_do_not_change_saved_versions(self):
         managed, second = self.managed(), self.managed(actor="admin_b")
