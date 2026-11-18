@@ -5,7 +5,7 @@ die() { printf 'COMMUNICATIONS_BROWSER_REFUSED %s\n' "$1" >&2; exit 1; }
 bounded() { timeout --kill-after=8s "$@"; }
 [[ $# == 6 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 &&
-   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-f01-f03-browser-20261117-v6 &&
+   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-f01-f03-browser-20261117-v7 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_HOSTED_EVENT_REQUIRED
 ops="$1"; frontend="$2"; recipe="$3"; relay="$4"; backend="$5"; migration="$6"
 [[ "$ops" == "$GITHUB_WORKSPACE/browser-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-base" &&
@@ -18,12 +18,12 @@ for checkout in "$ops" "$frontend" "$recipe" "$relay" "$backend" "$migration"; d
     die CLEAN_CHECKOUT_REQUIRED
 done
 [[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" &&
-   $(git -C "$ops" rev-parse HEAD^) == 12a19bc1a5bc5107e238d4a700bbe1e2e753e63b ]] || die EXACT_OPERATIONS_PARENT_REQUIRED
+   $(git -C "$ops" rev-parse HEAD^) == 9572e43923c7afcbe451cdb91b15b031e069101c ]] || die EXACT_OPERATIONS_PARENT_REQUIRED
 operations_delta=$(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) || die EXACT_OPERATIONS_DELTA_REQUIRED
-[[ "$operations_delta" == $'.github/workflows/live-communications-browser.yml\nci/live-communications-browser/run-communications-browser.mjs\nci/live-communications-browser/run-hosted-communications-browser.sh' ]] ||
+[[ "$operations_delta" == $'.github/workflows/live-communications-browser.yml\nci/live-communications-browser/check-browser-result.py\nci/live-communications-browser/default-renting.commit\nci/live-communications-browser/default-renting.patch\nci/live-communications-browser/delivery-mobile.commit\nci/live-communications-browser/delivery-mobile.patch\nci/live-communications-browser/reconstruct_frontend.py\nci/live-communications-browser/run-communications-browser.mjs\nci/live-communications-browser/run-hosted-communications-browser.sh' ]] ||
   die EXACT_OPERATIONS_DELTA_REQUIRED
-frontend_commit=977ca90b30c5cb1897eb186fec8a51c0711883f7
-frontend_tree=2e0f96561a531eb883b88112cad8b4b809cb3c26
+frontend_commit=480c3bd53bcfd16d95e9e4d974c97429e00a0e68
+frontend_tree=6749f0833ce655fa64918213792d28046f046b9d
 frontend_paths=391
 backend_commit=7f63fec927f75af3f901f74297973253ad5c743b
 backend_tree=1a87c3d4c96e2df0c956e18f0f26c982e7ef3289
@@ -272,7 +272,7 @@ assert any(b"http://127.0.0.1:8918" in payload for payload in assets)
 for language in ("en","es"):
     def source(path): return json.loads((workspace/path).read_bytes())
     copy={key:source(f"apps/landing/src/locales/{language}/{name}.json")
-          for key,name in (("started","get_started"),("property","property_detail"),("auth","auth"),("verify","verify"))}
+          for key,name in (("started","get_started"),("property","property_detail"),("auth","auth"),("verify","verify"),("common","common"),("rentals","rentals"))}
     copy.update({key:source(f"apps/dashboard/src/locale/{language}/{name}.json")
                  for key,name in (("nav","nav"),("delivery","lead_delivery"),("communications","communications"),
                                   ("feeds","inquiry_feeds"),("share","contact_share"))})

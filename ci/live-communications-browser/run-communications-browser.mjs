@@ -21,6 +21,7 @@ const checks = [
   'english_spanish_whole_page_390_and_320_geometry',
   'paused_flags_keep_fallback_and_do_not_replay',
   'zero_external_api_writes_tracking_and_page_errors',
+  'renting_desktop_and_mobile_navigation_en_es',
 ]
 const contexts = []
 const geometries = []
@@ -30,6 +31,7 @@ let pageErrors = 0
 const pageErrorKinds = []
 let externalWrites = 0
 let trackingRequests = 0
+let rentingNavigationChecks = 0
 
 class CheckFailure extends Error {}
 function check(value, code) { if (!value) throw new CheckFailure(code) }
@@ -63,8 +65,8 @@ async function observe(page, path, method, action, status = 200, privateRead = t
 async function request(context, path, method = 'GET', data, headers = {}) {
   return context.request.fetch(api + path, { method, data, headers: { Origin: dashboard, ...headers }, maxRedirects: 0, timeout: 8000 })
 }
-async function session(browser, locale, account) {
-  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, serviceWorkers: 'block' })
+async function session(browser, locale, account, mobile = true) {
+  const context = await browser.newContext({ viewport: { width: mobile ? 390 : 1366, height: 844 }, isMobile: mobile, hasTouch: mobile, serviceWorkers: 'block' })
   contexts.push(context)
   context.setDefaultTimeout(10000)
   context.setDefaultNavigationTimeout(15000)
@@ -100,9 +102,9 @@ async function geometry(page, label) {
   for (const width of [390, 320]) {
     await page.setViewportSize({ width, height: 844 })
     const value = await page.evaluate(() => [innerWidth, document.documentElement.scrollWidth])
+    console.log(`COMMUNICATIONS_BROWSER_GEOMETRY ${label}_${width} ${value.join(' ')}`)
     check(value[0] === width && value[1] <= width + 1, 'WHOLE_PAGE_HORIZONTAL_OVERFLOW')
     geometries.push(`${label}_${width}`)
-    console.log(`COMMUNICATIONS_BROWSER_GEOMETRY ${label}_${width} ${value.join(' ')}`)
   }
   await page.setViewportSize({ width: 390, height: 844 })
 }
@@ -113,6 +115,29 @@ async function navigate(page, label) {
 function metadata(value) {
   const body = JSON.stringify(value)
   check(!body.includes('@example.com') && !body.includes('private note sentinel') && !/"payload"|"recipient"|"html"/.test(body), 'PRIVATE_PAYLOAD_LEAKED_IN_METADATA')
+}
+async function rentingNavigation(browser, locale, copy) {
+  for (const width of [320, 390, 1366]) {
+    const context = await session(browser, locale, undefined, width < 1280)
+    const page = await context.newPage()
+    await page.setViewportSize({ width, height: 844 })
+    await page.goto(landing + '/get-started/?intent=rent', { waitUntil: 'domcontentloaded' })
+    if (width < 1280) await button(page, copy.common.nav.open_menu).click()
+    const navigation = width < 1280 ? page.locator('#main-mobile-navigation')
+      : page.getByRole('navigation', { name: copy.common.nav.main_navigation, exact: true })
+    const link = navigation.getByRole('link', { name: copy.common.nav.rentals, exact: true })
+    check(await link.getAttribute('href') === '/rentals/', 'CANONICAL_RENTING_MENU_DESTINATION_REQUIRED')
+    await link.click()
+    await page.waitForURL(url => url.pathname === '/rentals/')
+    await page.getByRole('heading', { name: copy.rentals.copy_8, exact: true }).waitFor()
+    check(await page.getByRole('link', { name: copy.rentals.copy_10, exact: true }).first().getAttribute('href') === '/search/?purpose=rent',
+      'RENTING_BROWSE_INTENT_REQUIRED')
+    const value = await page.evaluate(() => [innerWidth, document.documentElement.scrollWidth])
+    console.log(`COMMUNICATIONS_BROWSER_RENTING_NAVIGATION ${locale}_${width} ${value.join(' ')}`)
+    check(value[0] === width && value[1] <= width + 1, 'RENTING_PAGE_HORIZONTAL_OVERFLOW')
+    rentingNavigationChecks += 1
+    await page.close()
+  }
 }
 async function getStarted(context, locale, copy, intent) {
   const page = await context.newPage()
@@ -371,6 +396,8 @@ try {
   browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] })
   for (const locale of ['en', 'es']) {
     const copy = JSON.parse(await readFile(`/rehearsal/${locale}.json`, 'utf8'))
+    progress(`${locale}_renting_navigation`)
+    await rentingNavigation(browser, locale, copy)
     progress(`${locale}_public_forms`)
     const publicContext = await session(browser, locale)
     for (const intent of ['buy', 'sell', 'rent']) await getStarted(publicContext, locale, copy.started, intent)
@@ -399,13 +426,14 @@ try {
   const settings = await json(flags)
   check(settings.enabled === false && settings.customer_messages_enabled === false, 'FLAGS_MUST_REMAIN_PAUSED')
   await flags.dispose()
-  check(pageErrors === 0 && externalWrites === 0 && trackingRequests === 0 && geometries.length === 24, 'PRIVACY_ERRORS_OR_GEOMETRY_INCOMPLETE')
+  check(pageErrors === 0 && externalWrites === 0 && trackingRequests === 0 && geometries.length === 24 && rentingNavigationChecks === 6,
+    'PRIVACY_ERRORS_OR_GEOMETRY_INCOMPLETE')
   progress('browser_teardown')
   for (const context of contexts) await context.close()
   await browser.close()
   clearTimeout(watchdog)
   console.log('COMMUNICATIONS_BROWSER_RESULT ' + JSON.stringify({ status: 'PASS', checks, geometry_checks: geometries.length,
-    page_errors: pageErrors, external_writes: externalWrites, tracking_requests: trackingRequests }))
+    renting_navigation_checks: rentingNavigationChecks, page_errors: pageErrors, external_writes: externalWrites, tracking_requests: trackingRequests }))
 } catch (error) {
   clearTimeout(watchdog)
   const code = error instanceof CheckFailure ? error.message : error?.name === 'TimeoutError' ? 'LOCATOR_OR_EVENT_DEADLINE'

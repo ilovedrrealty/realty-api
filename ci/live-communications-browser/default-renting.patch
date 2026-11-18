@@ -1,0 +1,38 @@
+diff --git a/apps/landing/src/design.ts b/apps/landing/src/design.ts
+index 2943bd16778b71f4f4d50a32c0cbfd2b4de3edbf..edfd93547ab8c871d87bfe798d226e26d3312321 100644
+--- a/apps/landing/src/design.ts
++++ b/apps/landing/src/design.ts
+@@ -28,6 +28,7 @@ export const NAV_ITEMS: [string, string][] = [
+   ['landing',    'Home'],
+   ['buying',     'Buying'],
+   ['selling',    'Selling'],
++  ['rentals',    'Renting'],
+   ['team',       'Our Team'],
+   ['contact',    'Contact'],
+   ['get-started', 'Get Started'],
+diff --git a/apps/landing/src/locales/en/common.json b/apps/landing/src/locales/en/common.json
+index 56025bbda0ae78f535fb04c746b74b73c581a54d..c5d86509cd60129daf9963b24707246e83fd2828 100644
+--- a/apps/landing/src/locales/en/common.json
++++ b/apps/landing/src/locales/en/common.json
+@@ -8,7 +8,7 @@
+     "team": "Our Team",
+     "contact": "Contact",
+     "calculator": "ROI Calculator",
+-    "rentals": "Rentals",
++    "rentals": "Renting",
+     "get-started": "Get Started",
+     "main_navigation": "Main navigation",
+     "open_menu": "Open menu",
+diff --git a/apps/landing/src/locales/es/common.json b/apps/landing/src/locales/es/common.json
+index 89fc81252843635fccdb4ba585beb5f224fb9b03..0c21d4bd5ac93d0470de81d1e23b5d1409522fa8 100644
+--- a/apps/landing/src/locales/es/common.json
++++ b/apps/landing/src/locales/es/common.json
+@@ -8,7 +8,7 @@
+     "team": "Nuestro Equipo",
+     "contact": "Contacto",
+     "calculator": "Calculadora ROI",
+-    "rentals": "Alquileres",
++    "rentals": "Alquilar",
+     "get-started": "Comenzar",
+     "main_navigation": "Navegación principal",
+     "open_menu": "Abrir menú",
