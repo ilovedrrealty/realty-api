@@ -4,7 +4,7 @@ die() { printf 'CUSTOMER_FOLLOWUP_REFUSED %s\n' "$1" >&2; exit 1; }
 bounded() { timeout --kill-after=8s "$@"; }
 
 [[ $# == 6 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api ]] || die CI_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-network-live-core-native-20261118-v5 && ${GITHUB_RUN_ATTEMPT:-} == 1 &&
+[[ ${GITHUB_REF:-} == refs/heads/codex-ci-network-live-core-acl-diagnostic-20261118 && ${GITHUB_RUN_ATTEMPT:-} == 1 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 [[ ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 ]] || die HOSTED_LINUX_REQUIRED
 ops="$1"; application="$2"; prior="$3"; recipe="$4"; legacy="$5"; live="$6"
@@ -19,7 +19,7 @@ done
 app_commit=$(git -C "$application" rev-parse HEAD)
 app_tree=$(git -C "$application" rev-parse 'HEAD^{tree}')
 [[ "$app_commit" == 01695530df670a94ac28f8b3bf36cc34b5b7a942 && "$app_tree" == e88ea0c57f9fac39545322532a5992d5a2927676 &&
-   $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" show -s --format=%P HEAD) == a600c38cbd0b7a9e4788bff754c54e4b7491f3d5 &&
+   $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" show -s --format=%P HEAD) == 2fc16dcaf16d4634648d44314f2d4c88970f026f &&
    ! -e "$application/.env" && ! -L "$application/.env" ]] || die EXACT_IMMUTABLE_PRODUCT_REQUIRED
 # The successor scopes one historical migration fixture. Product and deployed
 # migration blobs retain the reviewed 081868 behavior; both test repairs are explicit.
@@ -28,7 +28,7 @@ app_tree=$(git -C "$application" rev-parse 'HEAD^{tree}')
    $(git -C "$application" diff --numstat HEAD^ HEAD) == $'7\t2\ttests/test_service_workflow_migration.py' &&
    $(git -C "$application" diff --name-only 081868373f318498ddaa835de6496aa6e62d6f57 HEAD) == $'tests/test_professionals.py\ntests/test_service_workflow_migration.py' ]] ||
   die EXACT_TEST_ONLY_SOURCE_SUCCESSOR_REQUIRED
-[[ $(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) == $'.github/workflows/network-live-core-native.yml\nci/network-live-core/run-hosted-customer-followup.sh\nci/network-live-core/verify-customer-followup.py' ]] ||
+[[ $(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) == $'.github/workflows/network-live-core-native.yml\nci/network-live-core/run-hosted-customer-followup.sh\nci/network-live-core/verify-live-delivery-schema.py' ]] ||
   die EXACT_OPERATIONS_DELTA_REQUIRED
 [[ $(git -C "$prior" rev-parse HEAD) == e660040e0c514aca3f7f5b7d7a5007e4fdc596c4 &&
    $(git -C "$prior" rev-parse 'HEAD^{tree}') == 4e230dcfd86ad1a3353ca3b30efe4a425e60f884 &&
@@ -142,126 +142,8 @@ bounded 10s docker exec "$pg" psql -X -h 127.0.0.1 -p 55449 -U postgres -d "$dat
   -c 'CREATE ROLE anon NOLOGIN NOINHERIT; CREATE ROLE authenticated NOLOGIN NOINHERIT; CREATE ROLE service_role NOLOGIN NOINHERIT' \
   -c "COMMENT ON DATABASE $database IS 'ildr-communications-ci:$nonce'" >/dev/null || die DATABASE_MARKER_REQUIRED
 
-test_container=$(bounded 25s docker create --label "$label=$run_key" --network "container:$pg" --user "$(id -u):$(id -g)" \
-  --read-only --init --cap-drop ALL --security-opt no-new-privileges:true --pids-limit 192 --cpus 2 \
-  --memory 1536m --memory-swap 1536m --tmpfs /tmp:rw,exec,size=128m \
-  --env GITHUB_ACTIONS=true --env GITHUB_REPOSITORY=ilovedrrealty/realty-api --env "ILDR_BROWSER_CI_NONCE=$nonce" \
-  --env "SEARCH_FILTER_TEST_DATABASE_URL=postgresql+psycopg2://postgres@127.0.0.1:55449/$database" \
-  --mount "type=bind,src=$application,dst=/application,readonly" --mount "type=bind,src=$tools,dst=/tools,readonly" \
-  --mount "type=bind,src=$prior_tools,dst=/prior,readonly" \
-  --mount "type=bind,src=$legacy/ci/legacy-inquiry,dst=/legacy,readonly" \
-  "$image" /usr/local/bin/python -I -B /tools/verify-customer-followup.py) || die TEST_CONTAINER_CREATE_FAILED
-owned "$test_container" || die OWNED_TEST_CONTAINER_REQUIRED
-test_exit=0
-bounded 1200s docker start --attach "$test_container" >"$state/test.log" 2>&1 || test_exit=$?
-test_state=$(bounded 15s docker inspect --format '{{.State.ExitCode}} {{.State.Running}} {{.State.OOMKilled}}' "$test_container")
-[[ "$test_state" =~ ^[0-9]+\ (true|false)\ (true|false)$ ]] || die NATIVE_TEST_STATE_REQUIRED
-printf 'CUSTOMER_FOLLOWUP_NATIVE client=%s state=%s\n' "$test_exit" "$test_state"
-python3 -I -B - "$state/test.log" "$app_commit" "$app_tree" <<'PY'
-from pathlib import Path
-import json
-import re
-import sys
-
-EXPECTED_CONTRACTS = {'customer_delivery': 19, 'lead_delivery': 53, 'owner_leads': 8, 'property_inquiry': 10, 'professionals': 27, 'professional_catalog': 7, 'property_network': 22, 'private_property_registry': 16, 'private_property_registry_migration': 5, 'property_custody': 5, 'history_share': 5, 'service_workflow': 35, 'service_workflow_migration': 5, 'service_visit': 5, 'service_conversation': 5, 'service_negotiation': 5, 'service_review': 5, 'service_rebooking': 3, 'service_favorites': 4, 'service_referrals': 5, 'maintenance_reminders': 5, 'due_work_reminders': 6, 'service_operations': 5, 'property_management': 19, 'transaction_room': 9, 'transaction_documents': 5, 'transaction_document_storage': 7, 'listing_floor_plans': 4, 'admin_trade_contacts': 3, 'legacy_rollout': 1}
-path = Path(sys.argv[1])
-assert path.stat().st_size <= 262144
-prefix = b'CUSTOMER_FOLLOWUP_RESULT '
-rows = [json.loads(line[len(prefix):]) for line in path.read_bytes().splitlines() if line.startswith(prefix)]
-assert len(rows) == 1
-report = rows[0]
-if report.get('status') == 'FAIL':
-    assert set(report) <= {'status', 'stage', 'exception_type', 'reason'}
-    assert all(isinstance(value, str) and re.fullmatch(r'[A-Za-z0-9_]{1,90}', value) for value in report.values())
-else:
-    assert report == {
-        'status': 'PASS', 'application_commit': sys.argv[2], 'application_tree': sys.argv[3], 'alembic_head': 'b19d8e4c720a',
-        'event_kinds': ['signup', 'buyer_interest', 'seller_interest', 'rental_interest', 'property_inquiry'],
-        'primary_owner_acceptances': 20, 'primary_customer_acceptances': 5, 'owner_only_guard_case_acceptances': 12,
-        'accepted_mock_provider_requests': 37, 'crm_rows_skipped': 28, 'customer_locales': ['en', 'es'],
-        'external_transport_attempts': 0, 'real_inbox_delivery_verified': False,
-        'customer_link_acceptances': {'en': 2, 'es': 3}, 'team_notices_checked': 32,
-        'exact_public_whatsapp_url': True, 'frontend_built': False,
-        'candidate_contracts': EXPECTED_CONTRACTS,
-        'candidate_contracts_passed': 313, 'triggered_sms_or_automatic_whatsapp': False,
-        'focused_legacy_string_capture_passed': 1,
-        'postgres_version_num': 170006,
-    }
-diagnostic_prefix = b'NETWORK_CONTRACT_DIAGNOSTICS '
-diagnostics = [json.loads(line[len(diagnostic_prefix):]) for line in path.read_bytes().splitlines()
-               if line.startswith(diagnostic_prefix)]
-assert len(diagnostics) <= 1
-if diagnostics:
-    diagnostic = diagnostics[0]
-    expected_suites = [('customer_delivery', 'CustomerDeliveryTests', 19),
- ('lead_delivery', 'LeadDeliveryTests', 53),
- ('owner_leads', 'OwnerLeadFeedTests', 8),
- ('property_inquiry', 'PropertyInquiryTests', 10),
- ('legacy_inquiry', 'LegacyInquiryRolloutTests', 1),
- ('contact_leads', 'LeadContactTests', 1),
- ('professionals', 'ProfessionalTests', 27),
- ('professional_catalog', 'ProfessionalCatalogTests', 7),
- ('property_network', 'PropertyNetworkRoutes', 18),
- ('property_network', 'PrivateImageContracts', 4),
- ('private_property_registry', 'PrivateRegistryRoutes', 16),
- ('private_property_registry_migration', 'PrivateRegistryMigration', 5),
- ('property_custody', 'PrivatePropertyCustody', 5),
- ('history_share', 'PrivatePropertyHistoryShares', 5),
- ('service_workflow', 'PrivateServiceWorkflow', 35),
- ('service_workflow_migration', 'PrivateServiceMigration', 5),
- ('service_visit', 'PrivateAwardedServiceWork', 5),
- ('service_conversation', 'PrivateAwardedServiceConversation', 5),
- ('service_negotiation', 'PrivateServiceNegotiationConversation', 5),
- ('service_review', 'PrivateCompletedServiceReview', 5),
- ('service_rebooking', 'PrivateCompletedServiceRebooking', 3),
- ('service_favorites', 'PrivateServiceFavorites', 4),
- ('service_referrals', 'PrivateServiceReferrals', 5),
- ('maintenance_reminders', 'PrivateMaintenanceReminders', 5),
- ('due_work_reminders', 'PrivateDueWorkReminders', 6),
- ('service_operations', 'PrivateServiceOperations', 5),
- ('property_management', 'PropertyManagementTests', 19),
- ('transaction_room', 'TransactionRoomTests', 9),
- ('transaction_documents', 'TransactionDocumentTests', 5),
- ('transaction_document_storage', 'TransactionDocumentStorageTests', 7),
- ('listing_floor_plans', 'ListingFloorPlanTests', 4),
- ('admin_trade_contacts', 'TradeContactsTest', 3)]
-    safe_exception_types = {'OperationalError', 'ImportError', 'PermissionError', 'CountMismatch', 'SkipTest', 'ForeignKeyViolation', 'DBAPIError', 'AttributeError', 'UnexpectedSuccess', 'ProgrammingError', 'TypeError', 'NameError', 'ValueError', 'DataError', 'InternalError', 'RuntimeError', 'ModuleNotFoundError', 'IntegrityError', 'ValidationError', 'OtherException', 'KeyError', 'TimeoutError', 'NotNullViolation', 'AssertionError'}
-    assert set(diagnostic) == {'status', 'required_cases', 'required_suites', 'run_cases', 'suite_count',
-        'unexpected_transport_attempts', 'schema_cleanup_verified', 'suites', 'issues'}
-    assert diagnostic['status'] in {'PASS', 'FAIL'}
-    assert diagnostic['required_cases'] == 314 and diagnostic['required_suites'] == 32
-    assert diagnostic['suite_count'] == len(diagnostic['suites']) == 32
-    assert type(diagnostic['schema_cleanup_verified']) is bool
-    assert type(diagnostic['unexpected_transport_attempts']) is int and 0 <= diagnostic['unexpected_transport_attempts'] <= 100000
-    assert [(row['module'], row['class'], row['expected']) for row in diagnostic['suites']] == expected_suites
-    fields = {'module', 'class', 'expected', 'discovered', 'run', 'failures', 'errors', 'skipped',
-              'expected_failures', 'unexpected_successes'}
-    for row in diagnostic['suites']:
-        assert set(row) == fields
-        assert all(type(row[key]) is int and 0 <= row[key] <= 100000 for key in fields - {'module', 'class'})
-    assert diagnostic['run_cases'] == sum(row['run'] for row in diagnostic['suites'])
-    pairs = {(module, class_name) for module, class_name, _ in expected_suites}
-    kinds = {'failure', 'error', 'expected_failure', 'skip', 'unexpected_success', 'load_error',
-             'harness_error', 'discovered_count_mismatch', 'run_count_mismatch'}
-    for item in diagnostic['issues']:
-        assert set(item) == {'module', 'class', 'method', 'kind', 'exception_type'}
-        assert (item['module'], item['class']) in pairs and item['kind'] in kinds
-        assert item['exception_type'] in safe_exception_types
-        assert item['method'] == 'setup_or_cleanup' or re.fullmatch(r'test_[a-z_]{1,180}', item['method'])
-    clean = (not diagnostic['issues'] and diagnostic['run_cases'] == 314 and
-             diagnostic['unexpected_transport_attempts'] == 0 and diagnostic['schema_cleanup_verified'] and
-             all(row['discovered'] == row['run'] == row['expected'] and
-                 not any(row[key] for key in ('failures','errors','skipped','expected_failures','unexpected_successes'))
-                 for row in diagnostic['suites']))
-    assert (diagnostic['status'] == 'PASS') is clean
-    print(diagnostic_prefix.decode() + json.dumps(diagnostic, sort_keys=True, separators=(',', ':')))
-if report['status'] == 'PASS':
-    assert len(diagnostics) == 1 and diagnostics[0]['status'] == 'PASS'
-print(prefix.decode() + json.dumps(report, sort_keys=True, separators=(',', ':')))
-assert report['status'] == 'PASS'
-PY
-[[ "$test_exit" == 0 && "$test_state" == '0 false false' ]] || die NATIVE_TEST_FAILED
-
+# Diagnostic-only branch. The314/37 receipt is retained from V5; this
+# operation runs fresh metadata inspection and makes no release acceptance claim.
 schema_container=$(bounded 25s docker create --label "$label=$run_key" --network "container:$pg" \
   --user "$(id -u):$(id -g)" --read-only --init --cap-drop ALL --security-opt no-new-privileges:true \
   --pids-limit 192 --cpus 2 --memory 1536m --memory-swap 1536m --tmpfs /tmp:rw,exec,size=128m \
@@ -270,90 +152,59 @@ schema_container=$(bounded 25s docker create --label "$label=$run_key" --network
   --mount "type=bind,src=$live,dst=/live,readonly" \
   --mount "type=bind,src=$state/rollback,dst=/rollback,readonly" \
   --mount "type=bind,src=$tools,dst=/tools,readonly" \
-  "$image" /usr/local/bin/python -I -B /tools/verify-live-delivery-schema.py) || die SCHEMA_CONTAINER_CREATE_FAILED
+  "$image" /usr/local/bin/python -I -B /tools/verify-live-delivery-schema.py acl) || die SCHEMA_CONTAINER_CREATE_FAILED
 owned "$schema_container" || die OWNED_SCHEMA_CONTAINER_REQUIRED
 schema_exit=0
 bounded 720s docker start --attach "$schema_container" >"$state/schema.log" 2>&1 || schema_exit=$?
 schema_state=$(bounded 15s docker inspect --format '{{.State.ExitCode}} {{.State.Running}} {{.State.OOMKilled}}' "$schema_container")
 [[ "$schema_state" =~ ^[0-9]+\ (true|false)\ (true|false)$ ]] || die SCHEMA_NATIVE_STATE_REQUIRED
 printf 'LIVE_DELIVERY_SCHEMA_NATIVE client=%s state=%s\n' "$schema_exit" "$schema_state"
-python3 -I -B - "$state/schema.log" "$app_commit" "$app_tree" <<'PY_SCHEMA'
+python3 -I -B - "$state/schema.log" <<'PY_ACL'
 from pathlib import Path
 import json, re, sys
-path = Path(sys.argv[1])
-assert path.stat().st_size <= 131072
-prefix = b'LIVE_DELIVERY_SCHEMA_RESULT '
+path = Path(sys.argv[1]); assert path.stat().st_size <= 262144
+prefix = b'NETWORK_PRIVATE_ACL_DIAGNOSTICS '
 rows = [json.loads(line[len(prefix):]) for line in path.read_bytes().splitlines() if line.startswith(prefix)]
 assert len(rows) == 1
-report = rows[0]
+diagnostic = rows[0]
+assert set(diagnostic) == {'scope','alembic_head','public_table_count','new_private_table_count',
+    'row_security','direct_grants','policies','synthetic_roles'}
+assert diagnostic['scope'] == 'synthetic_fresh_private_acl_only'
+assert diagnostic['alembic_head'] == 'b19d8e4c720a'
+assert diagnostic['public_table_count'] == 92 and diagnostic['new_private_table_count'] == 67
+assert len(diagnostic['row_security']) == 67
+names = set()
+for row in diagnostic['row_security']:
+    assert set(row) == {'table','enabled','forced'} and re.fullmatch(r'[a-z_]{1,100}', row['table'])
+    assert type(row['enabled']) is bool and type(row['forced']) is bool
+    names.add(row['table'])
+assert len(names) == 67 and len(diagnostic['direct_grants']) <= 2000
+for row in diagnostic['direct_grants']:
+    assert set(row) == {'table','role','privilege','grantable'} and row['table'] in names
+    assert row['role'] in {'PUBLIC','anon','authenticated','service_role'}
+    assert row['privilege'] in {'SELECT','INSERT','UPDATE','DELETE','TRUNCATE','REFERENCES','TRIGGER','MAINTAIN'}
+    assert type(row['grantable']) is bool
+for row in diagnostic['policies']:
+    assert set(row) == {'table','name'} and row['table'] in names and re.fullmatch(r'[a-zA-Z0-9_]{1,100}', row['name'])
+assert len(diagnostic['synthetic_roles']) == 3
+for row in diagnostic['synthetic_roles']:
+    assert set(row) == {'role','login','superuser','inherit','bypass_rls'}
+    assert row['role'] in {'anon','authenticated','service_role'}
+    assert all(type(row[key]) is bool for key in ('login','superuser','inherit','bypass_rls'))
+print(prefix.decode() + json.dumps(diagnostic, sort_keys=True, separators=(',', ':')))
+result_prefix = b'LIVE_DELIVERY_SCHEMA_RESULT '
+reports = [json.loads(line[len(result_prefix):]) for line in path.read_bytes().splitlines() if line.startswith(result_prefix)]
+assert len(reports) == 1
+report = reports[0]
 if report.get('status') == 'FAIL':
-    assert set(report) <= {'status', 'stage', 'error_type', 'reason'}
-    assert all(isinstance(value, str) and re.fullmatch(r'[A-Za-z0-9_]{1,100}', value) for value in report.values())
+    assert set(report) <= {'status','stage','error_type','reason'}
+    assert all(isinstance(value,str) and re.fullmatch(r'[A-Za-z0-9_]{1,100}',value) for value in report.values())
 else:
-    expected = {
-        'status': 'PASS', 'application_commit': sys.argv[2], 'application_tree': sys.argv[3],
-        'live_commit': '7f63fec927f75af3f901f74297973253ad5c743b', 'alembic_head': 'b19d8e4c720a',
-        'table_count': 92, 'fresh_upgrade_catalog_equal': True, 'old_column_rows_sequences_unchanged': True,
-        'reviewed_added_columns': 2, 'reviewed_added_old_table_triggers': 4, 'new_private_tables': 67,
-        'repeat_normal_startup_preserved': True, 'compatible_old_source_started': True,
-        'retained_accepted_jobs': 9, 'retained_worker_rows': 1, 'external_provider_requests': 0,
-        'baseline': {'status': 'PASS', 'stage': 'seed_live', 'historical_users': 4, 'historical_leads': 3, 'historical_inquiries': 1, 'historical_bookings': 1, 'configured_team_recipients': 4, 'retained_accepted_jobs': 9, 'worker_rows': 1, 'owner_trade_contacts': 82, 'trade_contacts': 85, 'trade_sources': 86, 'private_profiles': 46, 'cms_version': 7}, 'new_code_data': {'status': 'PASS', 'stage': 'seed_candidate', 'phone_only_inquiries': 1, 'email_only_inquiries': 1, 'consented_property_inquiries': 1, 'verified_signups': 1, 'linked_bookings': 1, 'delivery_jobs': 39, 'customer_email_jobs': 3, 'network_records': 8}, 'compatible_old_runtime': {'status': 'PASS', 'stage': 'verify_old', 'role_read_checks': 13, 'old_client_intakes': 1, 'fake_owner_notices': 1, 'head_preserved': True, 'delivery_jobs_unchanged': True, 'no_historical_replay': True},
-    }
-    assert re.fullmatch(r'[a-f0-9]{64}', report.get('full_catalog_sha256', ''))
-    expected['full_catalog_sha256'] = report['full_catalog_sha256']
-    assert report == expected
-print(prefix.decode() + json.dumps(report, sort_keys=True, separators=(',', ':')))
+    assert report == {'status':'PASS','scope':'fresh_acl_only','alembic_head':'b19d8e4c720a',
+        'public_table_count':92,'new_private_table_count':67}
+print(result_prefix.decode() + json.dumps(report, sort_keys=True, separators=(',', ':')))
 assert report['status'] == 'PASS'
-PY_SCHEMA
-[[ "$schema_exit" == 0 && "$schema_state" == '0 false false' ]] || die SCHEMA_RUNTIME_FAILED
-# Full public custom archive uses the accepted integrated92-table recipe.
-source_db="ildr_f01_upgrade_$nonce"
-restore_db="ildr_f01_restore_$nonce"
-[[ "$source_db" =~ ^ildr_f01_upgrade_[a-f0-9]{32}$ && "$restore_db" =~ ^ildr_f01_restore_[a-f0-9]{32}$ ]] || die EXACT_ARCHIVE_SCOPE_REQUIRED
-psql=(docker exec "$pg" psql -X -h 127.0.0.1 -p 55449 -U postgres -v ON_ERROR_STOP=1)
-bounded 10s "${psql[@]}" -d postgres -c "CREATE DATABASE $restore_db TEMPLATE template0" \
-  -c "COMMENT ON DATABASE $restore_db IS 'ildr-live-communications-ci:$nonce:restore'" \
-  >"$state/archive-create.log" 2>&1 || die OWNED_RESTORE_DATABASE_REQUIRED
-bounded 75s docker exec "$pg" pg_dump -h 127.0.0.1 -p 55449 -U postgres --format=custom \
-  --schema=public --strict-names --lock-wait-timeout=15000 --dbname="$source_db" \
-  >"$state/full-public.dump" 2>"$state/archive-dump.log" || die FULL_PUBLIC_ARCHIVE_FAILED
-[[ -f "$state/full-public.dump" && ! -L "$state/full-public.dump" && $(head -c 5 "$state/full-public.dump") == PGDMP &&
-   $(stat -c %s "$state/full-public.dump") -le 16777216 ]] || die BOUNDED_CUSTOM_ARCHIVE_REQUIRED
-bounded 90s docker exec -i "$pg" pg_restore -h 127.0.0.1 -p 55449 -U postgres --exit-on-error \
-  --single-transaction --clean --if-exists --dbname="$restore_db" <"$state/full-public.dump" \
-  >"$state/archive-restore.log" 2>&1 || die FULL_PUBLIC_RESTORE_FAILED
-restore_container=$(bounded 25s docker create --label "$label=$run_key" --network "container:$pg" \
-  --user "$(id -u):$(id -g)" --read-only --init --cap-drop ALL --security-opt no-new-privileges:true \
-  --pids-limit 192 --cpus 2 --memory 1536m --memory-swap 1536m --tmpfs /tmp:rw,exec,size=128m \
-  --env GITHUB_ACTIONS=true --env GITHUB_REPOSITORY=ilovedrrealty/realty-api --env "ILDR_BROWSER_CI_NONCE=$nonce" \
-  --mount "type=bind,src=$application,dst=/application,readonly" --mount "type=bind,src=$live,dst=/live,readonly" \
-  --mount "type=bind,src=$state/rollback,dst=/rollback,readonly" --mount "type=bind,src=$tools,dst=/tools,readonly" \
-  "$image" /usr/local/bin/python -I -B /tools/verify-live-delivery-schema.py restore) || die ARCHIVE_VERIFY_CONTAINER_FAILED
-owned "$restore_container" || die OWNED_ARCHIVE_CONTAINER_REQUIRED
-restore_exit=0
-bounded 180s docker start --attach "$restore_container" >"$state/archive-verify.log" 2>&1 || restore_exit=$?
-restore_state=$(bounded 15s docker inspect --format '{{.State.ExitCode}} {{.State.Running}} {{.State.OOMKilled}}' "$restore_container")
-python3 -I -B - "$state/archive-verify.log" <<'PY_RESTORE'
-from pathlib import Path
-import json, re, sys
-path = Path(sys.argv[1]); assert path.stat().st_size <= 131072
-prefix = b'LIVE_DELIVERY_SCHEMA_RESULT '
-rows = [json.loads(line[len(prefix):]) for line in path.read_bytes().splitlines() if line.startswith(prefix)]
-assert len(rows) == 1
-report = rows[0]
-if report.get('status') == 'FAIL':
-    assert set(report) <= {'status', 'stage', 'error_type', 'reason'}
-    assert all(isinstance(value, str) and re.fullmatch(r'[A-Za-z0-9_]{1,100}', value) for value in report.values())
-else:
-    assert report == {'status': 'PASS', 'alembic_head': 'b19d8e4c720a', 'tables': 92,
-        'all_rows_sequences_equal': True, 'all_catalogs_equal': True, 'floor_plan_binary_rows': 2,
-        'retained_accepted_jobs': 9, 'retained_private_profiles': 46, 'retained_owner_trade_contacts': 82}
-print('NETWORK_FULL_PUBLIC_RESTORE_RESULT ' + json.dumps(report, sort_keys=True, separators=(',', ':')))
-assert report['status'] == 'PASS'
-PY_RESTORE
-[[ "$restore_exit" == 0 && "$restore_state" == '0 false false' ]] || die FULL_ARCHIVE_VERIFICATION_REQUIRED
-for source in "$application" "$prior" "$recipe" "$legacy" "$live"; do
-  [[ -z $(git -C "$source" status --porcelain=v1 --untracked-files=all) ]] || die MOUNTED_SOURCE_CHANGED
-done
-printf 'NETWORK_LIVE_CORE_NATIVE_ACCEPTANCE commit=%s application=%s tree=%s run=%s attempt=1 contracts=314 fake_requests=37 tables=92 archive=verified rollback=verified\n' \
-  "$GITHUB_SHA" "$app_commit" "$app_tree" "$GITHUB_RUN_ID"
+PY_ACL
+[[ "$schema_exit" == 0 && "$schema_state" == '0 false false' ]] || die FRESH_PRIVATE_ACL_STRICT_CHECK_FAILED
+printf 'NETWORK_PRIVATE_ACL_DIAGNOSTIC_ONLY_COMPLETE ops=%s run=%s source=%s release_acceptance=false\n' \
+  "$GITHUB_SHA" "$GITHUB_RUN_ID" "$app_commit"

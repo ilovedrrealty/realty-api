@@ -1,8 +1,8 @@
-name: Isolated full property network and live-core rehearsal
+name: Isolated fresh private ACL diagnostic
 
 on:
   push:
-    branches: [codex-ci-network-live-core-native-20261118-v5]
+    branches: [codex-ci-network-live-core-acl-diagnostic-20261118]
 
 permissions:
   contents: read
@@ -62,7 +62,7 @@ jobs:
           ref: 2a9ecd58a8f22c11476f268bacd9b1c410c782a3
           path: legacy-inquiry-recipe
           persist-credentials: false
-      - name: Verify communications, exact catalogs and compatible rollback with synthetic inputs
+      - name: Inspect fresh private ACL metadata with the original strict assertion
         shell: bash
         run: |
           set -euo pipefail

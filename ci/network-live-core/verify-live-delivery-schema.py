@@ -593,6 +593,39 @@ def run():
             "full_catalog_sha256": sha256(json.dumps(fresh_full_catalog, sort_keys=True).encode()).hexdigest()}
 
 
+def diagnose_private_acl():
+    nonce = identity()
+    database = f"ildr_f01_acl_{nonce}"
+    advance("fresh_acl_database")
+    create_database(database, nonce, "acl")
+    advance("fresh_acl_bootstrap")
+    native(APPLICATION, database, "bootstrap_db.py")
+    native(APPLICATION, database, "-m", "alembic", "upgrade", "head")
+    require(table_names(database) == EXPECTED_TABLES
+            and query(database, "SELECT version_num FROM alembic_version") == [(HEAD,)],
+            "fresh_acl_head_and_tables_required")
+    value = catalog(database, NEW_TABLES)
+    roles = query(database, """SELECT rolname,rolcanlogin,rolsuper,rolinherit,rolbypassrls FROM pg_roles
+        WHERE rolname IN ('anon','authenticated','service_role') ORDER BY rolname""")
+    diagnostic = {
+        "scope": "synthetic_fresh_private_acl_only", "alembic_head": HEAD,
+        "public_table_count": len(EXPECTED_TABLES), "new_private_table_count": len(NEW_TABLES),
+        "row_security": [{"table": name, "enabled": enabled, "forced": forced}
+                         for name, enabled, forced in value["rls"]],
+        "direct_grants": [{"table": name, "role": role, "privilege": privilege, "grantable": grantable}
+                          for name, role, privilege, grantable in value["acl"]
+                          if role in {"PUBLIC", "anon", "authenticated", "service_role"}],
+        "policies": [{"table": row[0], "name": row[1]} for row in value["policies"]],
+        "synthetic_roles": [{"role": role, "login": login, "superuser": superuser,
+                             "inherit": inherit, "bypass_rls": bypass}
+                            for role, login, superuser, inherit, bypass in roles],
+    }
+    print("NETWORK_PRIVATE_ACL_DIAGNOSTICS " + json.dumps(diagnostic, sort_keys=True, separators=(",", ":")), flush=True)
+    verify_private(value)  # Preserve the original strict assertion unchanged.
+    return {"status": "PASS", "scope": "fresh_acl_only", "alembic_head": HEAD,
+            "public_table_count": len(EXPECTED_TABLES), "new_private_table_count": len(NEW_TABLES)}
+
+
 def restore():
     nonce = identity()
     source = f"ildr_f01_upgrade_{nonce}"
@@ -616,7 +649,12 @@ def restore():
 
 if __name__ == "__main__":
     try:
-        result = restore() if sys.argv[1:] == ["restore"] else run()
+        if sys.argv[1:] == ["acl"]:
+            result = diagnose_private_acl()
+        elif sys.argv[1:] == ["restore"]:
+            result = restore()
+        else:
+            result = run()
     except Exception as error:
         result = {"status": "FAIL", "stage": stage, "error_type": type(error).__name__}
         if isinstance(error, RehearsalFailure):
