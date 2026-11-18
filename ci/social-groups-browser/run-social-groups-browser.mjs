@@ -32,6 +32,9 @@ const pathIs = (response, path, method) => new URL(response.url()).origin === ap
 function noStore(response) { check((response.headers()['cache-control'] || '').split(',').some(value => value.trim() === 'no-store'), 'PRIVATE_NO_STORE_REQUIRED') }
 const groupPath = id => `${prefix}/groups/${id}`
 const quote = value => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+// Inline labels include option/textarea text in Playwright's label text matcher.
+const inlineField = (surface, name, tag) => surface.locator('label')
+  .filter({ hasText: new RegExp('^' + quote(name)) }).locator(tag)
 async function request(context, path, data) {
   return context.request.fetch(api + path, { method: data === undefined ? 'GET' : 'POST', data,
     headers: { Origin: dashboard }, timeout: 15000, maxRedirects: 0 })
@@ -220,7 +223,7 @@ async function confirm(page, perform) {
 async function ownInbox(page, copy) {
   await foreground(page)
   await button(page.getByRole('navigation', { name: copy.network.groups.views_label, exact: true }), copy.network.groups.views.invitations).click()
-  await page.getByLabel(copy.network.groups.membership_filter, { exact: true }).waitFor()
+  await inlineField(page, copy.network.groups.membership_filter, 'select').waitFor()
 }
 async function inviteMember(page, copy, facts, code) {
   await tab(page, copy, facts, 'members')
@@ -241,7 +244,7 @@ async function acceptInbox(page, copy, facts, alias) {
 }
 async function changeRole(page, copy, facts, code, role) {
   const row = memberRow(page, copy, code)
-  await row.getByLabel(copy.network.groups.change_role, { exact: true }).selectOption(role)
+  await inlineField(row, copy.network.groups.change_role, 'select').selectOption(role)
   const result = await write(page, `${groupPath(facts.groupId)}/members/${code}/actions`, () => button(row, copy.network.groups.save_role).click())
   check(result.value.operation === 'set_role' && result.value.current.role === role, 'REAL_GROUP_ROLE_REQUIRED')
   await row.getByText(new RegExp('^' + quote(copy.network.groups.roles[role]) + ' ·')).waitFor()
@@ -258,7 +261,7 @@ async function createPost(page, copy, facts, body, photoPath) {
   await foreground(page)
   const panel = page.getByRole('heading', { name: copy.network.groups.feed_title, exact: true }).locator('..')
   const form = panel.locator('form').first()
-  await form.getByLabel(copy.network.groups.write_post, { exact: true }).fill(body)
+  await inlineField(form, copy.network.groups.write_post, 'textarea').fill(body)
   let media = null
   if (photoPath) {
     const uploaded = await write(page, `${groupPath(facts.groupId)}/media`, () => form.locator('input[type=file]').setInputFiles(photoPath))
@@ -305,7 +308,7 @@ async function settings(page, copy, facts, changes, acknowledge = false) {
   await tab(page, copy, facts, 'settings')
   const form = page.getByRole('heading', { name: copy.network.groups.tabs.settings, exact: true }).locator('..').locator('form')
   for (const [key, value] of Object.entries(changes)) {
-    const field = form.getByLabel(copy.network.groups[key], { exact: true })
+    const field = inlineField(form, copy.network.groups[key], key === 'description' ? 'textarea' : 'select')
     if (key === 'description') await field.fill(value)
     else await field.selectOption(value)
   }
@@ -376,21 +379,29 @@ try {
   advance('G01_private_create')
   await button(ownerPage.getByRole('navigation', { name: g.views_label, exact: true }), g.views.create).click()
   const create = ownerPage.getByRole('heading', { name: g.views.create, exact: true }).locator('..').locator('form')
+  advance('G01_name')
   await create.getByLabel(g.name, { exact: true }).fill(facts.groupName)
-  await create.getByLabel(g.description, { exact: true }).fill(facts.description)
+  advance('G01_description')
+  await inlineField(create, g.description, 'textarea').fill(facts.description)
+  advance('G01_area')
   await create.getByLabel(g.area, { exact: true }).fill(facts.areaLabel)
+  advance('G01_alias')
   await create.getByLabel(g.owner_alias, { exact: true }).fill(facts.aliases.owner)
-  check(await create.getByLabel(g.visibility, { exact: true }).inputValue() === 'private'
-    && await create.getByLabel(g.join_policy, { exact: true }).inputValue() === 'approval_required'
+  advance('G01_defaults')
+  check(await inlineField(create, g.visibility, 'select').inputValue() === 'private'
+    && await inlineField(create, g.join_policy, 'select').inputValue() === 'approval_required'
     && await create.getByLabel(g.comments_enabled, { exact: true }).isChecked(), 'PRIVATE_CREATE_DEFAULTS_REQUIRED')
+  advance('G01_geometry')
   await geometry(ownerPage, 'en_create', [320])
   let cancelled = false, accidentalCreate = 0
   const createWatch = req => { if (new URL(req.url()).origin === api && new URL(req.url()).pathname === `${prefix}/groups` && req.method() === 'POST') accidentalCreate++ }
   ownerPage.on('request', createWatch)
+  advance('G01_draft_cancel')
   ownerPage.once('dialog', async dialog => { cancelled = true; await dialog.dismiss() })
   await button(ownerPage.getByRole('navigation', { name: en.network.main_tabs, exact: true }), en.network.main.projects).click()
   check(cancelled && await create.getByLabel(g.name, { exact: true }).inputValue() === facts.groupName && accidentalCreate === 0, 'DRAFT_CANCEL_MUST_PRESERVE_FORM')
   ownerPage.off('request', createWatch)
+  advance('G01_submit')
   const created = await write(ownerPage, `${prefix}/groups`, () => button(create, g.create).click())
   check(created.value.operation === 'group_create' && created.value.current.visibility === 'private', 'REAL_PRIVATE_CREATE_REQUIRED')
   facts.groupId = created.value.target_id
@@ -430,9 +441,9 @@ try {
     const made = await write(ownerPage, `${groupPath(facts.groupId)}/invite-links`, () => button(ownerPage, g.create_link).click())
     check(typeof made.input.token === 'string' && made.input.token.length === 43, 'CLIENT_GENERATED_FRAGMENT_TOKEN_REQUIRED')
     await button(ownerPage, g.copy_link).click()
-    await ownerPage.getByText(g.link_copied, { exact: true }).or(ownerPage.getByLabel(g.manual_copy, { exact: true })).waitFor()
+    await ownerPage.getByText(g.link_copied, { exact: true }).or(inlineField(ownerPage, g.manual_copy, 'textarea')).waitFor()
     let copied
-    if (await ownerPage.getByLabel(g.manual_copy, { exact: true }).count()) copied = await ownerPage.getByLabel(g.manual_copy, { exact: true }).inputValue()
+    if (await inlineField(ownerPage, g.manual_copy, 'textarea').count()) copied = await inlineField(ownerPage, g.manual_copy, 'textarea').inputValue()
     else copied = await ownerPage.evaluate(() => navigator.clipboard.readText())
     check(copied === `${dashboard}/group-invite/#token=${made.input.token}`, 'MANUAL_FRAGMENT_COPY_REQUIRED')
     links.push({ id: made.value.target_id, token: made.input.token })
@@ -500,8 +511,8 @@ try {
   await refreshFeed(memberPage, en, facts)
   const privateCard = postCard(memberPage, facts.privatePost)
   await button(privateCard, en.network.comments).click()
-  await privateCard.getByLabel(en.network.comment_context, { exact: true }).selectOption(privateEntry.media.id)
-  await privateCard.getByLabel(en.network.write_update, { exact: true }).fill(facts.comment)
+  await inlineField(privateCard, en.network.comment_context, 'select').selectOption(privateEntry.media.id)
+  await inlineField(privateCard, en.network.write_update, 'textarea').fill(facts.comment)
   const comment = await write(memberPage, `${prefix}/group-posts/${privateEntry.post.id}/comments`, () => button(privateCard, en.network.save_entry).click())
   check(comment.value.current.media_id === privateEntry.media.id, 'PHOTO_SPECIFIC_COMMENT_REQUIRED')
   await privateCard.getByText(facts.comment, { exact: true }).waitFor()
@@ -531,7 +542,7 @@ try {
   advance('G07_publication_draft_version')
   await tab(ownerPage, en, facts, 'feed')
   const draftForm = ownerPage.getByRole('heading', { name: g.feed_title, exact: true }).locator('..').locator('form').first()
-  await draftForm.getByLabel(g.write_post, { exact: true }).fill(facts.reply)
+  await inlineField(draftForm, g.write_post, 'textarea').fill(facts.reply)
   const draft = await hold(ownerPage, `${groupPath(facts.groupId)}/posts`, 'POST', () => true, 'request')
   await button(draftForm, g.publish_post).click(); const capturedDraft = await draft.ready()
   const peer = await session('en', null, null, await owner.storageState())
@@ -540,8 +551,8 @@ try {
   await peerPage.getByRole('heading', { name: s.title, exact: true }).waitFor()
   await geometry(peerPage, 'es_index'); await openGroup(peerPage, es, facts); await geometry(peerPage, 'es_detail')
   await tab(peerPage, es, facts, 'settings')
-  await peerPage.getByLabel(s.visibility, { exact: true }).selectOption('network')
-  await peerPage.getByLabel(s.description, { exact: true }).fill(facts.editedDescription)
+  await inlineField(peerPage, s.visibility, 'select').selectOption('network')
+  await inlineField(peerPage, s.description, 'textarea').fill(facts.editedDescription)
   await geometry(peerPage, 'es_publication', [320])
   check(await button(peerPage, s.save_settings).isDisabled(), 'EXPLICIT_PUBLICATION_REVIEW_REQUIRED')
   await peerPage.getByLabel(s.publication_acknowledge, { exact: true }).check()
@@ -554,8 +565,8 @@ try {
   const absent = await request(owner, `${prefix}/group-submissions/${capturedDraft.input.submission_id}`)
   check(absent.status() === 404, 'STALE_PRIVATE_DRAFT_MUST_HAVE_NO_RECEIPT'); await absent.dispose()
   await workspace(ownerPage, facts).locator('header').getByText(new RegExp('^' + quote(g.visibilities.network) + ' ·')).waitFor()
-  await ownerPage.getByLabel(g.write_post, { exact: true }).waitFor()
-  check(await ownerPage.getByLabel(g.write_post, { exact: true }).inputValue() === '', 'PRIVATE_DRAFT_MUST_NOT_BECOME_NETWORK_DRAFT')
+  await inlineField(ownerPage, g.write_post, 'textarea').waitFor()
+  check(await inlineField(ownerPage, g.write_post, 'textarea').inputValue() === '', 'PRIVATE_DRAFT_MUST_NOT_BECOME_NETWORK_DRAFT')
   await tab(peerPage, es, facts, 'feed')
   const networkEntry = await createPost(peerPage, es, facts, facts.networkPost)
   check(networkEntry.post.created_audience === 'network', 'EXPLICIT_NEW_NETWORK_POST_REQUIRED')
@@ -594,7 +605,7 @@ try {
   await rosterAction(peerPage, es, facts, fixture.codes.outsider, 'block', 'blocked', true)
   await denied(outsider, `${prefix}/group-media/${privateEntry.media.id}`)
   await peerPage.reload({ waitUntil: 'domcontentloaded' }); await tab(peerPage, es, facts, 'members')
-  await peerPage.getByLabel(s.roster_filter, { exact: true }).selectOption('all')
+  await inlineField(peerPage, s.roster_filter, 'select').selectOption('all')
   await rosterAction(peerPage, es, facts, fixture.codes.outsider, 'unblock', 'removed')
   await rosterAction(peerPage, es, facts, fixture.codes.outsider, 'invite', 'invited')
   await outsiderPage.goto(`${dashboard}/property-network?workspace=realtor&tab=groups`, { waitUntil: 'domcontentloaded' })

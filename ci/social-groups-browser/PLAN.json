@@ -6,8 +6,8 @@
   "frontend": "7b9ec53f54141ef66b92466de4dde81f5bc0f69e",
   "frontend_tree": "8baac20b593e6cf4cfc964fa95333e7a856de7d8",
   "frontend_parent": "5d2afabca5560cb06166ad6af8efa3a06f8d4b6c",
-  "operations_parent": "e68154f1e97a691dcab4c4479b88c91f11e01022",
-  "proposed_first_ref": "codex-ci-social-groups-browser-20261118-v4",
+  "operations_parent": "1dfd2b37e3469068ba74b744317e120e2fdd45cd",
+  "proposed_first_ref": "codex-ci-social-groups-browser-20261118-v5",
   "accepted_runtime_recipe": "3007728fd67c5889a8373e41ff3ffa5cc50d839b",
   "contracts": {
     "files": 59,
@@ -172,17 +172,23 @@
     "change": "Explicit GroupRole inference with the same runtime whitelist and boolean narrowing of unknown-valued read errors before JSX. No type cast bypass, validation or assertion relaxation."
   },
   "prior_attempt": {
-    "run": 44289200525,
-    "job": 134749687607,
+    "run": 44291663634,
+    "job": 134758129618,
     "status": "ACTUAL_FAILURE_PRESERVED",
-    "current_vite": "actualSUCCESS; same7b9 source; V2 full480/strict retained",
-    "browser_failure": "entry_groups_navigation; network heading1/groups navigation1/auth and professional options200, groupsGET absent, pageerrors0",
+    "current_vite": "actualSUCCESS; exact7b9 product; V2full480/strict retained",
+    "browser_failure": "G01_private_create beforefirstgeometry; exactcontrol notlogged",
+    "measured_loopback": {
+      "before": false,
+      "modeled": true,
+      "after": true,
+      "visible": true
+    },
     "owned_cleanup": "verified",
     "artifacts": [],
-    "receipt": "social-groups-browser-44289200525-v3-failure.json",
-    "receipt_sha256": "9ef63d60963714a2d2d8e1e16d39e54b89ce9bd8d6a71058b2cc9eaff014204c",
-    "log_sha256": "69ed729c1f1c2104dc4c36140949fd0cecd34a6d3e59cde634f4aa90aa017472",
-    "correction": "Reuse the exact accepted Dashboard-origin conditional loopback online-presence recipe, measure native before/modeled/after/visible booleans, and use real foreground visibility for actor UI actions. No product,locator,API,assertion or12/16 count change."
+    "receipt": "social-groups-browser-44291663634-v4-failure.json",
+    "receipt_sha256": "871f790ddb39e4b692813207a644c408f1f456aed324a218f67f699d6cb52d67",
+    "log_sha256": "57f1ed57f4a85d0efdf45a41d12308ca0a7132be6df5a3f9c39542288349e1f3",
+    "correction": "Pinned Playwright source proves inline select/textarea labels contain descendant option/value text. Scope the driver to the public label prefix ANDactual select/textarea tag,retain exactinput/checkbox matches, andaddconstantG01substeps. No product/API/predicate/12journey/16geometry change."
   },
   "retained_prior_attempt": {
     "run": 44285281874,
@@ -239,5 +245,39 @@
     "foreground": "Bring the actual actor page tofront and wait for actual document.visibilityState visible and navigator.onLine before entry/tab/read/write/alias/post useractions and before releasing the held G07 originalpost. Captured body/media/expected_group_version remain unchanged; actual409+missingreceipt checks remain.",
     "disclosure": "At each normal group menu entry emit only four measured boolean fields before,modeled,after,visible; max8 records256B each. Failure may show falseafter/visibility, success requires actualtrue. No URL/body/user/token or privatecontext.",
     "source_scope": "All product bytes stay exact7b9/4e23. Conditional fixture environment model only; no fake API,response,write,role or security behavior."
+  },
+  "retained_prior_attempt_v3": {
+    "run": 44289200525,
+    "job": 134749687607,
+    "status": "ACTUAL_FAILURE_PRESERVED",
+    "current_vite": "actualSUCCESS; same7b9 source; V2 full480/strict retained",
+    "browser_failure": "entry_groups_navigation; network heading1/groups navigation1/auth and professional options200, groupsGET absent, pageerrors0",
+    "owned_cleanup": "verified",
+    "artifacts": [],
+    "receipt": "social-groups-browser-44289200525-v3-failure.json",
+    "receipt_sha256": "9ef63d60963714a2d2d8e1e16d39e54b89ce9bd8d6a71058b2cc9eaff014204c",
+    "log_sha256": "69ed729c1f1c2104dc4c36140949fd0cecd34a6d3e59cde634f4aa90aa017472",
+    "correction": "Reuse the exact accepted Dashboard-origin conditional loopback online-presence recipe, measure native before/modeled/after/visible booleans, and use real foreground visibility for actor UI actions. No product,locator,API,assertion or12/16 count change."
+  },
+  "label_matcher_provenance": {
+    "version": "playwright-core1.64.1",
+    "source_url": "https://registry.npmjs.org/playwright-core/-/playwright-core-1.64.1.tgz",
+    "tarball_integrity_sha512_base64": "BC4s8y6SEVA6Q1rSxZTto8hI1KUI3xXlHGZgvGqP4IqPdI/a6FX9H29IDNz7vKo9l21b6LfYosScPL6M3xxyDQ==",
+    "primary_file": "package/lib/coreBundle.js",
+    "primary_file_sha256": "829521b67ed7be90c7d6d6098ff39f2241562d47e4ad7ccab13710924a56001d",
+    "algorithm": "getElementLabels maps the associated labels through elementText. elementText recursively includes descendant ELEMENT_NODE text; it doesnot omit SELECT option or TEXTAREA child text. Exacttext Groupaudience therefore differs from the inline label including alloptions.",
+    "actual_failure_limit": "The V4catch identifies G01 butnotwhichcontrol; the selector incompatibility is independently unconditional in the exact product/source, not a claim of captured browser locator traceback.",
+    "correction": "One scoped anchoredpublic-labelprefix helper endingin the actual controltag select ortextarea, used for all inline select/textarea targets. Inputs andcheckboxes stayexact. No product accessibility markup or any assertions changed.",
+    "source_handling": "Publicpackage fetched boundedly andintegrity-checked inRAM; no package binary,dependency,DOMsnapshot or privatecontext saved.",
+    "g01_substeps": [
+      "G01_name",
+      "G01_description",
+      "G01_area",
+      "G01_alias",
+      "G01_defaults",
+      "G01_geometry",
+      "G01_draft_cancel",
+      "G01_submit"
+    ]
   }
 }
