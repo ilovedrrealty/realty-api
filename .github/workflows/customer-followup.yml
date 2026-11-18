@@ -2,7 +2,7 @@ name: Isolated live-base communications and rollback rehearsal
 
 on:
   push:
-    branches: [codex-ci-live-communications-20261117]
+    branches: [codex-ci-live-communications-20261117-v2]
 
 permissions:
   contents: read

@@ -4,7 +4,7 @@ die() { printf 'CUSTOMER_FOLLOWUP_REFUSED %s\n' "$1" >&2; exit 1; }
 bounded() { timeout --kill-after=8s "$@"; }
 
 [[ $# == 6 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api ]] || die CI_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-live-communications-20261117 && ${GITHUB_RUN_ATTEMPT:-} == 1 &&
+[[ ${GITHUB_REF:-} == refs/heads/codex-ci-live-communications-20261117-v2 && ${GITHUB_RUN_ATTEMPT:-} == 1 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 [[ ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 ]] || die HOSTED_LINUX_REQUIRED
 ops="$1"; application="$2"; prior="$3"; recipe="$4"; legacy="$5"; live="$6"
@@ -19,9 +19,9 @@ done
 app_commit=$(git -C "$application" rev-parse HEAD)
 app_tree=$(git -C "$application" rev-parse 'HEAD^{tree}')
 [[ "$app_commit" == 7f63fec927f75af3f901f74297973253ad5c743b && "$app_tree" == 1a87c3d4c96e2df0c956e18f0f26c982e7ef3289 &&
-   $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" show -s --format=%P HEAD) == ac9de6d90fe9835d9577db0ce68add1a902ea927 &&
+   $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" show -s --format=%P HEAD) == f52bb5fdbef6126a22053eae0f6c919437c4be3f &&
    ! -e "$application/.env" && ! -L "$application/.env" ]] || die EXACT_IMMUTABLE_PRODUCT_REQUIRED
-[[ $(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) == $'.github/workflows/customer-followup.yml\nci/customer-followup/run-hosted-customer-followup.sh\nci/customer-followup/verify-customer-followup.py\nci/customer-followup/verify-live-delivery-rollback.py\nci/customer-followup/verify-live-delivery-schema.py' ]] ||
+[[ $(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) == $'.github/workflows/customer-followup.yml\nci/customer-followup/run-hosted-customer-followup.sh\nci/customer-followup/verify-live-delivery-rollback.py' ]] ||
   die EXACT_OPERATIONS_DELTA_REQUIRED
 [[ $(git -C "$prior" rev-parse HEAD) == e660040e0c514aca3f7f5b7d7a5007e4fdc596c4 &&
    $(git -C "$prior" rev-parse 'HEAD^{tree}') == 4e230dcfd86ad1a3353ca3b30efe4a425e60f884 &&

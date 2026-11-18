@@ -215,9 +215,12 @@ def seed_live():
     history = datetime(2025, 1, 1, tzinfo=timezone.utc)
     with SessionLocal.begin() as db:
         require(all(db.query(model).count() == 0 for model in (
-            User, Lead, Inquiry, Booking, Listing, SiteSettings, TradeContact, TradeContactSource,
+            User, Lead, Inquiry, Booking, Listing, TradeContact, TradeContactSource,
         )),
                 "empty_history_required")
+        configuration = db.query(SiteSettings).all()
+        require(len(configuration) == 1 and configuration[0].id == 1 and configuration[0].data == {},
+                "initial_settings_singleton_required")
         for role, identifier in USER_IDS.items():
             db.add(User(
                 id=identifier, role=role, status="active", email=ROLE_EMAILS[role],
@@ -255,7 +258,7 @@ def seed_live():
             lead_id=HISTORICAL_LEADS[1], check_in=str(start), check_out=str(end), guests=2,
             total_price=300, notes="F01 historical booking note", status="confirmed", created_at=history,
         ))
-        db.add(SiteSettings(id=1, data={"notify_email": ",".join(TEAM), "f01_history_sentinel": "preserve"}))
+        configuration[0].data = {"notify_email": ",".join(TEAM), "f01_history_sentinel": "preserve"}
         db.add(TradeContact(
             id=UUID(int=601), identity_key=sha256(b"F01 historical trade").hexdigest(),
             name="F01 historical trade", category="electrical", province="Puerto Plata", locality="Cabarete",
