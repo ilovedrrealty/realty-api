@@ -182,7 +182,9 @@ async function signup(context, locale, copy, verifyCopy, fixture) {
   const verified = await observe(page, '/auth/verify', 'POST', () => button(page, verifyCopy.verify_btn).click(), 200, false)
   check(verified.request().postDataJSON().locale === locale, 'SIGNUP_LOCALE_REQUIRED')
   const identity = await request(context, '/auth/me')
-  check(identity.status() === 200 && (await json(identity)).role === 'buyer', 'ACTUAL_NEW_ACCOUNT_REQUIRED')
+  const currentUser = await json(identity)
+  check(identity.status() === 200 && currentUser.role === 'buyer' &&
+    currentUser.email === `communications-signup-${locale}@example.com`, 'ACTUAL_NEW_ACCOUNT_REQUIRED')
   await identity.dispose()
   await page.close()
 }
@@ -207,6 +209,7 @@ async function administrative(context, locale, copy, fixture) {
   const detailBody = await json(detail)
   metadata(detailBody)
   check(detailBody.jobs.some(job => job.step === 'customer_email') && detailBody.jobs.some(job => job.outcome_uncertain), 'CUSTOMER_AND_UNCERTAIN_DETAIL_REQUIRED')
+  await page.getByText(copy.delivery.steps.customer_email, { exact: true }).first().waitFor()
   let retries = 0
   const listener = request => { if (request.url().endsWith('/retry') && request.method() === 'POST') retries += 1 }
   context.on('request', listener)
@@ -217,6 +220,7 @@ async function administrative(context, locale, copy, fixture) {
   await button(retryRow, copy.delivery.retry).click()
   await observe(page, `/admin/lead-deliveries/${fixture.failedJobId}/retry`, 'POST', () => button(page, copy.delivery.confirm.queue).click())
   check(retries === 1, 'ONE_EXPLICIT_RETRY_REQUIRED')
+  await page.getByText(copy.delivery.notices.queued, { exact: true }).waitFor()
   context.off('request', listener)
   const repeat = await request(context, `/admin/lead-deliveries/${fixture.failedJobId}/retry`, 'POST', {})
   check(repeat.status() === 409, 'ALREADY_QUEUED_RETRY_MUST_NOT_REPEAT')
@@ -230,6 +234,7 @@ async function administrative(context, locale, copy, fixture) {
   metadata(body)
   check(body.items.some(job => job.step === 'customer_email'), 'COMMUNICATIONS_CUSTOMER_STEP_REQUIRED')
   await page.getByText(copy.communications.intro, { exact: true }).waitFor()
+  await page.getByText(copy.communications.steps.customer_email, { exact: false }).first().waitFor()
   await geometry(page, `${locale}_communications`)
   await navigate(page, copy.nav.leads)
   await verifyShareContact(page, { id: fixture.shareLeadId, name: 'Browser Share Contact', email: 'browser-share+ci@example.com',
@@ -243,7 +248,11 @@ async function feeds(browser, locale, copy, fixture) {
   const response = await observe(page, '/owner/leads', 'GET', () => navigate(page, copy.nav.leads))
   const value = await json(response)
   check(value.items.some(lead => lead.id === fixture.shareLeadId) && !JSON.stringify(value).includes(fixture.foreignLeadId), 'OWNER_SCOPE_REQUIRED')
-  await page.getByText(copy.feeds.history_title, { exact: true }).waitFor()
+  const ownerHistory = await observe(page, '/inquiries/for-owner', 'GET', () => button(page, copy.feeds.history_title).click())
+  const previousOwner = await json(ownerHistory)
+  check(previousOwner.length === 1 && previousOwner[0].message === 'Synthetic historical inquiry sentinel' &&
+    !value.items.some(lead => lead.id === previousOwner[0].id), 'OWNER_HISTORY_MUST_REMAIN_SEPARATE')
+  await page.getByText('Synthetic historical inquiry sentinel', { exact: true }).waitFor()
   await geometry(page, `${locale}_owner`)
   await button(page, copy.share.open).first().click()
   const dialog = page.getByRole('dialog', { name: copy.share.title, exact: true })
@@ -258,7 +267,14 @@ async function feeds(browser, locale, copy, fixture) {
   const buyerPage = await buyer.newPage()
   await buyerPage.goto(dashboard + '/', { waitUntil: 'domcontentloaded' })
   const current = await observe(buyerPage, '/leads/mine', 'GET', () => navigate(buyerPage, copy.nav.inquiries))
-  check(!JSON.stringify(await json(current)).includes(fixture.foreignLeadId), 'BUYER_SCOPE_REQUIRED')
+  const currentBuyer = await json(current)
+  check(!JSON.stringify(currentBuyer).includes(fixture.foreignLeadId), 'BUYER_SCOPE_REQUIRED')
+  await buyerPage.getByRole('heading', { name: 'Browser communications villa', exact: true }).first().waitFor()
+  const buyerHistory = await observe(buyerPage, '/inquiries/mine', 'GET', () => button(buyerPage, copy.feeds.history_title).click())
+  const previousBuyer = await json(buyerHistory)
+  check(previousBuyer.length === 1 && previousBuyer[0].message === 'Synthetic historical inquiry sentinel' &&
+    !currentBuyer.some(lead => lead.id === previousBuyer[0].id), 'BUYER_HISTORY_MUST_REMAIN_SEPARATE')
+  await buyerPage.getByText('Synthetic historical inquiry sentinel', { exact: true }).waitFor()
   await geometry(buyerPage, `${locale}_buyer`)
   for (const [path, method, data] of [['/owner/leads', 'GET'], ['/admin/communications', 'GET'],
     [`/admin/lead-deliveries/${fixture.failedJobId}/retry`, 'POST', {}]]) {
@@ -295,7 +311,7 @@ try {
     const admin = await session(browser, locale, fixture.accounts.admin)
     await administrative(admin, locale, copy, { ...fixture,
       failedJobId: locale === 'es' ? fixture.failedEsJobId : fixture.failedJobId,
-      failedStep: locale === 'es' ? '2' : '0' })
+      failedStep: locale === 'es' ? '3' : '1' })
     progress(`${locale}_feeds`)
     await feeds(browser, locale, copy, fixture)
   }

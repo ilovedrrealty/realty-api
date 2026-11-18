@@ -2,7 +2,7 @@ name: Isolated narrow communications role and mobile browser rehearsal
 
 on:
   push:
-    branches: [codex-ci-f01-f03-browser-20261117-v2]
+    branches: [codex-ci-f01-f03-browser-20261117-v3]
 
 permissions:
   contents: read

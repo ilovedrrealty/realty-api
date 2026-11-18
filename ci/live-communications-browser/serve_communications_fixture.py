@@ -116,33 +116,40 @@ def migrate_and_seed():
                          from_user_id=users["buyer"].id)
         db.add_all((shared, other, legacy))
         db.flush()
+        now = datetime.now(timezone.utc)
         tracked = Lead(id=uuid4(), type="property_inquiry", name="Browser Tracked Contact",
                        email="browser-share+ci@example.com", phone="+18095551234", property_id=listing.id,
                        from_user_id=users["buyer"].id, assigned_realtor_id=users["realtor"].id, status="new",
+                       created_at=now - timedelta(minutes=10),
                        tracking={"form": "property_inquiry", "page_path": f"/listing/{listing.id}/", "locale": "en",
                                  "intent": "buy", "contact_consent": True, "measurement_consent": "denied"})
         db.add(tracked)
         db.flush()
-        enqueue_lead_delivery(db, tracked)
+        enqueue_lead_delivery(db, tracked, now=tracked.created_at)
         db.flush()
         jobs = db.query(LeadDeliveryJob).filter_by(lead_id=tracked.id).all()
-        fixture.require(len(jobs) == 9, "Exact tracked seed required")
-        failed = next(job for job in jobs if job.step == "email_0")
-        failed_es = next(job for job in jobs if job.step == "email_2")
-        uncertain = next(job for job in jobs if job.step == "email_1")
-        now = datetime.now(timezone.utc)
+        fixture.require(len(jobs) == 9 and {job.step for job in jobs} == {
+            "crm_contact", "crm_tags", "crm_note", "crm_task",
+            "email_1", "email_2", "email_3", "email_4", "customer_email",
+        }, "Exact tracked seed required")
+        failed = next(job for job in jobs if job.step == "email_1")
+        failed_es = next(job for job in jobs if job.step == "email_3")
+        uncertain = next(job for job in jobs if job.step == "email_2")
         for job in (failed, failed_es):
             job.status = "failed"
             job.attempt_count = 1
             job.safe_to_retry = True
-            job.error_code = "resend_http_503"
+            job.error_code = "resend_http_422"
             job.next_attempt_at = now - timedelta(seconds=60)
             job.first_attempt_at = job.last_attempt_at = now - timedelta(minutes=5)
+            job.updated_at = job.last_attempt_at
         uncertain.status = "needs_review"
         uncertain.attempt_count = 1
         uncertain.safe_to_retry = False
         uncertain.outcome_uncertain = True
-        uncertain.error_code = "provider_outcome_unknown"
+        uncertain.error_code = "resend_outcome_unknown"
+        uncertain.first_attempt_at = uncertain.last_attempt_at = now - timedelta(minutes=5)
+        uncertain.updated_at = uncertain.last_attempt_at
         return {"scope": "f01-f03-communications-only", "accounts": accounts, "control": CONTROL,
                 "shareLeadId": str(shared.id), "foreignLeadId": str(other.id), "trackedLeadId": str(tracked.id),
                 "failedJobId": str(failed.id), "failedEsJobId": str(failed_es.id),
