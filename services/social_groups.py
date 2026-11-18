@@ -332,10 +332,13 @@ def members(db, user, identity, state, number):
     group = group_for(db, user, identity)
     if not _role(db, user, group) and user.role != "admin":
         unavailable()
-    if state == "pending" and not _can_moderate(db, user, group):
+    if state in {"pending", "all"} and not _can_moderate(db, user, group):
         raise HTTPException(403, "Only group moderators can review membership requests")
     query = db.query(Membership).filter_by(group_id=identity)
-    query = query.filter(or_(Membership.state == "requested", and_(Membership.state == "invited", Membership.invite_expires_at > now()))) if state == "pending" else query.filter_by(state="active")
+    if state == "pending":
+        query = query.filter(or_(Membership.state == "requested", and_(Membership.state == "invited", Membership.invite_expires_at > now())))
+    elif state == "active":
+        query = query.filter_by(state="active")
     if not _can_moderate(db, user, group):
         query = query.filter(Membership.user_id.notin_(_excluded(db, user)))
     result = _page(query.order_by(Membership.created_at, Membership.id), number, lambda row: membership_view(db, row))

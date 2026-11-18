@@ -58,7 +58,7 @@ def own_memberships(state: Literal["all", "invited", "requested", "active"] = "a
 
 
 @router.get("/groups/{group_id}/members")
-def members(group_id: UUID, state: Literal["active", "pending"] = "active", page: int = Page,
+def members(group_id: UUID, state: Literal["active", "pending", "all"] = "active", page: int = Page,
             user=Depends(get_current_user), db: Session = Depends(get_db)):
     return service.members(db, user, group_id, state, page)
 

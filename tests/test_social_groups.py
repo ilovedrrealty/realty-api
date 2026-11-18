@@ -554,3 +554,42 @@ class SocialGroupsTest(unittest.TestCase):
             if closure == "owner_suspended":
                 self.users["owner"].status = "active"
                 self.db.commit()
+
+    def test_manager_reload_retains_versions_for_unblock_and_reinvite(self):
+        from models.user import User
+        group_id, current = self.group()
+        self.invite(group_id)
+        active = self.accept(group_id)
+        self.invite(group_id, actor="third")
+        self.accept(group_id, actor="third")
+        blocked = self.service.manage_member(self.db, self.users["owner"], group_id, self.users["member"].user_code,
+            ManageMember(submission_id=uuid4(), expected_membership_version=active["version"], action="block"))["current"]
+        code, owner_id = self.users["member"].user_code, self.users["owner"].id
+        with self.Session() as reloaded:
+            owner = reloaded.get(User, owner_id)
+            rows = self.service.members(reloaded, owner, group_id, "all", 1)
+            row = next(item for item in rows["items"] if item["user_code"] == code)
+            self.assertEqual((row["state"], row["version"]), ("blocked", blocked["version"]))
+            self.assertEqual(set(row), {"id", "group_id", "user_code", "member_alias", "role", "state", "version", "invite_expires_at", "updated_at"})
+            unblocked = self.service.manage_member(reloaded, owner, group_id, code,
+                ManageMember(submission_id=uuid4(), expected_membership_version=row["version"], action="unblock"))["current"]
+            self.assertEqual(unblocked["state"], "removed")
+        with self.Session() as reloaded:
+            owner = reloaded.get(User, owner_id)
+            row = next(item for item in self.service.members(reloaded, owner, group_id, "all", 1)["items"] if item["user_code"] == code)
+            self.assertEqual((row["state"], row["version"]), ("removed", unblocked["version"]))
+            invited = self.service.manage_member(reloaded, owner, group_id, code,
+                ManageMember(submission_id=uuid4(), expected_membership_version=row["version"], action="invite"))["current"]
+        with patch.object(self.service, "now", return_value=invited["invite_expires_at"] + timedelta(seconds=1)):
+            with self.Session() as reloaded:
+                owner = reloaded.get(User, owner_id)
+                row = next(item for item in self.service.members(reloaded, owner, group_id, "all", 1)["items"] if item["user_code"] == code)
+                self.assertEqual((row["state"], row["version"]), ("expired", invited["version"]))
+        self.assert_unavailable(lambda: self.service.members(self.db, self.users["third"], group_id, "all", 1))
+        self.assert_unavailable(lambda: self.service.members(self.db, self.users["other"], group_id, "all", 1))
+        self.service.archive(self.db, self.users["owner"], group_id,
+            ArchiveGroup(submission_id=uuid4(), expected_version=current["version"], action="archive"))
+        with self.Session() as reloaded:
+            owner = reloaded.get(User, owner_id)
+            row = next(item for item in self.service.members(reloaded, owner, group_id, "all", 1)["items"] if item["user_code"] == code)
+            self.assertEqual(row["version"], invited["version"])
