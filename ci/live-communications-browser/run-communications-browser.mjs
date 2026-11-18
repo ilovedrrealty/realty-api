@@ -217,6 +217,7 @@ async function signup(context, locale, copy, verifyCopy, fixture) {
     await control.dispose()
     phase = 'verify_digits'
     const digits = page.locator('input[inputmode=numeric][maxlength="1"]')
+    await digits.first().waitFor({ state: 'visible' })
     check(await digits.count() === 6, 'NORMAL_VERIFICATION_ENTRY_REQUIRED')
     for (let index = 0; index < 6; index += 1) await digits.nth(index).fill(code[index])
     phase = 'verify_submit'

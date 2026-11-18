@@ -5,7 +5,7 @@ die() { printf 'COMMUNICATIONS_BROWSER_REFUSED %s\n' "$1" >&2; exit 1; }
 bounded() { timeout --kill-after=8s "$@"; }
 [[ $# == 6 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 &&
-   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-f01-f03-browser-20261117-v5 &&
+   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-f01-f03-browser-20261117-v6 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_HOSTED_EVENT_REQUIRED
 ops="$1"; frontend="$2"; recipe="$3"; relay="$4"; backend="$5"; migration="$6"
 [[ "$ops" == "$GITHUB_WORKSPACE/browser-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-base" &&
@@ -18,7 +18,7 @@ for checkout in "$ops" "$frontend" "$recipe" "$relay" "$backend" "$migration"; d
     die CLEAN_CHECKOUT_REQUIRED
 done
 [[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" &&
-   $(git -C "$ops" rev-parse HEAD^) == 5353abe7381d8471f9d8e7ee26c6ad52d8ffb7b6 ]] || die EXACT_OPERATIONS_PARENT_REQUIRED
+   $(git -C "$ops" rev-parse HEAD^) == 12a19bc1a5bc5107e238d4a700bbe1e2e753e63b ]] || die EXACT_OPERATIONS_PARENT_REQUIRED
 operations_delta=$(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) || die EXACT_OPERATIONS_DELTA_REQUIRED
 [[ "$operations_delta" == $'.github/workflows/live-communications-browser.yml\nci/live-communications-browser/run-communications-browser.mjs\nci/live-communications-browser/run-hosted-communications-browser.sh' ]] ||
   die EXACT_OPERATIONS_DELTA_REQUIRED
