@@ -134,3 +134,37 @@ class ContactFileReaderTest(unittest.TestCase):
         with patch("zipfile.LZMADecompressor") as decoder:
             self.refused(stream.getvalue(), "contacts.xlsx", "invalid_xlsx")
             decoder.assert_not_called()
+
+    def test_manifest_selected_shared_strings_are_bounded_and_thumbnail_stays_binary(self):
+        book = Workbook()
+        book.active.append(["name"])
+        book.active.append(["Synthetic contact"])
+        original = workbook_bytes(book)
+        shared_type = b'application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml'
+        for overflow in ("<x>" * 129 + "</x>" * 129, "<x/>" * 100001):
+            stream = BytesIO()
+            with ZipFile(BytesIO(original)) as source, ZipFile(stream, "w", ZIP_DEFLATED) as archive:
+                for entry in source.infolist():
+                    data = source.read(entry)
+                    if entry.filename == "[Content_Types].xml":
+                        data = data.replace(b'</Types>', b'<Override PartName="/xl/sharedStrings.part" ContentType="' + shared_type + b'"/></Types>')
+                    archive.writestr(entry.filename, data)
+                archive.writestr("xl/sharedStrings.part", '<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' + overflow + '</sst>')
+            self.refused(stream.getvalue(), "contacts.xlsx", "table_limits")
+
+        from PIL import Image
+        image = BytesIO()
+        Image.new("RGB", (1, 1), "white").save(image, format="JPEG")
+        stream = BytesIO()
+        with ZipFile(BytesIO(original)) as source, ZipFile(stream, "w", ZIP_DEFLATED) as archive:
+            for entry in source.infolist():
+                data = source.read(entry)
+                if entry.filename == "[Content_Types].xml":
+                    data = data.replace(b'</Types>', b'<Default Extension="jpeg" ContentType="image/jpeg"/></Types>')
+                elif entry.filename == "_rels/.rels":
+                    relation = b'<Relationship Id="thumbnail-regression" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/thumbnail" Target="docProps/thumbnail.jpeg"/>'
+                    data = data.replace(b'</Relationships>', relation + b'</Relationships>')
+                archive.writestr(entry.filename, data)
+            archive.writestr("docProps/thumbnail.jpeg", image.getvalue())
+        table = read_file(stream.getvalue(), "contacts.xlsx")
+        self.assertEqual(table["rows"], [{"row_number": 2, "values": ["Synthetic contact"]}])
