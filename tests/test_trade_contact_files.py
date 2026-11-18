@@ -168,3 +168,35 @@ class ContactFileReaderTest(unittest.TestCase):
             archive.writestr("docProps/thumbnail.jpeg", image.getvalue())
         table = read_file(stream.getvalue(), "contacts.xlsx")
         self.assertEqual(table["rows"], [{"row_number": 2, "values": ["Synthetic contact"]}])
+
+    def test_workbook_sheet_references_cannot_disguise_xml_as_an_image(self):
+        from xml.etree import ElementTree
+        book = Workbook()
+        book.active.append(["name"])
+        book.active.append(["Synthetic contact"])
+        original = workbook_bytes(book)
+        for kind, code in (("image", "invalid_xlsx"), ("chartsheet", "table_limits")):
+            stream = BytesIO()
+            target = "xl/data/disguised.part"
+            with ZipFile(BytesIO(original)) as source, ZipFile(stream, "w", ZIP_DEFLATED) as archive:
+                for entry in source.infolist():
+                    name, data = entry.filename, source.read(entry)
+                    if name == "xl/worksheets/sheet1.xml":
+                        name = target
+                        data = ("<worksheet>" + "<x/>" * 100001 + "</worksheet>").encode()
+                    elif name == "[Content_Types].xml":
+                        manifest = ElementTree.fromstring(data)
+                        for part in manifest:
+                            if part.get("PartName") == "/xl/worksheets/sheet1.xml":
+                                part.set("PartName", "/" + target)
+                                part.set("ContentType", "image/jpeg")
+                        data = ElementTree.tostring(manifest)
+                    elif name == "xl/_rels/workbook.xml.rels":
+                        relationships = ElementTree.fromstring(data)
+                        for relation in relationships:
+                            if relation.get("Type", "").endswith("/worksheet"):
+                                relation.set("Target", "/" + target)
+                                relation.set("Type", "http://schemas.openxmlformats.org/officeDocument/2006/relationships/" + kind)
+                        data = ElementTree.tostring(relationships)
+                    archive.writestr(name, data)
+            self.refused(stream.getvalue(), "contacts.xlsx", code)

@@ -147,9 +147,10 @@ def spreadsheet(data, selected):
             # Relationships can target worksheet XML with a nonstandard name
             # or extension. Classify those actual ZIP parts before parsing data.
             content_overrides, content_defaults = {}, {}
-            def scan_xml(name, worksheet=False):
+            def scan_xml(name, worksheet=False, workbook=False):
                 nonlocal node_count
                 relationships = []
+                sheet_ids = []
                 with archive.open(name) as stream:
                     depth = 0
                     for event, element in iterparse(stream, events=("start", "end")):
@@ -161,6 +162,11 @@ def spreadsheet(data, selected):
                             continue
                         depth -= 1
                         tag = element.tag.rsplit("}", 1)[-1]
+                        if workbook and tag == "sheet":
+                            identity = element.get("{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id")
+                            if not identity or len(sheet_ids) >= 100:
+                                raise ContactFileError("invalid_xlsx")
+                            sheet_ids.append(identity)
                         if name == "[Content_Types].xml" and tag == "Override":
                             part = element.get("PartName", "").lstrip("/")
                             content_type = element.get("ContentType", "").lower()
@@ -191,7 +197,7 @@ def spreadsheet(data, selected):
                         elif not worksheet:
                             element.clear()
                 # All XML references die on return, before workbook loading.
-                return relationships
+                return relationships, sheet_ids
 
             scan_xml("[Content_Types].xml")
             def part_type(name):
@@ -201,6 +207,19 @@ def spreadsheet(data, selected):
             def is_xml_type(value):
                 return value in {"application/xml", "text/xml"} or value.endswith("+xml")
 
+            workbook_types = {
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.template.main+xml",
+                "application/vnd.ms-excel.sheet.macroenabled.main+xml",
+                "application/vnd.ms-excel.template.macroenabled.main+xml",
+            }
+            workbooks = [name for name, value in content_overrides.items() if value in workbook_types]
+            if not workbooks and set(content_defaults.values()) & workbook_types and "xl/workbook.xml" in names:
+                workbooks = ["xl/workbook.xml"]
+            if len(workbooks) != 1:
+                raise ContactFileError("invalid_xlsx")
+            workbook_name = workbooks[0]
+            sheet_ids = scan_xml(workbook_name, workbook=True)[1]
             relationship_parts = {name for name in names if name.lower().endswith(".rels")}
             xml_parts = {name for name in names if is_xml_type(part_type(name)) or
                          (not part_type(name) and name.lower().endswith(".xml"))}
@@ -210,8 +229,13 @@ def spreadsheet(data, selected):
                 "xl/styles.xml", "xl/workbook.xml", "xl/sharedStrings.xml", "xl/theme/theme1.xml",
                 "docProps/core.xml", "docProps/app.xml", "docProps/custom.xml"})
             worksheet_parts = set()
+            links_by_part = {}
             for name in relationship_parts:
-                for relation in scan_xml(name):
+                links = {}
+                for relation in scan_xml(name)[0]:
+                    identity = relation.get("Id", "")
+                    if not identity or identity in links:
+                        raise ContactFileError("invalid_xlsx")
                     kind = relation.get("Type", "").rsplit("/", 1)[-1].lower()
                     if kind in {"externallink", "oleobject", "vbaproject", "package"}:
                         raise ContactFileError("active_content")
@@ -220,6 +244,7 @@ def spreadsheet(data, selected):
                         # their targets are never requested by this reader.
                         if kind != "hyperlink":
                             raise ContactFileError("active_content")
+                        links[identity] = (kind, None)
                         continue
                     target = relation.get("Target", "")
                     if not target:
@@ -228,13 +253,21 @@ def spreadsheet(data, selected):
                     resolved = posixpath.normpath(target.lstrip("/") if target.startswith("/") else posixpath.join(base, target))
                     if resolved not in names or resolved.startswith("../"):
                         raise ContactFileError("invalid_xlsx")
+                    links[identity] = (kind, resolved)
                     if is_xml_type(part_type(resolved)) or kind in {
-                        "worksheet", "officedocument", "sharedstrings", "styles", "theme", "comments", "drawing", "vmldrawing"
+                        "worksheet", "chartsheet", "chart", "officedocument", "sharedstrings", "styles", "theme", "comments", "drawing", "vmldrawing"
                     }:
                         xml_parts.add(resolved)
                     if kind == "worksheet":
                         worksheet_parts.add(resolved)
-            for name in xml_parts - relationship_parts - {"[Content_Types].xml"}:
+                links_by_part[name] = links
+            workbook_path = PurePosixPath(workbook_name)
+            workbook_rels = str(workbook_path.parent / "_rels" / (workbook_path.name + ".rels"))
+            sheet_links = links_by_part.get(workbook_rels, {})
+            if any(identity not in sheet_links or sheet_links[identity][0] not in {"worksheet", "chartsheet"}
+                   for identity in sheet_ids):
+                raise ContactFileError("invalid_xlsx")
+            for name in xml_parts - relationship_parts - {"[Content_Types].xml", workbook_name}:
                 scan_xml(name, worksheet=name in worksheet_parts or name.lower().startswith("xl/worksheets/"))
         from openpyxl import load_workbook
         from openpyxl.xml.functions import DEFUSEDXML
