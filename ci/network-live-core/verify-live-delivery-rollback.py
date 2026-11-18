@@ -286,6 +286,7 @@ def seed_live():
 def seed_current_live_records(history):
     """Synthetic equivalents of the current retained live rows, never real contacts."""
     from unittest.mock import patch
+    from sqlalchemy import null
     from config import settings
     from database import SessionLocal
     from models.lead import Lead
@@ -320,7 +321,7 @@ def seed_current_live_records(history):
             identifier = UUID(int=3000 + index)
             draft = ProfessionalDraft(business_name=f"Synthetic private business {index}").model_dump(mode="json")
             db.add(ProfessionalProfile(id=identifier, user_id=None, version=1, draft_data=draft,
-                published_data=None, review_status="draft", listing_status="hidden", published_at=None,
+                published_data=null(), review_status="draft", listing_status="hidden", published_at=None,
                 created_at=history, updated_at=history))
             db.flush()
             db.add(ProfessionalProfileRevision(id=UUID(int=4000 + index), profile_id=identifier, version=1,

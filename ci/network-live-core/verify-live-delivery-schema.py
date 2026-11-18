@@ -525,7 +525,7 @@ def verify_private(value):
 
 
 def retained_fixture(database):
-    require(query(database, """SELECT
+    actual = query(database, """SELECT
         (SELECT count(*) FROM trade_contacts WHERE details->>'verification_status'='owner_source'),
         (SELECT count(*) FROM trade_contacts), (SELECT count(*) FROM trade_contact_sources),
         (SELECT count(*) FROM professional_profiles WHERE user_id IS NULL AND review_status='draft'
@@ -535,8 +535,17 @@ def retained_fixture(database):
         (SELECT count(*) FROM website_settings_revisions),
         (SELECT count(*) FROM lead_delivery_jobs WHERE lead_id='00000000-0000-0000-0000-00000000012f'
           AND status='accepted' AND attempt_count=1),
-        (SELECT count(*) FROM lead_delivery_worker_state)""") == [(82, 85, 86, 46, 7, 8, 9, 1)],
-        "retained_current_fixture_required")
+        (SELECT count(*) FROM lead_delivery_worker_state)""")
+    expected = [(82, 85, 86, 46, 7, 8, 9, 1)]
+    if actual != expected:
+        names = ("owner_trade_contacts", "trade_contacts", "trade_sources", "private_profiles",
+                 "cms_version", "cms_revisions", "retained_accepted_jobs", "worker_rows")
+        require(len(actual) == 1 and len(actual[0]) == len(names)
+                and all(type(value) is int and 0 <= value <= 1000 for value in actual[0]),
+                "bounded_retained_fixture_counts_required")
+        print("NETWORK_RETAINED_FIXTURE_COUNTS " + json.dumps(dict(zip(names, actual[0])),
+              sort_keys=True, separators=(",", ":")), flush=True)
+    require(actual == expected, "retained_current_fixture_required")
 
 
 def identity():
