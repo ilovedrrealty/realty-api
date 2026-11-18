@@ -43,3 +43,5 @@ from .maintenance_reminders import (NetworkMaintenancePreference, NetworkMainten
 from .due_work_reminders import NetworkDueWorkPreference, NetworkDueWorkDisposition, NetworkDueWorkAction
 from .history_share import NetworkHistoryShare, NetworkHistoryShareAction
 from .property_custody import NetworkPropertyCustodyTransfer, NetworkPropertyCustodyAction
+from .social_groups import (NetworkGroup, NetworkGroupMembership, NetworkGroupInviteLink,
+    NetworkGroupPost, NetworkGroupComment, NetworkGroupMedia, NetworkGroupAction)
