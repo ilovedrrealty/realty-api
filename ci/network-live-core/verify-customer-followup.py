@@ -158,10 +158,11 @@ def verify_candidate_contracts(prior):
     import httpx
     import requests
     from sqlalchemy import text
+    from sqlalchemy.engine import make_url
     from urllib import request as urllib_request
 
     from config import settings
-    from database import engine
+    from database import engine, SessionLocal
 
     prior.stage = "contract_inventory"
     tests_root = Path("/application/tests")
@@ -209,6 +210,24 @@ def verify_candidate_contracts(prior):
         prior.require(Path(module.__file__).resolve(strict=True) == tests_root / f"test_{name}.py",
                       "candidate_test_module_required")
         return module
+
+    def owned_trade_suite():
+        nonce = os.environ.get("ILDR_BROWSER_CI_NONCE", "")
+        prior.require(re.fullmatch(r"[a-f0-9]{32}", nonce)
+                      and engine.url == make_url(prior.DATABASE_URL)
+                      and SessionLocal.kw.get("bind") is engine,
+                      "owned_trade_database_binding_required")
+        with engine.connect() as connection:
+            actual = connection.execute(text("""SELECT current_database(),current_user,
+                host(inet_server_addr()),inet_server_port(),current_setting('server_version_num')::int,
+                shobj_description(oid,'pg_database'),current_schema(),
+                (SELECT version_num FROM public.alembic_version)
+                FROM pg_database WHERE datname=current_database()""")).one()
+        prior.require(tuple(actual) == (prior.DATABASE_NAME, "postgres", "127.0.0.1", 55449, 170006,
+                      f"ildr-communications-ci:{nonce}", "public", MIGRATION),
+                      "owned_trade_namespace_and_head_required")
+        prior.require("test_admin_trade_contacts" not in sys.modules, "trade_fixture_import_order_required")
+        return loader.loadTestsFromTestCase(source_module("admin_trade_contacts").TradeContactsTest)
 
     def run_suite(module_name, class_name, count, build):
         prior.stage = module_name
@@ -265,8 +284,21 @@ def verify_candidate_contracts(prior):
         run_suite("contact_leads", "LeadContactTests", 1, lambda: unittest.TestSuite([
             source_module("contact_leads").LeadContactTests("test_capture_endpoint_retains_contact_validation")]))
         for name, class_name, count in BROAD_CONTRACTS:
-            run_suite(name, class_name, count, lambda name=name, class_name=class_name:
-                      loader.loadTestsFromTestCase(getattr(source_module(name), class_name)))
+            if name == "admin_trade_contacts":
+                previous_flag = os.environ.get("TRADE_CONTACT_FIXTURE")
+                previous_origins = settings.allowed_origins
+                origins = settings.origins_list
+                scoped_origins = previous_origins if "http://localhost:5174" in origins else ",".join(
+                    [*origins, "http://localhost:5174"])
+                with patch.dict(os.environ, {"TRADE_CONTACT_FIXTURE": "yes"}), \
+                        patch.object(settings, "allowed_origins", scoped_origins):
+                    run_suite(name, class_name, count, owned_trade_suite)
+                prior.require(os.environ.get("TRADE_CONTACT_FIXTURE") == previous_flag
+                              and settings.allowed_origins == previous_origins,
+                              "trade_fixture_scope_restoration_required")
+            else:
+                run_suite(name, class_name, count, lambda name=name, class_name=class_name:
+                          loader.loadTestsFromTestCase(getattr(source_module(name), class_name)))
             outcomes[name] = outcomes.get(name, 0) + count
 
     prior.stage = "contract_cleanup"

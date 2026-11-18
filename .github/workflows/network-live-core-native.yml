@@ -2,7 +2,7 @@ name: Isolated full property network and live-core rehearsal
 
 on:
   push:
-    branches: [codex-ci-network-live-core-native-20261118-v4]
+    branches: [codex-ci-network-live-core-native-20261118-v5]
 
 permissions:
   contents: read
