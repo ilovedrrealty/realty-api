@@ -181,7 +181,10 @@ async function signup(context, locale, copy, verifyCopy, fixture) {
     phase = 'name'
     await page.getByPlaceholder('Maria Rodríguez', { exact: true }).fill(`Communications signup ${locale}`)
     phase = 'phone'
-    await page.locator('input[type=tel]').fill('+18095551234')
+    const phone = page.locator('input[type=tel]')
+    await phone.click()
+    await phone.press('ControlOrMeta+A')
+    await phone.pressSequentially('+18095551234')
     phase = 'email'
     await page.locator('input[type=email]').fill(`communications-signup-${locale}@example.com`)
     phase = 'passwords'
