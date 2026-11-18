@@ -21,7 +21,7 @@ import models
 from database import Base
 from models.user import User
 from models.listing import Listing
-from models.property_network import NetworkProperty
+from models.property_network import NetworkProperty, NetworkProject
 from models.service_workflow import (NetworkServicePreference as Preference, NetworkServiceRecipient as Recipient,
     NetworkServiceProposal as Proposal, NetworkServiceAction as Action)
 
@@ -77,7 +77,12 @@ class PrivateServiceMigration(unittest.TestCase):
             getattr(revision, direction)()
 
     def build(self, fresh=True):
-        Base.metadata.create_all(self.engine, **({} if fresh else {"tables": [User.__table__, Listing.__table__]}))
+        tables = [User.__table__, Listing.__table__]
+        if fresh:
+            # Model the a4b6 stage without later service-child foreign keys.
+            tables += [NetworkProperty.__table__, NetworkProject.__table__]
+            tables += [Base.metadata.tables[name] for name in TABLES]
+        Base.metadata.create_all(self.engine, tables=tables)
         if fresh:
             # Compare schemas only at a4b6, before the later custody revision.
             with self.engine.begin() as connection:
