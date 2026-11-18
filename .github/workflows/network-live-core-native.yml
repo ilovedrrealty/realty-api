@@ -1,8 +1,8 @@
-name: Isolated full property network and live-core rehearsal
+name: Isolated remaining property network native proof
 
 on:
   push:
-    branches: [codex-ci-network-live-core-native-20261118-v5]
+    branches: [codex-ci-network-live-core-remaining-native-20261118]
 
 permissions:
   contents: read
@@ -44,6 +44,12 @@ jobs:
           ref: 7f63fec927f75af3f901f74297973253ad5c743b
           path: live-app
           persist-credentials: false
+      - name: Read exact compatible rollback runtime and migration knowledge
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 95e4cf776dd41979a7f9f21ade22321a3c6d1d76
+          path: compatible-rollback
+          persist-credentials: false
       - name: Read accepted communications fixture and assertions
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -62,7 +68,7 @@ jobs:
           ref: 2a9ecd58a8f22c11476f268bacd9b1c410c782a3
           path: legacy-inquiry-recipe
           persist-credentials: false
-      - name: Verify communications, exact catalogs and compatible rollback with synthetic inputs
+      - name: Verify current25-to92 upgrade, compatible rollback and full archive
         shell: bash
         run: |
           set -euo pipefail
@@ -71,4 +77,5 @@ jobs:
           bash --noprofile --norc -n "$runner"
           exec bash --noprofile --norc "$runner" "$GITHUB_WORKSPACE/followup-ops" \
             "$GITHUB_WORKSPACE/followup-app" "$GITHUB_WORKSPACE/communications-recipe" "$GITHUB_WORKSPACE/migration-recipe" \
-            "$GITHUB_WORKSPACE/legacy-inquiry-recipe" "$GITHUB_WORKSPACE/live-app"
+            "$GITHUB_WORKSPACE/legacy-inquiry-recipe" "$GITHUB_WORKSPACE/live-app" \
+            "$GITHUB_WORKSPACE/compatible-rollback"

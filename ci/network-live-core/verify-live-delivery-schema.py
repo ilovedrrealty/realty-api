@@ -248,6 +248,31 @@ ROLLBACK_RESULTS = {'seed_live': {'status': 'PASS',
                 'delivery_jobs_unchanged': True,
                 'no_historical_replay': True}}
 
+SOURCE_REVIEWED_SERVER_TABLES = ('listing_location_review_revisions',
+ 'listing_location_reviews',
+ 'network_audit',
+ 'network_blocks',
+ 'network_media',
+ 'network_milestones',
+ 'network_post_comments',
+ 'network_posts',
+ 'network_project_comments',
+ 'network_project_members',
+ 'network_project_updates',
+ 'network_projects',
+ 'network_properties',
+ 'network_service_actions',
+ 'network_service_preferences',
+ 'network_service_proposals',
+ 'network_service_recipients',
+ 'network_service_requests',
+ 'network_service_work',
+ 'network_service_work_actions',
+ 'property_management_records',
+ 'property_management_revisions',
+ 'social_network_profiles')
+SOURCE_REVIEWED_SERVER_PRIVILEGES = ('DELETE', 'INSERT', 'MAINTAIN', 'REFERENCES', 'SELECT', 'TRIGGER', 'TRUNCATE', 'UPDATE')
+
 stage = "isolation"
 
 
@@ -488,8 +513,15 @@ def preserved_catalog(before, after):
 
 def verify_private(value):
     require(value["rls"] == [(name, True, False) for name in NEW_TABLES], "private_rls_required")
-    require(not value["policies"] and not any(row[1] in {"PUBLIC", "anon", "authenticated", "service_role"}
-                                             for row in value["acl"]), "private_data_api_grants_required")
+    require(not value["policies"] and not any(row[1] in {"PUBLIC", "anon", "authenticated"}
+                                             for row in value["acl"]), "private_client_data_api_grants_required")
+    # The six early revisions retain the existing trusted server defaults.
+    # Require their exact non-grantable matrix; all other new tables deny it.
+    expected_server = {(table, "service_role", privilege, False)
+                       for table in SOURCE_REVIEWED_SERVER_TABLES
+                       for privilege in SOURCE_REVIEWED_SERVER_PRIVILEGES}
+    actual_server = {row for row in value["acl"] if row[1] == "service_role"}
+    require(actual_server == expected_server, "source_reviewed_server_acl_required")
 
 
 def retained_fixture(database):
@@ -585,7 +617,9 @@ def run():
             "live_commit": LIVE_COMMIT, "alembic_head": HEAD, "table_count": 92,
             "fresh_upgrade_catalog_equal": True, "old_column_rows_sequences_unchanged": True,
             "reviewed_added_columns": 2, "reviewed_added_old_table_triggers": 4,
-            "new_private_tables": len(NEW_TABLES), "repeat_normal_startup_preserved": True,
+            "new_private_tables": len(NEW_TABLES), "public_member_denied_tables": len(NEW_TABLES),
+            "source_reviewed_service_role_tables": len(SOURCE_REVIEWED_SERVER_TABLES),
+            "source_reviewed_service_role_grants": 184, "repeat_normal_startup_preserved": True,
             "compatible_old_source_started": True, "compatible_old_runtime": rolled_back,
             "baseline": baseline, "new_code_data": seeded,
             "retained_accepted_jobs": 9, "retained_worker_rows": 1,
