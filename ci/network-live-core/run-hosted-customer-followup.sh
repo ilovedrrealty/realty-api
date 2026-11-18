@@ -4,7 +4,7 @@ die() { printf 'CUSTOMER_FOLLOWUP_REFUSED %s\n' "$1" >&2; exit 1; }
 bounded() { timeout --kill-after=8s "$@"; }
 
 [[ $# == 6 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api ]] || die CI_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-network-live-core-native-20261118 && ${GITHUB_RUN_ATTEMPT:-} == 1 &&
+[[ ${GITHUB_REF:-} == refs/heads/codex-ci-network-live-core-native-20261118-v2 && ${GITHUB_RUN_ATTEMPT:-} == 1 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 [[ ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 ]] || die HOSTED_LINUX_REQUIRED
 ops="$1"; application="$2"; prior="$3"; recipe="$4"; legacy="$5"; live="$6"
@@ -18,9 +18,15 @@ for checkout in "$ops" "$application" "$prior" "$recipe" "$legacy" "$live"; do
 done
 app_commit=$(git -C "$application" rev-parse HEAD)
 app_tree=$(git -C "$application" rev-parse 'HEAD^{tree}')
-[[ "$app_commit" == 081868373f318498ddaa835de6496aa6e62d6f57 && "$app_tree" == 89c1d970a7a25dcc40452e0c5e17b22229ffab83 &&
-   $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" show -s --format=%P HEAD) == acf0cefee12450ab99a02f8bec26b68ab5cf1a67 &&
+[[ "$app_commit" == 796f25ff52724db56313916e129df4b252a682fd && "$app_tree" == 10d76a3de555b567fde93a74b5f90b8d9ba76978 &&
+   $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" show -s --format=%P HEAD) == 6b049ea0f90e3db186583add2af4d67959405701 &&
    ! -e "$application/.env" && ! -L "$application/.env" ]] || die EXACT_IMMUTABLE_PRODUCT_REQUIRED
+# The only candidate successor change corrects the established four-key
+# public catalog test; every product and migration blob remains reviewed081868.
+[[ $(git -C "$application" show -s --format=%P HEAD) == 081868373f318498ddaa835de6496aa6e62d6f57 &&
+   $(git -C "$application" diff --name-only HEAD^ HEAD) == tests/test_professionals.py &&
+   $(git -C "$application" diff --numstat HEAD^ HEAD) == $'2\t2\ttests/test_professionals.py' ]] ||
+  die EXACT_TEST_ONLY_SOURCE_SUCCESSOR_REQUIRED
 [[ $(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) == $'.github/workflows/network-live-core-native.yml\nci/network-live-core/run-hosted-customer-followup.sh\nci/network-live-core/verify-customer-followup.py\nci/network-live-core/verify-live-delivery-rollback.py\nci/network-live-core/verify-live-delivery-schema.py' ]] ||
   die EXACT_OPERATIONS_DELTA_REQUIRED
 [[ $(git -C "$prior" rev-parse HEAD) == e660040e0c514aca3f7f5b7d7a5007e4fdc596c4 &&
@@ -99,7 +105,7 @@ from pathlib import Path, PurePosixPath
 import subprocess, sys
 application, live, target = map(Path, sys.argv[1:])
 paths = subprocess.check_output(["git", "-C", str(application), "diff", "--name-only", "--diff-filter=A",
-    "7f63fec927f75af3f901f74297973253ad5c743b", "081868373f318498ddaa835de6496aa6e62d6f57", "--", "alembic/versions"], text=True).splitlines()
+    "7f63fec927f75af3f901f74297973253ad5c743b", "796f25ff52724db56313916e129df4b252a682fd", "--", "alembic/versions"], text=True).splitlines()
 assert len(paths) == 32
 for name in paths:
     path = PurePosixPath(name)
