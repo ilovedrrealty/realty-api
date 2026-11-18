@@ -11,7 +11,7 @@ from slowapi.errors import RateLimitExceeded
 from config import settings
 from database import SessionLocal
 from utils.limiter import limiter
-from routes import research_workspaces, trade_contacts
+from routes import newsletter, research_workspaces, trade_contacts
 from routes import lead_delivery as lead_delivery_routes, owner_leads
 
 # Import all models so Base.metadata knows about them before create_all
@@ -169,7 +169,7 @@ async def security_headers(request: Request, call_next):
     response = await call_next(request)
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
     if settings.environment == "production":
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     return response
@@ -188,6 +188,7 @@ app.include_router(stats.router)
 app.include_router(professionals.router)
 app.include_router(research_workspaces.router)
 app.include_router(trade_contacts.router)
+app.include_router(newsletter.router)
 app.include_router(lead_delivery_routes.router)
 app.include_router(owner_leads.router)
 app.include_router(website_settings.router)
