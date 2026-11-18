@@ -10,7 +10,32 @@ path = Path(filename)
 assert path.is_file() and path.stat().st_size <= 2 * 1024 * 1024
 lines = path.read_bytes().splitlines()
 failed = False
+diagnostics = []
 for line in lines:
+    if line.startswith(b"SOCIAL_GROUPS_ENTRY_DIAGNOSTIC "):
+        assert mode == "browser" and len(line) <= 8192 and not diagnostics
+        value = json.loads(line.split(b" ", 1)[1])
+        assert set(value) == {"phase", "failure_type", "surface", "ready_state", "census_available", "counts", "page_errors", "page_error_types", "responses"}
+        assert value["phase"] in {"setup_fixture", "setup_browser", "setup_owner_session", "setup_member_session",
+            "setup_professional_session", "setup_admin_session", "entry_document", "entry_menu", "entry_network_navigation",
+            "entry_network_heading", "entry_groups_navigation", "entry_groups_heading"}
+        assert value["failure_type"] in {"TimeoutError", "TypeError", "ReferenceError", "SyntaxError", "Error", "Failure", "other"}
+        assert value["surface"] in {"unavailable", "dashboard_root", "property_network", "dashboard_other", "landing", "blank", "other"}
+        assert value["ready_state"] in {"unavailable", "loading", "interactive", "complete"} and type(value["census_available"]) is bool
+        assert set(value["counts"]) == {"menu_buttons", "sidebars", "network_navigation", "network_headings", "groups_navigation", "groups_headings"}
+        assert set(value["page_error_types"]) == {"Error", "TypeError", "ReferenceError", "SyntaxError", "RangeError", "other"}
+        assert all(type(count) is int and 0 <= count <= 999 for count in [value["page_errors"], *value["counts"].values(), *value["page_error_types"].values()])
+        assert isinstance(value["responses"], list) and len(value["responses"]) <= 36
+        identities = set()
+        for response in value["responses"]:
+            assert set(response) == {"name", "status", "count"}
+            assert response["name"] in {"auth_me", "professional_options", "groups", "dashboard_document", "dashboard_script", "dashboard_stylesheet"}
+            assert type(response["status"]) is int and 100 <= response["status"] <= 599
+            assert type(response["count"]) is int and 1 <= response["count"] <= 999
+            identity = (response["name"], response["status"])
+            assert identity not in identities
+            identities.add(identity)
+        diagnostics.append(value)
     if line.startswith(b"SOCIAL_GROUPS_BROWSER_FAILURE "):
         parts = line.decode().split(" ")
         assert len(parts) == 3 and all(re.fullmatch(r"[A-Za-z][A-Za-z0-9_]{0,79}", value) for value in parts)
@@ -22,6 +47,9 @@ for line in lines:
         assert all(isinstance(text, str) and re.fullmatch(r"[A-Za-z][A-Za-z0-9_]{0,79}", text) for text in value.values())
         print("SOCIAL_GROUPS_FIXTURE_FAILURE " + json.dumps(value, sort_keys=True))
         failed = True
+if diagnostics:
+    assert failed
+    print("SOCIAL_GROUPS_ENTRY_DIAGNOSTIC " + json.dumps(diagnostics[0], sort_keys=True))
 assert native == "0" and not failed
 prefix = b"SOCIAL_GROUPS_BROWSER_RESULT " if mode == "browser" else b"SOCIAL_GROUPS_FIXTURE_RESULT "
 rows = [json.loads(line[len(prefix):]) for line in lines if line.startswith(prefix)]

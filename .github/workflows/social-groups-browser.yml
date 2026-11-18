@@ -1,7 +1,7 @@
 name: Isolated social groups frontend and browser acceptance
 on:
   push:
-    branches: [codex-ci-social-groups-browser-20261118-v2]
+    branches: [codex-ci-social-groups-browser-20261118-v3]
 permissions:
   contents: read
 concurrency:
@@ -58,7 +58,7 @@ jobs:
           ref: 3007728fd67c5889a8373e41ff3ffa5cc50d839b
           path: browser-relay
           persist-credentials: false
-      - name: Run complete frontend contracts strict Dashboard and actual private groups
+      - name: Build exact Dashboard assets and run actual private groups
         shell: bash
         run: |
           set -euo pipefail

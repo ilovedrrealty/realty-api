@@ -11,6 +11,9 @@ const checks = ['normal_menu_private_create_and_draft_cancel', 'direct_invitatio
 const contexts = [], geometries = [], tokens = new Set(), invitePages = new Set()
 let browser, timer, stage = 'fixture', pageErrors = 0, externalWrites = 0, trackingRequests = 0
 let automaticAccepts = 0, tokenLeaks = 0, humanAcceptBudget = 0, linkAcceptRequests = 0, inviteProviders = 0
+let entryPage = null, entryCopy = null, entryInProgress = true
+const responseCounts = new Map()
+const errorTypes = { Error: 0, TypeError: 0, ReferenceError: 0, SyntaxError: 0, RangeError: 0, other: 0 }
 class Failure extends Error {}
 const check = (value, reason) => { if (!value) throw new Failure(reason) }
 function advance(value) {
@@ -44,7 +47,20 @@ async function session(locale, account, role, storageState) {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true,
     serviceWorkers: 'block', permissions: ['clipboard-read', 'clipboard-write'], ...(storageState ? { storageState } : {}) })
   contexts.push(context); context.setDefaultTimeout(15000); context.setDefaultNavigationTimeout(20000)
-  context.on('page', page => page.on('pageerror', () => { pageErrors++ }))
+  context.on('page', page => page.on('pageerror', error => {
+    pageErrors++
+    errorTypes[Object.hasOwn(errorTypes, error.name) ? error.name : 'other']++
+  }))
+  context.on('response', response => {
+    const url = new URL(response.url()), resource = response.request().resourceType()
+    const name = url.origin === api ? ({ '/auth/me': 'auth_me', '/professionals/options': 'professional_options',
+      [`${prefix}/groups`]: 'groups' })[url.pathname] : url.origin === dashboard
+      ? resource === 'document' ? 'dashboard_document' : resource === 'script' ? 'dashboard_script' : resource === 'stylesheet' ? 'dashboard_stylesheet' : null : null
+    if (name) {
+      const key = name + ':' + response.status()
+      responseCounts.set(key, Math.min(999, (responseCounts.get(key) || 0) + 1))
+    }
+  })
   // Passive request events include requests intercepted by a page-level race hold.
   context.on('request', req => {
     const url = new URL(req.url())
@@ -90,15 +106,54 @@ async function write(page, path, perform, method = 'POST', expected = [200, 201]
 }
 async function menuGroups(context, copy, role) {
   const page = await context.newPage()
+  entryPage = page; entryCopy = copy; entryInProgress = true
+  advance('entry_document')
   await page.goto(dashboard + '/?workspace=' + role, { waitUntil: 'domcontentloaded' })
+  advance('entry_menu')
   await page.locator('button:has(svg.lucide-menu)').click()
+  advance('entry_network_navigation')
   await button(page.locator('aside'), copy.nav['property-network']).click()
+  advance('entry_network_heading')
   await page.getByRole('heading', { name: copy.network.heading, exact: true }).waitFor()
+  advance('entry_groups_navigation')
   const [response] = await Promise.all([page.waitForResponse(value => pathIs(value, `${prefix}/groups`, 'GET')),
     button(page.getByRole('navigation', { name: copy.network.main_tabs, exact: true }), copy.network.main.groups).click()])
   check(response.status() === 200, 'NORMAL_GROUP_ENTRY_REQUIRED'); noStore(response)
+  advance('entry_groups_heading')
   await page.getByRole('heading', { name: copy.network.groups.title, exact: true }).waitFor()
+  entryInProgress = false
   return page
+}
+async function entryDiagnostic(cause) {
+  const counts = { menu_buttons: 0, sidebars: 0, network_navigation: 0, network_headings: 0, groups_navigation: 0, groups_headings: 0 }
+  let surface = 'unavailable', readyState = 'unavailable', censusAvailable = false
+  if (entryPage && !entryPage.isClosed()) {
+    const url = new URL(entryPage.url())
+    surface = url.origin === dashboard ? url.pathname === '/' ? 'dashboard_root' : url.pathname === '/property-network' ? 'property_network' : 'dashboard_other'
+      : url.origin === landing ? 'landing' : url.href === 'about:blank' ? 'blank' : 'other'
+    const census = async () => {
+      readyState = await entryPage.evaluate(() => document.readyState)
+      const locators = [entryPage.locator('button:has(svg.lucide-menu)'), entryPage.locator('aside'),
+        button(entryPage.locator('aside'), entryCopy.nav['property-network']),
+        entryPage.getByRole('heading', { name: entryCopy.network.heading, exact: true }),
+        button(entryPage.getByRole('navigation', { name: entryCopy.network.main_tabs, exact: true }), entryCopy.network.main.groups),
+        entryPage.getByRole('heading', { name: entryCopy.network.groups.title, exact: true })]
+      const values = await Promise.all(locators.map(locator => locator.count()))
+      Object.keys(counts).forEach((key, index) => { counts[key] = Math.min(999, values[index]) })
+      censusAvailable = true
+    }
+    let timeout
+    try { await Promise.race([census(), new Promise((_, reject) => { timeout = setTimeout(() => reject(new Error('CENSUS_DEADLINE')), 1500) })]) }
+    catch { /* Counts remain bounded and explicitly unavailable. */ }
+    finally { clearTimeout(timeout) }
+  }
+  const failureType = ['TimeoutError', 'TypeError', 'ReferenceError', 'SyntaxError', 'Error', 'Failure'].includes(cause?.name) ? cause.name : 'other'
+  const responses = [...responseCounts].sort(([a], [b]) => a.localeCompare(b)).slice(0, 36).map(([key, count]) => {
+    const [name, status] = key.split(':'); return { name, status: Number(status), count }
+  })
+  console.log('SOCIAL_GROUPS_ENTRY_DIAGNOSTIC ' + JSON.stringify({ phase: stage, failure_type: failureType, surface,
+    ready_state: readyState, census_available: censusAvailable, counts, page_errors: Math.min(999, pageErrors),
+    page_error_types: Object.fromEntries(Object.entries(errorTypes).map(([key, count]) => [key, Math.min(999, count)])), responses }))
 }
 function workspace(page, facts) {
   return page.getByRole('heading', { name: facts.groupName, exact: true }).locator('..').locator('..')
@@ -270,6 +325,7 @@ async function reopen(page, copy, facts) {
 }
 
 try {
+  advance('setup_fixture')
   check(process.env.GITHUB_ACTIONS === 'true' && process.env.GITHUB_REPOSITORY === 'ilovedrrealty/realty-api'
     && process.env.ILDR_BROWSER_FIXTURES === '/browser-fixtures/fixtures.json'
     && JSON.stringify(await readdir('/sys/class/net')) === '["lo"]', 'OWNED_HOSTED_LOOPBACK_REQUIRED')
@@ -280,10 +336,15 @@ try {
   check(fixture.scope === 'social-groups-only', 'EXACT_FIXTURE_SCOPE_REQUIRED')
   const en = JSON.parse(await readFile('/browser-run/en.json', 'utf8')), es = JSON.parse(await readFile('/browser-run/es.json', 'utf8'))
   const facts = { ...fixture.facts }, g = en.network.groups, s = es.network.groups
+  advance('setup_browser')
   browser = await chromium.launch({ headless: true })
+  advance('setup_owner_session')
   const owner = await session('en', fixture.accounts.owner, 'owner')
+  advance('setup_member_session')
   const member = await session('en', fixture.accounts.member, 'buyer')
+  advance('setup_professional_session')
   const professional = await session('en', fixture.accounts.professional, 'buyer')
+  advance('setup_admin_session')
   const admin = await session('en', fixture.accounts.admin, 'admin')
   const ownerPage = await menuGroups(owner, en, 'owner')
 
@@ -567,6 +628,7 @@ try {
     locales: ['en', 'es'], page_errors: pageErrors, external_writes: externalWrites, tracking_requests: trackingRequests,
     automatic_accepts: automaticAccepts, token_leaks: tokenLeaks }))
 } catch (cause) {
+  if (entryInProgress) await entryDiagnostic(cause)
   console.log('SOCIAL_GROUPS_BROWSER_FAILURE ' + stage + ' ' + (cause instanceof Failure ? cause.message : 'LOCATOR_OR_EVENT_DEADLINE'))
   process.exitCode = 1
 } finally {

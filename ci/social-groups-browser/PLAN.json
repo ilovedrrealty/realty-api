@@ -6,16 +6,17 @@
   "frontend": "7b9ec53f54141ef66b92466de4dde81f5bc0f69e",
   "frontend_tree": "8baac20b593e6cf4cfc964fa95333e7a856de7d8",
   "frontend_parent": "5d2afabca5560cb06166ad6af8efa3a06f8d4b6c",
-  "operations_parent": "1d39a443d6dc4ef21fed57f018df0b15c0d3b42a",
-  "proposed_first_ref": "codex-ci-social-groups-browser-20261118-v2",
+  "operations_parent": "65c819a4da23891af3b219cc88581bf2e43cf37b",
+  "proposed_first_ref": "codex-ci-social-groups-browser-20261118-v3",
   "accepted_runtime_recipe": "3007728fd67c5889a8373e41ff3ffa5cc50d839b",
   "contracts": {
     "files": 59,
     "tests": 480,
     "expected_failures": 0,
-    "expected_skips": 0
+    "expected_skips": 0,
+    "evidence": "Retained actual same-product V2 run44287063765/job134742332787:480 passed,zero skipped; not rerun in this attempt."
   },
-  "build": "One locked actual frontend contract suite and strict Dashboard typecheck plus Vite build on the exact source. No local build, unchanged Next build, old native suite or old network browser repeat.",
+  "build": "Locked install and fresh actual Vite build of all585 exact source blobs to obtain immutable served assets. Retain V2 same-source480 contract and strict Dashboard acceptance; this attempt makes no new CJS or typecheck success claim. No local build, native suite or unchanged Next build.",
   "retained": "Require Landing and shared packages byte-identical to the live map predecessor. Retain accepted 68 network, eight contact and eight map browser groups, with their 59 whole-page geometry checks. This supplies new groups evidence only. The prior Landing sign-in form evidence is retained by byte identity; this phase does not serve or exercise a new Landing login form.",
   "normal_browser": {
     "journeys": 12,
@@ -171,6 +172,21 @@
     "change": "Explicit GroupRole inference with the same runtime whitelist and boolean narrowing of unknown-valued read errors before JSX. No type cast bypass, validation or assertion relaxation."
   },
   "prior_attempt": {
+    "run": 44287063765,
+    "job": 134742332787,
+    "status": "ACTUAL_FAILURE_PRESERVED",
+    "contracts": "480/480 passed;zero skipped",
+    "strict_dashboard": "native0;typecheck and Vite actualSUCCESS",
+    "browser_started": true,
+    "browser_failure": "fixture LOCATOR_OR_EVENT_DEADLINE before G01; no concrete locator cause exposed by prior catch",
+    "owned_cleanup": "verified",
+    "artifacts": [],
+    "correction": "Diagnostic-only constant startup/entry phases and failure-only count/status/error-type census. No product,locator,assertion or12/16 acceptance-count change.",
+    "receipt": "social-groups-browser-44287063765-v2-failure.json",
+    "receipt_sha256": "8b748a036badb90bd1530398dcaef4ededde0e5203bccaa6dafcc89ac63e1a12",
+    "log_sha256": "db9e8cd9e0fd47810081cafbc718801415fefa60b4b4e69ddfca99364b5b944b"
+  },
+  "retained_prior_attempt": {
     "run": 44285281874,
     "job": 134736228253,
     "status": "ACTUAL_FAILURE_PRESERVED",
@@ -182,5 +198,24 @@
     "receipt": "social-groups-browser-44285281874-v1-failure.json",
     "receipt_sha256": "7fc545a1e1d3adde7bbc050d0d184f06f3fb8748a2969a1644488847845ec45b",
     "correction": "The seven diagnosed type errors are corrected in the exact successor; a new isolated first ref is required. No unchanged retry."
+  },
+  "entry_diagnostic": {
+    "failure_only": true,
+    "line_limit_bytes": 8192,
+    "phases": [
+      "setup_fixture",
+      "setup_browser",
+      "setup_owner_session",
+      "setup_member_session",
+      "setup_professional_session",
+      "setup_admin_session",
+      "entry_document",
+      "entry_menu",
+      "entry_network_navigation",
+      "entry_network_heading",
+      "entry_groups_navigation",
+      "entry_groups_heading"
+    ],
+    "data": "Only allowlisted type/surface/ready-state enums,menu/sidebar/network/groups element counts,expected endpoint/resource status counts and page-error type counts. No DOM text,body,email,raw URL/query,token,cookie,credential or screenshot."
   }
 }
