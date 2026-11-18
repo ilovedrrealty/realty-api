@@ -25,6 +25,34 @@ STAGES = ["browser_launch"] + [f"{locale}_{name}" for locale in ("en", "es")
                               for name in ("public_forms", "signup", "admin", "feeds")] + ["paused_fallback", "browser_teardown"]
 GEOMETRIES = {f"{locale}_{name}_{width}" for locale in ("en", "es")
               for name in ("thankyou", "property", "delivery", "communications", "owner", "buyer") for width in (390, 320)}
+SIGNUP_PHASES = {"navigate", "name", "phone", "email", "passwords", "terms", "readiness", "register",
+                 "verify_route", "verification_code", "verify_digits", "verify_submit", "new_identity"}
+VALIDATION_KEYS = {"name_required", "name_min", "phone_required", "phone_invalid", "email_required", "email_invalid",
+                   "password_required", "password_min", "password_lowercase", "password_uppercase", "password_number",
+                   "password_special", "confirm_required", "confirm_match", "terms_required"}
+
+
+def signup_diagnostic(value):
+    base = {"phase", "state_available", "failure_kind", "register_requests", "register_statuses", "page_error_count", "page_error_kinds"}
+    state = {"page_kind", "name_count", "phone_count", "email_count", "password_count", "terms_count", "name_matches",
+             "email_matches", "phone_matches", "passwords_match", "terms_checked", "validation"}
+    assert type(value["state_available"]) is bool and set(value) == (base | state if value["state_available"] else base)
+    assert value["phase"] in SIGNUP_PHASES and value["failure_kind"] in {"timeout", "ambiguous", "check", "other"}
+    assert type(value["register_requests"]) is int and 0 <= value["register_requests"] <= 10
+    assert isinstance(value["register_statuses"], list) and len(value["register_statuses"]) <= 4
+    assert all(type(item) is int and 100 <= item <= 599 for item in value["register_statuses"])
+    assert type(value["page_error_count"]) is int and 0 <= value["page_error_count"] <= 1000
+    assert isinstance(value["page_error_kinds"], list) and len(value["page_error_kinds"]) <= 8
+    assert all(item in {"TypeError", "ReferenceError", "SecurityError", "Error", "Other"}
+               or isinstance(item, str) and re.fullmatch(r"React[0-9]{1,4}", item) for item in value["page_error_kinds"])
+    if value["state_available"]:
+        assert value["page_kind"] in {"signup", "verify", "other"}
+        assert all(type(value[key]) is int and 0 <= value[key] <= 10 for key in
+                   ("name_count", "phone_count", "email_count", "password_count", "terms_count"))
+        assert all(type(value[key]) is bool for key in
+                   ("name_matches", "email_matches", "phone_matches", "passwords_match", "terms_checked"))
+        assert isinstance(value["validation"], list) and len(value["validation"]) <= 15 and set(value["validation"]) <= VALIDATION_KEYS
+    print("COMMUNICATIONS_BROWSER_SIGNUP_DIAGNOSTIC " + json.dumps(value, sort_keys=True, separators=(",", ":")))
 
 
 def main():
@@ -48,6 +76,8 @@ def main():
             assert re.fullmatch(r"COMMUNICATIONS_BROWSER_FAILURE [a-z_]{1,40} [A-Z_]{1,65}", line)
             failures.append(line)
             print(line)
+        elif line.startswith("COMMUNICATIONS_BROWSER_SIGNUP_DIAGNOSTIC "):
+            signup_diagnostic(json.loads(line.removeprefix("COMMUNICATIONS_BROWSER_SIGNUP_DIAGNOSTIC ")))
         elif line.startswith("COMMUNICATIONS_BROWSER_RESULT "):
             results.append(json.loads(line.removeprefix("COMMUNICATIONS_BROWSER_RESULT ")))
     assert len(failures) <= 1 and len(geometries) <= 24

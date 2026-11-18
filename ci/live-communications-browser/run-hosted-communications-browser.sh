@@ -5,7 +5,7 @@ die() { printf 'COMMUNICATIONS_BROWSER_REFUSED %s\n' "$1" >&2; exit 1; }
 bounded() { timeout --kill-after=8s "$@"; }
 [[ $# == 6 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 &&
-   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-f01-f03-browser-20261117-v3 &&
+   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-f01-f03-browser-20261117-v4 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_HOSTED_EVENT_REQUIRED
 ops="$1"; frontend="$2"; recipe="$3"; relay="$4"; backend="$5"; migration="$6"
 [[ "$ops" == "$GITHUB_WORKSPACE/browser-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-base" &&
@@ -18,9 +18,9 @@ for checkout in "$ops" "$frontend" "$recipe" "$relay" "$backend" "$migration"; d
     die CLEAN_CHECKOUT_REQUIRED
 done
 [[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" &&
-   $(git -C "$ops" rev-parse HEAD^) == 79fad6caad5c1a0d1b4655bea27431d77a43fb3d ]] || die EXACT_OPERATIONS_PARENT_REQUIRED
+   $(git -C "$ops" rev-parse HEAD^) == f773fa4512f1329ff6d14c418ff53787ddad5cdf ]] || die EXACT_OPERATIONS_PARENT_REQUIRED
 operations_delta=$(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) || die EXACT_OPERATIONS_DELTA_REQUIRED
-[[ "$operations_delta" == $'.github/workflows/live-communications-browser.yml\nci/live-communications-browser/run-communications-browser.mjs\nci/live-communications-browser/run-hosted-communications-browser.sh\nci/live-communications-browser/serve_communications_fixture.py' ]] ||
+[[ "$operations_delta" == $'.github/workflows/live-communications-browser.yml\nci/live-communications-browser/check-browser-result.py\nci/live-communications-browser/run-communications-browser.mjs\nci/live-communications-browser/run-hosted-communications-browser.sh' ]] ||
   die EXACT_OPERATIONS_DELTA_REQUIRED
 frontend_commit=977ca90b30c5cb1897eb186fec8a51c0711883f7
 frontend_tree=2e0f96561a531eb883b88112cad8b4b809cb3c26

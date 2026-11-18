@@ -27,6 +27,7 @@ const geometries = []
 let stage = 'fixture'
 let watchdog
 let pageErrors = 0
+const pageErrorKinds = []
 let externalWrites = 0
 let trackingRequests = 0
 
@@ -67,7 +68,12 @@ async function session(browser, locale, account) {
   contexts.push(context)
   context.setDefaultTimeout(10000)
   context.setDefaultNavigationTimeout(15000)
-  context.on('page', page => page.on('pageerror', () => { pageErrors += 1 }))
+  context.on('page', page => page.on('pageerror', error => {
+    pageErrors += 1
+    const react = /Minified React error #([0-9]{1,4})/.exec(error.message || '')
+    const kind = react ? `React${react[1]}` : ['TypeError', 'ReferenceError', 'SecurityError', 'Error'].includes(error.name) ? error.name : 'Other'
+    if (pageErrorKinds.length < 8) pageErrorKinds.push(kind)
+  }))
   await context.route('**/*', route => {
     const req = route.request(), url = new URL(req.url())
     if (/google-analytics|googletagmanager|doubleclick|facebook\.com\/tr/.test(url.href)) trackingRequests += 1
@@ -163,30 +169,91 @@ async function propertyInquiry(context, locale, copy, fixture) {
 }
 async function signup(context, locale, copy, verifyCopy, fixture) {
   const page = await context.newPage()
-  await page.goto(`${landing}/signup/`, { waitUntil: 'domcontentloaded' })
-  await page.getByPlaceholder('Maria Rodríguez', { exact: true }).fill(`Communications signup ${locale}`)
-  await page.locator('input[type=tel]').fill('+18095551234')
-  await page.locator('input[type=email]').fill(`communications-signup-${locale}@example.com`)
-  for (const field of await page.locator('input[type=password]').all()) await field.fill('Synthetic-Rehearsal-4!Password')
-  await page.locator('input[type=checkbox]').check()
-  await observe(page, '/auth/register', 'POST', () => button(page, copy.signup.form.submit).click(), 201, false)
-  await page.waitForURL(url => url.pathname.startsWith('/verify'))
-  const control = await request(context, `/__fixture/verification/${locale}`, 'GET', undefined, { 'X-ILDR-Rehearsal': fixture.control })
-  check(control.status() === 200, 'SYNTHETIC_VERIFICATION_CODE_REQUIRED')
-  const { code } = await json(control)
-  check(/^\d{6}$/.test(code), 'ACTUAL_VERIFICATION_CODE_REQUIRED')
-  await control.dispose()
-  const digits = page.locator('input[inputmode=numeric][maxlength="1"]')
-  check(await digits.count() === 6, 'NORMAL_VERIFICATION_ENTRY_REQUIRED')
-  for (let index = 0; index < 6; index += 1) await digits.nth(index).fill(code[index])
-  const verified = await observe(page, '/auth/verify', 'POST', () => button(page, verifyCopy.verify_btn).click(), 200, false)
-  check(verified.request().postDataJSON().locale === locale, 'SIGNUP_LOCALE_REQUIRED')
-  const identity = await request(context, '/auth/me')
-  const currentUser = await json(identity)
-  check(identity.status() === 200 && currentUser.role === 'buyer' &&
-    currentUser.email === `communications-signup-${locale}@example.com`, 'ACTUAL_NEW_ACCOUNT_REQUIRED')
-  await identity.dispose()
-  await page.close()
+  let phase = 'navigate'
+  let registerRequests = 0
+  const registerStatuses = []
+  const countRequest = request => { if (request.url() === api + '/auth/register' && request.method() === 'POST') registerRequests += 1 }
+  const countResponse = response => { if (match(response, '/auth/register', 'POST') && registerStatuses.length < 4) registerStatuses.push(response.status()) }
+  context.on('request', countRequest)
+  context.on('response', countResponse)
+  try {
+    await page.goto(`${landing}/signup/`, { waitUntil: 'domcontentloaded' })
+    phase = 'name'
+    await page.getByPlaceholder('Maria Rodríguez', { exact: true }).fill(`Communications signup ${locale}`)
+    phase = 'phone'
+    await page.locator('input[type=tel]').fill('+18095551234')
+    phase = 'email'
+    await page.locator('input[type=email]').fill(`communications-signup-${locale}@example.com`)
+    phase = 'passwords'
+    const passwords = page.locator('input[type=password]')
+    check(await passwords.count() === 2, 'TWO_SIGNUP_PASSWORD_FIELDS_REQUIRED')
+    for (const field of await passwords.all()) await field.fill('Synthetic-Rehearsal-4!Password')
+    phase = 'terms'
+    await page.locator('input[type=checkbox]').check()
+    phase = 'readiness'
+    const ready = await page.evaluate(({ locale }) => {
+      const name = document.querySelector('input[placeholder="Maria Rodríguez"]')
+      const phone = document.querySelector('input[type=tel]')
+      const email = document.querySelector('input[type=email]')
+      const passwords = [...document.querySelectorAll('input[type=password]')]
+      const terms = document.querySelector('input[type=checkbox]')
+      return name?.value === `Communications signup ${locale}` && email?.value === `communications-signup-${locale}@example.com` &&
+        phone?.value.replace(/\D/g, '') === '18095551234' && passwords.length === 2 &&
+        passwords.every(field => field.value === 'Synthetic-Rehearsal-4!Password') && terms?.checked === true
+    }, { locale })
+    check(ready, 'SIGNUP_FORM_VALUES_REQUIRED')
+    phase = 'register'
+    await observe(page, '/auth/register', 'POST', () => button(page, copy.signup.form.submit).click(), 201, false)
+    phase = 'verify_route'
+    await page.waitForURL(url => url.pathname.startsWith('/verify'))
+    phase = 'verification_code'
+    const control = await request(context, `/__fixture/verification/${locale}`, 'GET', undefined, { 'X-ILDR-Rehearsal': fixture.control })
+    check(control.status() === 200, 'SYNTHETIC_VERIFICATION_CODE_REQUIRED')
+    const { code } = await json(control)
+    check(/^\d{6}$/.test(code), 'ACTUAL_VERIFICATION_CODE_REQUIRED')
+    await control.dispose()
+    phase = 'verify_digits'
+    const digits = page.locator('input[inputmode=numeric][maxlength="1"]')
+    check(await digits.count() === 6, 'NORMAL_VERIFICATION_ENTRY_REQUIRED')
+    for (let index = 0; index < 6; index += 1) await digits.nth(index).fill(code[index])
+    phase = 'verify_submit'
+    const verified = await observe(page, '/auth/verify', 'POST', () => button(page, verifyCopy.verify_btn).click(), 200, false)
+    check(verified.request().postDataJSON().locale === locale, 'SIGNUP_LOCALE_REQUIRED')
+    phase = 'new_identity'
+    const identity = await request(context, '/auth/me')
+    const currentUser = await json(identity)
+    check(identity.status() === 200 && currentUser.role === 'buyer' &&
+      currentUser.email === `communications-signup-${locale}@example.com`, 'ACTUAL_NEW_ACCOUNT_REQUIRED')
+    await identity.dispose()
+    await page.close()
+  } catch (error) {
+    const state = await bounded(page.evaluate(({ locale, validation }) => {
+      const name = document.querySelector('input[placeholder="Maria Rodríguez"]')
+      const phone = document.querySelector('input[type=tel]')
+      const email = document.querySelector('input[type=email]')
+      const passwords = [...document.querySelectorAll('input[type=password]')]
+      const terms = document.querySelector('input[type=checkbox]')
+      const text = [...document.querySelectorAll('p')].map(node => node.textContent?.trim())
+      const pageKind = location.pathname.startsWith('/signup') ? 'signup' : location.pathname.startsWith('/verify') ? 'verify' : 'other'
+      return { state_available: true, page_kind: pageKind, name_count: document.querySelectorAll('input[placeholder="Maria Rodríguez"]').length,
+        phone_count: document.querySelectorAll('input[type=tel]').length, email_count: document.querySelectorAll('input[type=email]').length, password_count: passwords.length,
+        terms_count: document.querySelectorAll('input[type=checkbox]').length, name_matches: name?.value === `Communications signup ${locale}`,
+        email_matches: email?.value === `communications-signup-${locale}@example.com`,
+        phone_matches: Boolean(phone && phone.value.replace(/\D/g, '') === '18095551234'),
+        passwords_match: passwords.length === 2 && passwords.every(field => field.value === 'Synthetic-Rehearsal-4!Password'),
+        terms_checked: terms?.checked === true,
+        validation: Object.entries(validation).filter(([, message]) => text.includes(message)).map(([key]) => key) }
+    }, { locale, validation: copy.signup.validation }), 'SIGNUP_DIAGNOSTIC_DEADLINE', 3000).catch(() => ({ state_available: false }))
+    console.log('COMMUNICATIONS_BROWSER_SIGNUP_DIAGNOSTIC ' + JSON.stringify({ phase, ...state,
+      failure_kind: error?.name === 'TimeoutError' ? 'timeout' : String(error?.message).includes('strict mode violation') ? 'ambiguous'
+        : error instanceof CheckFailure ? 'check' : 'other',
+      register_requests: registerRequests, register_statuses: registerStatuses,
+      page_error_count: pageErrors, page_error_kinds: pageErrorKinds }))
+    throw error
+  } finally {
+    context.off('request', countRequest)
+    context.off('response', countResponse)
+  }
 }
 async function administrative(context, locale, copy, fixture) {
   const page = await context.newPage()
