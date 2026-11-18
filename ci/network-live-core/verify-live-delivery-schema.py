@@ -701,6 +701,54 @@ def archive_catalog_diagnostic(source, target, before, after):
           separators=(",", ":")), flush=True)
 
 
+def verify_check_render_controls(database):
+    """Exercise PostgreSQL's own Boolean deparser in an owned temporary table."""
+    with closing(connection(database)) as db, db.cursor() as cursor:
+        cursor.execute("""CREATE TEMP TABLE ildr_check_render_control (
+            n INTEGER, a BOOLEAN, b BOOLEAN, c BOOLEAN,
+            CONSTRAINT equivalent_between CHECK (n BETWEEN 1 AND 4 AND a),
+            CONSTRAINT equivalent_expanded CHECK (n >= 1 AND n <= 4 AND a),
+            CONSTRAINT different_bound CHECK (n >= 1 AND n <= 5 AND a),
+            CONSTRAINT different_precedence_left CHECK ((a AND b) OR c),
+            CONSTRAINT different_precedence_right CHECK (a AND (b OR c))
+        ) ON COMMIT DROP""")
+        cursor.execute("""SELECT conname,pg_get_constraintdef(oid),pg_get_constraintdef(oid,true)
+            FROM pg_constraint WHERE conrelid='pg_temp.ildr_check_render_control'::regclass""")
+        rows = {name: (raw, rendered) for name, raw, rendered in cursor.fetchall()}
+        require(len(rows) == 5 and rows["equivalent_between"][0] != rows["equivalent_expanded"][0]
+                and rows["equivalent_between"][1] == rows["equivalent_expanded"][1],
+                "postgres_positive_check_render_control_required")
+        require(rows["equivalent_expanded"][1] != rows["different_bound"][1]
+                and rows["different_precedence_left"][1] != rows["different_precedence_right"][1],
+                "postgres_negative_check_render_controls_required")
+
+
+def verify_archive_catalogs(source, target, before, after):
+    # The native fresh/upgrade comparison still uses every raw definition.
+    # Archive reparsing flattens redundant Boolean groups in exactly13 new CHECKs.
+    other_components_equal = all(before[key] == after[key] for key in before if key != "constraints")
+    left, right = before["constraints"], after["constraints"]
+    identities_equal = len(left) == len(right) == 481 and [row[:3] for row in left] == [row[:3] for row in right]
+    changed = [(old, new) for old, new in zip(left, right) if old != new]
+    reviewed_shape = identities_equal and len(changed) == 13 and all(
+        old[0] in NEW_TABLES and old[2] == new[2] == "c" for old, new in changed)
+    if not other_components_equal or not reviewed_shape:
+        archive_catalog_diagnostic(source, target, before, after)
+    require(other_components_equal, "restored_raw_catalog_components_required")
+    require(reviewed_shape, "exact_13_new_check_render_variations_required")
+    verify_check_render_controls(target)
+    statement = """SELECT c.relname,k.conname,k.contype,pg_get_constraintdef(k.oid,true)
+        FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace JOIN pg_constraint k ON k.conrelid=c.oid
+        WHERE n.nspname='public' AND c.relname=ANY(%s) ORDER BY c.relname,k.conname"""
+    source_rendered = query(source, statement, (list(EXPECTED_TABLES),))
+    target_rendered = query(target, statement, (list(EXPECTED_TABLES),))
+    if source_rendered != target_rendered:
+        archive_catalog_diagnostic(source, target, dict(before, constraints=source_rendered),
+                                   dict(after, constraints=target_rendered))
+    require(len(source_rendered) == len(target_rendered) == 481 and source_rendered == target_rendered,
+            "restored_postgres_rendered_constraints_required")
+
+
 def restore():
     nonce = identity()
     source = f"ildr_f01_upgrade_{nonce}"
@@ -712,16 +760,17 @@ def restore():
         require(table_names(database) == EXPECTED_TABLES
                 and query(database, "SELECT version_num FROM alembic_version") == [(HEAD,)], "archive_full_head_required")
     source_catalog, target_catalog = catalog(source, EXPECTED_TABLES), catalog(target, EXPECTED_TABLES)
-    if source_catalog != target_catalog:
-        archive_catalog_diagnostic(source, target, source_catalog, target_catalog)
-    require(source_catalog == target_catalog, "restored_full_catalog_required")
+    verify_archive_catalogs(source, target, source_catalog, target_catalog)
     require(snapshot(source, EXPECTED_TABLES) == snapshot(target, EXPECTED_TABLES), "restored_all_rows_sequences_required")
     retained_fixture(source)
     retained_fixture(target)
     require(query(source, "SELECT count(*),sum(octet_length(payload)) FROM listing_floor_plans")[0][0] == 2,
             "nonempty_binary_archive_fixture_required")
     return {"status": "PASS", "alembic_head": HEAD, "tables": 92, "all_rows_sequences_equal": True,
-            "all_catalogs_equal": True, "floor_plan_binary_rows": 2, "retained_accepted_jobs": 9,
+            "all_catalogs_equal": True, "raw_equal_catalog_components": 8,
+            "postgres_rendered_constraints_equal": 481, "raw_equal_constraints": 468,
+            "new_check_render_variations": 13, "postgres_check_render_control_cases": 3,
+            "floor_plan_binary_rows": 2, "retained_accepted_jobs": 9,
             "retained_private_profiles": 46, "retained_owner_trade_contacts": 82}
 
 

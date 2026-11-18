@@ -4,7 +4,7 @@ die() { printf 'CUSTOMER_FOLLOWUP_REFUSED %s\n' "$1" >&2; exit 1; }
 bounded() { timeout --kill-after=8s "$@"; }
 
 [[ $# == 7 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api ]] || die CI_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-network-live-core-archive-diagnostic-20261118 && ${GITHUB_RUN_ATTEMPT:-} == 1 &&
+[[ ${GITHUB_REF:-} == refs/heads/codex-ci-network-live-core-archive-restore-20261118 && ${GITHUB_RUN_ATTEMPT:-} == 1 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 [[ ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 ]] || die HOSTED_LINUX_REQUIRED
 ops="$1"; application="$2"; prior="$3"; recipe="$4"; legacy="$5"; live="$6"; rollback_source="$7"
@@ -20,7 +20,7 @@ done
 app_commit=$(git -C "$application" rev-parse HEAD)
 app_tree=$(git -C "$application" rev-parse 'HEAD^{tree}')
 [[ "$app_commit" == 01695530df670a94ac28f8b3bf36cc34b5b7a942 && "$app_tree" == e88ea0c57f9fac39545322532a5992d5a2927676 &&
-   $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" show -s --format=%P HEAD) == 7caaeae376eb35cc77ad772c8be01c200907f5c3 &&
+   $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" show -s --format=%P HEAD) == 315de0ba96fbbddf28df1975334f0c3a33952c2c &&
    ! -e "$application/.env" && ! -L "$application/.env" ]] || die EXACT_IMMUTABLE_PRODUCT_REQUIRED
 # The successor scopes one historical migration fixture. Product and deployed
 # migration blobs retain the reviewed 081868 behavior; both test repairs are explicit.
@@ -290,7 +290,9 @@ if report.get('status') == 'FAIL':
     assert all(isinstance(value, str) and re.fullmatch(r'[A-Za-z0-9_]{1,100}', value) for value in report.values())
 else:
     assert report == {'status': 'PASS', 'alembic_head': 'b19d8e4c720a', 'tables': 92,
-        'all_rows_sequences_equal': True, 'all_catalogs_equal': True, 'floor_plan_binary_rows': 2,
+        'all_rows_sequences_equal': True, 'all_catalogs_equal': True, 'raw_equal_catalog_components': 8,
+        'postgres_rendered_constraints_equal': 481, 'raw_equal_constraints': 468,
+        'new_check_render_variations': 13, 'postgres_check_render_control_cases': 3, 'floor_plan_binary_rows': 2,
         'retained_accepted_jobs': 9, 'retained_private_profiles': 46, 'retained_owner_trade_contacts': 82}
 print('NETWORK_FULL_PUBLIC_RESTORE_RESULT ' + json.dumps(report, sort_keys=True, separators=(',', ':')))
 assert report['status'] == 'PASS'
