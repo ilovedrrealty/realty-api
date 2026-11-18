@@ -1,0 +1,55 @@
+name: Isolated merged private-platform full frontend acceptance
+
+on:
+  push:
+    branches: [codex-ci-property-network-frontend-20261118]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: platform-frontend-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  frontend:
+    if: >-
+      github.repository == 'ilovedrrealty/realty-api' &&
+      github.event.repository.private == false &&
+      github.event.created == true && github.event.deleted == false &&
+      github.event.forced == false &&
+      github.event.before == '0000000000000000000000000000000000000000' &&
+      github.run_attempt == 1 && github.event.after == github.sha &&
+      github.workflow_sha == github.sha
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Read exact frontend operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          path: build-ops
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Read exact reviewed merged frontend
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: ilovedrrealty/iLoveDRRealty
+          ref: e9a5041d6ca46f9b8448ea494e635c11cdea4434
+          path: frontend-source
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Read accepted static export fixture
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: d49acd7d48e92dac6d06b1678570bc137fb6a5ba
+          path: landing-relay
+          persist-credentials: false
+      - name: Run all frontend contracts and strict native builds with synthetic inventory
+        shell: bash
+        run: |
+          set -euo pipefail
+          runner="$GITHUB_WORKSPACE/build-ops/ci/platform-frontend/run-hosted-platform-frontend.sh"
+          bash --noprofile --norc -n "$runner"
+          exec bash --noprofile --norc "$runner" "$GITHUB_WORKSPACE/build-ops" \
+            "$GITHUB_WORKSPACE/frontend-source" "$GITHUB_WORKSPACE/landing-relay"
