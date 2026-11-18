@@ -1,0 +1,44 @@
+{
+  "status": "PROPOSAL_ONLY_NOT_EXECUTED",
+  "backend": "8ed67c8d54ee64017c7e44095f35d954272ef668",
+  "backend_tree": "0f6a7a0b21f57558aa5c67f216e7eea39b5b42b0",
+  "frontend": "131dd24b854d8981a3b1be036e4fcc42d40ab137",
+  "frontend_tree": "aa1863b1d19063788cebb898a6d1f44fabd97c63",
+  "ops_parent": "99a0d8db05b150537e95a0ab13a1831b967947bf",
+  "proposed_first_ref": "codex-ci-contact-import-browser-20261118",
+  "accepted_dependency_reuse": "Same baseline016 requirements, c193 services163 recipe and three hashed reader wheels as actual native18 PASS44256266899.",
+  "contracts": {"files": 57, "tests": 463, "expected_skips": 0},
+  "build": "One actual strict Dashboard typecheck and Vite build. No local build. Landing and shared packages must be byte-identical to7ec; retain accepted Next and68network groups without repeating them.",
+  "browser": {
+    "groups": 8,
+    "whole_page_and_dialog_geometry_checks": 8,
+    "languages": ["en", "es"],
+    "widths": [320, 390],
+    "normal_UI": [
+      "Real Admin menu navigation and private directory choices.",
+      "Existing JSON file review and cancellation; old batch shape without the new flag.",
+      "CSV nonstandard column mapped explicitly, invalid email mapping refused, corrected mapping reviewed without writes.",
+      "Back retains mapping; closing reviewed batch leaves zero new contacts; confirmation is a separate real UI action.",
+      "CSV inserted then repeated through normal UI with unchanged result and exact full-row replay preservation.",
+      "Real XLSX workbook: choose visible Contactos sheet, hidden sheet excluded, phone text and postal zeroes retained, explicit confirmation in Spanish.",
+      "Combined locality/category/province/source/channel filters reconcile real UI counts and API results; clear restores full directory.",
+      "Actual registered nonAdmin and guest read/file-preview/mapping/import denials; no synthetic refusal used as proof."
+    ],
+    "api_control_reads": "Bounded own synthetic records only, used to verify zero writes before confirmation and API/UI count parity.",
+    "controls": "Direct exact product sources, real loopback PostgreSQL and genuine cookie login; fake external providers only, no CORS/provider/production configuration writes."
+  },
+  "synthetic_data": {
+    "before": {"contacts": 82, "sources": 82, "private_professional_drafts": 46, "users": 4},
+    "after": {"contacts": 84, "sources": 84, "private_professional_drafts": 46, "users": 4},
+    "successful_final_imports": 3,
+    "csv_final_calls": 2,
+    "xlsx_final_calls": 1,
+    "protected_contact_source_and_profile_rows": "All baseline rows compared exactly in private memory, not just counts.",
+    "provider_attempts": 0,
+    "leads_jobs_worker_rows_projects_created": 0,
+    "private_files_removed": 4
+  },
+  "fixture_correction": "Anonymous safe owned JSON requests pass to the actual API auth dependency, matching multipart behavior; fixture does not synthesize their401/403.",
+  "limits": "This is the contact import/filter slice only. No maps, Google Business, group posts, avatar/cover or wider platform browser repetition.18native tests have separate accepted runtime proof.",
+  "no_push_or_production_authorized_by_this_plan": true
+}

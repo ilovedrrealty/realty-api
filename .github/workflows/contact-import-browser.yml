@@ -1,0 +1,62 @@
+name: Isolated contact import frontend and Admin browser acceptance
+on:
+  push:
+    branches: [codex-ci-contact-import-browser-20261118]
+permissions:
+  contents: read
+concurrency:
+  group: contact-import-browser-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  browser:
+    if: >-
+      github.repository == 'ilovedrrealty/realty-api' &&
+      github.event.repository.private == false &&
+      github.event.created == true && github.event.deleted == false &&
+      github.event.forced == false &&
+      github.event.before == '0000000000000000000000000000000000000000' &&
+      github.run_attempt == 1 && github.event.after == github.sha && github.workflow_sha == github.sha
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Read exact operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          path: build-ops
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Read exact reviewed frontend
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: ilovedrrealty/iLoveDRRealty
+          ref: 131dd24b854d8981a3b1be036e4fcc42d40ab137
+          path: frontend-source
+          fetch-depth: 3
+          persist-credentials: false
+      - name: Read exact reviewed backend
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 8ed67c8d54ee64017c7e44095f35d954272ef668
+          path: browser-backend
+          persist-credentials: false
+      - name: Read unchanged dependency baseline
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 01695530df670a94ac28f8b3bf36cc34b5b7a942
+          path: current-platform
+          persist-credentials: false
+      - name: Read accepted Python dependency recipe
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: c193a925ba57ea2d67ea48c44e5262817885c8a2
+          path: migration-relay
+          persist-credentials: false
+      - name: Run complete frontend contracts strict Dashboard and real Admin uploads
+        shell: bash
+        run: |
+          set -euo pipefail
+          runner="$GITHUB_WORKSPACE/build-ops/ci/contact-import-browser/run-hosted-contact-import-browser.sh"
+          bash --noprofile --norc -n "$runner"
+          exec bash --noprofile --norc "$runner" "$GITHUB_WORKSPACE/build-ops" "$GITHUB_WORKSPACE/frontend-source" \
+            "$GITHUB_WORKSPACE/current-platform" "$GITHUB_WORKSPACE/browser-backend" "$GITHUB_WORKSPACE/migration-relay"
