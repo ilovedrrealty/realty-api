@@ -132,7 +132,7 @@ class ProfessionalTests(unittest.TestCase):
     def test_options_missing_profile_and_real_roles_unchanged_for_every_account_type(self):
         options = self.call("GET", "/professionals/options", actor=None)
         self.assertGreaterEqual(len(options["categories"]), 20)
-        for kind in ("categories", "areas", "languages"):
+        for kind in ("categories", "areas", "languages", "property_classes"):
             self.assertEqual(len(options[kind]), len({item["id"] for item in options[kind]}))
             self.assertTrue(all(item["label"]["en"] and item["label"]["es"] for item in options[kind]))
         for actor, role in (("buyer", "buyer"), ("owner", "owner"), ("realtor", "realtor"), ("admin", "admin"), ("admin_b", "admin")):
@@ -156,7 +156,7 @@ class ProfessionalTests(unittest.TestCase):
         self.assertEqual(response.status_code, 401)
         self.assertEqual(response.headers.get("cache-control"), "no-store")
         options = self.call("GET", "/professionals/options", actor=None)
-        self.assertEqual(set(options), {"categories", "areas", "languages"})
+        self.assertEqual(set(options), {"categories", "areas", "languages", "property_classes"})
         self.assertNotIn("Synthetic", str(options))
 
     def test_external_real_estate_service_profile_requires_company_and_never_grants_team_permissions(self):
