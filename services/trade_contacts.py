@@ -112,7 +112,16 @@ def import_entries(db, batch):
     return counts
 
 
-def search(db, *, q, category, province, limit, offset):
+def filter_options(db):
+    result = {}
+    for key, column in (("categories", TradeContact.category), ("provinces", TradeContact.province),
+                        ("localities", TradeContact.locality)):
+        result[key] = list(db.scalars(select(column).where(column.is_not(None), func.trim(column) != "")
+                                     .distinct().order_by(column).limit(1000)))
+    return result
+
+
+def search(db, *, q, category, province, limit, offset, locality="", verification_status="", contact_channel=""):
     filters = []
     if q:
         filters.append(or_(*(column.icontains(q, autoescape=True) for column in (
@@ -120,9 +129,17 @@ def search(db, *, q, category, province, limit, offset):
             TradeContact.details["subtype"].astext, TradeContact.details["phone"].astext,
             TradeContact.details["email"].astext, TradeContact.details["contact_name"].astext,
         ))))
-    for column, value in ((TradeContact.category, category), (TradeContact.province, province)):
+    for column, value in ((TradeContact.category, category), (TradeContact.province, province), (TradeContact.locality, locality)):
         if value:
             filters.append(func.lower(column) == value.lower())
+    if verification_status:
+        filters.append(TradeContact.details["verification_status"].astext == verification_status)
+    channels = {key: func.length(func.trim(func.coalesce(TradeContact.details[key].astext, ""))) > 0
+                for key in ("phone", "email", "website")}
+    if contact_channel == "no_contact":
+        filters.append(~or_(*channels.values()))
+    elif contact_channel:
+        filters.append(channels[contact_channel])
     total = db.scalar(select(func.count()).select_from(TradeContact).where(*filters))
     source_count = (select(func.count()).select_from(TradeContactSource)
                     .where(TradeContactSource.contact_id == TradeContact.id).scalar_subquery())
