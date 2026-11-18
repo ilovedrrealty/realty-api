@@ -124,6 +124,34 @@ class NewsletterTest(unittest.TestCase):
         self.now += timedelta(hours=21)
         self.assertEqual(self.call("confirm", {"token": newsletter.action_token(row_id, "confirm", nonce)}).status_code, 400)
 
+    def test_unsubscribe_during_confirmation_send_rejects_late_acceptance(self):
+        captured = {}
+
+        def unsubscribe_before_provider_returns(_url, **request):
+            with SessionLocal() as db:
+                row = db.scalar(select(NewsletterSubscription).where(NewsletterSubscription.email == self.email))
+                self.assertEqual(row.status, "pending")
+                captured["confirm"] = newsletter.action_token(row.id, "confirm", row.confirmation_nonce)
+                self.assertIn("#confirm=" + captured["confirm"], request["json"]["html"])
+                self.assertEqual(newsletter.finish(
+                    db, action="unsubscribe", token=newsletter.action_token(row.id, "unsubscribe"),
+                ), "unsubscribed")
+            return httpx.Response(201, json={"id": "synthetic-late-acceptance"})
+
+        self.mail.side_effect = self.send_confirmation_implementation
+        with patch.object(newsletter.httpx, "post", side_effect=unsubscribe_before_provider_returns) as provider:
+            result = self.call("subscribe", {"email": self.email, "language": "en", "consent": True})
+        self.assertEqual(result.status_code, 202)
+        self.assertEqual(result.json(), {"status": "accepted"})
+        self.assertEqual(provider.call_count, 1)
+        row = self.read()
+        self.assertEqual(row.status, "unsubscribed")
+        self.assertIsNotNone(row.unsubscribed_at)
+        for value in (row.confirmation_nonce, row.confirmation_payload, row.confirmation_expires_at, row.provider_accepted_at):
+            self.assertIsNone(value)
+        self.assertEqual(self.call("confirm", {"token": captured["confirm"]}).status_code, 400)
+        self.assertEqual(self.read().status, "unsubscribed")
+
     def test_direct_data_api_roles_cannot_read_or_write(self):
         with SessionLocal() as db:
             protection = db.execute(text("""SELECT c.relrowsecurity, count(r.oid),
