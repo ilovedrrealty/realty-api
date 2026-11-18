@@ -3,7 +3,8 @@
 from datetime import date
 from io import BytesIO
 import unittest
-from zipfile import ZIP_DEFLATED, ZipFile
+from unittest.mock import patch
+from zipfile import ZIP_DEFLATED, ZIP_LZMA, ZipFile
 
 from openpyxl import Workbook
 
@@ -105,3 +106,31 @@ class ContactFileReaderTest(unittest.TestCase):
             archive.writestr("[Content_Types].xml", "<Types>" + "<x/>" * 100001 + "</Types>")
             archive.writestr("xl/workbook.xml", "<workbook/>")
         self.refused(stream.getvalue(), "contacts.xlsx", "table_limits")
+
+    def test_actual_uppercase_and_nonstandard_worksheet_parts_are_preflighted(self):
+        book = Workbook()
+        book.active.append(["name"])
+        book.active.append(["Synthetic contact"])
+        original = workbook_bytes(book)
+        for target in ("xl/worksheets/sheet1.XML", "xl/data/contact.part"):
+            for overflow in ("<x>" * 129 + "</x>" * 129, "<x/>" * 100001):
+                stream = BytesIO()
+                with ZipFile(BytesIO(original)) as source, ZipFile(stream, "w", ZIP_DEFLATED) as archive:
+                    for entry in source.infolist():
+                        name, data = entry.filename, source.read(entry)
+                        if name == "xl/worksheets/sheet1.xml":
+                            name = target
+                            data = ('<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' + overflow + '</worksheet>').encode()
+                        elif name in {"xl/_rels/workbook.xml.rels", "[Content_Types].xml"}:
+                            data = data.replace(b"/xl/worksheets/sheet1.xml", ("/" + target).encode())
+                        archive.writestr(name, data)
+                self.refused(stream.getvalue(), "contacts.xlsx", "table_limits")
+
+    def test_lzma_member_is_refused_without_starting_its_decoder(self):
+        stream = BytesIO()
+        with ZipFile(stream, "w", ZIP_LZMA) as archive:
+            archive.writestr("[Content_Types].xml", "<Types/>")
+            archive.writestr("xl/workbook.xml", "<workbook/>")
+        with patch("zipfile.LZMADecompressor") as decoder:
+            self.refused(stream.getvalue(), "contacts.xlsx", "invalid_xlsx")
+            decoder.assert_not_called()

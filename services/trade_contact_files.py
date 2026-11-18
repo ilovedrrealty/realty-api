@@ -5,11 +5,12 @@ from datetime import date, datetime
 from hashlib import sha256
 from io import BytesIO, StringIO
 import math
+import posixpath
 import json
 from pathlib import PurePosixPath
 import re
 import unicodedata
-from zipfile import ZipFile
+from zipfile import ZIP_DEFLATED, ZIP_STORED, ZipFile
 
 from pydantic import ValidationError
 
@@ -133,21 +134,22 @@ def spreadsheet(data, selected):
             if len(files) > 512 or sum(file.file_size for file in files) > EXPANSION_LIMIT:
                 raise ContactFileError("xlsx_expansion")
             for file in files:
+                if file.compress_type not in {ZIP_STORED, ZIP_DEFLATED}:
+                    raise ContactFileError("invalid_xlsx")
                 path = PurePosixPath(file.filename)
                 if path.is_absolute() or ".." in path.parts or file.flag_bits & 1:
                     raise ContactFileError("invalid_xlsx")
-                if file.filename.lower().endswith("vbaproject.bin") or file.filename.startswith("xl/externalLinks/"):
+                if file.filename.lower().endswith("vbaproject.bin") or file.filename.lower().startswith("xl/externallinks/"):
                     raise ContactFileError("active_content")
             names = {file.filename for file in files}
             if len(names) != len(files) or not {"[Content_Types].xml", "xl/workbook.xml"} <= names:
                 raise ContactFileError("invalid_xlsx")
-            # Bound real stored cells before the lazy reader can materialize a
-            # row with a maliciously distant column or worksheet dimension.
-            for file in files:
-                if not file.filename.endswith((".xml", ".rels")):
-                    continue
-                worksheet = file.filename.startswith("xl/worksheets/") and file.filename.endswith(".xml")
-                with archive.open(file) as stream:
+            # Relationships can target worksheet XML with a nonstandard name
+            # or extension. Classify those actual ZIP parts before parsing data.
+            def scan_xml(name, worksheet=False):
+                nonlocal node_count
+                relationships = []
+                with archive.open(name) as stream:
                     depth = 0
                     for event, element in iterparse(stream, events=("start", "end")):
                         if event == "start":
@@ -157,26 +159,54 @@ def spreadsheet(data, selected):
                                 raise ContactFileError("table_limits")
                             continue
                         depth -= 1
-                        if not worksheet:
-                            relation = element.get("Type", "")
-                            if relation.endswith(("/externalLink", "/oleObject")):
-                                raise ContactFileError("active_content")
-                            element.clear()
-                            continue
-                        if element.tag.rsplit("}", 1)[-1] != "c":
-                            continue
-                        if any(child.tag.rsplit("}", 1)[-1] in {"v", "is", "f"} for child in element):
-                            reference = re.fullmatch(r"([A-Z]{1,3})([1-9][0-9]{0,6})", element.get("r", ""))
-                            if reference is None:
-                                raise ContactFileError("invalid_xlsx")
-                            column = 0
-                            for letter in reference[1]:
-                                column = column * 26 + ord(letter) - ord("A") + 1
-                            if column > COLUMN_LIMIT or int(reference[2]) > 2000:
+                        tag = element.tag.rsplit("}", 1)[-1]
+                        if tag == "Relationship":
+                            relationships.append(dict(element.attrib))
+                            if len(relationships) > 1024:
                                 raise ContactFileError("table_limits")
-                        element.clear()
-                # Do not retain the final XML root during workbook loading.
-                del element
+                        if worksheet and tag == "c":
+                            if any(child.tag.rsplit("}", 1)[-1] in {"v", "is", "f"} for child in element):
+                                reference = re.fullmatch(r"([A-Z]{1,3})([1-9][0-9]{0,6})", element.get("r", ""))
+                                if reference is None:
+                                    raise ContactFileError("invalid_xlsx")
+                                column = 0
+                                for letter in reference[1]:
+                                    column = column * 26 + ord(letter) - ord("A") + 1
+                                if column > COLUMN_LIMIT or int(reference[2]) > 2000:
+                                    raise ContactFileError("table_limits")
+                            element.clear()
+                        elif not worksheet:
+                            element.clear()
+                # All XML references die on return, before workbook loading.
+                return relationships
+
+            relationship_parts = {name for name in names if name.lower().endswith(".rels")}
+            xml_parts = {name for name in names if name.lower().endswith(".xml")}
+            worksheet_parts = set()
+            for name in relationship_parts:
+                for relation in scan_xml(name):
+                    kind = relation.get("Type", "").rsplit("/", 1)[-1].lower()
+                    if kind in {"externallink", "oleobject", "vbaproject", "package"}:
+                        raise ContactFileError("active_content")
+                    if relation.get("TargetMode", "").lower() == "external":
+                        # Ordinary clickable website cells are retained as text;
+                        # their targets are never requested by this reader.
+                        if kind != "hyperlink":
+                            raise ContactFileError("active_content")
+                        continue
+                    target = relation.get("Target", "")
+                    if not target:
+                        raise ContactFileError("invalid_xlsx")
+                    base = str(PurePosixPath(name).parent.parent)
+                    resolved = posixpath.normpath(target.lstrip("/") if target.startswith("/") else posixpath.join(base, target))
+                    if resolved not in names or resolved.startswith("../"):
+                        raise ContactFileError("invalid_xlsx")
+                    if kind not in {"image", "printersettings"}:
+                        xml_parts.add(resolved)
+                    if kind == "worksheet":
+                        worksheet_parts.add(resolved)
+            for name in xml_parts - relationship_parts:
+                scan_xml(name, worksheet=name in worksheet_parts or name.lower().startswith("xl/worksheets/"))
         from openpyxl import load_workbook
         from openpyxl.xml.functions import DEFUSEDXML
         if not DEFUSEDXML:
