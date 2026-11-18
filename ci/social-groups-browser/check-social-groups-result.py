@@ -11,13 +11,20 @@ assert path.is_file() and path.stat().st_size <= 2 * 1024 * 1024
 lines = path.read_bytes().splitlines()
 failed = False
 diagnostics = []
+loopback = []
 for line in lines:
+    if line.startswith(b"SOCIAL_GROUPS_LOOPBACK_STATE "):
+        assert mode == "browser" and len(line) <= 256 and len(loopback) < 8
+        value = json.loads(line.split(b" ", 1)[1])
+        assert set(value) == {"before", "modeled", "after", "visible"} and all(type(flag) is bool for flag in value.values())
+        assert value["modeled"] is not value["before"]
+        loopback.append(value)
     if line.startswith(b"SOCIAL_GROUPS_ENTRY_DIAGNOSTIC "):
         assert mode == "browser" and len(line) <= 8192 and not diagnostics
         value = json.loads(line.split(b" ", 1)[1])
         assert set(value) == {"phase", "failure_type", "surface", "ready_state", "census_available", "counts", "page_errors", "page_error_types", "responses"}
         assert value["phase"] in {"setup_fixture", "setup_browser", "setup_owner_session", "setup_member_session",
-            "setup_professional_session", "setup_admin_session", "entry_document", "entry_menu", "entry_network_navigation",
+            "setup_professional_session", "setup_admin_session", "entry_document", "entry_presence", "entry_menu", "entry_network_navigation",
             "entry_network_heading", "entry_groups_navigation", "entry_groups_heading"}
         assert value["failure_type"] in {"TimeoutError", "TypeError", "ReferenceError", "SyntaxError", "Error", "Failure", "other"}
         assert value["surface"] in {"unavailable", "dashboard_root", "property_network", "dashboard_other", "landing", "blank", "other"}
@@ -50,12 +57,15 @@ for line in lines:
 if diagnostics:
     assert failed
     print("SOCIAL_GROUPS_ENTRY_DIAGNOSTIC " + json.dumps(diagnostics[0], sort_keys=True))
+for value in loopback:
+    print("SOCIAL_GROUPS_LOOPBACK_STATE " + json.dumps(value, sort_keys=True))
 assert native == "0" and not failed
 prefix = b"SOCIAL_GROUPS_BROWSER_RESULT " if mode == "browser" else b"SOCIAL_GROUPS_FIXTURE_RESULT "
 rows = [json.loads(line[len(prefix):]) for line in lines if line.startswith(prefix)]
 assert len(rows) == 1
 value = rows[0]
 if mode == "browser":
+    assert loopback and all(row["after"] and row["visible"] for row in loopback)
     assert value == {"status": "PASS", "checks": [
         "normal_menu_private_create_and_draft_cancel",
         "direct_invitation_decline_reinvite_and_alias_acceptance",

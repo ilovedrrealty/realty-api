@@ -93,22 +93,41 @@ async function session(locale, account, role, storageState) {
   await context.addInitScript(({ locale, origin }) => {
     if (location.origin !== origin) return
     if (!localStorage.getItem('ildr_lang')) localStorage.setItem('ildr_lang', locale)
+    const native = navigator.onLine
+    if (!native) Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => true })
+    Object.defineProperty(window, '__ildrGroupsLoopbackOnline', { value: { before: native, modeled: !native } })
     localStorage.setItem('ildr_measurement_consent_v1', JSON.stringify({ choice: 'denied', savedAt: Date.now() }))
   }, { locale, origin: dashboard })
   if (account) await login(context, account, role)
   return context
 }
 async function write(page, path, perform, method = 'POST', expected = [200, 201]) {
+  await foreground(page)
   const [response] = await Promise.all([page.waitForResponse(value => pathIs(value, path, method)), perform()])
   check(expected.includes(response.status()), 'ACTUAL_ACTION_STATUS_REQUIRED'); noStore(response)
   const req = response.request()
   return { response, value: await json(response), input: (req.headers()['content-type'] || '').startsWith('application/json') ? req.postDataJSON() : null }
+}
+async function foreground(page) {
+  await page.bringToFront()
+  await page.waitForFunction(() => document.visibilityState === 'visible' && navigator.onLine)
 }
 async function menuGroups(context, copy, role) {
   const page = await context.newPage()
   entryPage = page; entryCopy = copy; entryInProgress = true
   advance('entry_document')
   await page.goto(dashboard + '/?workspace=' + role, { waitUntil: 'domcontentloaded' })
+  advance('entry_presence')
+  let online
+  try { await foreground(page) }
+  finally {
+    online = await page.evaluate(() => ({ ...window.__ildrGroupsLoopbackOnline,
+      after: navigator.onLine, visible: document.visibilityState === 'visible' }))
+    check(Object.keys(online).length === 4 && Object.values(online).every(value => typeof value === 'boolean')
+      && online.modeled === !online.before, 'MEASURED_LOOPBACK_STATE_REQUIRED')
+    console.log('SOCIAL_GROUPS_LOOPBACK_STATE ' + JSON.stringify(online))
+  }
+  check(online.after && online.visible, 'ACTUAL_LOOPBACK_PRESENCE_REQUIRED')
   advance('entry_menu')
   await page.locator('button:has(svg.lucide-menu)').click()
   advance('entry_network_navigation')
@@ -165,9 +184,11 @@ async function openGroup(page, copy, facts) {
   return workspace(page, facts)
 }
 async function tab(page, copy, facts, name) {
+  await foreground(page)
   await button(workspace(page, facts).getByRole('navigation', { name: copy.network.groups.workspace_tabs, exact: true }), copy.network.groups.tabs[name]).click()
 }
 async function refreshHeader(page, copy, facts, expected = 200) {
+  await foreground(page)
   const name = copy.network.refresh
   const [response] = await Promise.all([page.waitForResponse(value => pathIs(value, groupPath(facts.groupId), 'GET')),
     button(workspace(page, facts), name).first().click()])
@@ -197,6 +218,7 @@ async function confirm(page, perform) {
   return perform()
 }
 async function ownInbox(page, copy) {
+  await foreground(page)
   await button(page.getByRole('navigation', { name: copy.network.groups.views_label, exact: true }), copy.network.groups.views.invitations).click()
   await page.getByLabel(copy.network.groups.membership_filter, { exact: true }).waitFor()
 }
@@ -209,6 +231,7 @@ async function inviteMember(page, copy, facts, code) {
   return result.value
 }
 async function acceptInbox(page, copy, facts, alias) {
+  await foreground(page)
   const card = page.getByRole('heading', { name: facts.groupName, exact: true }).locator('..')
   await card.getByLabel(copy.network.groups.member_alias, { exact: true }).fill(alias)
   const result = await write(page, `${groupPath(facts.groupId)}/membership/actions`, () => button(card, copy.network.groups.accept_invite).click())
@@ -232,6 +255,7 @@ async function refreshFeed(page, copy, facts) {
   check(response.status() === 200, 'ACTUAL_FEED_REFRESH_REQUIRED'); noStore(response)
 }
 async function createPost(page, copy, facts, body, photoPath) {
+  await foreground(page)
   const panel = page.getByRole('heading', { name: copy.network.groups.feed_title, exact: true }).locator('..')
   const form = panel.locator('form').first()
   await form.getByLabel(copy.network.groups.write_post, { exact: true }).fill(body)
@@ -307,6 +331,7 @@ async function rosterAction(page, copy, facts, code, action, expectedState, need
   return result.value.current
 }
 async function ownAction(page, copy, facts, name, action, state, alias, needsConfirm = false) {
+  await foreground(page)
   if (alias) await workspace(page, facts).getByLabel(copy.network.groups.member_alias, { exact: true }).fill(alias)
   const click = () => button(workspace(page, facts), copy.network.groups[name]).click()
   const result = await write(page, `${groupPath(facts.groupId)}/membership/actions`, () => needsConfirm ? confirm(page, click) : click())
@@ -524,6 +549,7 @@ try {
   check(published.value.current.visibility === 'network' && published.value.current.version > capturedDraft.input.expected_group_version, 'REVIEWED_PUBLICATION_VERSION_REQUIRED')
   await peerPage.getByRole('heading', { name: s.tabs.settings, exact: true }).locator('..').locator('fieldset:not([disabled])').waitFor()
   const stale = ownerPage.waitForResponse(response => pathIs(response, `${groupPath(facts.groupId)}/posts`, 'POST') && response.status() === 409)
+  await foreground(ownerPage)
   await draft.release(); await stale
   const absent = await request(owner, `${prefix}/group-submissions/${capturedDraft.input.submission_id}`)
   check(absent.status() === 404, 'STALE_PRIVATE_DRAFT_MUST_HAVE_NO_RECEIPT'); await absent.dispose()
