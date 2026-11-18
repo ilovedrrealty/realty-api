@@ -1,8 +1,8 @@
-name: Isolated combined communications rehearsal
+name: Isolated live-base communications and rollback rehearsal
 
 on:
   push:
-    branches: [codex-ci-post-trade-communications-20261117]
+    branches: [codex-ci-live-communications-20261117]
 
 permissions:
   contents: read
@@ -22,7 +22,7 @@ jobs:
       github.run_attempt == 1 && github.event.after == github.sha &&
       github.workflow_sha == github.sha
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 30
     steps:
       - name: Read exact rehearsal operations
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -31,11 +31,17 @@ jobs:
           path: followup-ops
           fetch-depth: 2
           persist-credentials: false
-      - name: Read exact combined backend
+      - name: Read exact narrow backend candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: c5ac614398fae413d231c28a51e703bb297e0bb9
+          ref: 7f63fec927f75af3f901f74297973253ad5c743b
           path: followup-app
+          persist-credentials: false
+      - name: Read exact live backend for upgrade and compatible rollback
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 1ae9c9f2ccf3bdd3ac36b11b0da76486d7889838
+          path: live-app
           persist-credentials: false
       - name: Read accepted communications fixture and assertions
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -55,7 +61,7 @@ jobs:
           ref: 2a9ecd58a8f22c11476f268bacd9b1c410c782a3
           path: legacy-inquiry-recipe
           persist-credentials: false
-      - name: Verify queued emails, retry and owner routes using synthetic inputs
+      - name: Verify communications, exact catalogs and compatible rollback with synthetic inputs
         shell: bash
         run: |
           set -euo pipefail
@@ -64,4 +70,4 @@ jobs:
           bash --noprofile --norc -n "$runner"
           exec bash --noprofile --norc "$runner" "$GITHUB_WORKSPACE/followup-ops" \
             "$GITHUB_WORKSPACE/followup-app" "$GITHUB_WORKSPACE/communications-recipe" "$GITHUB_WORKSPACE/migration-recipe" \
-            "$GITHUB_WORKSPACE/legacy-inquiry-recipe"
+            "$GITHUB_WORKSPACE/legacy-inquiry-recipe" "$GITHUB_WORKSPACE/live-app"

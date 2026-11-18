@@ -1,4 +1,4 @@
-"""Verify combined communications and inquiry behavior on owned hosted Postgres."""
+"""Verify narrow live-base communications on owned hosted Postgres."""
 
 from collections import Counter
 import hashlib
@@ -13,9 +13,9 @@ import unittest
 from unittest.mock import patch
 
 
-APPLICATION_COMMIT = "c5ac614398fae413d231c28a51e703bb297e0bb9"
-APPLICATION_TREE = "803196ebd0961373c1ce41fe1dfa971aecc5cc9c"
-MIGRATION = "a4e72d1c718b"
+APPLICATION_COMMIT = "7f63fec927f75af3f901f74297973253ad5c743b"
+APPLICATION_TREE = "1a87c3d4c96e2df0c956e18f0f26c982e7ef3289"
+MIGRATION = "d721f0b6a84c"
 PRIOR_HARNESS = Path("/prior/test_cumulative_communications_acceptance.py")
 PRIOR_SHA256 = "31d9792c4fc11f924af0b0ab2db3247f77eb083c1274fab94fb99c75197db60b"
 FIXTURE = Path("/prior/serve_cumulative_communications_fixture.py")
@@ -175,6 +175,13 @@ def verify_candidate_contracts(prior):
         prior.stage = "legacy_rollout"
         assert_suite(unittest.TestSuite([legacy.legacy_rollout_case(module)]), 1)
         outcomes["legacy_rollout"] = 1
+        prior.stage = "legacy_string_capture"
+        contacts = importlib.import_module("test_contact_leads")
+        prior.require(Path(contacts.__file__).resolve(strict=True) == tests_root / "test_contact_leads.py",
+                      "candidate_contact_contract_required")
+        assert_suite(unittest.TestSuite([
+            contacts.LeadContactTests("test_capture_endpoint_retains_contact_validation")
+        ]), 1)
     prior.require(not unexpected_egress, "real_transport_was_attempted")
     prior.stage = "contract_cleanup"
     with engine.connect() as connection:
@@ -194,6 +201,7 @@ def main():
         result = verify_links(prior)
         contracts = verify_candidate_contracts(prior)
         result.update(candidate_contracts=contracts, candidate_contracts_passed=sum(contracts.values()),
+                      focused_legacy_string_capture_passed=1,
                       triggered_sms_or_automatic_whatsapp=False, postgres_version_num=170006)
     except Exception as error:
         result = {"status": "FAIL", "stage": prior.stage if prior is not None else "rehearsal_source",
