@@ -2,7 +2,7 @@ name: Isolated social groups native proof
 
 on:
   push:
-    branches: [codex-ci-social-groups-native-20261118]
+    branches: [codex-ci-social-groups-native-v2-20261118]
 
 permissions:
   contents: read
@@ -32,9 +32,9 @@ jobs:
       - name: Read exact groups candidate before running tests
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 4404b3f1c4160b0df7c71d56780f410128c9d446
+          ref: 4e23cc8b643a4b07f4e14042e530e6271dad9c8f
           path: groups-app
-          fetch-depth: 5
+          fetch-depth: 6
           persist-credentials: false
       - name: Read unchanged live dependency baseline
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -54,7 +54,7 @@ jobs:
           ref: 4d21cb3ae2b14475828ff8fbe710b22c34c3a53b
           path: groups-previous
           persist-credentials: false
-      - name: Run22 groups contracts,99-table upgrade,old runtime and archive
+      - name: Run24 groups contracts,99-table upgrade,old runtime and archive
         shell: bash
         run: |
           set -euo pipefail

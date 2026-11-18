@@ -3,7 +3,7 @@ set -euo pipefail
 die() { printf 'SOCIAL_GROUPS_NATIVE_REFUSED %s\n' "$1" >&2; exit 1; }
 bounded() { timeout --kill-after=8s "$@"; }
 [[ $# == 5 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
-   ${GITHUB_REF:-} == refs/heads/codex-ci-social-groups-native-20261118 && ${GITHUB_RUN_ATTEMPT:-} == 1 &&
+   ${GITHUB_REF:-} == refs/heads/codex-ci-social-groups-native-v2-20261118 && ${GITHUB_RUN_ATTEMPT:-} == 1 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 ]] || die EXACT_HOSTED_EVENT_REQUIRED
 ops="$1"; application="$2"; baseline="$3"; recipe="$4"; previous="$5"
@@ -14,10 +14,10 @@ for path in "$ops" "$application" "$baseline" "$recipe" "$previous"; do
      ! -e "$path/.env" && ! -L "$path/.env" ]] || die CLEAN_SOURCE_REQUIRED
 done
 [[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" &&
-   $(git -C "$ops" show -s --format=%P HEAD) == 4cf1fdd0ad45db3e1d476c251219a950b8c1a328 &&
-   $(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) == $'.github/workflows/social-groups-native.yml\nci/social-groups-native/README.md\nci/social-groups-native/accepted-catalog-provenance.json\nci/social-groups-native/catalog.py\nci/social-groups-native/records.py\nci/social-groups-native/run-hosted-native.sh\nci/social-groups-native/verify.py' &&
-   $(git -C "$application" rev-parse HEAD) == 4404b3f1c4160b0df7c71d56780f410128c9d446 &&
-   $(git -C "$application" rev-parse 'HEAD^{tree}') == ed6553b3dd0ccbd2cee898919a2f21c9ac39cc6f &&
+   $(git -C "$ops" show -s --format=%P HEAD) == b7c3de95a74ed84bc4aaed3e06cada2d3685f3a1 &&
+   $(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) == $'.github/workflows/social-groups-native.yml\nci/social-groups-native/README.md\nci/social-groups-native/records.py\nci/social-groups-native/run-hosted-native.sh\nci/social-groups-native/verify.py' &&
+   $(git -C "$application" rev-parse HEAD) == 4e23cc8b643a4b07f4e14042e530e6271dad9c8f &&
+   $(git -C "$application" rev-parse 'HEAD^{tree}') == 8093ea7aa9fd8f87a842e2527c715a8c482ac1fc &&
    $(git -C "$previous" rev-parse HEAD) == 4d21cb3ae2b14475828ff8fbe710b22c34c3a53b &&
    $(git -C "$previous" rev-parse 'HEAD^{tree}') == 1e3f72978515a58733188caa235cb6ee61190a26 &&
    $(git -C "$baseline" rev-parse HEAD) == 01695530df670a94ac28f8b3bf36cc34b5b7a942 &&
@@ -26,6 +26,8 @@ done
 git -C "$application" merge-base --is-ancestor 4d21cb3ae2b14475828ff8fbe710b22c34c3a53b HEAD || die EXACT_PREDECESSOR_REQUIRED
 [[ $(git -C "$application" diff --name-only 4d21cb3ae2b14475828ff8fbe710b22c34c3a53b HEAD) == $'alembic/versions/c4e2a7319b60_private_social_groups.py\nmain.py\nmodels/__init__.py\nmodels/social_groups.py\nroutes/social_groups.py\nschemas/social_groups.py\nservices/social_groups.py\ntests/test_social_groups.py' ]] || die EXACT_GROUPS_SLICE_REQUIRED
 [[ -z $(git -C "$application" diff --name-only 4d21cb3ae2b14475828ff8fbe710b22c34c3a53b HEAD -- requirements.txt) ]] || die EXISTING_DEPENDENCIES_REQUIRED
+[[ $(git -C "$application" show -s --format=%P HEAD) == 4404b3f1c4160b0df7c71d56780f410128c9d446 &&
+   $(git -C "$application" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) == $'schemas/social_groups.py\nservices/social_groups.py\ntests/test_social_groups.py' ]] || die EXACT_POST_AUDIENCE_FIX_REQUIRED
 dockerfile="$recipe/ci/migration/services163.Dockerfile"
 printf '%s  %s\n' e546d8c5668b87ef28e604107bbb330e6f4b3873cf0208b4d24ca378bd0851f9 "$dockerfile" |
   sha256sum --check --status || die ACCEPTED_RECIPE_REQUIRED
@@ -115,7 +117,7 @@ bounded 10s docker exec "$pg" psql -X -h 127.0.0.1 -p 55449 -U postgres -d postg
 mkdir "$state/rollback"
 git -C "$previous" archive --format=tar 4d21cb3ae2b14475828ff8fbe710b22c34c3a53b | tar -xf - -C "$state/rollback"
 migration=alembic/versions/c4e2a7319b60_private_social_groups.py
-git -C "$application" cat-file blob "4404b3f1c4160b0df7c71d56780f410128c9d446:$migration" >"$state/rollback/$migration"
+git -C "$application" cat-file blob "4e23cc8b643a4b07f4e14042e530e6271dad9c8f:$migration" >"$state/rollback/$migration"
 run_mode() {
   local mode="$1" container client_exit=0 native_state
   container=$(bounded 25s docker create --label "$label=$run_key" --network "container:$pg" \
@@ -149,7 +151,7 @@ else:
     assert set(report)==(run_keys if sys.argv[2]=='run' else restore_keys)
     assert report.get('status')=='PASS' and report.get('mode')==sys.argv[2] and report['external_provider_attempts']==0
     if sys.argv[2]=='run':
-        expected={'tests':22,'fresh_tables':99,'forward_from_tables':92,'forward_tables':99,'old_tables_preserved':92,'new_private_tables':7,'accepted_jobs_retained':9,'hidden_profiles_retained':46,'owner_contacts_retained':82,'cms_version_retained':7,'floorplan_rows_retained':2,'actual_old_reads':9,'external_provider_attempts':0}
+        expected={'tests':24,'fresh_tables':99,'forward_from_tables':92,'forward_tables':99,'old_tables_preserved':92,'new_private_tables':7,'accepted_jobs_retained':9,'hidden_profiles_retained':46,'owner_contacts_retained':82,'cms_version_retained':7,'floorplan_rows_retained':2,'actual_old_reads':9,'external_provider_attempts':0}
         assert all(type(report[k]) is int and report[k]==v for k,v in expected.items())
         assert report['populated_downgrade_refused'] is True
         assert re.fullmatch(r'[0-9a-f]{64}',report['fresh_forward_catalog_sha256'])
@@ -189,5 +191,5 @@ run_mode restore
 for path in "$application" "$baseline" "$recipe" "$previous"; do
   [[ -z $(git -C "$path" status --porcelain=v1 --untracked-files=all) ]] || die MOUNTED_SOURCE_CHANGED
 done
-printf 'SOCIAL_GROUPS_NATIVE_ACCEPTANCE commit=%s application=%s tests=22 tables=99 run=%s attempt=1\n' \
-  "$GITHUB_SHA" 4404b3f1c4160b0df7c71d56780f410128c9d446 "$GITHUB_RUN_ID"
+printf 'SOCIAL_GROUPS_NATIVE_ACCEPTANCE commit=%s application=%s tests=24 tables=99 run=%s attempt=1\n' \
+  "$GITHUB_SHA" 4e23cc8b643a4b07f4e14042e530e6271dad9c8f "$GITHUB_RUN_ID"

@@ -3,8 +3,8 @@
 Preparation only until the first reviewed isolated operations ref runs successfully.
 No production connections, credentials, real accounts, messages or Storage objects.
 
-The exact product is `4404b3f1c4160b0df7c71d56780f410128c9d446`
-(`ed6553b3dd0ccbd2cee898919a2f21c9ac39cc6f`) and the exact preceding
+The exact product is `4e23cc8b643a4b07f4e14042e530e6271dad9c8f`
+(`8093ea7aa9fd8f87a842e2527c715a8c482ac1fc`) and the exact preceding
 runtime is `4d21cb3ae2b14475828ff8fbe710b22c34c3a53b`
 (`1e3f72978515a58733188caa235cb6ee61190a26`). Exactly eight group paths
 and one additive `c4e2a7319b60` revision differ. Existing map/contact source
@@ -24,7 +24,7 @@ Finite acceptance:
    tables have RLS, zero policies and no PUBLIC/anon/authenticated/service_role
    grants. The group trigger function is invoker-only and has no such grants.
    Empty-only downgrade/reupgrade restores the identical full catalog.
-2. Run exactly 22 source cases (3 input, 19 native), no skips or expected
+2. Run exactly 24 source cases (4 input, 20 native), no skips or expected
    failures. These include group join/invite/link/photo/comment behavior,
    concurrent link use, audience withdrawal, former-member photo revocation,
    closed-group withdrawal/access revocation, persistent manager roster
@@ -58,6 +58,8 @@ Finite acceptance:
 The accepted catalog, row/sequence and deparser-control helper blocks are
 copied verbatim from `54266a09109a1a012aa3de0ddf39c8487d4289b3`; their source
 and individual hashes are recorded in `accepted-catalog-provenance.json`.
+New posts require the captured group version: a private draft cannot acquire a new network audience after a concurrent settings change. Existing immutable private-post receipts still replay safely.
+
 The source-only subset test inventory and archive constraint count are
 explicit assertions, not claims of a new successful hosted run.
 

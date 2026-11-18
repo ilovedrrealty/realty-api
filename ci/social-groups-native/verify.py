@@ -20,8 +20,8 @@ from catalog import (OLD_TABLES, LEGACY_NEW_TABLES, RehearsalFailure, require, c
 APP = Path("/application")
 PREVIOUS = Path("/previous")
 ROLLBACK = Path("/rollback")
-APP_COMMIT = "4404b3f1c4160b0df7c71d56780f410128c9d446"
-APP_TREE = "ed6553b3dd0ccbd2cee898919a2f21c9ac39cc6f"
+APP_COMMIT = "4e23cc8b643a4b07f4e14042e530e6271dad9c8f"
+APP_TREE = "8093ea7aa9fd8f87a842e2527c715a8c482ac1fc"
 OLD_COMMIT = "4d21cb3ae2b14475828ff8fbe710b22c34c3a53b"
 OLD_TREE = "1e3f72978515a58733188caa235cb6ee61190a26"
 HEAD = "c4e2a7319b60"
@@ -81,7 +81,7 @@ def sources():
     tree = ast.parse((APP / "tests/test_social_groups.py").read_text())
     inventory = {node.name: len([item for item in node.body if isinstance(item, ast.FunctionDef) and item.name.startswith("test_")])
         for node in tree.body if isinstance(node, ast.ClassDef)}
-    require(inventory == {"GroupInputTest": 3, "SocialGroupsTest": 19}, "actual_22_test_inventory_required")
+    require(inventory == {"GroupInputTest": 4, "SocialGroupsTest": 20}, "actual_24_test_inventory_required")
 
 
 def database(purpose):
@@ -191,7 +191,7 @@ def tests(name):
     from database import SessionLocal, engine
     require(str(engine.url) == os.environ["DATABASE_URL"] and SessionLocal.kw["bind"] is engine, "native_test_engine_required")
     import test_social_groups as module
-    expected = (("GroupInputTest", 3), ("SocialGroupsTest", 19))
+    expected = (("GroupInputTest", 4), ("SocialGroupsTest", 20))
     diagnostics, total, successful = [], 0, True
     class Result(unittest.TestResult):
         def addError(self, test, error):
@@ -218,7 +218,7 @@ def tests(name):
         require(classname in {item[0] for item in expected} and re.fullmatch(r"test_[a-z_]+|setup_or_cleanup", method)
             and re.fullmatch(r"[A-Za-z_]{1,80}", error), "safe_test_diagnostic_required")
         print("GROUPS_NATIVE_TEST_DIAGNOSTIC " + json.dumps({"class": classname, "test": method, "error_type": error}))
-    require(total == 22 and successful and not diagnostics, "all_22_native_contracts_required")
+    require(total == 24 and successful and not diagnostics, "all_24_native_contracts_required")
     return total
 
 

@@ -180,7 +180,7 @@ def seed_groups():
         buffer = BytesIO()
         Image.new("RGB", (3, 2), (40, 80, 120)).save(buffer, format="PNG")
         media = service.upload_media(db, owner, identity, "post", uuid4(), buffer.getvalue())
-        post = service.create_post(db, owner, identity, GroupPostCreate(submission_id=uuid4(), body="Synthetic group progress", media_ids=[UUID(media["target_id"])]))
+        post = service.create_post(db, owner, identity, GroupPostCreate(submission_id=uuid4(), expected_group_version=created["current"]["version"], body="Synthetic group progress", media_ids=[UUID(media["target_id"])]))
         service.create_comment(db, buyer, UUID(post["target_id"]), GroupCommentCreate(submission_id=uuid4(), body="Synthetic photo comment", media_id=UUID(media["target_id"])))
         service.create_link(db, owner, identity, CreateInviteLink(submission_id=uuid4(), token=secrets.token_urlsafe(32)))
         require(len(stored) == 1 and service.post_for(db, buyer, UUID(post["target_id"])).group_id == identity, "actual_group_lifecycle_required")
