@@ -1,0 +1,142 @@
+{
+  "status": "SOURCE_PROPOSAL_ONLY_NOT_EXECUTED",
+  "backend": "d9cfc94a1ebc45b8f3c391a69cbb8d0d8b25d26b",
+  "backend_tree": "4a00441d18cf55c3e26414d1a7c2b49f791ee33d",
+  "backend_head": "c4e2a7319b60",
+  "schema_tables": 99,
+  "frontend": "06d7f74965896ae23d47e7701fc1dbfd9815cc40",
+  "frontend_tree": "e57b136e251493e2ee4b5b81e836843e8bd9e7a8",
+  "frontend_parent": "7b9ec53f54141ef66b92466de4dde81f5bc0f69e",
+  "frontend_tracked_blobs": 587,
+  "operations_parent": "1dfd2b37e3469068ba74b744317e120e2fdd45cd",
+  "proposed_first_ref": "codex-ci-professional-google-browser-20261118",
+  "contracts": {
+    "files": 60,
+    "tests": 489,
+    "expected_failures": 0,
+    "expected_skips": 0
+  },
+  "build": "One actual locked full frontend contract run, strict Dashboard typecheck and Vite build of the exact new source; all runtime hosted. No local install/build/browser.",
+  "landing_scope": "The shared packages/professionals module changed. Landing app files and package manifests remain unchanged, but no Landing output byte-identity claim is made. Both exact source Vercel preview builds are actual READY in the separate metadata receipt.",
+  "vercel_review_evidence": {
+    "receipt": "professional-google-vercel-review-pair-20261118.json",
+    "source": "06d7f74965896ae23d47e7701fc1dbfd9815cc40",
+    "dashboard": {
+      "id": "dpl_FFoU4CmGfAT9SJ3amjGyQhHT9jZG",
+      "state": "READY"
+    },
+    "landing": {
+      "id": "dpl_8k99vUNHs6a8cqSJ3KPSHKnaxYbp",
+      "state": "READY"
+    },
+    "limit": "Actual review-build metadata only; no preview API/CORS/protection/environment or production changes and no browser claim from deployment status."
+  },
+  "retained_native": {
+    "run": 44292767822,
+    "job": 134761901239,
+    "source": "d9cfc94a1ebc45b8f3c391a69cbb8d0d8b25d26b",
+    "tests": 38,
+    "status": "ACTUAL_PASS_SEPARATE_RECEIPT",
+    "receipt": "professional-google-native-44292767822-success.json",
+    "sha256": "7912218b9f12238d0ce8300f7073d0b20319c1166e1e2996aaf1a06df65da535",
+    "scope": "31 real Professional cases plus seven pure URL/schema contracts, full99 preservation and compatible rollback checks; not repeated by browser workflow."
+  },
+  "retained_groups": "Of the 22 frontend files in the reviewed groups composition, 21 remain byte-identical. Shared ProfessionalProfile.tsx gains Google field validation and UI while preserving its Groups shortcut. Direct Group components, API, mutation hook and fragment handling remain byte-identical. Separate group browser evidence covers its 12 journeys and 16 geometries; this Google phase retains it without repeating or claiming a new Group result.",
+  "normal_browser": {
+    "journeys": 6,
+    "checks": [
+      "owner_google_validation_private_save",
+      "admin_managed_google_private_edit",
+      "explicit_review_publication_and_audience",
+      "manual_embed_load_hide_and_external_fallback",
+      "approved_snapshot_and_source_change_remount",
+      "consent_withdrawal_and_legacy_blank_compatibility"
+    ],
+    "geometries": 8,
+    "geometry_pairs": [
+      [
+        "en_owner_editor",
+        320
+      ],
+      [
+        "en_owner_editor",
+        390
+      ],
+      [
+        "es_managed_editor",
+        320
+      ],
+      [
+        "es_managed_editor",
+        390
+      ],
+      [
+        "en_member_view",
+        320
+      ],
+      [
+        "en_member_view",
+        390
+      ],
+      [
+        "es_member_view",
+        320
+      ],
+      [
+        "es_member_view",
+        390
+      ]
+    ],
+    "languages": [
+      "en",
+      "es"
+    ],
+    "flows": [
+      "Normal owner profile edit rejects an invalid Google destination without persistence, then saves optional valid Google fields privately and explicitly requests review.",
+      "Normal Admin managed draft field edit/save stays hidden; the original46 hidden profiles are unchanged.",
+      "Normal Admin approval publishes only the reviewed owner snapshot; registered member sees its allowed Google destination and anonymous API is denied.",
+      "No business Google request before a user action; two explicit old-source iframe loads are observed and aborted, first Hide removes it; profile fallback opens once in a separate aborted popup.",
+      "Pending edits retain the previous approved link/frame source; after the second explicit review/approval the loaded old iframe unmounts to the new link-only source.",
+      "Contact consent withdrawal removes member access; the legacy published snapshot lacking Google keys remains readable without stored-data/version backfill."
+    ],
+    "native_ui_writes": {
+      "owner_save": 5,
+      "owner_submit": 2,
+      "admin_approve": 2,
+      "managed_save": 1,
+      "total": 10,
+      "stale_owner_save_409": 1
+    }
+  },
+  "google_network_boundary": {
+    "business_google_requests_before_click": 0,
+    "manual_frame_requests": 2,
+    "manual_profile_requests": 1,
+    "live_google_fetches": 0,
+    "existing_oauth": "Pre-existing Google Identity script requests are separately counted and blocked; no claim they are zero.",
+    "rendering_limit": "All Google frame/profile requests are aborted. No inert or real Google page is served, and no real Google rendering, review retrieval, rating copy, API key, paid API or business ownership verification is claimed."
+  },
+  "synthetic_data": {
+    "users": 4,
+    "profiles": 49,
+    "protected_hidden_profiles": 46,
+    "target_profiles": 3,
+    "legacy_profile_unchanged": 1,
+    "owner_contacts_unchanged": 82,
+    "contacts_unchanged": 85,
+    "sources_unchanged": 86,
+    "accepted_jobs_unchanged": 9,
+    "worker_rows_unchanged": 1,
+    "cms_version_unchanged": 7,
+    "typed_floorplans_unchanged": 2,
+    "successful_profile_writes": 10,
+    "revision_rows_matched": 10,
+    "private_files_removed": 1,
+    "all_other_rows_and_sequences": "Every full unrelated row and sequence of all99 tables compared privately; original46 drafts, legacy profile and all initial revision rows remain exact."
+  },
+  "isolation": "Reuse the accepted pinned Docker/loopback/private-file recipe. Exact b7 native helpers and e0c5 fixture helpers are read-only and byte-verified; only seed_old is invoked. Real API/session/JWT/routes and real PostgreSQL17.6; no dependency override or image-storage replacement. Blank provider credentials, disabled workers and refused/counting external transports.",
+  "loopback_presence": "Dashboard-origin-only conditional model of native navigator.onLine in the already-guarded loopback-only runner; record measured before/modeled/after/actual visible booleans and use real foreground. No visibility override or API fake.",
+  "cleanup": "One owned0600 facts file is inode-verified and removed; drop only marked disposable database and nonce-labeled containers/image/scratch. No artifacts uploaded.",
+  "limits": "Synthetic profile updates only; no real contact import, account/invite/outreach, billing, keys, role/permission change, project/group mutation, stored ratings/reviews, provider message or production mutation. Native38 and the prior broad platform suites are retained, not repeated.",
+  "publication": "Root reviews the exact six-file operations tree before any first absent-ref isolated push. This plan is not a production deployment authorization; root owns combined publication and recovery."
+}
