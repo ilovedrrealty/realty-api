@@ -18,6 +18,7 @@ from models.user import User
 from models.bulk_import_job import BulkImportJob
 from utils.storage import upload_image
 from utils.listing_constants import ALL_REGIONS, FEATURES, BASE_TAGS
+from utils.location_quality import stage_location_change
 
 logger = logging.getLogger(__name__)
 
@@ -297,9 +298,6 @@ def _import_row(db: Session, row: dict, admin_user_id) -> dict:
         transaction=purpose,
         price=price,
         location=region,
-        maps_url=maps_url,
-        latitude=latitude,
-        longitude=longitude,
         bedrooms=_parse_int(row.get("bedrooms")),
         bathrooms=_parse_decimal(row.get("bathrooms")),
         area_sqft=_parse_int(row.get("living_area_sqft")),
@@ -326,6 +324,8 @@ def _import_row(db: Session, row: dict, admin_user_id) -> dict:
     )
     db.add(listing)
     db.flush()
+    stage_location_change(db, listing, {"maps_url": maps_url, "latitude": latitude, "longitude": longitude},
+                          admin_user_id, new_submission=True)
     db.add(ListingEvent(listing_id=listing.id, event_type="submitted", actor_id=admin_user_id, note="Bulk CSV import"))
 
     return {

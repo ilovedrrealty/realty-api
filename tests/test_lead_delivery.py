@@ -1129,6 +1129,36 @@ class LeadDeliveryTests(unittest.TestCase):
             self.assertEqual(db.query(Lead).count(), 2)
             self.assertEqual(db.query(LeadDeliveryJob).count(), 6)
 
+    def test_donor_outbox_migration_is_additive_repeatable_private_and_does_not_enqueue_history(self):
+        path = Path(__file__).parents[1]/"alembic/versions/82e1a7c4d9b0_private_lead_delivery_outbox.py"
+        spec = importlib.util.spec_from_file_location("synthetic_outbox_migration", path)
+        migration = importlib.util.module_from_spec(spec); spec.loader.exec_module(migration)
+        self.assertEqual(migration.down_revision, "52b2edc810ad")
+        with self.factory() as db:
+            db.add(Lead(type="buyer_interest", name="Synthetic historical", phone="+18095551234", status="new")); db.commit()
+        with self.engine.begin() as connection:
+            with Operations.context(MigrationContext.configure(connection)):
+                migration.upgrade(); migration.upgrade(); migration.downgrade()
+            private = connection.execute(text("SELECT relname,relrowsecurity FROM pg_class WHERE relnamespace=current_schema()::regnamespace AND relname IN ('lead_delivery_jobs','lead_delivery_worker_state')")).all()
+            self.assertEqual(len(private), 2)
+            self.assertTrue(all(row.relrowsecurity for row in private))
+            grants = connection.scalar(text("SELECT count(*) FROM pg_class c CROSS JOIN LATERAL aclexplode(coalesce(c.relacl,acldefault('r',c.relowner))) a WHERE c.relnamespace=current_schema()::regnamespace AND c.relname IN ('lead_delivery_jobs','lead_delivery_worker_state') AND a.grantee=0"))
+            self.assertEqual(grants, 0)
+        with self.factory() as db:
+            self.assertEqual(db.query(Lead).count(), 1)
+            self.assertEqual(db.query(LeadDeliveryJob).count(), 0)
+            self.assertEqual(db.query(LeadDeliveryWorkerState).count(), 0)
+            new = Lead(type="buyer_interest", name="Synthetic new", phone="+18095551234", status="new")
+            db.add(new); db.flush()
+            service.enqueue_lead_delivery(db, new)
+            db.commit()
+        with self.engine.begin() as connection:
+            with Operations.context(MigrationContext.configure(connection)):
+                migration.downgrade()
+        with self.factory() as db:
+            self.assertEqual(db.query(Lead).count(), 2)
+            self.assertEqual(db.query(LeadDeliveryJob).count(), 6)
+
 
 if __name__ == "__main__":
     unittest.main()

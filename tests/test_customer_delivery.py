@@ -438,6 +438,27 @@ class CustomerDeliveryTests(unittest.TestCase):
         with Session(self.engine) as db:
             self.assertEqual(db.query(Job).filter(Job.user_id.isnot(None)).count(), 0)
 
+    def test_donor_signup_migration_preserves_legacy_jobs_and_does_not_enqueue_anything(self):
+        with patch.object(settings, "customer_messages_enabled", False):
+            lead_id, _ = self.lead()
+        before = self.lead_jobs(lead_id)
+        path = Path(__file__).resolve().parents[1] / "alembic/versions/e2f4a8b0c612_signup_delivery_events.py"
+        spec = importlib.util.spec_from_file_location("signup_event_migration_test", path)
+        migration = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(migration)
+        with self.engine.begin() as connection:
+            connection.execute(text("ALTER TABLE lead_delivery_jobs DROP COLUMN user_id CASCADE"))
+            connection.execute(text("ALTER TABLE lead_delivery_jobs ALTER COLUMN lead_id SET NOT NULL"))
+            migration.op = Operations(MigrationContext.configure(connection))
+            migration.upgrade()
+        after = self.lead_jobs(lead_id)
+        self.assertEqual(set(after), set(before))
+        for step in before:
+            self.assertEqual((after[step].id, after[step].payload_sha256, after[step].payload),
+                             (before[step].id, before[step].payload_sha256, before[step].payload))
+        with Session(self.engine) as db:
+            self.assertEqual(db.query(Job).filter(Job.user_id.isnot(None)).count(), 0)
+
 
 if __name__ == "__main__":
     unittest.main()

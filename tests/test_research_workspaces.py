@@ -117,6 +117,44 @@ class ResearchWorkspaceTests(unittest.TestCase):
         self.assertEqual(response.status_code, 413)
         self.assertEqual(response.headers.get("cache-control"), "no-store")
 
+    def test_private_purchase_costs_preserve_minor_units_and_compatible_updates(self):
+        costs = [
+            {"category": "transfer_tax", "currency": "DOP", "basis": "estimate", "amount_minor": 10505, "label": "Transfer estimate"},
+            {"category": "legal", "currency": "USD", "basis": "quote", "amount_minor": 256001, "label": "Legal quote"},
+            {"category": "inspection", "currency": "USD", "basis": "paid", "amount_minor": 0, "label": ""},
+        ]
+        created = self.call("POST", body={"title": "Purchase budget", "purchase_costs": costs}, status=201)
+        path = "/" + created["id"]
+        self.assertEqual(self.call("GET", path)["data"]["purchase_costs"], costs)
+        self.assertNotIn("purchase_costs", self.call("GET")[0])
+        self.call("GET", path, "admin", status=404)
+        self.call("GET", path, "other", status=404)
+
+        legacy = self.call("PUT", path, body={"title": "Checklist only edit", "notes": "A note", "expected_version": 1})
+        self.assertEqual(legacy["data"]["purchase_costs"], costs)
+        self.call("PUT", path, body={"title": "Stale", "purchase_costs": [], "expected_version": 1}, status=409)
+        self.assertEqual(self.call("GET", path)["data"]["purchase_costs"], costs)
+        cleared = self.call("PUT", path, body={"title": "Cleared", "purchase_costs": [], "expected_version": 2})
+        self.assertEqual(cleared["data"]["purchase_costs"], [])
+
+    def test_existing_workspace_and_invalid_purchase_costs_keep_private_contract(self):
+        with Session(self.engine) as db:
+            existing = ResearchWorkspace(user_id=self.ids["buyer"], title="Earlier case", data={"title": "Earlier case"})
+            db.add(existing)
+            db.commit()
+            path = "/" + str(existing.id)
+        self.assertEqual(self.call("GET", path)["data"]["purchase_costs"], [])
+
+        cost = {"category": "survey", "currency": "DOP", "basis": "quote", "amount_minor": 2000}
+        for field, value in (
+            ("amount_minor", "2000"), ("amount_minor", True), ("amount_minor", 1.1), ("amount_minor", -1),
+            ("amount_minor", 10_000_000_000_000), ("category", "invalid"), ("currency", "EUR"),
+            ("basis", "unverified"), ("label", "x" * 81), ("private_link", "hidden"),
+        ):
+            reply = self.call("POST", body={"title": "Invalid row", "purchase_costs": [{**cost, field: value}]}, status=422)
+            self.assertNotIn("hidden", str(reply))
+        self.call("POST", body={"title": "Too many rows", "purchase_costs": [cost] * 21}, status=422)
+
     def test_creation_limit_does_not_hide_saved_cases(self):
         with Session(self.engine) as db:
             db.add_all([ResearchWorkspace(user_id=self.ids["buyer"], title="Case "+str(i), data={"title": "Case "+str(i)}) for i in range(100)])

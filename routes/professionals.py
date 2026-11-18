@@ -24,7 +24,7 @@ from schemas.professionals import (ProfessionalDraft, SaveProfessionalBody, Crea
     AdminProfessionalPage, ReviewStatus, ListingStatus)
 from utils.auth import get_current_user
 from utils.permission import require_admin
-from utils.professional_options import CATEGORIES, AREAS, LANGUAGES, CATEGORY_IDS, AREA_IDS, LANGUAGE_IDS, matching_areas
+from utils.professional_options import CATEGORIES, PROPERTY_CLASSES, AREAS, LANGUAGES, CATEGORY_IDS, AREA_IDS, LANGUAGE_IDS, matching_areas
 from utils.professional_photos import (MAX_PHOTO_BYTES, prepare_photo, upload_professional_photo, validate_owned_photo,
     upload_managed_professional_photo, validate_managed_photo)
 from utils.limiter import limiter
@@ -187,7 +187,7 @@ def _visible(db):
 
 @router.get("/professionals/options")
 def professional_options():
-    return {"categories": CATEGORIES, "areas": AREAS, "languages": LANGUAGES}
+    return {"categories": CATEGORIES, "areas": AREAS, "languages": LANGUAGES, "property_classes": PROPERTY_CLASSES}
 
 
 @router.get("/professionals", response_model=PublicProfessionalPage)

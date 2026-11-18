@@ -4,7 +4,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.routing import APIRoute
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.responses import JSONResponse
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Query, Session
 from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 
 from database import get_db
 from models.lead import Lead
+from models.seller_valuation import SellerValuationIntake
 from models.user import User
 from models.listing import Listing
 from models.booking import Booking
@@ -26,6 +27,7 @@ from config import settings
 from models.site_settings import SiteSettings
 from utils.phone import normalize_phone
 from schemas.lead_tracking import LeadTracking
+from schemas.seller_valuation import SellerValuationSubject
 from utils.lead_tracking import tracking_metadata, measurement_receipt, private_tracking_summary
 from services import lead_delivery
 
@@ -64,6 +66,7 @@ class LeadCreate(BaseModel):
     property_id: Optional[UUID] = None
     submission_id: Optional[UUID] = None
     tracking: Optional[LeadTracking] = None
+    valuation_subject: SellerValuationSubject | None = None
 
     @field_validator("name", "email", mode="before")
     @classmethod
@@ -86,6 +89,11 @@ class LeadCreate(BaseModel):
                 raise ValueError("Provide a valid phone number or email address")
         elif not self.email:
             raise ValueError("Email is required for bookings")
+        if self.valuation_subject is not None and (
+            self.type != "seller_interest" or self.submission_id is None
+            or self.tracking is None or not self.tracking.contact_consent
+        ):
+            raise ValueError("A valuation request must be a seller lead with contact consent and a submission identifier")
         return self
 
 
@@ -124,6 +132,10 @@ class LeadResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class StaffLeadResponse(LeadResponse):
+    has_valuation_request: bool
 
 
 class AssignBody(BaseModel):
@@ -242,7 +254,10 @@ def _get_notify_email(db: Session) -> str:
 # ── Public endpoints ──────────────────────────────────────────────────────────
 
 def _receipt(lead: Lead) -> dict:
-    return {"id": str(lead.id), "status": lead.status, "measurement": measurement_receipt(lead)}
+    receipt = {"id": str(lead.id), "status": lead.status, "measurement": measurement_receipt(lead)}
+    if getattr(lead, "_valuation_request_registered", False):
+        receipt["valuation_request_registered"] = True
+    return receipt
 
 
 def _existing_submission(body: LeadCreate, db: Session, user, legacy: bool = False):
@@ -262,10 +277,18 @@ def _existing_submission(body: LeadCreate, db: Session, user, legacy: bool = Fal
     saved_tracking = {k: v for k, v in (lead.tracking or {}).items() if k not in {"received_at", "version"}} or None
     if actual != expected or submitted_tracking != saved_tracking:
         raise HTTPException(status_code=409, detail="This submission identifier was already used. Start a new request.")
+    if body.type == "seller_interest":
+        intake = db.get(SellerValuationIntake, lead.id)
+        saved_subject = SellerValuationSubject.model_validate(intake.subject) if intake is not None else None
+        if saved_subject != body.valuation_subject:
+            raise HTTPException(status_code=409, detail="This submission identifier was already used. Start a new request.")
+        lead._valuation_request_registered = intake is not None
     return lead
 
 
 def _persist_submission(body: LeadCreate, db: Session, user=None, legacy: bool = False):
+    if legacy and body.valuation_subject is not None:
+        raise HTTPException(422, "Use the property valuation form", headers={"Cache-Control": "no-store"})
     existing = _existing_submission(body, db, user, legacy)
     if existing:
         return existing, False
@@ -297,8 +320,11 @@ def _persist_submission(body: LeadCreate, db: Session, user=None, legacy: bool =
     db.add(lead)
     queued = lead_delivery.enabled()
     try:
-        if queued:
+        if queued or body.valuation_subject is not None:
             db.flush()
+        if body.valuation_subject is not None:
+            db.add(SellerValuationIntake(lead_id=lead.id, subject=body.valuation_subject.model_dump(mode="json")))
+        if queued:
             lead_delivery.enqueue_lead_delivery(db, lead, lead_delivery.property_snapshot(db, lead), include_crm=not legacy)
         db.commit()
     except IntegrityError:
@@ -320,6 +346,7 @@ def _persist_submission(body: LeadCreate, db: Session, user=None, legacy: bool =
                             headers={"Cache-Control": "no-store"}) from None
     db.refresh(lead)
     lead._delivery_enqueued = queued
+    lead._valuation_request_registered = body.valuation_subject is not None
     return lead, True
 
 @router.post("/leads", status_code=201)
@@ -396,20 +423,31 @@ def get_my_leads(
 
 # ── Realtor ───────────────────────────────────────────────────────────────────
 
+def _build_staff_responses(query: Query, db: Session, *, include_tracking: bool = False) -> list[StaffLeadResponse]:
+    rows = query.outerjoin(
+        SellerValuationIntake, SellerValuationIntake.lead_id == Lead.id,
+    ).add_columns(SellerValuationIntake.lead_id).all()
+    return [
+        StaffLeadResponse(
+            **_build_response(lead, db, include_ghl=True, include_tracking=include_tracking).model_dump(),
+            has_valuation_request=lead.type == "seller_interest" and intake_id is not None,
+        )
+        for lead, intake_id in rows
+    ]
 
-@router.get("/realtor/leads", response_model=List[LeadResponse])
+
+@router.get("/realtor/leads", response_model=List[StaffLeadResponse])
 def get_realtor_leads(
     user=Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     _require_realtor(user)
-    leads = (
+    query = (
         db.query(Lead)
         .filter(Lead.assigned_realtor_id == user.id)
         .order_by(Lead.created_at.desc())
-        .all()
     )
-    return [_build_response(l, db, include_ghl=True) for l in leads]
+    return _build_staff_responses(query, db)
 
 
 @router.put("/realtor/leads/{lead_id}/status", status_code=204)
@@ -438,7 +476,7 @@ def realtor_update_lead_status(
 
 # ── Admin ─────────────────────────────────────────────────────────────────────
 
-@router.get("/admin/leads", response_model=List[LeadResponse])
+@router.get("/admin/leads", response_model=List[StaffLeadResponse])
 def admin_get_leads(
     response: Response,
     type: Optional[str] = None,
@@ -455,8 +493,7 @@ def admin_get_leads(
         q = q.filter(Lead.status == status)
     if assigned_realtor_id:
         q = q.filter(Lead.assigned_realtor_id == UUID(assigned_realtor_id))
-    leads = q.order_by(Lead.created_at.desc()).all()
-    return [_build_response(l, db, include_ghl=True, include_tracking=True) for l in leads]
+    return _build_staff_responses(q.order_by(Lead.created_at.desc()), db, include_tracking=True)
 
 
 @router.get("/admin/leads/tracking-summary")
@@ -500,18 +537,19 @@ def admin_assign_lead(
     lead.assigned_realtor_id = realtor.id
     lead.status = "assigned"
     _apply_status_timestamp(lead, "assigned")
-    # Upgrade the submitting user to owner when their seller_interest lead is assigned
+    valuation_request = lead.type == "seller_interest" and db.query(SellerValuationIntake.lead_id).filter(
+        SellerValuationIntake.lead_id == lead.id,
+    ).first() is not None
+    # A structured valuation assignment changes the lead's staff access only.
     owner_upgraded = None
-    if lead.type == "seller_interest" and lead.from_user_id:
-        owner = db.query(User).filter(User.id == lead.from_user_id).first()
-        if owner and owner.role == "buyer":
-            owner.role = "owner"
-            owner_upgraded = owner
-    # Mirror realtor assignment onto the submitting user so their "My Agent" card reflects it
-    if lead.from_user_id:
+    if lead.from_user_id and not valuation_request:
         submitter = db.query(User).filter(User.id == lead.from_user_id).first()
-        if submitter and submitter.role in ("owner", "buyer", "admin"):
-            submitter.assigned_realtor_id = realtor.id
+        if submitter:
+            if lead.type == "seller_interest" and submitter.role == "buyer":
+                submitter.role = "owner"
+                owner_upgraded = submitter
+            if submitter.role in ("owner", "buyer", "admin"):
+                submitter.assigned_realtor_id = realtor.id
     db.commit()
 
     if lead.ghl_contact_id:

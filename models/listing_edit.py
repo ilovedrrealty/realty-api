@@ -18,3 +18,4 @@ class ListingEdit(Base):
     reviewed_by  = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     reviewed_at  = Column(TIMESTAMP(timezone=True), nullable=True)
     rejection_reason = Column(Text, nullable=True)
+    room_photo_tour_base_gallery_sha256 = Column(Text, nullable=True)
