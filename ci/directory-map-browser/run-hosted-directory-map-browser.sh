@@ -6,7 +6,7 @@ die() { printf 'PLATFORM_BROWSER_REFUSED %s\n' "$1" >&2; exit 1; }
 bounded() { timeout --kill-after=8s "$@"; }
 [[ $# == 5 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 &&
-   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-directory-map-browser-20261118 &&
+   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-directory-map-browser-20261118-v2 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die HOSTED_EXACT_EVENT_REQUIRED
 ops="$1"; frontend="$2"; baseline="$3"; backend="$4"; migration="$5"
 [[ "$ops" == "$GITHUB_WORKSPACE/build-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-source" &&
@@ -17,7 +17,7 @@ for checkout in "$ops" "$frontend" "$baseline" "$backend" "$migration"; do
      ! -e "$checkout/.env" && ! -L "$checkout/.env" ]] || die CLEAN_CHECKOUT_REQUIRED
 done
 [[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" &&
-   $(git -C "$ops" rev-parse HEAD^) == b91e5b9cee15e91a518e9393a9b7501f0cc1d2cc &&
+   $(git -C "$ops" rev-parse HEAD^) == 41076d3ca31ece9b7e3c3421488add8f51c51a6c &&
    $(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) == "$(cat "$ops/ci/directory-map-browser/delta.txt")" ]] || die EXACT_OPERATIONS_REQUIRED
 backend_commit=4d21cb3ae2b14475828ff8fbe710b22c34c3a53b
 backend_tree=1e3f72978515a58733188caa235cb6ee61190a26

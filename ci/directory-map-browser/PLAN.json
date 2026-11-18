@@ -4,8 +4,8 @@
   "backend_tree": "1e3f72978515a58733188caa235cb6ee61190a26",
   "frontend": "461a2ca2c7c2cac39212d4bddec9352e35429c39",
   "frontend_tree": "5532b387c0e4f27fb3b7ae8bb2c702de121aeecf",
-  "operations_parent": "b91e5b9cee15e91a518e9393a9b7501f0cc1d2cc",
-  "proposed_first_ref": "codex-ci-directory-map-browser-20261118",
+  "operations_parent": "41076d3ca31ece9b7e3c3421488add8f51c51a6c",
+  "proposed_first_ref": "codex-ci-directory-map-browser-20261118-v2",
   "contracts": {"files": 58, "tests": 470, "expected_failures": 0, "expected_skips": 0},
   "build": "One actual strict Dashboard typecheck and Vite build on the exact source. No local build, no unchanged Next or broad network browser repeat.",
   "retained": "Landing/shared packages/import component unchanged from current contact release. Retain accepted68network groups/39geometries and8contact groups/8geometries; this is new map evidence only.",
@@ -35,5 +35,6 @@
   },
   "isolation": "Accepted b91 pinned Docker/loopback-only network/owned disposable PG17.6/private inode cleanup and dependency construction. Real API, cookies and database; fake external transport only. No production/security/provider/env changes.",
   "limits": "Current local reference catalog is Dominican Republic only. Markers are approximate area references, never office locations or observed business country. Current source supports general ISO2 metadata. No new Google/geocoder/tile API, radius, map drawing, profile customization, groups, imports or paid activation.",
+  "prior_attempt": {"run": 44267401749, "job": 134675246104, "status": "FAILURE", "frontend_contracts": "470/470PASS", "strict_dashboard": "PASS", "browser_stage": "auth_loss_and_late_read_isolation", "owned_cleanup": "verified", "correction": "The member list serializes an empty q= while aggregate map omits q. Wait for an empty effective query value; real cookie-loss/denial and UI assertions unchanged."},
   "no_production_action_authorized_by_plan": true
 }

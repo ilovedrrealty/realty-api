@@ -1,7 +1,7 @@
 name: Isolated directory map frontend and member browser acceptance
 on:
   push:
-    branches: [codex-ci-directory-map-browser-20261118]
+    branches: [codex-ci-directory-map-browser-20261118-v2]
 permissions:
   contents: read
 concurrency:
