@@ -1,0 +1,118 @@
+{
+  "status": "PREPARATION_ONLY_NOT_ACCEPTANCE",
+  "source": "25af99d2556c25b9875d34a90e6241f9097d11fe",
+  "files": [
+    {
+      "path": "private_storage_fixture.py",
+      "accepted_source": "25af99d2556c25b9875d34a90e6241f9097d11fe",
+      "accepted_sha256": "197bd56208b0139aba785109848314794cbe9e697222af87d1482effae522f44",
+      "runtime_sha256": "197bd56208b0139aba785109848314794cbe9e697222af87d1482effae522f44",
+      "change": "unchanged"
+    },
+    {
+      "path": "run-history-share-browser.mjs",
+      "accepted_source": "25af99d2556c25b9875d34a90e6241f9097d11fe",
+      "accepted_sha256": "39e620f933b728b9f10a30cce1b59b14772df4481e7c2ee4f31b0a6043b4897a",
+      "runtime_sha256": "39e620f933b728b9f10a30cce1b59b14772df4481e7c2ee4f31b0a6043b4897a",
+      "change": "unchanged"
+    },
+    {
+      "path": "run-member-community-browser.mjs",
+      "accepted_source": "25af99d2556c25b9875d34a90e6241f9097d11fe",
+      "accepted_sha256": "165972be89902c060411ed335205f58a28c8c878d120de597e34d5d6670df4c1",
+      "runtime_sha256": "165972be89902c060411ed335205f58a28c8c878d120de597e34d5d6670df4c1",
+      "change": "unchanged"
+    },
+    {
+      "path": "run-private-custody-browser.mjs",
+      "accepted_source": "25af99d2556c25b9875d34a90e6241f9097d11fe",
+      "accepted_sha256": "af93f250fe5d8d01ee92040c68cb72abde61d5002c4a3e6becc681f1ee6eeb41",
+      "runtime_sha256": "af93f250fe5d8d01ee92040c68cb72abde61d5002c4a3e6becc681f1ee6eeb41",
+      "change": "unchanged"
+    },
+    {
+      "path": "run-service-conversation-browser.mjs",
+      "accepted_source": "25af99d2556c25b9875d34a90e6241f9097d11fe",
+      "accepted_sha256": "f68af4fbad568291b05891a3d0d8c6708f697606bfb258e69c38c215b85308cc",
+      "runtime_sha256": "f68af4fbad568291b05891a3d0d8c6708f697606bfb258e69c38c215b85308cc",
+      "change": "unchanged"
+    },
+    {
+      "path": "run-service-negotiation-browser.mjs",
+      "accepted_source": "25af99d2556c25b9875d34a90e6241f9097d11fe",
+      "accepted_sha256": "161842b957d7bc8385be75b15353fee3b9c91443d4a2ea6362d5c8c057c8f265",
+      "runtime_sha256": "161842b957d7bc8385be75b15353fee3b9c91443d4a2ea6362d5c8c057c8f265",
+      "change": "unchanged"
+    },
+    {
+      "path": "run-service-review-browser.mjs",
+      "accepted_source": "25af99d2556c25b9875d34a90e6241f9097d11fe",
+      "accepted_sha256": "0188040057e97cf391daf2c06200f0230bd19dc649f1ea9785c0cc6524b89482",
+      "runtime_sha256": "0188040057e97cf391daf2c06200f0230bd19dc649f1ea9785c0cc6524b89482",
+      "change": "unchanged"
+    },
+    {
+      "path": "run-service-visits-browser.mjs",
+      "accepted_source": "25af99d2556c25b9875d34a90e6241f9097d11fe",
+      "accepted_sha256": "d76ba389f444ca0615b00549c03b20ff9318bfdb9b0d4344712757c53b01b12d",
+      "runtime_sha256": "d76ba389f444ca0615b00549c03b20ff9318bfdb9b0d4344712757c53b01b12d",
+      "change": "unchanged"
+    },
+    {
+      "path": "serve_dashboard_fixture.mjs",
+      "accepted_source": "25af99d2556c25b9875d34a90e6241f9097d11fe",
+      "accepted_sha256": "29e0041be48ea60430b9166c65f00190cf726452a0e62979a6075156f9b81ff3",
+      "runtime_sha256": "29e0041be48ea60430b9166c65f00190cf726452a0e62979a6075156f9b81ff3",
+      "change": "unchanged"
+    },
+    {
+      "path": "serve_history_share_fixture.py",
+      "accepted_source": "25af99d2556c25b9875d34a90e6241f9097d11fe",
+      "accepted_sha256": "fe5b78e7457437839f787c3df4df6d957524e34a7ac974b5904f92a359652e32",
+      "runtime_sha256": "fe5b78e7457437839f787c3df4df6d957524e34a7ac974b5904f92a359652e32",
+      "change": "unchanged"
+    },
+    {
+      "path": "serve_member_community_fixture.py",
+      "accepted_source": "25af99d2556c25b9875d34a90e6241f9097d11fe",
+      "accepted_sha256": "7bc655bee78c6eb3ae0bcb8250c11c3e133733f57f9bd4d0fb5077022b5084ec",
+      "runtime_sha256": "7bc655bee78c6eb3ae0bcb8250c11c3e133733f57f9bd4d0fb5077022b5084ec",
+      "change": "unchanged"
+    },
+    {
+      "path": "serve_private_custody_fixture.py",
+      "accepted_source": "25af99d2556c25b9875d34a90e6241f9097d11fe",
+      "accepted_sha256": "a30522c5b9af2b3ed763d9e80b7c5b27dc66972d5f9fa9d7fffb48140ec6894a",
+      "runtime_sha256": "a30522c5b9af2b3ed763d9e80b7c5b27dc66972d5f9fa9d7fffb48140ec6894a",
+      "change": "unchanged"
+    },
+    {
+      "path": "serve_service_conversation_fixture.py",
+      "accepted_source": "25af99d2556c25b9875d34a90e6241f9097d11fe",
+      "accepted_sha256": "77a0d6232c1fe1ab3db1ce0932a1ee1eca3d0c0a49d0f3b1069089eca7fab9e9",
+      "runtime_sha256": "77a0d6232c1fe1ab3db1ce0932a1ee1eca3d0c0a49d0f3b1069089eca7fab9e9",
+      "change": "unchanged"
+    },
+    {
+      "path": "serve_service_negotiation_fixture.py",
+      "accepted_source": "25af99d2556c25b9875d34a90e6241f9097d11fe",
+      "accepted_sha256": "6b62c9d2151346ee728d352ddde916916abc03d0e0e78b84dd300e55b76a63bb",
+      "runtime_sha256": "6b62c9d2151346ee728d352ddde916916abc03d0e0e78b84dd300e55b76a63bb",
+      "change": "unchanged"
+    },
+    {
+      "path": "serve_service_review_fixture.py",
+      "accepted_source": "25af99d2556c25b9875d34a90e6241f9097d11fe",
+      "accepted_sha256": "47247a5dab165ac8862ab4717af467470e1cb63fa2a2bb9e494bf8979cd76b1a",
+      "runtime_sha256": "47247a5dab165ac8862ab4717af467470e1cb63fa2a2bb9e494bf8979cd76b1a",
+      "change": "unchanged"
+    },
+    {
+      "path": "serve_service_visit_fixture.py",
+      "accepted_source": "25af99d2556c25b9875d34a90e6241f9097d11fe",
+      "accepted_sha256": "49159b4ea01e78e6cca3b4c9ae552df2f57b66edc34f6bf40cb72a36920af9bc",
+      "runtime_sha256": "629adb3bbc97fe3ac740502c38e951caba3c0d6ca198e64d3315bce85e509991",
+      "change": "PostgreSQL guard rebound from17.11 to exact17.6"
+    }
+  ]
+}

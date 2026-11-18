@@ -1,0 +1,41 @@
+{
+  "status": "PREPARATION_ONLY_NOT_ACCEPTANCE",
+  "source": "33f6fc0bd6cb038f92dabe19cd4445278a01cec2",
+  "files": [
+    {
+      "path": "serve_communications_fixture.py",
+      "accepted_source": "33f6fc0bd6cb038f92dabe19cd4445278a01cec2",
+      "accepted_sha256": "f1cb6952695e579e9b6f73f0ddf8f87a5fc665f953d88e476b6bdedcd1a730b8",
+      "runtime_sha256": "148e5ad8eca7604dbcb6816203e370f3346b4df71a5a7990fe9049bb5e0f49c3",
+      "change": "exact source/head/API port rebinding only"
+    },
+    {
+      "path": "serve_admin_share_fixture.py",
+      "accepted_source": "33f6fc0bd6cb038f92dabe19cd4445278a01cec2",
+      "accepted_sha256": "7b69adcde368665ac3eaf0b3dae12dfa867aaf197efd63e82c4cc7fddfb8f86d",
+      "runtime_sha256": "7b69adcde368665ac3eaf0b3dae12dfa867aaf197efd63e82c4cc7fddfb8f86d",
+      "change": "unchanged"
+    },
+    {
+      "path": "run-communications-browser.mjs",
+      "accepted_source": "33f6fc0bd6cb038f92dabe19cd4445278a01cec2",
+      "accepted_sha256": "42fdda10d1f287bb6bdcb31f090602c87caf2d1153a3ae6e8ce774b68dc9dacf",
+      "runtime_sha256": "1340cb32ab3a60f4304b0040d200fd2e2e217c20140431cfc24466e567aa37ce",
+      "change": "exact source/head/API port rebinding only"
+    },
+    {
+      "path": "verify-share-contact.mjs",
+      "accepted_source": "33f6fc0bd6cb038f92dabe19cd4445278a01cec2",
+      "accepted_sha256": "165704f23b1dd999d6facf5265e1a7e658af225f39db33748654f29f15466f32",
+      "runtime_sha256": "bc685ccba773bd55db42379ca6dd4312106c43fc00e1bc820c92d7fe1f5e97d7",
+      "change": "exact source/head/API port rebinding only"
+    },
+    {
+      "path": "check-browser-result.py",
+      "accepted_source": "33f6fc0bd6cb038f92dabe19cd4445278a01cec2",
+      "accepted_sha256": "da7bf840fce7dc67a06b1d6737fb2160cd755ae4e53993f6cf87ed404b72694a",
+      "runtime_sha256": "da7bf840fce7dc67a06b1d6737fb2160cd755ae4e53993f6cf87ed404b72694a",
+      "change": "unchanged"
+    }
+  ]
+}
