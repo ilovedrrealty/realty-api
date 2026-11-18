@@ -3,7 +3,7 @@ import { lstat, readFile } from 'node:fs/promises'
 import { chromium } from 'playwright-core'
 
 const dashboard = 'http://127.0.0.1:4175'
-const api = 'http://127.0.0.1:8000'
+const api = 'http://127.0.0.1:8918'
 const network = '/property-network'
 const wait = 12_000
 const uuid = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/

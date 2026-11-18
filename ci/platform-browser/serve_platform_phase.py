@@ -41,6 +41,8 @@ def run():
                              ("MIGRATION_HEAD", HEAD), ("MIGRATION", HEAD)):
                 if hasattr(value, key):
                     setattr(value, key, pin)
+            if hasattr(value, "API_PORT"):
+                value.API_PORT = 8918
     for prefix in ("REVIEW", "CONVERSATION", "NEGOTIATION", "HISTORY_SHARE", "PRIVATE_CUSTODY"):
         os.environ.update({f"ILDR_{prefix}_APP_COMMIT": COMMIT,
                            f"ILDR_{prefix}_APP_TREE": TREE,
@@ -48,7 +50,7 @@ def run():
     if phase == "core":
         fixture = module.fixture
         fixture.APP_COMMIT, fixture.APP_TREE, fixture.MIGRATION_HEAD = COMMIT, TREE, HEAD
-        fixture.API_PORT = 8000
+        fixture.API_PORT = 8918
         fixture.configure_application = module.configure
         fixture.migrate_and_seed = module.migrate_and_seed
         fixture.confined_api = module.confined_api

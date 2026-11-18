@@ -6,7 +6,7 @@
       "path": "serve_communications_fixture.py",
       "accepted_source": "33f6fc0bd6cb038f92dabe19cd4445278a01cec2",
       "accepted_sha256": "f1cb6952695e579e9b6f73f0ddf8f87a5fc665f953d88e476b6bdedcd1a730b8",
-      "runtime_sha256": "148e5ad8eca7604dbcb6816203e370f3346b4df71a5a7990fe9049bb5e0f49c3",
+      "runtime_sha256": "181c5d2747f5846ac4d3540496f351cfd61c8308efb693a3346a07e2bc3dbff4",
       "change": "exact source/head/API port rebinding only"
     },
     {
@@ -20,14 +20,14 @@
       "path": "run-communications-browser.mjs",
       "accepted_source": "33f6fc0bd6cb038f92dabe19cd4445278a01cec2",
       "accepted_sha256": "42fdda10d1f287bb6bdcb31f090602c87caf2d1153a3ae6e8ce774b68dc9dacf",
-      "runtime_sha256": "1340cb32ab3a60f4304b0040d200fd2e2e217c20140431cfc24466e567aa37ce",
+      "runtime_sha256": "42fdda10d1f287bb6bdcb31f090602c87caf2d1153a3ae6e8ce774b68dc9dacf",
       "change": "exact source/head/API port rebinding only"
     },
     {
       "path": "verify-share-contact.mjs",
       "accepted_source": "33f6fc0bd6cb038f92dabe19cd4445278a01cec2",
       "accepted_sha256": "165704f23b1dd999d6facf5265e1a7e658af225f39db33748654f29f15466f32",
-      "runtime_sha256": "bc685ccba773bd55db42379ca6dd4312106c43fc00e1bc820c92d7fe1f5e97d7",
+      "runtime_sha256": "165704f23b1dd999d6facf5265e1a7e658af225f39db33748654f29f15466f32",
       "change": "exact source/head/API port rebinding only"
     },
     {

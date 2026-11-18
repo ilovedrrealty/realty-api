@@ -224,7 +224,7 @@ def confined_api(api):
 if __name__ == "__main__":
     try:
         fixture.APP_COMMIT, fixture.APP_TREE, fixture.MIGRATION_HEAD = APP_COMMIT, APP_TREE, MIGRATION
-        fixture.API_PORT = 8000
+        fixture.API_PORT = 8918
         fixture.configure_application = configure
         fixture.migrate_and_seed = migrate_and_seed
         fixture.confined_api = confined_api

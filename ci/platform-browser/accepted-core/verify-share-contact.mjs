@@ -1,5 +1,5 @@
 const dashboard = 'http://127.0.0.1:4175'
-const api = 'http://127.0.0.1:8000'
+const api = 'http://127.0.0.1:8918'
 const timeout = 10_000
 
 const labels = {

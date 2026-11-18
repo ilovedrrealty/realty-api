@@ -13,50 +13,50 @@
       "path": "run-history-share-browser.mjs",
       "accepted_source": "25af99d2556c25b9875d34a90e6241f9097d11fe",
       "accepted_sha256": "39e620f933b728b9f10a30cce1b59b14772df4481e7c2ee4f31b0a6043b4897a",
-      "runtime_sha256": "39e620f933b728b9f10a30cce1b59b14772df4481e7c2ee4f31b0a6043b4897a",
-      "change": "unchanged"
+      "runtime_sha256": "4099c9431065ae45e4bfd4db5a1317743130017c7a5accc17627c87b84b85b69",
+      "change": "API URL uses accepted fixture port8918"
     },
     {
       "path": "run-member-community-browser.mjs",
       "accepted_source": "25af99d2556c25b9875d34a90e6241f9097d11fe",
       "accepted_sha256": "165972be89902c060411ed335205f58a28c8c878d120de597e34d5d6670df4c1",
-      "runtime_sha256": "165972be89902c060411ed335205f58a28c8c878d120de597e34d5d6670df4c1",
-      "change": "unchanged"
+      "runtime_sha256": "d8dfd8e20c09a16de81c67dcb9f9986779a57005337d9cf12a725d087dd1e096",
+      "change": "API URL uses accepted fixture port8918"
     },
     {
       "path": "run-private-custody-browser.mjs",
       "accepted_source": "25af99d2556c25b9875d34a90e6241f9097d11fe",
       "accepted_sha256": "af93f250fe5d8d01ee92040c68cb72abde61d5002c4a3e6becc681f1ee6eeb41",
-      "runtime_sha256": "af93f250fe5d8d01ee92040c68cb72abde61d5002c4a3e6becc681f1ee6eeb41",
-      "change": "unchanged"
+      "runtime_sha256": "716eddeefe62c2bc06272fc5dfe96fc26d2d6b349f8dd2fed3bd4f073f999e36",
+      "change": "API URL uses accepted fixture port8918"
     },
     {
       "path": "run-service-conversation-browser.mjs",
       "accepted_source": "25af99d2556c25b9875d34a90e6241f9097d11fe",
       "accepted_sha256": "f68af4fbad568291b05891a3d0d8c6708f697606bfb258e69c38c215b85308cc",
-      "runtime_sha256": "f68af4fbad568291b05891a3d0d8c6708f697606bfb258e69c38c215b85308cc",
-      "change": "unchanged"
+      "runtime_sha256": "6f83ad2f9221b2bfc1dbf7d5d0a6b24a70ad142d7648cfae21fc4c453e01be3e",
+      "change": "API URL uses accepted fixture port8918"
     },
     {
       "path": "run-service-negotiation-browser.mjs",
       "accepted_source": "25af99d2556c25b9875d34a90e6241f9097d11fe",
       "accepted_sha256": "161842b957d7bc8385be75b15353fee3b9c91443d4a2ea6362d5c8c057c8f265",
-      "runtime_sha256": "161842b957d7bc8385be75b15353fee3b9c91443d4a2ea6362d5c8c057c8f265",
-      "change": "unchanged"
+      "runtime_sha256": "caa888c8d89604cd3d061dbda7c8ba695b7ab655eb1a77bf88af93ecb7ae8588",
+      "change": "API URL uses accepted fixture port8918"
     },
     {
       "path": "run-service-review-browser.mjs",
       "accepted_source": "25af99d2556c25b9875d34a90e6241f9097d11fe",
       "accepted_sha256": "0188040057e97cf391daf2c06200f0230bd19dc649f1ea9785c0cc6524b89482",
-      "runtime_sha256": "0188040057e97cf391daf2c06200f0230bd19dc649f1ea9785c0cc6524b89482",
-      "change": "unchanged"
+      "runtime_sha256": "a7dbf5a36bda5d9451ea6765ca170cd41aa524bfc7c6a301c8623d3f7dffeda4",
+      "change": "API URL uses accepted fixture port8918"
     },
     {
       "path": "run-service-visits-browser.mjs",
       "accepted_source": "25af99d2556c25b9875d34a90e6241f9097d11fe",
       "accepted_sha256": "d76ba389f444ca0615b00549c03b20ff9318bfdb9b0d4344712757c53b01b12d",
-      "runtime_sha256": "d76ba389f444ca0615b00549c03b20ff9318bfdb9b0d4344712757c53b01b12d",
-      "change": "unchanged"
+      "runtime_sha256": "5f50eacda33fb7175995c63e1613ceafb9780cd51facd808efdca90e650a686e",
+      "change": "API URL uses accepted fixture port8918"
     },
     {
       "path": "serve_dashboard_fixture.mjs",

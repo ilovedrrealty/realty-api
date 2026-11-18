@@ -31,8 +31,8 @@ blocking; separate service negotiations and actual award; visit proposal,
 reschedule, cancellation, completion changes and approval; private review;
 selective history sharing/revocation; custody transfer/decline/cancel; and awarded
 service conversation/revocation. Their assertions and scenarios remain intact.
-`accepted/PROVENANCE.json` records every copied byte hash. The only copied-source
-change is the exact PostgreSQL identity 170011 to 170006; the entry wrapper binds
+`accepted/PROVENANCE.json` records every copied byte hash. Copied changes bind the exact PostgreSQL identity 170011 to 170006 and API URL
+to8918, within the accepted static fixture's8900–8999 port range; the entry wrapper binds
 the reusable source verifiers and their explicit environment guards to this pair.
 Their service requests and initial quotes are seeded through real services;
 these phases do not prove normal UI request creation or quote submission.

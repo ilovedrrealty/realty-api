@@ -2,7 +2,7 @@ import { lstat, readFile } from 'node:fs/promises'
 import { chromium } from 'playwright-core'
 
 const dashboard = 'http://127.0.0.1:4175'
-const api = 'http://127.0.0.1:8000'
+const api = 'http://127.0.0.1:8918'
 const fixturePath = '/browser-fixtures/fixtures.json'
 const wait = 15_000
 const roles = { owner: 'owner', winner: 'buyer', loser: 'buyer', outsider: 'buyer', admin: 'admin' }

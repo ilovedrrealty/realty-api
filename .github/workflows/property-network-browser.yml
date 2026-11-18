@@ -2,7 +2,7 @@ name: Isolated integrated owner member and service browser journeys
 
 on:
   push:
-    branches: [codex-ci-property-network-browser-20261118]
+    branches: [codex-ci-property-network-browser-20261118-v2]
 
 permissions:
   contents: read

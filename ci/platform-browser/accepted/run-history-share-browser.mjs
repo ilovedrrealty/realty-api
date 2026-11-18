@@ -3,7 +3,7 @@ import { isDeepStrictEqual } from 'node:util'
 import { chromium } from 'playwright-core'
 
 const dashboard = 'http://127.0.0.1:4175'
-const api = 'http://127.0.0.1:8000'
+const api = 'http://127.0.0.1:8918'
 const fixturePath = '/browser-fixtures/fixtures.json'
 const base = '/property-network/history-shares'
 const wait = 15_000

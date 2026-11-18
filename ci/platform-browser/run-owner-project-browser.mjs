@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import { lstat, readFile } from 'node:fs/promises'
 import { chromium } from 'playwright-core'
 
-const dashboard = 'http://127.0.0.1:4175', api = 'http://127.0.0.1:8000'
+const dashboard = 'http://127.0.0.1:4175', api = 'http://127.0.0.1:8918'
 const network = '/property-network', wait = 15_000
 const roles = { owner: 'owner', professional: 'buyer', outsider: 'buyer' }
 const uuid = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/
@@ -227,12 +227,12 @@ async function main() {
     await run('owner_records_milestone_and_live_completion_progress', async () => {
       await tab(owner, owner.t.milestones)
       const milestones = panel(owner.page, owner.t.milestonePanel)
-      const create = milestones.locator('form').filter({ has: button(milestones, owner.t.addMilestone) })
+      const create = milestones.locator('form').filter({ has: button(owner.page, owner.t.addMilestone) })
       await (await field(create, owner.t.milestone, 'input')).fill(facts.milestone)
       const saved = await write(owner.page, `${projectPath()}/milestones`, 'POST', 201, () => button(create, owner.t.addMilestone).click())
       check(uuid.test(saved.id) && saved.status === 'open', 'MILESTONE_CREATE_INVALID')
       milestoneId = saved.id
-      const edit = milestones.locator('form').filter({ has: button(milestones, owner.t.save) })
+      const edit = milestones.locator('form').filter({ has: button(owner.page, owner.t.save) })
       await (await field(edit, owner.t.status, 'select')).selectOption('completed')
       const done = await write(owner.page, `${network}/milestones/${milestoneId}`, 'PUT', 200, () => button(edit, owner.t.save).click())
       check(done.status === 'completed' && done.id === milestoneId, 'MILESTONE_COMPLETION_INVALID')
@@ -245,7 +245,7 @@ async function main() {
       await visit(professional, `${network}?tab=projects&project=${projectId}`)
       await professional.page.getByRole('heading', { name: facts.project, exact: true, level: 1 }).waitFor()
       const timeline = panel(professional.page, professional.t.timeline)
-      const form = timeline.locator('form').filter({ has: timeline.locator('input[type="file"]') })
+      const form = timeline.locator('form').filter({ has: professional.page.locator('input[type="file"]') })
       const png = await professional.page.evaluate(() => {
         const canvas = document.createElement('canvas'); canvas.width = 36; canvas.height = 24
         const context = canvas.getContext('2d'); context.fillStyle = '#1c8075'; context.fillRect(0, 0, 36, 24)
@@ -270,7 +270,7 @@ async function main() {
     await run('owner_comments_on_exact_photo_and_reads_property_history', async () => {
       await tab(owner, owner.t.timeline)
       const timeline = panel(owner.page, owner.t.timeline)
-      const entry = timeline.locator('li').filter({ has: text(timeline, facts.update) })
+      const entry = timeline.locator('li').filter({ has: text(owner.page, facts.update) })
       await text(entry, facts.update).waitFor(); await attachment(owner, entry)
       await button(entry, owner.t.comments).click()
       await (await field(entry, owner.t.context, 'select')).selectOption(photoId)

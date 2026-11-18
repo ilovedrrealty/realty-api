@@ -6,7 +6,7 @@ die() { printf 'PLATFORM_BROWSER_REFUSED %s\n' "$1" >&2; exit 1; }
 bounded() { timeout --kill-after=8s "$@"; }
 [[ $# == 5 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 &&
-   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-property-network-browser-20261118 &&
+   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-property-network-browser-20261118-v2 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die HOSTED_EXACT_EVENT_REQUIRED
 ops="$1"; frontend="$2"; relay="$3"; backend="$4"; migration="$5"
 [[ "$ops" == "$GITHUB_WORKSPACE/build-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-source" &&
@@ -17,9 +17,9 @@ for checkout in "$ops" "$frontend" "$relay" "$backend" "$migration"; do
   [[ $(realpath "$checkout") == "$checkout" && -z "$current" && ! -e "$checkout/.env" && ! -L "$checkout/.env" ]] || die CLEAN_CHECKOUT_REQUIRED
 done
 [[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" &&
-   $(git -C "$ops" rev-parse HEAD^) == 3a4d8d4d632010b2868d44d55acf493561d76c1b ]] || die EXACT_OPERATIONS_REQUIRED
+   $(git -C "$ops" rev-parse HEAD^) == 76698867d0642ac179cc48c1cc0ca6f92cd649b5 ]] || die EXACT_OPERATIONS_REQUIRED
 delta=$(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD)
-[[ "$delta" == "$(git -C "$ops" ls-tree -r --name-only HEAD -- .github/workflows/property-network-browser.yml ci/platform-browser)" ]] || die EXACT_NEW_BROWSER_FILES_REQUIRED
+[[ "$delta" == "$(cat "$ops/ci/platform-browser/v2-delta.txt")" ]] || die EXACT_PORT_CORRECTION_FILES_REQUIRED
 backend_commit=796f25ff52724db56313916e129df4b252a682fd
 backend_tree=10d76a3de555b567fde93a74b5f90b8d9ba76978
 [[ $(git -C "$backend" rev-parse HEAD) == "$backend_commit" &&
@@ -172,7 +172,7 @@ bounded 360s docker run "${prepare[@]}" --network none \
   env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp CI=true NODE_OPTIONS=--max-old-space-size=1536 \
   npm_config_userconfig=/tmp/ildr-user.npmrc npm_config_globalconfig=/tmp/ildr-global.npmrc \
   npm_config_cache=/tmp/npm npm_config_audit=false npm_config_fund=false npm_config_update_notifier=false \
-  VITE_API_URL=http://127.0.0.1:8000 VITE_LANDING_URL=http://127.0.0.1:8917 \
+  VITE_API_URL=http://127.0.0.1:8918 VITE_LANDING_URL=http://127.0.0.1:8917 \
   VITE_GOOGLE_CLIENT_ID=synthetic-ci.apps.googleusercontent.com \
   sh -c 'npm run typecheck --workspace=dashboard && npm run build --workspace=dashboard' \
   >"$state/dashboard.log" 2>&1 || native=$?
@@ -191,7 +191,7 @@ if sys.argv[3] != "0":
     print(f"INTEGRATED_DASHBOARD native={int(sys.argv[3])}")
     raise SystemExit(1)
 assert b"tsc --noEmit" in data and b"vite build" in data and index.is_file() and not index.is_symlink()
-assert b"127.0.0.1:8000" in b"".join(f.read_bytes() for f in index.parent.glob("assets/*.js") if f.is_file())
+assert b"127.0.0.1:8918" in b"".join(f.read_bytes() for f in index.parent.glob("assets/*.js") if f.is_file())
 print("INTEGRATED_DASHBOARD native=0 typecheck=success build=success")
 PY
 verify_source || die DASHBOARD_ALTERED_SOURCE
@@ -204,8 +204,8 @@ import sys
 source, target = map(Path, sys.argv[1:])
 data = source.read_bytes()
 for before, after in (
-    (b"NEXT_PUBLIC_API_URL: 'http://127.0.0.1:8917'", b"NEXT_PUBLIC_API_URL: 'http://127.0.0.1:8000'"),
-    (b"await startFixture(8917)", b"await startFixture(8000)"),
+    (b"NEXT_PUBLIC_API_URL: 'http://127.0.0.1:8917'", b"NEXT_PUBLIC_API_URL: 'http://127.0.0.1:8918'"),
+    (b"await startFixture(8917)", b"await startFixture(8918)"),
 ):
     assert data.count(before) == 1
     data = data.replace(before, after, 1)
@@ -238,7 +238,7 @@ for phase in phases:
 if sys.argv[3] != "0":
     known = {b"EXACT_RUNTIME_REQUIRED", b"LOOPBACK_ONLY_REQUIRED", b"NATIVE_PHASE_FAILED", b"FIXTURE_CLOSE_REQUIRED",
              b"FIXTURE_CONTRACT_NOT_ACCEPTED", b"UNEXPECTED_GENERATED_TYPE_SOURCE_CHANGE",
-             b"ACTUAL_SYNTHETIC_REQUESTS_REQUIRED", b"SYNTHETIC_EXPORT_AND_METADATA_REQUIRED"}
+             b"ACTUAL_SYNTHETIC_REQUESTS_REQUIRED", b"SYNTHETIC_EXPORT_AND_METADATA_REQUIRED", b"FIXTURE_PORT_REFUSED"}
     for code in re.findall(rb"(?m)^CUMULATIVE_LANDING_FAILED ([A-Z_]+)$", data):
         if code in known:
             print("INTEGRATED_NEXT_FAILURE code=" + code.decode("ascii"))
@@ -304,7 +304,7 @@ import sys
 workspace, browser = map(Path, sys.argv[1:])
 output = workspace/'apps/landing/out'
 assert all((output/path).is_file() for path in ('login/index.html', 'rentals/index.html', 'search/index.html'))
-assert any(b'http://127.0.0.1:8000' in file.read_bytes() for file in output.glob('_next/static/chunks/**/*.js'))
+assert any(b'http://127.0.0.1:8918' in file.read_bytes() for file in output.glob('_next/static/chunks/**/*.js'))
 for language in ('en', 'es'):
     def source(path):
         return json.loads((workspace/path).read_bytes())
@@ -399,7 +399,7 @@ for index in "${!phases[@]}"; do
   ready=0
   for ((attempt=0; attempt<120; attempt++)); do
     if [[ -f "$state/fixtures/$phase/fixtures.json" ]] && bounded 4s docker exec "$api" python -I -B -c \
-      'import urllib.request; assert all(urllib.request.urlopen(url,timeout=2).status==200 for url in ("http://127.0.0.1:8000/health","http://127.0.0.1:4175/property-network","http://127.0.0.1:8917/rentals/"))' >/dev/null 2>&1; then
+      'import urllib.request; assert all(urllib.request.urlopen(url,timeout=2).status==200 for url in ("http://127.0.0.1:8918/health","http://127.0.0.1:4175/property-network","http://127.0.0.1:8917/rentals/"))' >/dev/null 2>&1; then
       ready=1; break
     fi
     [[ $(bounded 4s docker inspect --format '{{.State.Running}}' "$api") == true ]] || break

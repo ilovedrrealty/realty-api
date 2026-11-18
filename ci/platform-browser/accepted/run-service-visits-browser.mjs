@@ -2,7 +2,7 @@ import { lstat, readFile } from 'node:fs/promises'
 import { chromium } from 'playwright-core'
 
 const DASHBOARD = 'http://127.0.0.1:4175'
-const API = 'http://127.0.0.1:8000'
+const API = 'http://127.0.0.1:8918'
 const FIXTURE_PATH = '/browser-fixtures/fixtures.json'
 const CLOCK_PATH = '/__service-visit-rehearsal/advance-clock'
 const WAIT = 14_000
