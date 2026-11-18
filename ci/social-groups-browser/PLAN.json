@@ -1,0 +1,167 @@
+{
+  "status": "SOURCE_PROPOSAL_ONLY_NOT_EXECUTED",
+  "backend": "4e23cc8b643a4b07f4e14042e530e6271dad9c8f",
+  "backend_tree": "8093ea7aa9fd8f87a842e2527c715a8c482ac1fc",
+  "backend_head": "c4e2a7319b60",
+  "frontend": "5d2afabca5560cb06166ad6af8efa3a06f8d4b6c",
+  "frontend_tree": "48b26c92f06d3112d3bebea2e17a373d3a7b533e",
+  "frontend_parent": "c53aed2cdd0d9480a6c46c78253874a7674452d5",
+  "operations_parent": "b7c3de95a74ed84bc4aaed3e06cada2d3685f3a1",
+  "proposed_first_ref": "codex-ci-social-groups-browser-20261118",
+  "accepted_runtime_recipe": "3007728fd67c5889a8373e41ff3ffa5cc50d839b",
+  "contracts": {
+    "files": 59,
+    "tests": 480,
+    "expected_failures": 0,
+    "expected_skips": 0
+  },
+  "build": "One locked actual frontend contract suite and strict Dashboard typecheck plus Vite build on the exact source. No local build, unchanged Next build, old native suite or old network browser repeat.",
+  "retained": "Require Landing and shared packages byte-identical to the live map predecessor. Retain accepted 68 network, eight contact and eight map browser groups, with their 59 whole-page geometry checks. This supplies new groups evidence only. The prior Landing sign-in form evidence is retained by byte identity; this phase does not serve or exercise a new Landing login form.",
+  "normal_browser": {
+    "journeys": 12,
+    "geometries": 16,
+    "languages": [
+      "en",
+      "es"
+    ],
+    "widths": [
+      320,
+      390,
+      1366
+    ],
+    "flows": [
+      "Normal Groups menu entry, private defaults, cancel unsaved creation, then explicitly create one group.",
+      "Direct invite, decline, reinvite and explicit alias acceptance.",
+      "Private group image, post photo and photo-scoped comment through actual forms.",
+      "Role change, moderation and refreshed permission controls.",
+      "Browser-created fragment invite and logged-out Dashboard shell; actual Sign-in anchor opens a separate tab with the unchanged Landing/login URL, target/rel and no query, hash or token. Abort and close that unserved Landing tab, sign in through the real API cookie in the same context, then use the actual shell Check sign-in, Preview and Accept controls; revoke the link.",
+      "Registered discovery, request and owner approval.",
+      "Reviewed and acknowledged private-to-network publication; older private posts remain private.",
+      "Open join and leave without property or project access.",
+      "Withdraw network visibility and observe actual private photo or feed denial.",
+      "Reload authoritative inactive membership versions and unblock or reinvite.",
+      "Archive blocks new activity while managers can withdraw retained access.",
+      "Real auth loss, unsaved draft, stale action and same-tab second invitation handling."
+    ],
+    "exact_driver_inventory": {
+      "prefix": "SOCIAL_GROUPS_BROWSER_RESULT",
+      "checks": [
+        "normal_menu_private_create_and_draft_cancel",
+        "direct_invitation_decline_reinvite_and_alias_acceptance",
+        "private_photos_group_image_and_photo_comments",
+        "group_roles_and_moderation",
+        "manual_fragment_invites_signin_accept_revoke",
+        "registered_discovery_request_and_approval",
+        "publication_review_and_private_draft_version_binding",
+        "open_join_leave_without_property_grants",
+        "withdrawal_and_next_request_photo_denial",
+        "manager_history_unblock_and_reinvite",
+        "archive_and_closed_group_access_revocation",
+        "auth_loss_uncertain_status_and_second_invite_isolation"
+      ],
+      "geometry_pairs": [
+        [
+          "en_index",
+          320
+        ],
+        [
+          "en_index",
+          390
+        ],
+        [
+          "en_index",
+          1366
+        ],
+        [
+          "en_detail",
+          320
+        ],
+        [
+          "en_detail",
+          390
+        ],
+        [
+          "en_detail",
+          1366
+        ],
+        [
+          "es_index",
+          320
+        ],
+        [
+          "es_index",
+          390
+        ],
+        [
+          "es_index",
+          1366
+        ],
+        [
+          "es_detail",
+          320
+        ],
+        [
+          "es_detail",
+          390
+        ],
+        [
+          "es_detail",
+          1366
+        ],
+        [
+          "en_create",
+          320
+        ],
+        [
+          "en_members",
+          320
+        ],
+        [
+          "es_publication",
+          320
+        ],
+        [
+          "invite_shell",
+          320
+        ]
+      ]
+    }
+  },
+  "synthetic_data": {
+    "schema_tables": 99,
+    "retained_tables": 92,
+    "protected_owner_contacts": 82,
+    "total_contacts": 85,
+    "total_sources": 86,
+    "hidden_professional_drafts": 46,
+    "users": 5,
+    "accepted_shaped_jobs": 9,
+    "worker_rows": 1,
+    "cms_version": 7,
+    "typed_floorplans": 2,
+    "unrelated_private_projects": 1,
+    "preseeded_group_rows": 0,
+    "created_groups": 1,
+    "unique_receipt_budget": 64,
+    "private_files_removed": 2,
+    "all_retained_rows": "Compare every full row and sequence privately before and after. No contact rows, credentials, tokens or photo bytes are printed or uploaded.",
+    "receipts": "Compare real successful operation, actor, submission, target and version projections with every persisted immutable action; reads and replays are counted separately."
+  },
+  "isolation": "Immutable Docker images; disposable marked PG17.6 on loopback-only network; actual API, signed sessions and cookies. The CI parent is mounted read-only for unchanged b7 catalog and seed_old helpers. Only bounded synthetic group image storage is replaced by an in-memory byte map. External transports are refused and counted; no worker lifespan.",
+  "cleanup": "Verify private facts and image files by inode before deletion; verify disposable database marker before dropping it; remove only nonce-labeled containers, generated image and owned scratch. No artifact upload.",
+  "limits": "Synthetic accounts and private group content only. No real invite, contact import, account creation, property/project/service mutation, real Storage recovery, provider message, fee, environment, CORS, security or production change. Native token expiry boundaries and schema/restore evidence remain separate accepted proofs. Browser entry uses the canonical lowercase generated invite path. Case and encoded path aliases are covered by the existing ten API/token leaf contracts and source review; this phase makes no new uppercase HTTP-navigation claim.",
+  "publication": "This proposal authorizes no main, deployment, alias, database or provider action. Exact source pins and all six operations files require root review before the first absent-ref isolated push.",
+  "native_evidence": {
+    "run": 44277418032,
+    "source": "4e23cc8b643a4b07f4e14042e530e6271dad9c8f",
+    "cases": 24,
+    "status": "PASS_REPORTED_BY_ROOT_RETAIN_SEPARATE_RECEIPT",
+    "schema_tables": 99
+  },
+  "live_frontend_predecessor": "461a2ca2c7c2cac39212d4bddec9352e35429c39",
+  "test_only_successor": {
+    "parent": "c53aed2cdd0d9480a6c46c78253874a7674452d5",
+    "file": "tests/property-network-ui.test.cjs",
+    "change": "Supply the existing VM browser adapter with one benign shared location object; no assertions or test counts changed. All product files are byte-identical to the reviewed parent."
+  }
+}
