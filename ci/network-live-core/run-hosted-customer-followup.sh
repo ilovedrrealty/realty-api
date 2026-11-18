@@ -4,7 +4,7 @@ die() { printf 'CUSTOMER_FOLLOWUP_REFUSED %s\n' "$1" >&2; exit 1; }
 bounded() { timeout --kill-after=8s "$@"; }
 
 [[ $# == 6 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api ]] || die CI_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-network-live-core-native-20261118-v3 && ${GITHUB_RUN_ATTEMPT:-} == 1 &&
+[[ ${GITHUB_REF:-} == refs/heads/codex-ci-network-live-core-native-20261118-v4 && ${GITHUB_RUN_ATTEMPT:-} == 1 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 [[ ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 ]] || die HOSTED_LINUX_REQUIRED
 ops="$1"; application="$2"; prior="$3"; recipe="$4"; legacy="$5"; live="$6"
@@ -18,16 +18,17 @@ for checkout in "$ops" "$application" "$prior" "$recipe" "$legacy" "$live"; do
 done
 app_commit=$(git -C "$application" rev-parse HEAD)
 app_tree=$(git -C "$application" rev-parse 'HEAD^{tree}')
-[[ "$app_commit" == 796f25ff52724db56313916e129df4b252a682fd && "$app_tree" == 10d76a3de555b567fde93a74b5f90b8d9ba76978 &&
-   $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" show -s --format=%P HEAD) == ed878d5d9504305084b572cf74310d366d3d1f89 &&
+[[ "$app_commit" == 01695530df670a94ac28f8b3bf36cc34b5b7a942 && "$app_tree" == e88ea0c57f9fac39545322532a5992d5a2927676 &&
+   $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" show -s --format=%P HEAD) == d284ff5ac9e4da093a39fa21d10f126da1222351 &&
    ! -e "$application/.env" && ! -L "$application/.env" ]] || die EXACT_IMMUTABLE_PRODUCT_REQUIRED
-# The only candidate successor change corrects the established four-key
-# public catalog test; every product and migration blob remains reviewed081868.
-[[ $(git -C "$application" show -s --format=%P HEAD) == 081868373f318498ddaa835de6496aa6e62d6f57 &&
-   $(git -C "$application" diff --name-only HEAD^ HEAD) == tests/test_professionals.py &&
-   $(git -C "$application" diff --numstat HEAD^ HEAD) == $'2\t2\ttests/test_professionals.py' ]] ||
+# The successor scopes one historical migration fixture. Product and deployed
+# migration blobs retain the reviewed 081868 behavior; both test repairs are explicit.
+[[ $(git -C "$application" show -s --format=%P HEAD) == 796f25ff52724db56313916e129df4b252a682fd &&
+   $(git -C "$application" diff --name-only HEAD^ HEAD) == tests/test_service_workflow_migration.py &&
+   $(git -C "$application" diff --numstat HEAD^ HEAD) == $'7\t2\ttests/test_service_workflow_migration.py' &&
+   $(git -C "$application" diff --name-only 081868373f318498ddaa835de6496aa6e62d6f57 HEAD) == $'tests/test_professionals.py\ntests/test_service_workflow_migration.py' ]] ||
   die EXACT_TEST_ONLY_SOURCE_SUCCESSOR_REQUIRED
-[[ $(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) == $'.github/workflows/network-live-core-native.yml\nci/network-live-core/run-hosted-customer-followup.sh' ]] ||
+[[ $(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) == $'.github/workflows/network-live-core-native.yml\nci/network-live-core/run-hosted-customer-followup.sh\nci/network-live-core/verify-customer-followup.py\nci/network-live-core/verify-live-delivery-rollback.py\nci/network-live-core/verify-live-delivery-schema.py' ]] ||
   die EXACT_OPERATIONS_DELTA_REQUIRED
 [[ $(git -C "$prior" rev-parse HEAD) == e660040e0c514aca3f7f5b7d7a5007e4fdc596c4 &&
    $(git -C "$prior" rev-parse 'HEAD^{tree}') == 4e230dcfd86ad1a3353ca3b30efe4a425e60f884 &&
@@ -105,7 +106,7 @@ from pathlib import Path, PurePosixPath
 import subprocess, sys
 application, live, target = map(Path, sys.argv[1:])
 paths = subprocess.check_output(["git", "-C", str(application), "diff", "--name-only", "--diff-filter=A",
-    "7f63fec927f75af3f901f74297973253ad5c743b", "796f25ff52724db56313916e129df4b252a682fd", "--", "alembic/versions"], text=True).splitlines()
+    "7f63fec927f75af3f901f74297973253ad5c743b", "01695530df670a94ac28f8b3bf36cc34b5b7a942", "--", "alembic/versions"], text=True).splitlines()
 assert len(paths) == 32
 for name in paths:
     path = PurePosixPath(name)
@@ -164,7 +165,7 @@ import sys
 
 EXPECTED_CONTRACTS = {'customer_delivery': 19, 'lead_delivery': 53, 'owner_leads': 8, 'property_inquiry': 10, 'professionals': 27, 'professional_catalog': 7, 'property_network': 22, 'private_property_registry': 16, 'private_property_registry_migration': 5, 'property_custody': 5, 'history_share': 5, 'service_workflow': 35, 'service_workflow_migration': 5, 'service_visit': 5, 'service_conversation': 5, 'service_negotiation': 5, 'service_review': 5, 'service_rebooking': 3, 'service_favorites': 4, 'service_referrals': 5, 'maintenance_reminders': 5, 'due_work_reminders': 6, 'service_operations': 5, 'property_management': 19, 'transaction_room': 9, 'transaction_documents': 5, 'transaction_document_storage': 7, 'listing_floor_plans': 4, 'admin_trade_contacts': 3, 'legacy_rollout': 1}
 path = Path(sys.argv[1])
-assert path.stat().st_size <= 131072
+assert path.stat().st_size <= 262144
 prefix = b'CUSTOMER_FOLLOWUP_RESULT '
 rows = [json.loads(line[len(prefix):]) for line in path.read_bytes().splitlines() if line.startswith(prefix)]
 assert len(rows) == 1
@@ -186,6 +187,76 @@ else:
         'focused_legacy_string_capture_passed': 1,
         'postgres_version_num': 170006,
     }
+diagnostic_prefix = b'NETWORK_CONTRACT_DIAGNOSTICS '
+diagnostics = [json.loads(line[len(diagnostic_prefix):]) for line in path.read_bytes().splitlines()
+               if line.startswith(diagnostic_prefix)]
+assert len(diagnostics) <= 1
+if diagnostics:
+    diagnostic = diagnostics[0]
+    expected_suites = [('customer_delivery', 'CustomerDeliveryTests', 19),
+ ('lead_delivery', 'LeadDeliveryTests', 53),
+ ('owner_leads', 'OwnerLeadFeedTests', 8),
+ ('property_inquiry', 'PropertyInquiryTests', 10),
+ ('legacy_inquiry', 'LegacyInquiryRolloutTests', 1),
+ ('contact_leads', 'LeadContactTests', 1),
+ ('professionals', 'ProfessionalTests', 27),
+ ('professional_catalog', 'ProfessionalCatalogTests', 7),
+ ('property_network', 'PropertyNetworkRoutes', 18),
+ ('property_network', 'PrivateImageContracts', 4),
+ ('private_property_registry', 'PrivateRegistryRoutes', 16),
+ ('private_property_registry_migration', 'PrivateRegistryMigration', 5),
+ ('property_custody', 'PrivatePropertyCustody', 5),
+ ('history_share', 'PrivatePropertyHistoryShares', 5),
+ ('service_workflow', 'PrivateServiceWorkflow', 35),
+ ('service_workflow_migration', 'PrivateServiceMigration', 5),
+ ('service_visit', 'PrivateAwardedServiceWork', 5),
+ ('service_conversation', 'PrivateAwardedServiceConversation', 5),
+ ('service_negotiation', 'PrivateServiceNegotiationConversation', 5),
+ ('service_review', 'PrivateCompletedServiceReview', 5),
+ ('service_rebooking', 'PrivateCompletedServiceRebooking', 3),
+ ('service_favorites', 'PrivateServiceFavorites', 4),
+ ('service_referrals', 'PrivateServiceReferrals', 5),
+ ('maintenance_reminders', 'PrivateMaintenanceReminders', 5),
+ ('due_work_reminders', 'PrivateDueWorkReminders', 6),
+ ('service_operations', 'PrivateServiceOperations', 5),
+ ('property_management', 'PropertyManagementTests', 19),
+ ('transaction_room', 'TransactionRoomTests', 9),
+ ('transaction_documents', 'TransactionDocumentTests', 5),
+ ('transaction_document_storage', 'TransactionDocumentStorageTests', 7),
+ ('listing_floor_plans', 'ListingFloorPlanTests', 4),
+ ('admin_trade_contacts', 'TradeContactsTest', 3)]
+    safe_exception_types = {'OperationalError', 'ImportError', 'PermissionError', 'CountMismatch', 'SkipTest', 'ForeignKeyViolation', 'DBAPIError', 'AttributeError', 'UnexpectedSuccess', 'ProgrammingError', 'TypeError', 'NameError', 'ValueError', 'DataError', 'InternalError', 'RuntimeError', 'ModuleNotFoundError', 'IntegrityError', 'ValidationError', 'OtherException', 'KeyError', 'TimeoutError', 'NotNullViolation', 'AssertionError'}
+    assert set(diagnostic) == {'status', 'required_cases', 'required_suites', 'run_cases', 'suite_count',
+        'unexpected_transport_attempts', 'schema_cleanup_verified', 'suites', 'issues'}
+    assert diagnostic['status'] in {'PASS', 'FAIL'}
+    assert diagnostic['required_cases'] == 314 and diagnostic['required_suites'] == 32
+    assert diagnostic['suite_count'] == len(diagnostic['suites']) == 32
+    assert type(diagnostic['schema_cleanup_verified']) is bool
+    assert type(diagnostic['unexpected_transport_attempts']) is int and 0 <= diagnostic['unexpected_transport_attempts'] <= 100000
+    assert [(row['module'], row['class'], row['expected']) for row in diagnostic['suites']] == expected_suites
+    fields = {'module', 'class', 'expected', 'discovered', 'run', 'failures', 'errors', 'skipped',
+              'expected_failures', 'unexpected_successes'}
+    for row in diagnostic['suites']:
+        assert set(row) == fields
+        assert all(type(row[key]) is int and 0 <= row[key] <= 100000 for key in fields - {'module', 'class'})
+    assert diagnostic['run_cases'] == sum(row['run'] for row in diagnostic['suites'])
+    pairs = {(module, class_name) for module, class_name, _ in expected_suites}
+    kinds = {'failure', 'error', 'expected_failure', 'skip', 'unexpected_success', 'load_error',
+             'harness_error', 'discovered_count_mismatch', 'run_count_mismatch'}
+    for item in diagnostic['issues']:
+        assert set(item) == {'module', 'class', 'method', 'kind', 'exception_type'}
+        assert (item['module'], item['class']) in pairs and item['kind'] in kinds
+        assert item['exception_type'] in safe_exception_types
+        assert item['method'] == 'setup_or_cleanup' or re.fullmatch(r'test_[a-z_]{1,180}', item['method'])
+    clean = (not diagnostic['issues'] and diagnostic['run_cases'] == 314 and
+             diagnostic['unexpected_transport_attempts'] == 0 and diagnostic['schema_cleanup_verified'] and
+             all(row['discovered'] == row['run'] == row['expected'] and
+                 not any(row[key] for key in ('failures','errors','skipped','expected_failures','unexpected_successes'))
+                 for row in diagnostic['suites']))
+    assert (diagnostic['status'] == 'PASS') is clean
+    print(diagnostic_prefix.decode() + json.dumps(diagnostic, sort_keys=True, separators=(',', ':')))
+if report['status'] == 'PASS':
+    assert len(diagnostics) == 1 and diagnostics[0]['status'] == 'PASS'
 print(prefix.decode() + json.dumps(report, sort_keys=True, separators=(',', ':')))
 assert report['status'] == 'PASS'
 PY

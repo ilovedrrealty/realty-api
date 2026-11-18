@@ -13,8 +13,8 @@ import unittest
 from unittest.mock import patch
 
 
-APPLICATION_COMMIT = "796f25ff52724db56313916e129df4b252a682fd"
-APPLICATION_TREE = "10d76a3de555b567fde93a74b5f90b8d9ba76978"
+APPLICATION_COMMIT = "01695530df670a94ac28f8b3bf36cc34b5b7a942"
+APPLICATION_TREE = "e88ea0c57f9fac39545322532a5992d5a2927676"
 MIGRATION = "b19d8e4c720a"
 PRIOR_HARNESS = Path("/prior/test_cumulative_communications_acceptance.py")
 PRIOR_SHA256 = "31d9792c4fc11f924af0b0ab2db3247f77eb083c1274fab94fb99c75197db60b"
@@ -171,21 +171,82 @@ def verify_candidate_contracts(prior):
     loader = unittest.TestLoader()
     legacy = load_pinned("accepted_legacy_contract", LEGACY_HARNESS, LEGACY_SHA256)
     unexpected_egress = []
+    reports = []
+    issues = []
+    safe_exception_types = {
+        "AssertionError", "AttributeError", "CountMismatch", "DataError", "DBAPIError",
+        "ForeignKeyViolation", "ImportError", "IntegrityError", "InternalError", "KeyError",
+        "ModuleNotFoundError", "NameError", "NotNullViolation", "OperationalError", "OtherException",
+        "PermissionError", "ProgrammingError", "RuntimeError", "SkipTest", "TimeoutError",
+        "TypeError", "UnexpectedSuccess", "ValidationError", "ValueError",
+    }
 
     def refuse_transport(*_args, **_kwargs):
         unexpected_egress.append(True)
         raise prior.RehearsalFailure("unexpected_real_transport")
 
-    def assert_suite(suite, count):
-        prior.require(suite.countTestCases() == count, "candidate_contract_inventory_changed")
+    def exception_category(trace):
+        # Emit a fixed category only. Never return a traceback or exception message.
+        names = re.findall(r"(?m)^([A-Za-z_][A-Za-z0-9_.]*):", trace)
+        for name in reversed(names):
+            short = name.rsplit(".", 1)[-1]
+            if short in safe_exception_types:
+                return short
+        return "OtherException"
+
+    def issue(module_name, class_name, case, kind, category):
+        parent = getattr(case, "test_case", case)
+        method = getattr(parent, "_testMethodName", "")
+        if not isinstance(method, str) or not re.fullmatch(r"test_[a-z_]{1,180}", method):
+            method = "setup_or_cleanup"
+        item = {"module": module_name, "class": class_name, "method": method,
+                "kind": kind, "exception_type": category}
+        if item not in issues:
+            issues.append(item)
+
+    def source_module(name):
+        module = importlib.import_module(f"test_{name}")
+        prior.require(Path(module.__file__).resolve(strict=True) == tests_root / f"test_{name}.py",
+                      "candidate_test_module_required")
+        return module
+
+    def run_suite(module_name, class_name, count, build):
+        prior.stage = module_name
+        report = {"module": module_name, "class": class_name, "expected": count,
+                  "discovered": 0, "run": 0, "failures": 0, "errors": 0, "skipped": 0,
+                  "expected_failures": 0, "unexpected_successes": 0}
+        try:
+            suite = build()
+            report["discovered"] = suite.countTestCases()
+        except Exception as error:
+            category = type(error).__name__
+            issue(module_name, class_name, None, "load_error",
+                  category if category in safe_exception_types else "OtherException")
+            reports.append(report)
+            return
+        if report["discovered"] != count:
+            issue(module_name, class_name, None, "discovered_count_mismatch", "CountMismatch")
         result = unittest.TestResult()
-        suite.run(result)
-        if result.failures or result.errors:
-            case = (result.failures + result.errors)[0][0]
-            method = getattr(case, "_testMethodName", "")
-            prior.require(False, method if re.fullmatch(r"test_[a-z_]{1,84}", method) else "candidate_contract_failed")
-        prior.require(result.testsRun == count and not result.skipped and not result.expectedFailures
-                      and not result.unexpectedSuccesses, "candidate_contracts_not_fully_executed")
+        try:
+            suite.run(result)
+        except Exception as error:
+            category = type(error).__name__
+            issue(module_name, class_name, None, "harness_error",
+                  category if category in safe_exception_types else "OtherException")
+        report.update(run=result.testsRun, failures=len(result.failures), errors=len(result.errors),
+                      skipped=len(result.skipped), expected_failures=len(result.expectedFailures),
+                      unexpected_successes=len(result.unexpectedSuccesses))
+        for kind, entries in (("failure", result.failures), ("error", result.errors),
+                              ("expected_failure", result.expectedFailures)):
+            for case, trace in entries:
+                issue(module_name, class_name, case, kind, exception_category(trace))
+        for case, _reason in result.skipped:
+            issue(module_name, class_name, case, "skip", "SkipTest")
+        for case in result.unexpectedSuccesses:
+            issue(module_name, class_name, case, "unexpected_success", "UnexpectedSuccess")
+        if result.testsRun != count:
+            issue(module_name, class_name, None, "run_count_mismatch", "CountMismatch")
+        reports.append(report)
 
     outcomes = {}
     with ExitStack() as stack:
@@ -195,38 +256,42 @@ def verify_candidate_contracts(prior):
         for flag in ("lead_delivery_enabled", "customer_messages_enabled", "property_inquiry_require_consent"):
             stack.enter_context(patch.object(settings, flag, False))
         for name, class_name, count in CONTRACTS:
-            prior.stage = name
-            module = importlib.import_module(f"test_{name}")
-            prior.require(Path(module.__file__).resolve(strict=True) == tests_root / f"test_{name}.py",
-                          "candidate_test_module_required")
-            assert_suite(loader.loadTestsFromTestCase(getattr(module, class_name)), count)
+            run_suite(name, class_name, count, lambda name=name, class_name=class_name:
+                      loader.loadTestsFromTestCase(getattr(source_module(name), class_name)))
             outcomes[name] = count
-        prior.stage = "legacy_rollout"
-        assert_suite(unittest.TestSuite([legacy.legacy_rollout_case(module)]), 1)
+        run_suite("legacy_inquiry", "LegacyInquiryRolloutTests", 1, lambda: unittest.TestSuite([
+            legacy.legacy_rollout_case(source_module("property_inquiry"))]))
         outcomes["legacy_rollout"] = 1
-        prior.stage = "legacy_string_capture"
-        contacts = importlib.import_module("test_contact_leads")
-        prior.require(Path(contacts.__file__).resolve(strict=True) == tests_root / "test_contact_leads.py",
-                      "candidate_contact_contract_required")
-        assert_suite(unittest.TestSuite([
-            contacts.LeadContactTests("test_capture_endpoint_retains_contact_validation")
-        ]), 1)
+        run_suite("contact_leads", "LeadContactTests", 1, lambda: unittest.TestSuite([
+            source_module("contact_leads").LeadContactTests("test_capture_endpoint_retains_contact_validation")]))
         for name, class_name, count in BROAD_CONTRACTS:
-            prior.stage = name
-            module = importlib.import_module(f"test_{name}")
-            prior.require(Path(module.__file__).resolve(strict=True) == tests_root / f"test_{name}.py",
-                          "candidate_test_module_required")
-            assert_suite(loader.loadTestsFromTestCase(getattr(module, class_name)), count)
+            run_suite(name, class_name, count, lambda name=name, class_name=class_name:
+                      loader.loadTestsFromTestCase(getattr(source_module(name), class_name)))
             outcomes[name] = outcomes.get(name, 0) + count
-    prior.require(not unexpected_egress, "real_transport_was_attempted")
+
     prior.stage = "contract_cleanup"
-    with engine.connect() as connection:
-        schemas = connection.execute(text(
-            "SELECT COUNT(*) FROM pg_namespace "
-            "WHERE nspname NOT IN ('public','information_schema') AND nspname NOT LIKE 'pg_%'"
-        )).scalar_one()
-    engine.dispose()
+    schemas = None
+    try:
+        with engine.connect() as connection:
+            schemas = connection.execute(text(
+                "SELECT COUNT(*) FROM pg_namespace "
+                "WHERE nspname NOT IN ('public','information_schema') AND nspname NOT LIKE 'pg_%'"
+            )).scalar_one()
+    except Exception:
+        # Retain all case diagnostics while marking an unverified cleanup failed.
+        schemas = None
+    finally:
+        engine.dispose()
+    diagnostics = {"status": "PASS" if not issues and not unexpected_egress and schemas == 0 else "FAIL",
+                   "required_cases": 314, "required_suites": 32,
+                   "run_cases": sum(row["run"] for row in reports), "suite_count": len(reports),
+                   "unexpected_transport_attempts": len(unexpected_egress), "schema_cleanup_verified": schemas == 0,
+                   "suites": reports, "issues": issues}
+    print("NETWORK_CONTRACT_DIAGNOSTICS " + json.dumps(diagnostics, sort_keys=True, separators=(",", ":")), flush=True)
+    prior.require(not unexpected_egress, "real_transport_was_attempted")
     prior.require(schemas == 0, "candidate_test_schema_cleanup_required")
+    prior.require(not issues and len(reports) == 32 and diagnostics["run_cases"] == 314,
+                  "candidate_contract_suite_failures")
     return outcomes
 
 

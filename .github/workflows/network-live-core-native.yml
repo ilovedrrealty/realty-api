@@ -2,7 +2,7 @@ name: Isolated full property network and live-core rehearsal
 
 on:
   push:
-    branches: [codex-ci-network-live-core-native-20261118-v3]
+    branches: [codex-ci-network-live-core-native-20261118-v4]
 
 permissions:
   contents: read
@@ -34,9 +34,9 @@ jobs:
       - name: Read exact integrated property network backend
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 796f25ff52724db56313916e129df4b252a682fd
+          ref: 01695530df670a94ac28f8b3bf36cc34b5b7a942
           path: followup-app
-          fetch-depth: 3
+          fetch-depth: 4
           persist-credentials: false
       - name: Read exact live backend for upgrade and compatible rollback
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1

@@ -25,8 +25,8 @@ CANDIDATE = Path("/application")
 ROLLBACK = Path("/rollback")
 LIVE_COMMIT = "7f63fec927f75af3f901f74297973253ad5c743b"
 LIVE_TREE = "1a87c3d4c96e2df0c956e18f0f26c982e7ef3289"
-APP_COMMIT = "796f25ff52724db56313916e129df4b252a682fd"
-APP_TREE = "10d76a3de555b567fde93a74b5f90b8d9ba76978"
+APP_COMMIT = "01695530df670a94ac28f8b3bf36cc34b5b7a942"
+APP_TREE = "e88ea0c57f9fac39545322532a5992d5a2927676"
 MIGRATION = "alembic/versions/d721f0b6a84c_live_transactional_notifications.py"
 HEAD = "b19d8e4c720a"
 ROOTS = {"seed_live": LIVE, "seed_candidate": CANDIDATE, "verify_old": ROLLBACK}
@@ -220,7 +220,7 @@ def seed_live():
     history = datetime(2025, 1, 1, tzinfo=timezone.utc)
     with SessionLocal.begin() as db:
         require(all(db.query(model).count() == 0 for model in (
-            User, Lead, Inquiry, Booking, Listing, SiteSettings, TradeContact, TradeContactSource,
+            User, Lead, Inquiry, Booking, Listing, TradeContact, TradeContactSource,
         )),
                 "empty_history_required")
         for role, identifier in USER_IDS.items():
@@ -260,7 +260,11 @@ def seed_live():
             lead_id=HISTORICAL_LEADS[1], check_in=str(start), check_out=str(end), guests=2,
             total_price=300, notes="F01 historical booking note", status="confirmed", created_at=history,
         ))
-        db.add(SiteSettings(id=1, data={"notify_email": ",".join(TEAM), "f01_history_sentinel": "preserve"}))
+        # The deployed settings revision creates this exact empty singleton.
+        configuration = db.get(SiteSettings, 1)
+        require(db.query(SiteSettings).count() == 1 and configuration is not None
+                and configuration.data == {}, "source_created_settings_singleton_required")
+        configuration.data = {"notify_email": ",".join(TEAM), "f01_history_sentinel": "preserve"}
         db.add(TradeContact(
             id=UUID(int=601), identity_key=sha256(b"F01 historical trade").hexdigest(),
             name="F01 historical trade", category="electrical", province="Puerto Plata", locality="Cabarete",
