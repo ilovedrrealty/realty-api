@@ -8,15 +8,16 @@
   "frontend_tree": "e57b136e251493e2ee4b5b81e836843e8bd9e7a8",
   "frontend_parent": "7b9ec53f54141ef66b92466de4dde81f5bc0f69e",
   "frontend_tracked_blobs": 587,
-  "operations_parent": "1dfd2b37e3469068ba74b744317e120e2fdd45cd",
-  "proposed_first_ref": "codex-ci-professional-google-browser-20261118",
+  "operations_parent": "a3f5c088aa321edc54053defa9b8af34ea9b17a8",
+  "proposed_first_ref": "codex-ci-professional-google-browser-20261118-v2",
   "contracts": {
     "files": 60,
     "tests": 489,
     "expected_failures": 0,
-    "expected_skips": 0
+    "expected_skips": 0,
+    "execution": "Retained actual V1 run44297510933/job134778291830 on exact unchanged06d7; not repeated."
   },
-  "build": "One actual locked full frontend contract run, strict Dashboard typecheck and Vite build of the exact new source; all runtime hosted. No local install/build/browser.",
+  "build": "Fresh locked install and actual Vite browser assets from exact06d7. Retain actual489/489/noSkip and strict Dashboard typecheck success from V1; no unchanged contracts/typecheck rerun.",
   "landing_scope": "The shared packages/professionals module changed. Landing app files and package manifests remain unchanged, but no Landing output byte-identity claim is made. Both exact source Vercel preview builds are actual READY in the separate metadata receipt.",
   "vercel_review_evidence": {
     "receipt": "professional-google-vercel-review-pair-20261118.json",
@@ -138,5 +139,30 @@
   "loopback_presence": "Dashboard-origin-only conditional model of native navigator.onLine in the already-guarded loopback-only runner; record measured before/modeled/after/actual visible booleans and use real foreground. No visibility override or API fake.",
   "cleanup": "One owned0600 facts file is inode-verified and removed; drop only marked disposable database and nonce-labeled containers/image/scratch. No artifacts uploaded.",
   "limits": "Synthetic profile updates only; no real contact import, account/invite/outreach, billing, keys, role/permission change, project/group mutation, stored ratings/reviews, provider message or production mutation. Native38 and the prior broad platform suites are retained, not repeated.",
-  "publication": "Root reviews the exact six-file operations tree before any first absent-ref isolated push. This plan is not a production deployment authorization; root owns combined publication and recovery."
+  "publication": "Root reviews the exact six-file operations tree before any first absent-ref isolated push. This plan is not a production deployment authorization; root owns combined publication and recovery.",
+  "prior_attempt": {
+    "run": 44297510933,
+    "job": 134778291830,
+    "operations": "a3f5c088aa321edc54053defa9b8af34ea9b17a8",
+    "status": "ACTUAL_FAILURE_PRESERVED",
+    "actual_contracts": {
+      "tests": 489,
+      "pass": 489,
+      "fail": 0,
+      "skipped": 0
+    },
+    "actual_strict_dashboard": "typecheck and Vite PASS/native0",
+    "browser": "G01_owner_validation LOCATOR_OR_EVENT_DEADLINE; exact await not recorded",
+    "source_mismatch": "saveOwner singular readiness locator matched outer and nested enabled fieldsets. Scope to direct form > fieldset; preserve saved notice, response/version and clean Save proof. Add finite G01 substages only.",
+    "causality_limit": "Source mismatch is unconditional, but broad V1 stage does not establish exact failed await. No product defect inferred.",
+    "owned_cleanup": "verified",
+    "artifacts": [],
+    "receipt": "professional-google-browser-44297510933-v1-failure.json",
+    "receipt_sha256": "87655bbff134c2e46634fb512dccbc956155bdd9c3d19ef64aa8fb73cb7d1bd6",
+    "log_sha256": "637f010c7712d5df50cd803534f685ffdf57389673fec18924e1b2e6f65a427b"
+  },
+  "unchanged_ops_files": {
+    "fixture": "41d1b798d22e93364b12e472a200bd3b86c85467318c8c27adf9d236a1ff2bb0",
+    "checker": "Identical Git blob to a3f5; all six/eight/ten-write acceptance predicates unchanged."
+  }
 }

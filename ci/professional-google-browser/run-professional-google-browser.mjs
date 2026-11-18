@@ -107,12 +107,17 @@ async function write(page, path, method, perform, expected = 200) {
   return { value: await response.json(), input: response.request().postDataJSON() }
 }
 async function saveOwner(page, copy, expectedVersion, expectedStatus = 200) {
+  const firstOwnerSave = stage.startsWith('G01_')
+  if (firstOwnerSave) advance('G01_save_response')
   const result = await write(page, '/professional-profile', 'PUT', () => button(page, copy.professionals.save).click(), expectedStatus)
   check(result.input.expected_version === expectedVersion, 'ACTUAL_CAS_VERSION_REQUIRED')
   if (expectedStatus === 200) {
     check(result.value.version === expectedVersion + 1, 'SAVED_VERSION_INCREMENT_REQUIRED')
+    if (firstOwnerSave) advance('G01_saved_notice')
     await page.getByText(copy.professionals.saved, { exact: true }).waitFor()
-    await page.locator('form fieldset:not([disabled])').waitFor()
+    if (firstOwnerSave) advance('G01_outer_fieldset')
+    await page.locator('form > fieldset:not([disabled])').waitFor()
+    if (firstOwnerSave) advance('G01_clean_save_control')
     check(await button(page, copy.professionals.save).isDisabled(), 'SAVED_DRAFT_BASELINE_REQUIRED')
   }
   return result.value
@@ -214,19 +219,28 @@ try {
   const member = await contextFor(fixture.accounts.member, 'buyer'), guest = await contextFor()
   const ownerPage = await openMenu(owner, en, 'professional-profile')
 
-  advance('G01_owner_validation')
+  advance('G01_invalid_input')
   await ownerPage.getByLabel(en.professionals.google.profile_url, { exact: true }).fill(facts.invalidProfileUrl)
+  advance('G01_invalid_save')
   await button(ownerPage, en.professionals.save).click()
+  advance('G01_invalid_alert')
   await ownerPage.getByRole('alert').getByText(en.professionals.issues.google_profile_url, { exact: true }).waitFor()
+  advance('G01_invalid_unchanged')
   check(ownerPuts === 0 && (await read(owner, '/professional-profile')).version === 1, 'INVALID_GOOGLE_MUST_NOT_SAVE')
+  advance('G01_valid_input')
   await ownerPage.getByLabel(en.professionals.google.profile_url, { exact: true }).fill(facts.profileUrl)
   await ownerPage.getByLabel(en.professionals.google.embed_url, { exact: true }).fill(facts.embedUrl)
   const first = await saveOwner(ownerPage, en, 1)
   check(first.listing_status === 'hidden' && !first.draft.public_contact_consent, 'PRIVATE_GOOGLE_SAVE_REQUIRED')
+  advance('G01_owner_geometry')
   await geometry(ownerPage, 'en_owner_editor')
+  advance('G01_spanish_fields')
   await language(ownerPage, en); await ownerPage.getByLabel(es.professionals.google.embed_url, { exact: true }).waitFor()
+  advance('G01_restore_english')
   await language(ownerPage, es)
+  advance('G01_peer_entry')
   const peer = await contextFor(null, null, await owner.storageState()), peerPage = await openMenu(peer, en, 'professional-profile')
+  advance('G01_peer_draft')
   await peerPage.getByLabel(en.professionals.google.profile_url, { exact: true }).fill(facts.nextProfileUrl)
   await peerPage.getByLabel(en.professionals.google.embed_url, { exact: true }).fill('')
 
