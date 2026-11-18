@@ -31,7 +31,8 @@ class ProfessionalGoogleLinksTest(unittest.TestCase):
                       "https://www.google.com/maps/embed?pb=!1m2", "https://g.page/synthetic/review",
                       "https://www.google.com/maps/place/A%0A", "https://www.google.com/maps/place/../url",
                       "https://www.google.com/maps/place/%2e%2e/url", "https://www.google.com\\@evil.example/maps/place/A",
-                      "https://www.google.com/maps/search/?api=1&api=0&query=Business"):
+                      "https://www.google.com/maps/search/?api=1&api=0&query=Business",
+                      "https://maps.app.goo.gl/Abcde12345?link=https://evil.example"):
             with self.subTest(value=value), self.assertRaises(ValueError):
                 google_profile_url(value)
 

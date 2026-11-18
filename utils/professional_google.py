@@ -5,7 +5,8 @@ from urllib.parse import parse_qsl, unquote, urlsplit
 PROFILE_URL_LIMIT = 2048
 EMBED_URL_LIMIT = 4096
 _CREDENTIAL_PARAMETERS = {"key", "api_key", "apikey", "client", "signature", "token", "access_token",
-                          "callback", "url", "redirect", "redirect_uri", "continue", "return", "returnurl"}
+                          "callback", "url", "link", "deep_link_id", "afl", "ifl", "ofl", "redirect", "redirect_uri",
+                          "redirect_url", "redirecturl", "continue", "return", "returnurl"}
 
 
 def _parts(value, limit):
