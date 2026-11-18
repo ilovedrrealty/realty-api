@@ -650,6 +650,57 @@ def run():
             "full_catalog_sha256": sha256(json.dumps(fresh_full_catalog, sort_keys=True).encode()).hexdigest()}
 
 
+def archive_catalog_diagnostic(source, target, before, after):
+    """Schema metadata only, emitted solely when exact restore equality fails."""
+    render_sql = """SELECT current_setting('search_path'), current_setting('quote_all_identifiers'),
+        current_setting('standard_conforming_strings'), current_setting('server_version_num')"""
+    report = {"scope": "schema_metadata_only", "source_render_settings": query(source, render_sql)[0],
+              "target_render_settings": query(target, render_sql)[0], "components": {}}
+    for category in before:
+        left, right = before[category], after[category]
+        left_only, right_only = sorted(set(left) - set(right), key=repr), sorted(set(right) - set(left), key=repr)
+        component = {"source_count": len(left), "target_count": len(right), "ordered_equal": left == right,
+                     "set_equal": set(left) == set(right), "source_only_count": len(left_only),
+                     "target_only_count": len(right_only), "source_only": [], "target_only": [],
+                     "source_only_truncated": False, "target_only_truncated": False, "mismatches": [],
+                     "mismatches_truncated": False}
+        for name, rows in (("source_only", left_only), ("target_only", right_only)):
+            if category in {"acl", "rls", "enums"}:
+                component[name] = rows[:512]
+            else:
+                component[name] = [{"identity": list(row[:2]),
+                    "tuple_sha256": sha256(json.dumps(row, separators=(",", ":")).encode()).hexdigest()}
+                    for row in rows[:8]]
+            component[name + "_truncated"] = len(rows) > len(component[name])
+        if category not in {"acl", "rls", "enums"}:
+            for index in range(max(len(left), len(right))):
+                old = left[index] if index < len(left) else None
+                new = right[index] if index < len(right) else None
+                if old == new:
+                    continue
+                if len(component["mismatches"]) == 8:
+                    component["mismatches_truncated"] = True
+                    break
+                old_text, new_text = json.dumps(old), json.dumps(new)
+                offset = next((at for at, values in enumerate(zip(old_text, new_text)) if values[0] != values[1]),
+                              min(len(old_text), len(new_text)))
+                start = max(0, offset - 80)
+                component["mismatches"].append({"row_index": index, "first_mismatch_character": offset,
+                    "source_context": old_text[start:start + 256], "target_context": new_text[start:start + 256],
+                    "source_length": len(old_text), "target_length": len(new_text)})
+        report["components"][category] = component
+    # Keep the complete safe tuples whenever they fit; report every truncation.
+    while len(json.dumps(report, sort_keys=True).encode()) > 120000:
+        for component in report["components"].values():
+            for name in ("source_only", "target_only", "mismatches"):
+                rows = component[name]
+                if rows:
+                    component[name] = rows[:len(rows) // 2]
+                    component[name + "_truncated"] = True
+    print("NETWORK_ARCHIVE_CATALOG_DIAGNOSTIC " + json.dumps(report, sort_keys=True,
+          separators=(",", ":")), flush=True)
+
+
 def restore():
     nonce = identity()
     source = f"ildr_f01_upgrade_{nonce}"
@@ -660,7 +711,10 @@ def restore():
                 (database, 170006, f"ildr-live-communications-ci:{nonce}:{purpose}")], "owned_archive_database_required")
         require(table_names(database) == EXPECTED_TABLES
                 and query(database, "SELECT version_num FROM alembic_version") == [(HEAD,)], "archive_full_head_required")
-    require(catalog(source, EXPECTED_TABLES) == catalog(target, EXPECTED_TABLES), "restored_full_catalog_required")
+    source_catalog, target_catalog = catalog(source, EXPECTED_TABLES), catalog(target, EXPECTED_TABLES)
+    if source_catalog != target_catalog:
+        archive_catalog_diagnostic(source, target, source_catalog, target_catalog)
+    require(source_catalog == target_catalog, "restored_full_catalog_required")
     require(snapshot(source, EXPECTED_TABLES) == snapshot(target, EXPECTED_TABLES), "restored_all_rows_sequences_required")
     retained_fixture(source)
     retained_fixture(target)

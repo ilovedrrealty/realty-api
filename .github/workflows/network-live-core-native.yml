@@ -2,7 +2,7 @@ name: Isolated remaining property network native proof
 
 on:
   push:
-    branches: [codex-ci-network-live-core-remaining-native-20261118-v3]
+    branches: [codex-ci-network-live-core-archive-diagnostic-20261118]
 
 permissions:
   contents: read

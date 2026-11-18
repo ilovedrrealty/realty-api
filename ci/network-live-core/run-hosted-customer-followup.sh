@@ -4,7 +4,7 @@ die() { printf 'CUSTOMER_FOLLOWUP_REFUSED %s\n' "$1" >&2; exit 1; }
 bounded() { timeout --kill-after=8s "$@"; }
 
 [[ $# == 7 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api ]] || die CI_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-network-live-core-remaining-native-20261118-v3 && ${GITHUB_RUN_ATTEMPT:-} == 1 &&
+[[ ${GITHUB_REF:-} == refs/heads/codex-ci-network-live-core-archive-diagnostic-20261118 && ${GITHUB_RUN_ATTEMPT:-} == 1 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 [[ ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 ]] || die HOSTED_LINUX_REQUIRED
 ops="$1"; application="$2"; prior="$3"; recipe="$4"; legacy="$5"; live="$6"; rollback_source="$7"
@@ -20,7 +20,7 @@ done
 app_commit=$(git -C "$application" rev-parse HEAD)
 app_tree=$(git -C "$application" rev-parse 'HEAD^{tree}')
 [[ "$app_commit" == 01695530df670a94ac28f8b3bf36cc34b5b7a942 && "$app_tree" == e88ea0c57f9fac39545322532a5992d5a2927676 &&
-   $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" show -s --format=%P HEAD) == c6ec28405c481a27901d955934a66ecb4d7d0161 &&
+   $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" show -s --format=%P HEAD) == 7caaeae376eb35cc77ad772c8be01c200907f5c3 &&
    ! -e "$application/.env" && ! -L "$application/.env" ]] || die EXACT_IMMUTABLE_PRODUCT_REQUIRED
 # The successor scopes one historical migration fixture. Product and deployed
 # migration blobs retain the reviewed 081868 behavior; both test repairs are explicit.
@@ -257,10 +257,34 @@ python3 -I -B - "$state/archive-verify.log" <<'PY_RESTORE'
 from pathlib import Path
 import json, re, sys
 path = Path(sys.argv[1]); assert path.stat().st_size <= 131072
+diagnostic_prefix = b'NETWORK_ARCHIVE_CATALOG_DIAGNOSTIC '
+diagnostics = [json.loads(line[len(diagnostic_prefix):]) for line in path.read_bytes().splitlines()
+               if line.startswith(diagnostic_prefix)]
+assert len(diagnostics) <= 1
+for diagnostic in diagnostics:
+    assert set(diagnostic) == {'scope','source_render_settings','target_render_settings','components'}
+    assert diagnostic['scope'] == 'schema_metadata_only'
+    assert len(json.dumps(diagnostic, sort_keys=True).encode()) <= 120000
+    for name in ('source_render_settings','target_render_settings'):
+        assert len(diagnostic[name]) == 4 and all(isinstance(value,str) and len(value) <= 256
+                                                 for value in diagnostic[name])
+    assert set(diagnostic['components']) == {'columns','constraints','indexes','rls','acl','policies','triggers','functions','enums'}
+    for component in diagnostic['components'].values():
+        assert set(component) == {'source_count','target_count','ordered_equal','set_equal','source_only_count',
+            'target_only_count','source_only','target_only','source_only_truncated','target_only_truncated',
+            'mismatches','mismatches_truncated'}
+        assert all(type(component[name]) is int and 0 <= component[name] <= 10000
+                   for name in ('source_count','target_count','source_only_count','target_only_count'))
+        assert all(type(component[name]) is bool for name in ('ordered_equal','set_equal',
+                   'source_only_truncated','target_only_truncated','mismatches_truncated'))
+        assert all(isinstance(component[name],list) and len(component[name]) <= limit
+                   for name,limit in (('source_only',512),('target_only',512),('mismatches',8)))
+    print('NETWORK_ARCHIVE_CATALOG_DIAGNOSTIC ' + json.dumps(diagnostic, sort_keys=True, separators=(',', ':')))
 prefix = b'LIVE_DELIVERY_SCHEMA_RESULT '
 rows = [json.loads(line[len(prefix):]) for line in path.read_bytes().splitlines() if line.startswith(prefix)]
 assert len(rows) == 1
 report = rows[0]
+assert not diagnostics or report.get('status') == 'FAIL'
 if report.get('status') == 'FAIL':
     assert set(report) <= {'status', 'stage', 'error_type', 'reason'}
     assert all(isinstance(value, str) and re.fullmatch(r'[A-Za-z0-9_]{1,100}', value) for value in report.values())
