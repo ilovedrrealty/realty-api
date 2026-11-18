@@ -1,8 +1,8 @@
-name: Isolated live-base communications and rollback rehearsal
+name: Isolated live-base newsletter and communications rehearsal
 
 on:
   push:
-    branches: [codex-ci-live-communications-20261117-v2]
+    branches: [codex-ci-live-newsletter-native-20261118]
 
 permissions:
   contents: read
@@ -34,13 +34,13 @@ jobs:
       - name: Read exact narrow backend candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 7f63fec927f75af3f901f74297973253ad5c743b
+          ref: c3c4ac8d0371941b0bfa2d086ade8752c42585c9
           path: followup-app
           persist-credentials: false
       - name: Read exact live backend for upgrade and compatible rollback
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 1ae9c9f2ccf3bdd3ac36b11b0da76486d7889838
+          ref: 7f63fec927f75af3f901f74297973253ad5c743b
           path: live-app
           persist-credentials: false
       - name: Read accepted communications fixture and assertions

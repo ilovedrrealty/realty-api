@@ -19,17 +19,17 @@ import sys
 APPLICATION = Path("/application")
 LIVE = Path("/live")
 ROLLBACK = Path("/rollback")
-APP_COMMIT = "7f63fec927f75af3f901f74297973253ad5c743b"
-APP_TREE = "1a87c3d4c96e2df0c956e18f0f26c982e7ef3289"
-LIVE_COMMIT = "1ae9c9f2ccf3bdd3ac36b11b0da76486d7889838"
-LIVE_TREE = "e5dccb6ad520404dda262a0dff99ab3bf1082b9b"
-HEAD = "d721f0b6a84c"
-MIGRATION = "alembic/versions/d721f0b6a84c_live_transactional_notifications.py"
-NEW_TABLES = ("lead_delivery_jobs", "lead_delivery_worker_state")
+APP_COMMIT = "c3c4ac8d0371941b0bfa2d086ade8752c42585c9"
+APP_TREE = "88732c8b457f6e6e30ba696fa998a74cafb08316"
+LIVE_COMMIT = "7f63fec927f75af3f901f74297973253ad5c743b"
+LIVE_TREE = "1a87c3d4c96e2df0c956e18f0f26c982e7ef3289"
+HEAD = "6c02d4a1b9e8"
+MIGRATION = "alembic/versions/6c02d4a1b9e8_private_newsletter_subscriptions.py"
+NEW_TABLES = ("newsletter_subscriptions",)
 EXPECTED_TABLES = (
     "activity_log", "alembic_version", "anonymous_leads", "bookings", "bulk_import_jobs",
     "deal_requests", "inquiries", "lead_delivery_jobs", "lead_delivery_worker_state", "leads",
-    "listing_edits", "listing_events", "listings", "pending_users", "professional_profile_revisions",
+    "listing_edits", "listing_events", "listings", "newsletter_subscriptions", "pending_users", "professional_profile_revisions",
     "professional_profiles", "research_workspaces", "saved_homes", "settings", "trade_contact_sources",
     "trade_contacts", "upgrade_requests", "users", "website_settings", "website_settings_revisions",
 )
@@ -120,6 +120,7 @@ def environment(database):
         "NOTIFY_EMAIL": "", "GHL_ENABLED": "false", "GHL_API_KEY": "", "GHL_LOCATION_ID": "",
         "GHL_WEBHOOK_SECRET": "", "LEAD_DELIVERY_ENABLED": "false", "CUSTOMER_MESSAGES_ENABLED": "false",
         "PROPERTY_INQUIRY_REQUIRE_CONSENT": "false", "SUPABASE_URL": "", "SUPABASE_SERVICE_KEY": "",
+        "NEWSLETTER_FIXTURE": "yes",
         "PAYPAL_CLIENT_ID": "", "PAYPAL_CLIENT_SECRET": "", "PAYPAL_WEBHOOK_ID": "",
     }
     return values
@@ -258,7 +259,7 @@ def repeat_migration(database):
     spec = importlib.util.spec_from_file_location("reviewed_live_delivery_migration", APPLICATION / MIGRATION)
     migration = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(migration)
-    require(migration.revision == HEAD and migration.down_revision == "7aa51b40e2bd", "migration_ancestry_required")
+    require(migration.revision == HEAD and migration.down_revision == "d721f0b6a84c", "migration_ancestry_required")
     engine = create_engine(environment(database)["DATABASE_URL"])
     try:
         with engine.begin() as db:
@@ -267,6 +268,32 @@ def repeat_migration(database):
             migration.upgrade()
     finally:
         engine.dispose()
+
+
+def newsletter_contracts(database):
+    # Reuse six accepted contracts plus the in-flight unsubscribe regression.
+    # TestResult keeps synthetic payloads/errors private; emit aggregates only.
+    code = """
+import json, sys, unittest
+sys.path.insert(0, '/application')
+suite = unittest.defaultTestLoader.discover('/application/tests', pattern='test_newsletter.py')
+assert suite.countTestCases() == 7
+result = unittest.TestResult()
+suite.run(result)
+print('NEWSLETTER_NATIVE_CONTRACTS_RESULT ' + json.dumps({
+    'tests': result.testsRun, 'failures': len(result.failures), 'errors': len(result.errors),
+    'skipped': len(result.skipped), 'expected_failures': len(result.expectedFailures),
+    'unexpected_successes': len(result.unexpectedSuccesses),
+}, sort_keys=True))
+sys.exit(0 if result.wasSuccessful() and not result.skipped else 1)
+"""
+    process = native(APPLICATION, database, "-c", code, allow_failure=True)
+    prefix = b"NEWSLETTER_NATIVE_CONTRACTS_RESULT "
+    rows = [json.loads(line[len(prefix):]) for line in process.stdout.splitlines() if line.startswith(prefix)]
+    require(rows == [{"tests": 7, "failures": 0, "errors": 0, "skipped": 0,
+                      "expected_failures": 0, "unexpected_successes": 0}] and process.returncode == 0,
+            "seven_native_newsletter_contracts_required")
+    return 7
 
 
 def verify_private(value):
@@ -292,17 +319,20 @@ def run():
     advance("fresh_bootstrap")
     native(APPLICATION, fresh, "bootstrap_db.py")
     native(APPLICATION, fresh, "-m", "alembic", "upgrade", "head")
-    require(table_names(fresh) == EXPECTED_TABLES, "exact_25_tables_required")
+    require(table_names(fresh) == EXPECTED_TABLES, "exact_26_tables_required")
     require(query(fresh, "SELECT version_num FROM alembic_version") == [(HEAD,)], "fresh_head_required")
     require(query(fresh, "SELECT (SELECT count(*) FROM lead_delivery_jobs),(SELECT count(*) FROM lead_delivery_worker_state)") == [(0, 0)],
             "fresh_delivery_tables_empty_required")
+    require(query(fresh, "SELECT count(*) FROM newsletter_subscriptions") == [(0,)], "fresh_newsletter_empty_required")
     fresh_catalog = catalog(fresh, NEW_TABLES)
     fresh_full_catalog = catalog(fresh, EXPECTED_TABLES)
     verify_private(fresh_catalog)
+    advance("fresh_newsletter_contracts")
+    fresh_contracts = newsletter_contracts(fresh)
     advance("live_bootstrap")
     native(LIVE, upgrade, "bootstrap_db.py")
     native(LIVE, upgrade, "-m", "alembic", "upgrade", "head")
-    require(query(upgrade, "SELECT version_num FROM alembic_version") == [("7aa51b40e2bd",)], "exact_live_head_required")
+    require(query(upgrade, "SELECT version_num FROM alembic_version") == [("d721f0b6a84c",)], "exact_live_head_required")
     old_tables = tuple(name for name in EXPECTED_TABLES if name not in NEW_TABLES)
     require(table_names(upgrade) == old_tables, "exact_live_table_inventory_required")
     baseline = rollback_mode(upgrade, "seed_live")
@@ -316,8 +346,11 @@ def run():
             "historical_rows_sequences_and_catalog_unchanged_required")
     require(query(upgrade, "SELECT (SELECT count(*) FROM lead_delivery_jobs),(SELECT count(*) FROM lead_delivery_worker_state)") == [(0, 0)],
             "no_historical_delivery_replay_required")
+    require(query(upgrade, "SELECT count(*) FROM newsletter_subscriptions") == [(0,)], "no_historical_enrollment_required")
     require(catalog(upgrade, NEW_TABLES) == fresh_catalog, "fresh_upgrade_catalog_parity_required")
-    require(catalog(upgrade, EXPECTED_TABLES) == fresh_full_catalog, "all_25_catalogs_equal_required")
+    require(catalog(upgrade, EXPECTED_TABLES) == fresh_full_catalog, "all_26_catalogs_equal_required")
+    advance("forward_newsletter_contracts")
+    forward_contracts = newsletter_contracts(upgrade)
     advance("candidate_data")
     seeded = rollback_mode(upgrade, "seed_candidate")
     current = snapshot(upgrade, EXPECTED_TABLES)
@@ -342,10 +375,11 @@ def run():
     require(catalog(upgrade, NEW_TABLES) == repeated and query(upgrade, "SELECT version_num FROM alembic_version") == [(HEAD,)],
             "rollback_schema_head_preserved_required")
     return {"status": "PASS", "application_commit": APP_COMMIT, "application_tree": APP_TREE,
-            "live_commit": LIVE_COMMIT, "alembic_head": HEAD, "table_count": 25,
+            "live_commit": LIVE_COMMIT, "alembic_head": HEAD, "table_count": 26,
             "fresh_upgrade_catalog_equal": True, "historical_rows_sequences_unchanged": True,
-            "catalog_comparison_table_count": 25, "historical_catalogs_preserved": True,
-            "delivery_tables_empty_after_migration": True, "private_direct_api_tables": 2,
+            "catalog_comparison_table_count": 26, "historical_catalogs_preserved": True,
+            "delivery_tables_empty_after_migration": True, "private_direct_api_tables": 1,
+            "newsletter_contracts": {"fresh": fresh_contracts, "forward": forward_contracts},
             "repeated_migration_preserved_data": True, "compatible_old_source_started": True,
             "compatible_old_runtime": rolled_back, "baseline": baseline, "new_code_data": seeded,
             "retained_delivery_jobs": True, "one_old_client_intake": True,

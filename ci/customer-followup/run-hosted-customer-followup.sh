@@ -4,7 +4,7 @@ die() { printf 'CUSTOMER_FOLLOWUP_REFUSED %s\n' "$1" >&2; exit 1; }
 bounded() { timeout --kill-after=8s "$@"; }
 
 [[ $# == 6 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api ]] || die CI_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-live-communications-20261117-v2 && ${GITHUB_RUN_ATTEMPT:-} == 1 &&
+[[ ${GITHUB_REF:-} == refs/heads/codex-ci-live-newsletter-native-20261118 && ${GITHUB_RUN_ATTEMPT:-} == 1 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 [[ ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 ]] || die HOSTED_LINUX_REQUIRED
 ops="$1"; application="$2"; prior="$3"; recipe="$4"; legacy="$5"; live="$6"
@@ -18,17 +18,17 @@ for checkout in "$ops" "$application" "$prior" "$recipe" "$legacy" "$live"; do
 done
 app_commit=$(git -C "$application" rev-parse HEAD)
 app_tree=$(git -C "$application" rev-parse 'HEAD^{tree}')
-[[ "$app_commit" == 7f63fec927f75af3f901f74297973253ad5c743b && "$app_tree" == 1a87c3d4c96e2df0c956e18f0f26c982e7ef3289 &&
-   $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" show -s --format=%P HEAD) == f52bb5fdbef6126a22053eae0f6c919437c4be3f &&
+[[ "$app_commit" == c3c4ac8d0371941b0bfa2d086ade8752c42585c9 && "$app_tree" == 88732c8b457f6e6e30ba696fa998a74cafb08316 &&
+   $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" show -s --format=%P HEAD) == e50f8b39824faf14f652b995d996b9e9b1aa304b &&
    ! -e "$application/.env" && ! -L "$application/.env" ]] || die EXACT_IMMUTABLE_PRODUCT_REQUIRED
-[[ $(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) == $'.github/workflows/customer-followup.yml\nci/customer-followup/run-hosted-customer-followup.sh\nci/customer-followup/verify-live-delivery-rollback.py' ]] ||
+[[ $(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) == $'.github/workflows/customer-followup.yml\nci/customer-followup/run-hosted-customer-followup.sh\nci/customer-followup/verify-customer-followup.py\nci/customer-followup/verify-live-delivery-rollback.py\nci/customer-followup/verify-live-delivery-schema.py' ]] ||
   die EXACT_OPERATIONS_DELTA_REQUIRED
 [[ $(git -C "$prior" rev-parse HEAD) == e660040e0c514aca3f7f5b7d7a5007e4fdc596c4 &&
    $(git -C "$prior" rev-parse 'HEAD^{tree}') == 4e230dcfd86ad1a3353ca3b30efe4a425e60f884 &&
    $(git -C "$recipe" rev-parse HEAD) == c193a925ba57ea2d67ea48c44e5262817885c8a2 &&
    $(git -C "$legacy" rev-parse HEAD) == 2a9ecd58a8f22c11476f268bacd9b1c410c782a3 ]] || die EXACT_ACCEPTED_RECIPES_REQUIRED
-[[ $(git -C "$live" rev-parse HEAD) == 1ae9c9f2ccf3bdd3ac36b11b0da76486d7889838 &&
-   $(git -C "$live" rev-parse 'HEAD^{tree}') == e5dccb6ad520404dda262a0dff99ab3bf1082b9b &&
+[[ $(git -C "$live" rev-parse HEAD) == 7f63fec927f75af3f901f74297973253ad5c743b &&
+   $(git -C "$live" rev-parse 'HEAD^{tree}') == 1a87c3d4c96e2df0c956e18f0f26c982e7ef3289 &&
    ! -e "$live/.env" && ! -L "$live/.env" ]] || die EXACT_LIVE_BASE_REQUIRED
 prior_tools="$prior/ci/browser"
 tools="$ops/ci/customer-followup"
@@ -94,10 +94,10 @@ mkdir "$state/build"
 mkdir "$state/rollback"
 cp "$application/requirements.txt" "$state/build/"
 git -C "$live" archive --format=tar HEAD | tar -xf - -C "$state/rollback" || die EXACT_ROLLBACK_ARCHIVE_REQUIRED
-[[ ! -e "$state/rollback/alembic/versions/d721f0b6a84c_live_transactional_notifications.py" ]] ||
+[[ ! -e "$state/rollback/alembic/versions/6c02d4a1b9e8_private_newsletter_subscriptions.py" ]] ||
   die ROLLBACK_REVISION_MUST_BE_NEW
-cp "$application/alembic/versions/d721f0b6a84c_live_transactional_notifications.py" \
-  "$state/rollback/alembic/versions/d721f0b6a84c_live_transactional_notifications.py"
+cp "$application/alembic/versions/6c02d4a1b9e8_private_newsletter_subscriptions.py" \
+  "$state/rollback/alembic/versions/6c02d4a1b9e8_private_newsletter_subscriptions.py"
 for base in "docker.io/library/python:3.11-slim@$python_digest" "$postgres"; do
   bounded 180s docker pull --platform linux/amd64 "$base" >/dev/null || die PINNED_IMAGE_PULL_FAILED
   [[ $(bounded 15s docker image inspect --format '{{.Os}}/{{.Architecture}}' "$base") == linux/amd64 ]] || die EXACT_IMAGE_PLATFORM_REQUIRED
@@ -156,7 +156,7 @@ if report.get('status') == 'FAIL':
     assert all(isinstance(value, str) and re.fullmatch(r'[A-Za-z0-9_]{1,90}', value) for value in report.values())
 else:
     assert report == {
-        'status': 'PASS', 'application_commit': sys.argv[2], 'application_tree': sys.argv[3], 'alembic_head': 'd721f0b6a84c',
+        'status': 'PASS', 'application_commit': sys.argv[2], 'application_tree': sys.argv[3], 'alembic_head': '6c02d4a1b9e8',
         'event_kinds': ['signup', 'buyer_interest', 'seller_interest', 'rental_interest', 'property_inquiry'],
         'primary_owner_acceptances': 20, 'primary_customer_acceptances': 5, 'owner_only_guard_case_acceptances': 12,
         'accepted_mock_provider_requests': 37, 'crm_rows_skipped': 28, 'customer_locales': ['en', 'es'],
@@ -207,15 +207,16 @@ else:
         'fresh_upgrade_catalog_equal', 'historical_rows_sequences_unchanged', 'catalog_comparison_table_count',
         'historical_catalogs_preserved', 'delivery_tables_empty_after_migration', 'private_direct_api_tables',
         'repeated_migration_preserved_data', 'compatible_old_source_started', 'compatible_old_runtime',
-        'baseline', 'new_code_data', 'retained_delivery_jobs', 'one_old_client_intake',
+        'baseline', 'new_code_data', 'retained_delivery_jobs', 'one_old_client_intake', 'newsletter_contracts',
         'live_provider_requests', 'fresh_catalog_sha256',
     }
     assert report['status'] == 'PASS'
     assert report['application_commit'] == sys.argv[2] and report['application_tree'] == sys.argv[3]
-    assert report['live_commit'] == '1ae9c9f2ccf3bdd3ac36b11b0da76486d7889838'
-    assert report['alembic_head'] == 'd721f0b6a84c' and report['table_count'] == 25
-    assert report['catalog_comparison_table_count'] == 25
-    assert report['private_direct_api_tables'] == 2 and report['live_provider_requests'] == 0
+    assert report['live_commit'] == '7f63fec927f75af3f901f74297973253ad5c743b'
+    assert report['alembic_head'] == '6c02d4a1b9e8' and report['table_count'] == 26
+    assert report['catalog_comparison_table_count'] == 26
+    assert report['private_direct_api_tables'] == 1 and report['live_provider_requests'] == 0
+    assert report['newsletter_contracts'] == {'fresh': 7, 'forward': 7}
     assert re.fullmatch(r'[a-f0-9]{64}', report['fresh_catalog_sha256'])
     for key in ('fresh_upgrade_catalog_equal', 'historical_rows_sequences_unchanged',
                 'historical_catalogs_preserved',

@@ -23,12 +23,12 @@ from uuid import UUID
 LIVE = Path("/live")
 CANDIDATE = Path("/application")
 ROLLBACK = Path("/rollback")
-LIVE_COMMIT = "1ae9c9f2ccf3bdd3ac36b11b0da76486d7889838"
-LIVE_TREE = "e5dccb6ad520404dda262a0dff99ab3bf1082b9b"
-APP_COMMIT = "7f63fec927f75af3f901f74297973253ad5c743b"
-APP_TREE = "1a87c3d4c96e2df0c956e18f0f26c982e7ef3289"
-MIGRATION = "alembic/versions/d721f0b6a84c_live_transactional_notifications.py"
-HEAD = "d721f0b6a84c"
+LIVE_COMMIT = "7f63fec927f75af3f901f74297973253ad5c743b"
+LIVE_TREE = "1a87c3d4c96e2df0c956e18f0f26c982e7ef3289"
+APP_COMMIT = "c3c4ac8d0371941b0bfa2d086ade8752c42585c9"
+APP_TREE = "88732c8b457f6e6e30ba696fa998a74cafb08316"
+MIGRATION = "alembic/versions/6c02d4a1b9e8_private_newsletter_subscriptions.py"
+HEAD = "6c02d4a1b9e8"
 ROOTS = {"seed_live": LIVE, "seed_candidate": CANDIDATE, "verify_old": ROLLBACK}
 ROLES = ("admin", "owner", "buyer", "realtor")
 USER_IDS = {role: UUID(int=100 + index) for index, role in enumerate(ROLES, 1)}
@@ -144,7 +144,7 @@ def guard(mode):
                 database, "127.0.0.1", 55449, 170006, f"ildr-live-communications-ci:{nonce}:upgrade",
             ), "owned_database_required")
             cursor.execute("SELECT version_num FROM alembic_version")
-            expected_head = "7aa51b40e2bd" if mode == "seed_live" else HEAD
+            expected_head = "d721f0b6a84c" if mode == "seed_live" else HEAD
             require(cursor.fetchall() == [(expected_head,)], "exact_migration_required")
     return root
 

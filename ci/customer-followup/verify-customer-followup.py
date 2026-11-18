@@ -13,9 +13,9 @@ import unittest
 from unittest.mock import patch
 
 
-APPLICATION_COMMIT = "7f63fec927f75af3f901f74297973253ad5c743b"
-APPLICATION_TREE = "1a87c3d4c96e2df0c956e18f0f26c982e7ef3289"
-MIGRATION = "d721f0b6a84c"
+APPLICATION_COMMIT = "c3c4ac8d0371941b0bfa2d086ade8752c42585c9"
+APPLICATION_TREE = "88732c8b457f6e6e30ba696fa998a74cafb08316"
+MIGRATION = "6c02d4a1b9e8"
 PRIOR_HARNESS = Path("/prior/test_cumulative_communications_acceptance.py")
 PRIOR_SHA256 = "31d9792c4fc11f924af0b0ab2db3247f77eb083c1274fab94fb99c75197db60b"
 FIXTURE = Path("/prior/serve_cumulative_communications_fixture.py")
