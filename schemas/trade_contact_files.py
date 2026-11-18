@@ -45,7 +45,7 @@ class ContactFileMapping(FileInput):
 class ContactFileIssue(FileInput):
     row: int
     field: str
-    code: Literal["required", "invalid"]
+    code: Literal["required", "invalid", "note_limit"]
 
 
 class ContactMappingPreview(FileInput):
@@ -53,6 +53,7 @@ class ContactMappingPreview(FileInput):
     issues: list[ContactFileIssue] = Field(default_factory=list, max_length=50)
     issue_count: int = Field(default=0, ge=0)
     result: TradeContactImportResult | None = None
+    preserve_source_details: Literal[True] = True
 
 
 class ContactFilterOptions(FileInput):

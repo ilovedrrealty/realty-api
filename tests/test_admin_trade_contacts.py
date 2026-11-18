@@ -154,3 +154,68 @@ class TradeContactsTest(unittest.TestCase):
         self.assertIn(town, choices.json()["localities"])
         self.role("buyer")
         self.assertEqual(self.client.get("/admin/trade-contacts/options").status_code, 403)
+
+    def test_spreadsheet_refresh_preserves_notes_and_refuses_overflow_atomically(self):
+        self.role("admin")
+        path = "/admin/trade-contacts/import"
+        original = {**self.entry, "verification_status": "owner_source", "source_details": {
+            "private_note": "Keep the owner-provided context", "source_description": "Original source observation"}}
+        full = {**original, "name": self.name + " full", "source_details": {
+            f"note_{index}": f"Protected source note {index}" for index in range(20)}}
+
+        def submit(entries, preserve=False):
+            return self.client.post(path, headers=self.origin,
+                                    json={"dry_run": False, "entries": entries, "preserve_source_details": preserve})
+
+        def snapshot():
+            with SessionLocal() as db:
+                return db.execute(text("""SELECT c.name,c.details::text,s.evidence::text
+                    FROM trade_contacts c JOIN trade_contact_sources s ON s.contact_id=c.id
+                    WHERE c.name LIKE :name ORDER BY c.name,s.source_key"""), {"name": self.name + "%"}).all()
+
+        def mapped(rows):
+            data = ("name,email\n" + "\n".join(f"{name},{email}" for name, email in rows) + "\n").encode()
+            table = self.client.post("/admin/trade-contacts/preview-file", headers=self.origin,
+                                     files={"file": ("contacts.csv", data, "text/csv")}).json()
+            return {"table": table, "mapping": table["suggested_mapping"], "defaults": {
+                key: original[key] for key in ("category", "province", "source_authority", "source_url", "verified_on", "verification_status")}}
+
+        self.assertEqual(submit([original, full]).status_code, 200)
+        before = snapshot()
+        body = mapped([(self.name, "refreshed@example.com")])
+        preview = self.client.post("/admin/trade-contacts/preview-mapping", headers=self.origin, json=body).json()
+        self.assertTrue(preview["preserve_source_details"])
+        self.assertEqual(preview["result"], {"inserted": 0, "updated": 1, "unchanged": 0})
+        self.assertEqual(snapshot(), before)
+        self.assertEqual(submit(preview["entries"], True).json(), {"inserted": 0, "updated": 1, "unchanged": 0})
+        after = snapshot()
+        import json
+        details, evidence = json.loads(after[0][1]), json.loads(after[0][2])
+        self.assertEqual(details["email"], "refreshed@example.com")
+        self.assertEqual(details["phone"], original["phone"])
+        for notes in (details["source_details"], evidence["source_details"]):
+            self.assertEqual(notes["private_note"], original["source_details"]["private_note"])
+            self.assertEqual(notes["source_description"], original["source_details"]["source_description"])
+            self.assertEqual(notes["import_file_sha256"], body["table"]["file_sha256"])
+        self.assertEqual(after[1], before[1])
+        replay = self.client.post("/admin/trade-contacts/preview-mapping", headers=self.origin, json=body).json()
+        self.assertEqual(replay["result"], {"inserted": 0, "updated": 0, "unchanged": 1})
+        self.assertEqual(submit(replay["entries"], True).json(), {"inserted": 0, "updated": 0, "unchanged": 1})
+        self.assertEqual(snapshot(), after)
+
+        overflow = mapped([(self.name, "changed@example.com"), (full["name"], "changed@example.com")])
+        refused = self.client.post("/admin/trade-contacts/preview-mapping", headers=self.origin, json=overflow).json()
+        self.assertEqual(refused["entries"], [])
+        self.assertIsNone(refused["result"])
+        self.assertEqual(refused["issues"], [{"row": 3, "field": "source_details", "code": "note_limit"}])
+        self.assertEqual(snapshot(), after)
+
+        # Simulate an authorized legacy JSON edit after the spreadsheet preview.
+        # The final locked import must recheck notes and roll back an earlier
+        # new contact in the same batch if the later refresh now overflows.
+        concurrent = {**original, "email": "refreshed@example.com", "source_details": full["source_details"]}
+        self.assertEqual(submit([concurrent]).status_code, 200)
+        current = snapshot()
+        new_entry = {**original, "name": self.name + " new", "source_details": None}
+        self.assertEqual(submit([new_entry, *preview["entries"]], True).status_code, 422)
+        self.assertEqual(snapshot(), current)

@@ -38,11 +38,30 @@ def _fields(details):
     return {key: details.get(key) for key in ("name", "category", "province", "locality")}
 
 
-def _preserve_details(previous, observation, same_source):
+class SourceNotesOverflow(ValueError):
+    def __init__(self, identities):
+        super().__init__("Existing source notes cannot be merged within the limit")
+        self.identities = set(identities)
+
+
+def _preserve_source_notes(previous, observation, identity):
+    old = previous.get("source_details") or {}
+    new = observation.get("source_details") or {}
+    if not isinstance(old, dict) or not isinstance(new, dict):
+        raise SourceNotesOverflow({identity})
+    merged = {**old, **new}
+    if len(merged) > 20:
+        raise SourceNotesOverflow({identity})
+    return {**observation, "source_details": merged or None}
+
+
+def _preserve_details(previous, observation, same_source, preserve_notes=False, identity=None):
     if previous is None:
         return observation
     refresh = same_source and observation["verified_on"] >= previous["verified_on"]
     if refresh:
+        if preserve_notes:
+            observation = _preserve_source_notes(previous, observation, identity)
         return {**previous, **{key: value for key, value in observation.items() if value is not None}}
     portfolio_fields = {"name", "category", "province", "locality", "subtype", "contact_name", "contact_title",
                         "phone", "email", "website", "address", "postal_code", "service_area"}
@@ -68,45 +87,55 @@ def import_entries(db, batch):
     sources = {(row.contact_id, row.source_key): row for row in db.scalars(
         select(TradeContactSource).where(TradeContactSource.contact_id.in_([row.id for row in contacts.values()])))}
     counts = TradeContactImportResult()
+    note_overflows = set()
     for key, observations in groups.items():
-        contact = contacts.get(key)
-        contact_id = contact.id if contact else uuid4()
-        details = contact.details if contact else None
-        source_changes = []
-        for source_key, observation in observations.items():
-            evidence = sources.get((contact_id, source_key))
-            evidence_before = evidence.evidence if evidence else None
-            if evidence_before and observation["verified_on"] < evidence_before["verified_on"]:
-                continue
-            if observation != evidence_before:
-                observation = ({**evidence_before, **{field: value for field, value in observation.items()
-                                                     if value is not None}} if evidence_before else observation)
+        try:
+            contact = contacts.get(key)
+            contact_id = contact.id if contact else uuid4()
+            details = contact.details if contact else None
+            source_changes = []
+            for source_key, observation in observations.items():
+                evidence = sources.get((contact_id, source_key))
+                evidence_before = evidence.evidence if evidence else None
+                if evidence_before and observation["verified_on"] < evidence_before["verified_on"]:
+                    continue
+                if batch.preserve_source_details and evidence_before:
+                    observation = _preserve_source_notes(evidence_before, observation, key)
                 if observation != evidence_before:
-                    source_changes.append((source_key, evidence, observation))
-            same_source = (details is not None and details["source_authority"] == observation["source_authority"]
-                           and (details.get("external_id") or details["source_url"])
-                           == (observation.get("external_id") or observation["source_url"]))
-            details = _preserve_details(details, observation, same_source)
-        if contact is None:
-            counts.inserted += 1
-        elif source_changes or details != contact.details:
-            counts.updated += 1
-        else:
-            counts.unchanged += 1
-        if batch.dry_run:
-            continue
-        if contact is None:
-            db.add(TradeContact(id=contact_id, identity_key=key, details=details, **_fields(details)))
-            db.flush()
-        elif details != contact.details:
-            contact.details = details
-            for field, value in _fields(details).items():
-                setattr(contact, field, value)
-        for source_key, evidence, observation in source_changes:
-            if evidence is None:
-                db.add(TradeContactSource(id=uuid4(), contact_id=contact_id, source_key=source_key, evidence=observation))
+                    observation = ({**evidence_before, **{field: value for field, value in observation.items()
+                                                         if value is not None}} if evidence_before else observation)
+                    if observation != evidence_before:
+                        source_changes.append((source_key, evidence, observation))
+                same_source = (details is not None and details["source_authority"] == observation["source_authority"]
+                               and (details.get("external_id") or details["source_url"])
+                               == (observation.get("external_id") or observation["source_url"]))
+                details = _preserve_details(details, observation, same_source, batch.preserve_source_details, key)
+            if contact is None:
+                counts.inserted += 1
+            elif source_changes or details != contact.details:
+                counts.updated += 1
             else:
-                evidence.evidence = observation
+                counts.unchanged += 1
+            if batch.dry_run:
+                continue
+            if contact is None:
+                db.add(TradeContact(id=contact_id, identity_key=key, details=details, **_fields(details)))
+                db.flush()
+            elif details != contact.details:
+                contact.details = details
+                for field, value in _fields(details).items():
+                    setattr(contact, field, value)
+            for source_key, evidence, observation in source_changes:
+                if evidence is None:
+                    db.add(TradeContactSource(id=uuid4(), contact_id=contact_id, source_key=source_key, evidence=observation))
+                else:
+                    evidence.evidence = observation
+        except SourceNotesOverflow as error:
+            if not batch.dry_run:
+                raise
+            note_overflows.update(error.identities)
+    if note_overflows:
+        raise SourceNotesOverflow(note_overflows)
     if not batch.dry_run:
         db.commit()
     return counts

@@ -109,4 +109,7 @@ def preview_mapping(body: ContactFileMapping, admin: Admin, db: Database):
 
 @router.post("/import", response_model=TradeContactImportResult)
 def import_contacts(batch: TradeContactImport, admin: Admin, db: Database):
-    return directory.import_entries(db, batch)
+    try:
+        return directory.import_entries(db, batch)
+    except directory.SourceNotesOverflow:
+        raise HTTPException(422, "Existing source notes would exceed the 20-field limit. Review the batch again; nothing was imported.") from None

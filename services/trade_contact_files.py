@@ -15,7 +15,7 @@ from pydantic import ValidationError
 
 from schemas.trade_contact_files import CELL_LIMIT, IMPORT_FIELDS
 from schemas.trade_contacts import TradeContactEntry, TradeContactImport
-from services.trade_contacts import import_entries
+from services.trade_contacts import SourceNotesOverflow, contact_identity, import_entries
 
 FILE_LIMIT = 512 * 1024
 ROW_LIMIT = 250
@@ -277,5 +277,10 @@ def preview_mapping(db, body):
                                    "code": "required" if problem["type"] == "missing" else "invalid"})
     if issues:
         return {"entries": [], "issues": issues, "issue_count": issue_count, "result": None}
-    result = import_entries(db, TradeContactImport(dry_run=True, entries=entries))
+    try:
+        result = import_entries(db, TradeContactImport(dry_run=True, entries=entries, preserve_source_details=True))
+    except SourceNotesOverflow as error:
+        conflicts = [{"row": row.row_number, "field": "source_details", "code": "note_limit"}
+                     for row, entry in zip(body.table.rows, entries) if contact_identity(entry) in error.identities]
+        return {"entries": [], "issues": conflicts[:50], "issue_count": len(conflicts), "result": None}
     return {"entries": entries, "issues": [], "issue_count": 0, "result": result}

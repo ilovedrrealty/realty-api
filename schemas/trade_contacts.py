@@ -5,7 +5,7 @@ from typing import Annotated, Literal
 from urllib.parse import urlsplit
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, StringConstraints, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, StrictBool, StringConstraints, field_validator
 
 
 Name = Annotated[str, StringConstraints(min_length=1, max_length=240)]
@@ -75,6 +75,7 @@ class TradeContactImport(BaseModel):
 
     dry_run: bool
     entries: list[TradeContactEntry] = Field(min_length=1, max_length=250)
+    preserve_source_details: StrictBool = False
 
 
 class TradeContactImportResult(BaseModel):
