@@ -15,6 +15,8 @@ from database import get_db
 from models.user import User
 from schemas.trade_contacts import TradeContactImport, TradeContactImportResult, TradeContactList
 from schemas.trade_contact_files import ContactFileMapping, ContactFileTable, ContactFilterOptions, ContactMappingPreview
+from schemas.directory_maps import DirectoryMapSummary, LocationStatus
+from utils.directory_geo import AREA_KEYS
 from services import trade_contacts as directory
 from services import trade_contact_files as files
 from utils.permission import require_admin
@@ -72,19 +74,47 @@ def list_contacts(
     category: Annotated[str, Query(max_length=160)] = "",
     province: Annotated[str, Query(max_length=160)] = "",
     locality: Annotated[str, Query(max_length=160)] = "",
+    subtype: Annotated[str, Query(max_length=160)] = "",
+    service_area: Annotated[str, Query(max_length=320)] = "",
     verification_status: Literal["", "owner_source", "public_source", "official_registry"] = "",
     contact_channel: Literal["", "phone", "email", "website", "no_contact"] = "",
+    location_status: LocationStatus = "all",
+    map_area: Annotated[str, Query(max_length=100)] = "",
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
     offset: Annotated[int, Query(ge=0, le=1000000)] = 0,
 ):
+    if map_area and map_area not in AREA_KEYS:
+        raise HTTPException(422, "Choose a known map reference area")
     return directory.search(db, q=q.strip(), category=category.strip(), province=province.strip(),
                             locality=locality.strip(), verification_status=verification_status, contact_channel=contact_channel,
+                            subtype=subtype.strip(), service_area=service_area.strip(),
+                            location_status=location_status, map_area=map_area,
                             limit=limit, offset=offset)
 
 
 @router.get("/options", response_model=ContactFilterOptions)
 def filter_options(admin: Admin, db: Database):
     return directory.filter_options(db)
+
+
+@router.get("/map", response_model=DirectoryMapSummary)
+def contact_map(
+    admin: Admin, db: Database, q: Annotated[str, Query(max_length=160)] = "",
+    category: Annotated[str, Query(max_length=160)] = "",
+    province: Annotated[str, Query(max_length=160)] = "",
+    locality: Annotated[str, Query(max_length=160)] = "",
+    subtype: Annotated[str, Query(max_length=160)] = "",
+    service_area: Annotated[str, Query(max_length=320)] = "",
+    verification_status: Literal["", "owner_source", "public_source", "official_registry"] = "",
+    contact_channel: Literal["", "phone", "email", "website", "no_contact"] = "",
+    location_status: LocationStatus = "all", map_area: Annotated[str, Query(max_length=100)] = "",
+):
+    if map_area and map_area not in AREA_KEYS:
+        raise HTTPException(422, "Choose a known map reference area")
+    return directory.directory_map(db, q=q.strip(), category=category.strip(), province=province.strip(),
+        locality=locality.strip(), subtype=subtype.strip(), service_area=service_area.strip(),
+        verification_status=verification_status, contact_channel=contact_channel,
+        location_status=location_status, map_area=map_area)
 
 
 @router.post("/preview-file", response_model=ContactFileTable)

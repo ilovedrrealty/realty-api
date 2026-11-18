@@ -566,5 +566,85 @@ class ProfessionalTests(unittest.TestCase):
         self.assertEqual(len(self.call("GET", f"/admin/professionals/{managed['id']}", "admin_b")["history"]), managed["version"])
 
 
+    def test_area_map_requires_verified_member_and_uses_approved_snapshot_until_withdrawal(self):
+        approved = self.publish(draft("Synthetic area-map approved", service_area_ids=["sosua"]))
+        for actor, status in ((None, 401), ("unverified", 403), ("suspended", 403)):
+            self.call("GET", "/professionals/map", actor, status=status)
+        for actor in ("buyer", "owner", "realtor", "admin", "admin_b"):
+            mapped = self.call("GET", "/professionals/map", actor)
+            self.assertEqual((mapped["total"], mapped["mapped_total"], mapped["unmapped_total"]), (1, 1, 0))
+        for path in ("/professionals", "/professionals/map"):
+            self.call("GET", path + "?map_area=DO:unknown", status=422)
+            self.call("GET", path + "?location_status=unknown", status=422)
+        changed = self.save(draft("Private pending map name", service_area_ids=["punta_cana"]), version=approved["version"])
+        pending = self.submit(changed)
+        mapped = self.call("GET", "/professionals/map", "other")
+        self.assertEqual([area["area_key"] for area in mapped["areas"]], ["DO:sosua"])
+        self.assertNotIn("Private pending", str(mapped))
+        self.call("POST", "/professional-profile/withdraw", body={"expected_version": pending["version"]})
+        self.assertEqual(self.call("GET", "/professionals/map", "other")["total"], 0)
+        self.assertEqual(self.call("GET", "/professionals", "other")["total"], 0)
+
+    def test_area_map_deduplicates_services_and_matches_shared_filters_without_private_fields(self):
+        approved = []
+        for name, areas, languages in (
+            ("Synthetic area-map overlap", ["sosua", "cabarete"], ["en", "es"]),
+            ("Synthetic area-map single", ["sosua"], ["en", "es"]),
+            ("Synthetic area-map national", ["nationwide"], ["en"]),
+        ):
+            managed = self.managed(draft(name, service_area_ids=areas, languages=languages))
+            approved.append(self.moderate(self.managed_submit(managed)))
+        self.managed(draft("Synthetic area-map hidden", service_area_ids=["sosua"]))
+        with Session(self.engine) as db:
+            row = db.get(ProfessionalProfile, UUID(approved[0]["id"]))
+            row.published_data = {**row.published_data, "service_area_ids": ["sosua", "sosua", "cabarete"]}
+            db.commit()
+            before = [(str(item.id), deepcopy(item.draft_data), deepcopy(item.published_data), item.version)
+                      for item in db.query(ProfessionalProfile).order_by(ProfessionalProfile.id)]
+        mapped = self.call("GET", "/professionals/map")
+        self.assertEqual((mapped["total"], mapped["mapped_total"], mapped["unmapped_total"]), (3, 2, 1))
+        self.assertEqual({area["area_key"]: area["record_count"] for area in mapped["areas"]},
+                         {"DO:sosua": 2, "DO:cabarete": 1})
+        self.assertTrue(all(area["purpose"] == "service_area" for area in mapped["areas"]))
+        self.assertTrue(mapped["complete"])
+        for private in ("Synthetic", "public@example.com", "public_phone", "business_name", "draft_data", "user_id"):
+            self.assertNotIn(private, str(mapped))
+        for suffix, expected in (
+            ("?category=property_law&area=sosua&language=es&q=Synthetic%20area-map", 2),
+            ("?map_area=DO:sosua", 2), ("?map_area=DO:cabarete", 1),
+            ("?location_status=unmapped", 1), ("?location_status=mapped", 2),
+            ("?area=nationwide", 1), ("?language=fr", 0),
+        ):
+            listed = self.call("GET", "/professionals" + suffix + "&limit=1")
+            scoped = self.call("GET", "/professionals/map" + suffix)
+            self.assertEqual((listed["total"], scoped["total"]), (expected, expected))
+            if "location_status=unmapped" in suffix:
+                self.assertEqual(scoped["areas"], [])
+            if "map_area=" in suffix:
+                self.assertEqual(len(scoped["areas"]), 1)
+        with Session(self.engine) as db:
+            after = [(str(item.id), deepcopy(item.draft_data), deepcopy(item.published_data), item.version)
+                     for item in db.query(ProfessionalProfile).order_by(ProfessionalProfile.id)]
+        self.assertEqual(after, before)
+
+    def test_area_map_removes_revoked_consent_suspended_profiles_and_inactive_owners(self):
+        owned = self.publish(draft(service_area_ids=["sosua"]))
+        managed = self.managed(draft("Synthetic managed map", service_area_ids=["cabarete"]))
+        managed = self.moderate(self.managed_submit(managed))
+        self.assertEqual(self.call("GET", "/professionals/map", "other")["total"], 2)
+        with Session(self.engine) as db:
+            db.get(User, self.accounts["buyer"]).status = "suspended"
+            db.commit()
+        self.assertEqual(self.call("GET", "/professionals/map", "other")["total"], 1)
+        with Session(self.engine) as db:
+            db.get(User, self.accounts["buyer"]).status = "active"
+            db.commit()
+        self.save(draft(service_area_ids=["sosua"], public_contact_consent=False), version=owned["version"])
+        self.assertEqual(self.call("GET", "/professionals/map", "other")["total"], 1)
+        self.moderate(managed, "suspend")
+        self.assertEqual(self.call("GET", "/professionals/map", "other")["total"], 0)
+        self.assertEqual(self.call("GET", "/professionals", "other")["total"], 0)
+
+
 if __name__ == "__main__":
     unittest.main()

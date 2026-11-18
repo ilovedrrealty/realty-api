@@ -1,5 +1,6 @@
 """Moderated business profiles for verified, signed-in directory members."""
 from copy import deepcopy
+from collections import Counter
 from datetime import datetime, timezone
 import logging
 from typing import Optional
@@ -28,6 +29,8 @@ from utils.professional_options import CATEGORIES, PROPERTY_CLASSES, AREAS, LANG
 from utils.professional_photos import (MAX_PHOTO_BYTES, prepare_photo, upload_professional_photo, validate_owned_photo,
     upload_managed_professional_photo, validate_managed_photo)
 from utils.limiter import limiter
+from schemas.directory_maps import DirectoryMapSummary, LocationStatus
+from utils.directory_geo import AREA_KEYS, map_summary, professional_mapped_expression, professional_reference_keys
 
 logger = logging.getLogger(__name__)
 NO_STORE = {"Cache-Control": "no-store", "Pragma": "no-cache"}
@@ -190,13 +193,11 @@ def professional_options():
     return {"categories": CATEGORIES, "areas": AREAS, "languages": LANGUAGES, "property_classes": PROPERTY_CLASSES}
 
 
-@router.get("/professionals", response_model=PublicProfessionalPage)
-def directory(category: Optional[list[str]] = Query(None), area: Optional[list[str]] = Query(None),
-              language: Optional[str] = Query(None), q: Optional[str] = Query(None, max_length=100),
-              limit: int = Query(24, ge=1, le=50), offset: int = Query(0, ge=0, le=10000),
-              user=Depends(get_current_user), db: Session = Depends(get_db)):
+def _directory_query(db, category=None, area=None, language=None, q=None, location_status="all", map_area=""):
     if len(category or []) > 8 or len(area or []) > 20 or set(category or []) - CATEGORY_IDS or set(area or []) - AREA_IDS or (language and language not in LANGUAGE_IDS):
         raise HTTPException(422, "Unknown or excessive professional filters")
+    if map_area and map_area not in AREA_KEYS:
+        raise HTTPException(422, "Choose a known map reference area")
     query = _visible(db)
     if category:
         query = query.filter(or_(*(ProfessionalProfile.published_data["category_ids"].contains([value]) for value in set(category))))
@@ -210,9 +211,46 @@ def directory(category: Optional[list[str]] = Query(None), area: Optional[list[s
                                 ProfessionalProfile.published_data["descriptions"]["en"].astext.icontains(q.strip(), autoescape=True),
                                 ProfessionalProfile.published_data["descriptions"]["es"].astext.icontains(q.strip(), autoescape=True),
                                 ProfessionalProfile.published_data["custom_services"].astext.icontains(q.strip(), autoescape=True)))
+    mapped = professional_mapped_expression(ProfessionalProfile.published_data)
+    if location_status == "mapped":
+        query = query.filter(mapped)
+    elif location_status == "unmapped":
+        query = query.filter(~mapped)
+    if map_area:
+        query = query.filter(professional_mapped_expression(ProfessionalProfile.published_data, map_area))
+    return query
+
+
+@router.get("/professionals", response_model=PublicProfessionalPage)
+def directory(category: Optional[list[str]] = Query(None), area: Optional[list[str]] = Query(None),
+              language: Optional[str] = Query(None), q: Optional[str] = Query(None, max_length=100),
+              location_status: LocationStatus = "all", map_area: str = Query("", max_length=100),
+              limit: int = Query(24, ge=1, le=50), offset: int = Query(0, ge=0, le=10000),
+              user=Depends(get_current_user), db: Session = Depends(get_db)):
+    query = _directory_query(db, category, area, language, q, location_status, map_area)
     total = query.count()
     rows = query.order_by(func.lower(ProfessionalProfile.published_data["business_name"].astext), ProfessionalProfile.id).offset(offset).limit(limit).all()
     return {"items": [_public(row) for row in rows], "total": total, "limit": limit, "offset": offset}
+
+
+@router.get("/professionals/map", response_model=DirectoryMapSummary)
+def professional_map(category: Optional[list[str]] = Query(None), area: Optional[list[str]] = Query(None),
+                     language: Optional[str] = Query(None), q: Optional[str] = Query(None, max_length=100),
+                     location_status: LocationStatus = "all", map_area: str = Query("", max_length=100),
+                     user=Depends(get_current_user), db: Session = Depends(get_db)):
+    query = _directory_query(db, category, area, language, q, location_status, map_area)
+    # Only IDs, declared areas and optional country are read; no contact/name or
+    # unpublished draft fields enter this full-scope aggregate.
+    rows = query.with_entities(ProfessionalProfile.id, ProfessionalProfile.published_data["service_area_ids"],
+                               ProfessionalProfile.published_data["country_code"].astext).all()
+    records = {identifier: (areas, country) for identifier, areas, country in rows}
+    counts, mapped_total = Counter(), 0
+    for areas, country in records.values():
+        references = professional_reference_keys(areas, country, map_area)
+        if references:
+            mapped_total += 1
+            counts.update(references)
+    return map_summary(counts, len(records), mapped_total, "service_area")
 
 
 @router.get("/professionals/{profile_id}", response_model=PublicProfessional)

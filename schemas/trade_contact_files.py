@@ -60,3 +60,5 @@ class ContactFilterOptions(FileInput):
     categories: list[str]
     provinces: list[str]
     localities: list[str]
+    subtypes: list[str] = Field(default_factory=list)
+    service_areas: list[str] = Field(default_factory=list)

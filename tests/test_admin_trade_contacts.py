@@ -219,3 +219,90 @@ class TradeContactsTest(unittest.TestCase):
         new_entry = {**original, "name": self.name + " new", "source_details": None}
         self.assertEqual(submit([new_entry, *preview["entries"]], True).status_code, 422)
         self.assertEqual(snapshot(), current)
+
+    def test_map_is_admin_only_and_shared_location_filters_validate(self):
+        path = "/admin/trade-contacts/map"
+        response = self.client.get(path)
+        self.assertIn(response.status_code, (401, 403))
+        self.assertEqual(response.headers.get("cache-control"), "no-store")
+        for role in ("buyer", "owner", "realtor"):
+            self.role(role)
+            self.assertEqual(self.client.get(path).status_code, 403)
+        self.role("admin")
+        for endpoint in (path, "/admin/trade-contacts"):
+            for params in ({"map_area": "DO:near-sosua"}, {"location_status": "unknown"},
+                           {"subtype": "x" * 161}, {"service_area": "x" * 321}):
+                response = self.client.get(endpoint, params=params)
+                self.assertEqual(response.status_code, 422)
+                self.assertEqual(response.headers.get("cache-control"), "no-store")
+        empty = self.client.get(path, params={"q": self.name}).json()
+        self.assertEqual((empty["total"], empty["mapped_total"], empty["unmapped_total"], empty["areas"]), (0, 0, 0, []))
+        self.assertTrue(empty["complete"])
+
+    def test_map_and_list_share_subtype_service_area_and_provenance_filters_without_writes(self):
+        self.role("admin")
+        entries = [
+            {**self.entry, "locality": "Sosúa", "subtype": "Hotel maintenance", "service_area": "Sosúa %_ service zone"},
+            {**self.entry, "name": self.name + " other subtype", "locality": "Sosúa", "subtype": "Home maintenance", "service_area": "Sosúa %_ service zone"},
+            {**self.entry, "name": self.name + " wildcard decoy", "locality": "Sosúa", "subtype": "Hotel maintenance", "service_area": "Sosúa other service zone"},
+        ]
+        response = self.client.post("/admin/trade-contacts/import", headers=self.origin,
+                                    json={"dry_run": False, "entries": entries})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["inserted"], 3)
+
+        def snapshot():
+            with SessionLocal() as db:
+                return db.execute(text("""SELECT to_jsonb(contact)::text,
+                    (SELECT jsonb_agg(to_jsonb(source) ORDER BY source.id)::text
+                     FROM trade_contact_sources source WHERE source.contact_id=contact.id)
+                    FROM trade_contacts contact WHERE name LIKE :prefix ORDER BY contact.id"""),
+                    {"prefix": self.name + "%"}).all()
+
+        before = snapshot()
+        params = {"q": self.name, "category": "Construcción", "province": "PUERTO PLATA", "locality": "Sosúa",
+                  "subtype": "HOTEL MAINTENANCE", "service_area": "%_", "verification_status": "public_source",
+                  "contact_channel": "phone", "map_area": "DO:sosua"}
+        listed = self.client.get("/admin/trade-contacts", params=params).json()
+        response = self.client.get("/admin/trade-contacts/map", params=params)
+        self.assertEqual(response.status_code, 200)
+        mapped = response.json()
+        self.assertEqual((listed["total"], mapped["total"], mapped["mapped_total"]), (1, 1, 1))
+        self.assertEqual(mapped["areas"][0]["record_count"], 1)
+        self.assertEqual(mapped["areas"][0]["purpose"], "record_area")
+        for private in (self.name, "office@example.com", "source_details", "source_authority", "contact_name"):
+            self.assertNotIn(private, response.text)
+        options = self.client.get("/admin/trade-contacts/options").json()
+        self.assertIn("Hotel maintenance", options["subtypes"])
+        self.assertIn("Sosúa %_ service zone", options["service_areas"])
+        self.assertEqual(snapshot(), before)
+
+    def test_map_full_scope_exceeds_page_and_keeps_unknown_conflicting_locations_unmapped(self):
+        self.role("admin")
+        entries = [{**self.entry, "name": self.name + f" mapped {index}", "locality": "  SOsu\u0301a  "}
+                   for index in range(51)]
+        entries.extend([
+            {**self.entry, "name": self.name + " fallback", "locality": "Uncatalogued quarter"},
+            {**self.entry, "name": self.name + " conflict", "province": "Santiago", "locality": "Sosúa"},
+            {**self.entry, "name": self.name + " partial", "province": "Puerto Plata resort"},
+        ])
+        response = self.client.post("/admin/trade-contacts/import", headers=self.origin,
+                                    json={"dry_run": False, "entries": entries})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["inserted"], 54)
+        listed = self.client.get("/admin/trade-contacts", params={"q": self.name}).json()
+        self.assertEqual((listed["total"], len(listed["items"])), (54, 50))
+        mapped = self.client.get("/admin/trade-contacts/map", params={"q": self.name}).json()
+        self.assertEqual((mapped["total"], mapped["mapped_total"], mapped["unmapped_total"]), (54, 52, 2))
+        self.assertEqual({area["area_key"]: area["record_count"] for area in mapped["areas"]},
+                         {"DO:sosua": 51, "DO:puerto-plata": 1})
+        for params, expected in (({"map_area": "DO:sosua"}, 51), ({"location_status": "unmapped"}, 2),
+                                 ({"location_status": "mapped"}, 52), ({}, 54)):
+            query = {"q": self.name, **params}
+            listed = self.client.get("/admin/trade-contacts", params={**query, "limit": 1}).json()
+            mapped = self.client.get("/admin/trade-contacts/map", params=query).json()
+            self.assertEqual((listed["total"], mapped["total"]), (expected, expected))
+            if params.get("location_status") == "unmapped":
+                self.assertEqual(mapped["areas"], [])
+            if params.get("map_area"):
+                self.assertEqual([area["area_key"] for area in mapped["areas"]], ["DO:sosua"])

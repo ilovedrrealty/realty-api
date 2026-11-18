@@ -10,6 +10,7 @@ from sqlalchemy import func, or_, select, text
 
 from models.trade_contact import TradeContact, TradeContactSource
 from schemas.trade_contacts import TradeContactImportResult
+from utils.directory_geo import contact_reference_expression, map_summary
 
 
 def _normalized(value):
@@ -144,13 +145,15 @@ def import_entries(db, batch):
 def filter_options(db):
     result = {}
     for key, column in (("categories", TradeContact.category), ("provinces", TradeContact.province),
-                        ("localities", TradeContact.locality)):
+                        ("localities", TradeContact.locality), ("subtypes", TradeContact.details["subtype"].astext),
+                        ("service_areas", TradeContact.details["service_area"].astext)):
         result[key] = list(db.scalars(select(column).where(column.is_not(None), func.trim(column) != "")
                                      .distinct().order_by(column).limit(1000)))
     return result
 
 
-def search(db, *, q, category, province, limit, offset, locality="", verification_status="", contact_channel=""):
+def contact_filters(*, q="", category="", province="", locality="", subtype="", service_area="",
+                    verification_status="", contact_channel="", location_status="all", map_area=""):
     filters = []
     if q:
         filters.append(or_(*(column.icontains(q, autoescape=True) for column in (
@@ -161,6 +164,10 @@ def search(db, *, q, category, province, limit, offset, locality="", verificatio
     for column, value in ((TradeContact.category, category), (TradeContact.province, province), (TradeContact.locality, locality)):
         if value:
             filters.append(func.lower(column) == value.lower())
+    if subtype:
+        filters.append(func.lower(TradeContact.details["subtype"].astext) == subtype.lower())
+    if service_area:
+        filters.append(TradeContact.details["service_area"].astext.icontains(service_area, autoescape=True))
     if verification_status:
         filters.append(TradeContact.details["verification_status"].astext == verification_status)
     channels = {key: func.length(func.trim(func.coalesce(TradeContact.details[key].astext, ""))) > 0
@@ -169,6 +176,22 @@ def search(db, *, q, category, province, limit, offset, locality="", verificatio
         filters.append(~or_(*channels.values()))
     elif contact_channel:
         filters.append(channels[contact_channel])
+    reference = contact_reference_expression(TradeContact.province, TradeContact.locality,
+                                             TradeContact.details["country_code"].astext)
+    if location_status == "mapped":
+        filters.append(reference.isnot(None))
+    elif location_status == "unmapped":
+        filters.append(reference.is_(None))
+    if map_area:
+        filters.append(reference == map_area)
+    return filters, reference
+
+
+def search(db, *, q, category, province, limit, offset, locality="", verification_status="", contact_channel="",
+           subtype="", service_area="", location_status="all", map_area=""):
+    filters, _ = contact_filters(q=q, category=category, province=province, locality=locality, subtype=subtype,
+        service_area=service_area, verification_status=verification_status, contact_channel=contact_channel,
+        location_status=location_status, map_area=map_area)
     total = db.scalar(select(func.count()).select_from(TradeContact).where(*filters))
     source_count = (select(func.count()).select_from(TradeContactSource)
                     .where(TradeContactSource.contact_id == TradeContact.id).scalar_subquery())
@@ -176,3 +199,12 @@ def search(db, *, q, category, province, limit, offset, locality="", verificatio
                          .order_by(func.lower(TradeContact.name), TradeContact.id).limit(limit).offset(offset)).all()
     return {"total": total, "items": [dict(details, id=identifier, source_count=count)
                                       for identifier, details, count in entries]}
+
+
+def directory_map(db, **values):
+    filters, reference = contact_filters(**values)
+    # One aggregate statement covers the entire filtered set, before pagination.
+    rows = db.execute(select(reference, func.count(TradeContact.id)).where(*filters).group_by(reference)).all()
+    counts = {key: count for key, count in rows if key is not None}
+    total = sum(count for _, count in rows)
+    return map_summary(counts, total, sum(counts.values()), "record_area")
