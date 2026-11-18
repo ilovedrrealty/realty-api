@@ -212,9 +212,11 @@ NEW_TABLES = ('client_shortlist_grants',
 ADDED_COLUMNS = (('listing_edits', 'room_photo_tour_base_gallery_sha256', 'text', False, None),
  ('listings', 'room_photo_tour_snapshot', 'jsonb', False, None))
 ADDED_TRIGGERS = {('leads', 'transaction_room_lead_changed'),
+ ('listings', 'history_share_scope_changed'),
  ('listings', 'listing_arrival_guide_owner_changed'),
  ('listings', 'property_viewing_listing_changed'),
- ('users', 'client_shortlist_assignment_changed')}
+ ('users', 'client_shortlist_assignment_changed'),
+ ('users', 'history_share_scope_changed')}
 ROLLBACK_RESULTS = {'seed_live': {'status': 'PASS',
                'stage': 'seed_live',
                'historical_users': 4,
@@ -497,14 +499,26 @@ def snapshot(database, tables, columns=None, sequence_names=None):
 
 
 def preserved_catalog(before, after):
-    """Only the two reviewed nullable columns and four new old-table triggers."""
+    """Only the two reviewed nullable columns and six new old-table triggers."""
     old_columns = set(before["columns"])
     require(set(after["columns"]) - old_columns == set(ADDED_COLUMNS)
             and old_columns <= set(after["columns"]), "only_reviewed_columns_added_required")
     old_triggers = set(before["triggers"])
     extra = set(after["triggers"]) - old_triggers
-    require(old_triggers <= set(after["triggers"])
-            and {(row[0], row[1]) for row in extra} == ADDED_TRIGGERS,
+    added_pairs = {(row[0], row[1]) for row in extra}
+    old_preserved = old_triggers <= set(after["triggers"])
+    if not old_preserved or added_pairs != ADDED_TRIGGERS:
+        differences = {
+            "missing_old": sorted((row[0], row[1]) for row in old_triggers - set(after["triggers"])),
+            "missing_added": sorted(ADDED_TRIGGERS - added_pairs),
+            "unexpected_added": sorted(added_pairs - ADDED_TRIGGERS),
+        }
+        require(all(len(pairs) <= 100 and all(table in LIVE_TABLES
+                    and re.fullmatch(r"[a-z_]{1,63}", name) for table, name in pairs)
+                    for pairs in differences.values()), "bounded_trigger_catalog_diagnostic_required")
+        print("NETWORK_OLD_TRIGGER_DIFFERENCES " + json.dumps(differences, sort_keys=True,
+              separators=(",", ":")), flush=True)
+    require(old_preserved and added_pairs == ADDED_TRIGGERS,
             "only_reviewed_triggers_added_required")
     for key in ("constraints", "indexes", "rls", "acl", "policies", "enums"):
         require(after[key] == before[key], "retained_catalog_definition_changed")
@@ -625,7 +639,7 @@ def run():
     return {"status": "PASS", "application_commit": APP_COMMIT, "application_tree": APP_TREE,
             "live_commit": LIVE_COMMIT, "alembic_head": HEAD, "table_count": 92,
             "fresh_upgrade_catalog_equal": True, "old_column_rows_sequences_unchanged": True,
-            "reviewed_added_columns": 2, "reviewed_added_old_table_triggers": 4,
+            "reviewed_added_columns": 2, "reviewed_added_old_table_triggers": 6,
             "new_private_tables": len(NEW_TABLES), "public_member_denied_tables": len(NEW_TABLES),
             "source_reviewed_service_role_tables": len(SOURCE_REVIEWED_SERVER_TABLES),
             "source_reviewed_service_role_grants": 184, "repeat_normal_startup_preserved": True,
