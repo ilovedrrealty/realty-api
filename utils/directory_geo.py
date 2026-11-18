@@ -3,7 +3,7 @@
 import re
 import unicodedata
 
-from sqlalchemy import and_, case, func, or_
+from sqlalchemy import and_, case, false, func, or_
 
 
 CATALOG_ID = "existing-dr-area-references-v1"
@@ -130,6 +130,8 @@ def professional_mapped_expression(published, map_area=""):
         identifier for identifier, area in PROFESSIONAL_AREAS.items()
         if not map_area or AREAS[area]["area_key"] == map_area
     ]
+    if not identifiers:
+        return false()
     covered = or_(*(published["service_area_ids"].contains([identifier]) for identifier in identifiers))
     allowed_country = func.upper(func.btrim(func.coalesce(published["country_code"].astext, ""))).in_(("", "DO"))
     return and_(allowed_country, func.coalesce(covered, False))

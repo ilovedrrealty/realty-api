@@ -611,7 +611,7 @@ class ProfessionalTests(unittest.TestCase):
             self.assertNotIn(private, str(mapped))
         for suffix, expected in (
             ("?category=property_law&area=sosua&language=es&q=Synthetic%20area-map", 2),
-            ("?map_area=DO:sosua", 2), ("?map_area=DO:cabarete", 1),
+            ("?map_area=DO:sosua", 2), ("?map_area=DO:cabarete", 1), ("?map_area=DO:azua", 0),
             ("?location_status=unmapped", 1), ("?location_status=mapped", 2),
             ("?area=nationwide", 1), ("?language=fr", 0),
         ):
@@ -621,7 +621,7 @@ class ProfessionalTests(unittest.TestCase):
             if "location_status=unmapped" in suffix:
                 self.assertEqual(scoped["areas"], [])
             if "map_area=" in suffix:
-                self.assertEqual(len(scoped["areas"]), 1)
+                self.assertEqual(len(scoped["areas"]), 1 if expected else 0)
         with Session(self.engine) as db:
             after = [(str(item.id), deepcopy(item.draft_data), deepcopy(item.published_data), item.version)
                      for item in db.query(ProfessionalProfile).order_by(ProfessionalProfile.id)]
