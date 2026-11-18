@@ -14,10 +14,10 @@ for path in "$ops" "$application" "$baseline" "$recipe"; do
      ! -e "$path/.env" && ! -L "$path/.env" ]] || die CLEAN_SOURCE_REQUIRED
 done
 [[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" &&
-   $(git -C "$ops" show -s --format=%P HEAD) == 01695530df670a94ac28f8b3bf36cc34b5b7a942 &&
+   $(git -C "$ops" show -s --format=%P HEAD) == 029e2f432ced01e9473bff017867df980959f73d &&
    $(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) == $'.github/workflows/contact-import-native.yml\nci/contact-import/run-hosted-native.sh\nci/contact-import/verify-contact-import-native.py' &&
-   $(git -C "$application" rev-parse HEAD) == 161be4464b1f134e53e9c89b3b93222ea7617bc9 &&
-   $(git -C "$application" rev-parse 'HEAD^{tree}') == 6227e5a3cae0d4835c31bd2400ec19a04c2262c0 &&
+   $(git -C "$application" rev-parse HEAD) == 8ed67c8d54ee64017c7e44095f35d954272ef668 &&
+   $(git -C "$application" rev-parse 'HEAD^{tree}') == 0f6a7a0b21f57558aa5c67f216e7eea39b5b42b0 &&
    $(git -C "$baseline" rev-parse HEAD) == 01695530df670a94ac28f8b3bf36cc34b5b7a942 &&
    $(git -C "$baseline" rev-parse 'HEAD^{tree}') == e88ea0c57f9fac39545322532a5992d5a2927676 &&
    $(git -C "$recipe" rev-parse HEAD) == c193a925ba57ea2d67ea48c44e5262817885c8a2 ]] || die EXACT_PINS_REQUIRED
@@ -135,17 +135,17 @@ report=rows[0]
 assert report.get('status') in {'PASS','FAIL'}
 for suite in report.get('suites',[]):
     assert (suite['module'],suite['class'],suite['expected']) in {
-        ('test_trade_contact_files','ContactFileReaderTest',11),('test_admin_trade_contacts','TradeContactsTest',6)}
+        ('test_trade_contact_files','ContactFileReaderTest',12),('test_admin_trade_contacts','TradeContactsTest',6)}
     for diagnostic in suite['diagnostics']:
         assert re.fullmatch(r'test_[a-z_]+|setup_or_cleanup',diagnostic['test'])
         assert re.fullmatch(r'[A-Za-z_]{1,80}',diagnostic['error_type'])
 print('CONTACT_IMPORT_NATIVE_RESULT '+json.dumps(report,sort_keys=True,separators=(',',':')))
 assert report.get('unexpected_transport_attempts')==0
-assert report['status']=='PASS' and report['tests']==17 and report['schema_tables']==92
+assert report['status']=='PASS' and report['tests']==18 and report['schema_tables']==92
 PY_REPORT
 [[ "$native_exit" == 0 && "$native_state" == '0 false false' ]] || die NATIVE_RUNTIME_FAILED
 for path in "$application" "$baseline" "$recipe"; do
   [[ -z $(git -C "$path" status --porcelain=v1 --untracked-files=all) ]] || die MOUNTED_SOURCE_CHANGED
 done
-printf 'CONTACT_IMPORT_NATIVE_ACCEPTANCE commit=%s application=%s tests=17 run=%s attempt=1\n' \
-  "$GITHUB_SHA" 161be4464b1f134e53e9c89b3b93222ea7617bc9 "$GITHUB_RUN_ID"
+printf 'CONTACT_IMPORT_NATIVE_ACCEPTANCE commit=%s application=%s tests=18 run=%s attempt=1\n' \
+  "$GITHUB_SHA" 8ed67c8d54ee64017c7e44095f35d954272ef668 "$GITHUB_RUN_ID"

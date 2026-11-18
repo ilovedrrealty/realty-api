@@ -32,7 +32,7 @@ jobs:
       - name: Read exact contact candidate before running tests
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 161be4464b1f134e53e9c89b3b93222ea7617bc9
+          ref: 8ed67c8d54ee64017c7e44095f35d954272ef668
           path: contact-app
           fetch-depth: 6
           persist-credentials: false
@@ -48,7 +48,7 @@ jobs:
           ref: c193a925ba57ea2d67ea48c44e5262817885c8a2
           path: contact-recipe
           persist-credentials: false
-      - name: Run only17 contact native cases in owned loopback Postgres
+      - name: Run only18 contact native cases in owned loopback Postgres
         shell: bash
         run: |
           set -euo pipefail

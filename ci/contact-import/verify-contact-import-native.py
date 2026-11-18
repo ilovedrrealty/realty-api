@@ -17,10 +17,10 @@ from unittest.mock import patch
 
 
 APPLICATION = Path('/application')
-APP_COMMIT = '161be4464b1f134e53e9c89b3b93222ea7617bc9'
-APP_TREE = '6227e5a3cae0d4835c31bd2400ec19a04c2262c0'
+APP_COMMIT = '8ed67c8d54ee64017c7e44095f35d954272ef668'
+APP_TREE = '0f6a7a0b21f57558aa5c67f216e7eea39b5b42b0'
 HEAD = 'b19d8e4c720a'
-SUITES = (('test_trade_contact_files', 'ContactFileReaderTest', 11),
+SUITES = (('test_trade_contact_files', 'ContactFileReaderTest', 12),
           ('test_admin_trade_contacts', 'TradeContactsTest', 6))
 PROVIDER_KEYS = ('RESEND_API_KEY', 'GHL_API_KEY', 'GHL_LOCATION_ID', 'GHL_WEBHOOK_SECRET',
                  'SUPABASE_SERVICE_KEY', 'PAYPAL_CLIENT_ID', 'PAYPAL_CLIENT_SECRET', 'PAYPAL_WEBHOOK_ID')
@@ -178,9 +178,9 @@ def contracts(database):
         AND c.relname IN ('trade_contacts','trade_contact_sources') ORDER BY c.relname""")
     require(private == [('trade_contact_sources', True, False, 0, 0), ('trade_contacts', True, False, 0, 0)],
             'private_trade_data_api_required')
-    require(not attempts and sum(row['run'] for row in reports) == 17 and all(
+    require(not attempts and sum(row['run'] for row in reports) == 18 and all(
         row['run'] == row['expected'] and not any(row[key] for key in ('failures','errors','skipped',
-        'expected_failures','unexpected_successes')) for row in reports), 'all_17_contracts_required')
+        'expected_failures','unexpected_successes')) for row in reports), 'all_18_contracts_required')
 
 
 def run():
@@ -199,7 +199,7 @@ def run():
     stage = 'contact_contracts'
     contracts(database)
     return {'status': 'PASS', 'application_commit': APP_COMMIT, 'application_tree': APP_TREE,
-            'head': HEAD, 'schema_tables': 92, 'tests': 17, 'suites': reports,
+            'head': HEAD, 'schema_tables': 92, 'tests': 18, 'suites': reports,
             'unrelated_rows_sequences_unchanged': True, 'trade_data_api_private': True,
             'unexpected_transport_attempts': len(attempts), 'external_provider_requests': 0}
 
