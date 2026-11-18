@@ -1,7 +1,7 @@
 name: Isolated social groups frontend and browser acceptance
 on:
   push:
-    branches: [codex-ci-social-groups-browser-20261118]
+    branches: [codex-ci-social-groups-browser-20261118-v2]
 permissions:
   contents: read
 concurrency:
@@ -30,9 +30,9 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: ilovedrrealty/iLoveDRRealty
-          ref: 5d2afabca5560cb06166ad6af8efa3a06f8d4b6c
+          ref: 7b9ec53f54141ef66b92466de4dde81f5bc0f69e
           path: frontend-source
-          fetch-depth: 3
+          fetch-depth: 4
           persist-credentials: false
       - name: Read exact reviewed backend
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1

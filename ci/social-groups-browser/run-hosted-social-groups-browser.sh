@@ -6,7 +6,7 @@ die() { printf 'PLATFORM_BROWSER_REFUSED %s\n' "$1" >&2; exit 1; }
 bounded() { timeout --kill-after=8s "$@"; }
 [[ $# == 6 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 &&
-   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-social-groups-browser-20261118 &&
+   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-social-groups-browser-20261118-v2 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die HOSTED_EXACT_EVENT_REQUIRED
 ops="$1"; frontend="$2"; baseline="$3"; backend="$4"; migration="$5"; relay="$6"
 [[ "$ops" == "$GITHUB_WORKSPACE/build-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-source" &&
@@ -20,24 +20,22 @@ done
 expected_operations=$(cat <<'EXACT_OPERATIONS'
 .github/workflows/social-groups-browser.yml
 ci/social-groups-browser/PLAN.json
-ci/social-groups-browser/check-social-groups-result.py
 ci/social-groups-browser/run-hosted-social-groups-browser.sh
-ci/social-groups-browser/run-social-groups-browser.mjs
-ci/social-groups-browser/serve_social_groups_fixture.py
 EXACT_OPERATIONS
 )
 [[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" &&
-   $(git -C "$ops" rev-parse HEAD^) == b7c3de95a74ed84bc4aaed3e06cada2d3685f3a1 &&
+   $(git -C "$ops" rev-parse HEAD^) == 1d39a443d6dc4ef21fed57f018df0b15c0d3b42a &&
    $(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) == "$expected_operations" ]] || die EXACT_OPERATIONS_REQUIRED
 backend_commit=4e23cc8b643a4b07f4e14042e530e6271dad9c8f
 backend_tree=8093ea7aa9fd8f87a842e2527c715a8c482ac1fc
-frontend_commit=5d2afabca5560cb06166ad6af8efa3a06f8d4b6c
-frontend_tree=48b26c92f06d3112d3bebea2e17a373d3a7b533e
+frontend_commit=7b9ec53f54141ef66b92466de4dde81f5bc0f69e
+frontend_tree=8baac20b593e6cf4cfc964fa95333e7a856de7d8
 frontend_paths=585
 [[ $(git -C "$backend" rev-parse HEAD) == "$backend_commit" && $(git -C "$backend" rev-parse HEAD^{tree}) == "$backend_tree" &&
    $(git -C "$frontend" rev-parse HEAD) == "$frontend_commit" && $(git -C "$frontend" rev-parse HEAD^{tree}) == "$frontend_tree" &&
-   $(git -C "$frontend" rev-parse HEAD^) == c53aed2cdd0d9480a6c46c78253874a7674452d5 &&
-   $(git -C "$frontend" rev-parse HEAD^^) == 461a2ca2c7c2cac39212d4bddec9352e35429c39 &&
+   $(git -C "$frontend" rev-parse HEAD^) == 5d2afabca5560cb06166ad6af8efa3a06f8d4b6c &&
+   $(git -C "$frontend" rev-parse HEAD^^) == c53aed2cdd0d9480a6c46c78253874a7674452d5 &&
+   $(git -C "$frontend" rev-parse HEAD^^^) == 461a2ca2c7c2cac39212d4bddec9352e35429c39 &&
    $(git -C "$baseline" rev-parse HEAD) == 01695530df670a94ac28f8b3bf36cc34b5b7a942 &&
    $(git -C "$baseline" rev-parse HEAD^{tree}) == e88ea0c57f9fac39545322532a5992d5a2927676 &&
    $(git -C "$migration" rev-parse HEAD) == c193a925ba57ea2d67ea48c44e5262817885c8a2 &&
