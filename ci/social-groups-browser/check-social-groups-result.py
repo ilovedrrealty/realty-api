@@ -37,7 +37,7 @@ for line in lines:
             "geometry_viewport", "geometry_measure", "inbox_filter", "member_code_field", "alias_field",
             "membership_adoption", "role_field", "role_adoption", "feed_response", "feed_control", "post_field",
             "post_adoption", "post_image", "held_ready", "held_release", "settings_field", "settings_adoption",
-            "back_control", "back_heading", "create_header", "header_image"}
+            "back_control", "back_heading", "back_list_response", "back_mine_control", "create_header", "header_image"}
         assert value["last_await"] in waits and value["failed_await"] in waits
         assert isinstance(value["pending_awaits"], list) and len(value["pending_awaits"]) <= 12
         assert len(set(value["pending_awaits"])) == len(value["pending_awaits"]) and set(value["pending_awaits"]) <= waits - {"none"}

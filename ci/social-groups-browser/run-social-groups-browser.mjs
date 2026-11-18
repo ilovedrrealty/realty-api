@@ -352,6 +352,11 @@ async function settings(page, copy, facts, changes, acknowledge = false) {
 async function backIndex(page, copy) {
   await observed('back_control', () => button(page, copy.network.groups.back).click())
   await observed('back_heading', () => page.getByRole('heading', { name: copy.network.groups.title, exact: true }).waitFor())
+  const [response] = await Promise.all([
+    observed('back_list_response', () => page.waitForResponse(value => pathIs(value, `${prefix}/groups`, 'GET'))),
+    observed('back_mine_control', () => button(page.getByRole('navigation', { name: copy.network.groups.views_label, exact: true }), copy.network.groups.views.mine).click()),
+  ])
+  check(response.status() === 200, 'ACTUAL_MINE_LIST_REQUIRED'); noStore(response)
 }
 async function rosterAction(page, copy, facts, code, action, expectedState, needsConfirm = false) {
   const row = memberRow(page, copy, code)

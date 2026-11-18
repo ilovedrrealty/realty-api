@@ -6,8 +6,8 @@
   "frontend": "7b9ec53f54141ef66b92466de4dde81f5bc0f69e",
   "frontend_tree": "8baac20b593e6cf4cfc964fa95333e7a856de7d8",
   "frontend_parent": "5d2afabca5560cb06166ad6af8efa3a06f8d4b6c",
-  "operations_parent": "b032a14a93f1a361c876538af16afef70ebf0cae",
-  "proposed_first_ref": "codex-ci-social-groups-browser-20261118-v6",
+  "operations_parent": "c0a865fa73a4a75583552f6c168114f72424e4d6",
+  "proposed_first_ref": "codex-ci-social-groups-browser-20261118-v7",
   "accepted_runtime_recipe": "3007728fd67c5889a8373e41ff3ffa5cc50d839b",
   "contracts": {
     "files": 59,
@@ -172,25 +172,27 @@
     "change": "Explicit GroupRole inference with the same runtime whitelist and boolean narrowing of unknown-valued read errors before JSX. No type cast bypass, validation or assertion relaxation."
   },
   "prior_attempt": {
-    "run": 44293500146,
-    "job": 134764426662,
-    "status": "ACTUAL_FAILURE_PRESERVED",
-    "source": "b032a14a93f1a361c876538af16afef70ebf0cae",
-    "current_vite": "actualPASS; exact7b9 source;V2full480/strict retained",
-    "browser_failure": "G01_submit umbrella afterfirstgeometry; exactremainingawait notcaptured",
+    "run": 44296512590,
+    "job": 134774829414,
+    "status": "ACTUAL_FAILURE_READ_BY_ROOT",
+    "current_vite": "actualPASS; same7b9 source;V2480/strict retained",
+    "browser_failure": "G01_reopen; failedawaitopen_group_control;Createview retained afterBack",
+    "diagnostic": {
+      "create_forms": 1,
+      "groups_headings": 1,
+      "page_errors": 0,
+      "ui_error_counts": 0,
+      "group_create_status": 201,
+      "group_edit_status": 200,
+      "group_media_upload_status": 201,
+      "group_media_read_status": 200,
+      "group_header_status": 200,
+      "groups_get_count": 1
+    },
     "owned_cleanup": "verified",
     "artifacts": [],
-    "source_url": "https://github.com/ilovedrrealty/realty-api/actions/runs/44293500146",
-    "correction": "No proven product mismatch found in finiteindependent create/receipt source review. Add exactconstant remainingG01 stages and shared awaited-action/firstfailure/pending enums plus bounded endpointstatus andknownUIerror category counts. No product,locator,payload,assertion,12journey or16geometry change.",
-    "receipt": "social-groups-browser-44293500146-v5-failure.json",
-    "receipt_sha256": "bac9575b6140bec8a41fabd94b0a9645f56a1b2202f0e3c3099565a413d6b9d8",
-    "log_sha256": "74cb7514222ccbfae45ba043e041482c749ec1eabfbe885061ccd5a35aba7693",
-    "measured_loopback": {
-      "before": false,
-      "modeled": true,
-      "after": true,
-      "visible": true
-    }
+    "source_url": "https://github.com/ilovedrrealty/realty-api/actions/runs/44296512590",
+    "correction": "After normal Backtogroups, explicitlyselectexistingMygroups view andawaitactualGETgroups beforecardreopen. SocialGroups preserves itschosenview whilegroupdetail isopen; no product change or relaxedlocator/assertion."
   },
   "retained_prior_attempt": {
     "run": 44285281874,
@@ -258,6 +260,8 @@
       "alias_field",
       "back_control",
       "back_heading",
+      "back_list_response",
+      "back_mine_control",
       "create_header",
       "feed_control",
       "feed_response",
@@ -288,7 +292,8 @@
       "write_response"
     ],
     "first_failure": "Record the first failing sharedawait only; later simultaneous responsewait failure cannot overwrite it. Keep bounded pendingawaits andlast startedawait separately.",
-    "assertion_calls_unchanged": 65
+    "assertion_calls_unchanged": 65,
+    "additional_mine_get_assertions": 1
   },
   "retained_prior_attempt_v2": {
     "run": 44287063765,
@@ -365,5 +370,26 @@
     "receipt_sha256": "871f790ddb39e4b692813207a644c408f1f456aed324a218f67f699d6cb52d67",
     "log_sha256": "57f1ed57f4a85d0efdf45a41d12308ca0a7132be6df5a3f9c39542288349e1f3",
     "correction": "Pinned Playwright source proves inline select/textarea labels contain descendant option/value text. Scope the driver to the public label prefix ANDactual select/textarea tag,retain exactinput/checkbox matches, andaddconstantG01substeps. No product/API/predicate/12journey/16geometry change."
+  },
+  "retained_prior_attempt_v5": {
+    "run": 44293500146,
+    "job": 134764426662,
+    "status": "ACTUAL_FAILURE_PRESERVED",
+    "source": "b032a14a93f1a361c876538af16afef70ebf0cae",
+    "current_vite": "actualPASS; exact7b9 source;V2full480/strict retained",
+    "browser_failure": "G01_submit umbrella afterfirstgeometry; exactremainingawait notcaptured",
+    "owned_cleanup": "verified",
+    "artifacts": [],
+    "source_url": "https://github.com/ilovedrrealty/realty-api/actions/runs/44293500146",
+    "correction": "No proven product mismatch found in finiteindependent create/receipt source review. Add exactconstant remainingG01 stages and shared awaited-action/firstfailure/pending enums plus bounded endpointstatus andknownUIerror category counts. No product,locator,payload,assertion,12journey or16geometry change.",
+    "receipt": "social-groups-browser-44293500146-v5-failure.json",
+    "receipt_sha256": "bac9575b6140bec8a41fabd94b0a9645f56a1b2202f0e3c3099565a413d6b9d8",
+    "log_sha256": "74cb7514222ccbfae45ba043e041482c749ec1eabfbe885061ccd5a35aba7693",
+    "measured_loopback": {
+      "before": false,
+      "modeled": true,
+      "after": true,
+      "visible": true
+    }
   }
 }

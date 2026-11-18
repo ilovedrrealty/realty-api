@@ -6,7 +6,7 @@ die() { printf 'PLATFORM_BROWSER_REFUSED %s\n' "$1" >&2; exit 1; }
 bounded() { timeout --kill-after=8s "$@"; }
 [[ $# == 6 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 &&
-   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-social-groups-browser-20261118-v6 &&
+   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-social-groups-browser-20261118-v7 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die HOSTED_EXACT_EVENT_REQUIRED
 ops="$1"; frontend="$2"; baseline="$3"; backend="$4"; migration="$5"; relay="$6"
 [[ "$ops" == "$GITHUB_WORKSPACE/build-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-source" &&
@@ -26,7 +26,7 @@ ci/social-groups-browser/run-social-groups-browser.mjs
 EXACT_OPERATIONS
 )
 [[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" &&
-   $(git -C "$ops" rev-parse HEAD^) == b032a14a93f1a361c876538af16afef70ebf0cae &&
+   $(git -C "$ops" rev-parse HEAD^) == c0a865fa73a4a75583552f6c168114f72424e4d6 &&
    $(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) == "$expected_operations" ]] || die EXACT_OPERATIONS_REQUIRED
 backend_commit=4e23cc8b643a4b07f4e14042e530e6271dad9c8f
 backend_tree=8093ea7aa9fd8f87a842e2527c715a8c482ac1fc
