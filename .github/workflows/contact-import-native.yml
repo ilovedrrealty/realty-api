@@ -1,0 +1,58 @@
+name: Isolated Admin contact import native proof
+
+on:
+  push:
+    branches: [codex-ci-contact-import-native-20261118]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: contact-import-native-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  rehearsal:
+    if: >-
+      github.repository == 'ilovedrrealty/realty-api' &&
+      github.event.repository.private == false && github.event.created == true &&
+      github.event.deleted == false && github.event.forced == false &&
+      github.event.before == '0000000000000000000000000000000000000000' &&
+      github.run_attempt == 1 && github.event.after == github.sha && github.workflow_sha == github.sha
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Read exact native operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          path: contact-ops
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Read exact contact candidate before running tests
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 161be4464b1f134e53e9c89b3b93222ea7617bc9
+          path: contact-app
+          fetch-depth: 6
+          persist-credentials: false
+      - name: Read unchanged live dependency baseline
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 01695530df670a94ac28f8b3bf36cc34b5b7a942
+          path: contact-base
+          persist-credentials: false
+      - name: Read accepted Python dependency recipe
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: c193a925ba57ea2d67ea48c44e5262817885c8a2
+          path: contact-recipe
+          persist-credentials: false
+      - name: Run only17 contact native cases in owned loopback Postgres
+        shell: bash
+        run: |
+          set -euo pipefail
+          runner="$GITHUB_WORKSPACE/contact-ops/ci/contact-import/run-hosted-native.sh"
+          bash --noprofile --norc -n "$runner"
+          exec bash --noprofile --norc "$runner" "$GITHUB_WORKSPACE/contact-ops" \
+            "$GITHUB_WORKSPACE/contact-app" "$GITHUB_WORKSPACE/contact-base" "$GITHUB_WORKSPACE/contact-recipe"
