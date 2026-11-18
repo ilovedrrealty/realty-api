@@ -8,8 +8,8 @@
   "frontend_tree": "e57b136e251493e2ee4b5b81e836843e8bd9e7a8",
   "frontend_parent": "7b9ec53f54141ef66b92466de4dde81f5bc0f69e",
   "frontend_tracked_blobs": 587,
-  "operations_parent": "a3f5c088aa321edc54053defa9b8af34ea9b17a8",
-  "proposed_first_ref": "codex-ci-professional-google-browser-20261118-v2",
+  "operations_parent": "1ba7c80ad5022fa9659bf279e1ab1b5d13dd1425",
+  "proposed_first_ref": "codex-ci-professional-google-browser-20261118-v3",
   "contracts": {
     "files": 60,
     "tests": 489,
@@ -141,6 +141,26 @@
   "limits": "Synthetic profile updates only; no real contact import, account/invite/outreach, billing, keys, role/permission change, project/group mutation, stored ratings/reviews, provider message or production mutation. Native38 and the prior broad platform suites are retained, not repeated.",
   "publication": "Root reviews the exact six-file operations tree before any first absent-ref isolated push. This plan is not a production deployment authorization; root owns combined publication and recovery.",
   "prior_attempt": {
+    "run": 44299290896,
+    "job": 134784464972,
+    "operations": "1ba7c80ad5022fa9659bf279e1ab1b5d13dd1425",
+    "status": "ACTUAL_FAILURE_PRESERVED",
+    "fresh_vite": "PASS",
+    "contracts_and_strict": "Retain same-source actual V1 489/489/noSkip and strict native0. Not rerun in V2 or V3.",
+    "browser": "entry_menu LOCATOR_OR_EVENT_DEADLINE after three actual before=false/modeled=true/after=true/visible=true records. Source order reaches owner, peer owner and Admin entries. Exact third await was not captured.",
+    "source_check": "Actual Admin account/default workspace, sidebar copy, view branch and explicit search label/id agree. No new source or product mismatch proven.",
+    "correction": "Diagnostic only: finite owner/Admin/member document/toggle/navigation/readiness stage names, plus safe timeout/strict-locator/other error classification. No locator, payload, response or acceptance predicate changes.",
+    "owned_cleanup": "verified",
+    "artifacts": [],
+    "receipt": "professional-google-browser-44299290896-v2-failure.json",
+    "receipt_sha256": "5d6a013e6a33a21f3666ab89b9904437910a1cda9c4306e90748fd719ae7198a",
+    "log_sha256": "450d06dae992a3a6c5459fe58dc45ba303793056d47a7a48aee917ee43e250d3"
+  },
+  "unchanged_ops_files": {
+    "fixture": "41d1b798d22e93364b12e472a200bd3b86c85467318c8c27adf9d236a1ff2bb0",
+    "checker": "Identical Git blob to a3f5; all six/eight/ten-write acceptance predicates unchanged."
+  },
+  "retained_prior_attempt_v1": {
     "run": 44297510933,
     "job": 134778291830,
     "operations": "a3f5c088aa321edc54053defa9b8af34ea9b17a8",
@@ -161,8 +181,24 @@
     "receipt_sha256": "87655bbff134c2e46634fb512dccbc956155bdd9c3d19ef64aa8fb73cb7d1bd6",
     "log_sha256": "637f010c7712d5df50cd803534f685ffdf57389673fec18924e1b2e6f65a427b"
   },
-  "unchanged_ops_files": {
-    "fixture": "41d1b798d22e93364b12e472a200bd3b86c85467318c8c27adf9d236a1ff2bb0",
-    "checker": "Identical Git blob to a3f5; all six/eight/ten-write acceptance predicates unchanged."
+  "entry_diagnostic": {
+    "entries": [
+      "entry_owner",
+      "entry_admin",
+      "entry_member"
+    ],
+    "steps": [
+      "document",
+      "toggle",
+      "navigation",
+      "ready"
+    ],
+    "generic_error_classifications": [
+      "LOCATOR_OR_EVENT_DEADLINE",
+      "STRICT_LOCATOR",
+      "OTHER_DRIVER_ERROR"
+    ],
+    "privacy": "Only source-constant stage and reason strings. Error message is inspected solely for the strict-mode classification and is never printed; no DOM, URLs, IDs, cookies, account data or raw exceptions.",
+    "scope": "All39 original check calls, six journeys, eight geometries and ten-write authoritative ledger unchanged. No new feature or guessed product fix."
   }
 }

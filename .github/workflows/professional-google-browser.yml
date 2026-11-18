@@ -1,7 +1,7 @@
 name: Isolated professional Google links frontend and browser acceptance
 on:
   push:
-    branches: [codex-ci-professional-google-browser-20261118-v2]
+    branches: [codex-ci-professional-google-browser-20261118-v3]
 permissions:
   contents: read
 concurrency:

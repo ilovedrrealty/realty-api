@@ -80,15 +80,19 @@ async function foreground(page) {
 }
 async function openMenu(context, copy, item) {
   const page = await context.newPage()
-  advance('entry_document')
+  const entry = item === 'professionals' ? 'entry_admin'
+    : item === 'professional-directory' ? 'entry_member' : 'entry_owner'
+  advance(entry + '_document')
   await page.goto(DASH + '/', { waitUntil: 'domcontentloaded' }); await foreground(page)
   const state = await page.evaluate(() => ({ before: window.__ildrGoogleNativeOnline,
     modeled: !window.__ildrGoogleNativeOnline, after: navigator.onLine, visible: document.visibilityState === 'visible' }))
   check(Object.values(state).every(flag => typeof flag === 'boolean') && state.after && state.visible, 'ACTUAL_LOOPBACK_PRESENCE_REQUIRED')
   console.log('PROFESSIONAL_GOOGLE_LOOPBACK_STATE ' + JSON.stringify(state))
-  advance('entry_menu')
+  advance(entry + '_toggle')
   await page.locator('button:has(svg.lucide-menu)').click()
+  advance(entry + '_navigation')
   await button(page.locator('aside'), copy.nav[item]).click()
+  advance(entry + '_ready')
   if (item === 'professional-profile') await page.getByLabel(copy.professionals.google.profile_url, { exact: true }).waitFor()
   if (item === 'professionals') await page.getByLabel(copy.professionals.search, { exact: true }).waitFor()
   if (item === 'professional-directory') await page.getByRole('heading', { name: copy.professionals.directory_search.title, exact: true }).waitFor()
@@ -333,7 +337,13 @@ try {
     business_google_requests_before_click: beforeClick, live_google_fetches: 0,
     manual_frame_requests: frameRequests, manual_profile_requests: profileRequests, blocked_auth_script_requests: authScripts }))
 } catch (cause) {
-  console.log('PROFESSIONAL_GOOGLE_BROWSER_FAILURE ' + stage + ' ' + (cause instanceof Failure ? cause.message : 'LOCATOR_OR_EVENT_DEADLINE'))
+  let reason = 'OTHER_DRIVER_ERROR'
+  try {
+    if (cause instanceof Failure) reason = cause.message
+    else if (cause?.name === 'TimeoutError') reason = 'LOCATOR_OR_EVENT_DEADLINE'
+    else if (typeof cause?.message === 'string' && cause.message.includes('strict mode violation')) reason = 'STRICT_LOCATOR'
+  } catch { /* Only finite classifications are emitted, never arbitrary error values. */ }
+  console.log('PROFESSIONAL_GOOGLE_BROWSER_FAILURE ' + stage + ' ' + reason)
   process.exitCode = 1
 } finally {
   clearTimeout(timer)
