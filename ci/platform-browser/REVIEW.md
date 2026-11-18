@@ -1,7 +1,7 @@
 This proposal exercises exact frontend 7ec86e649fa1830fa159274759e22212035469bb
 (tree 0e492a8ef36c25074917a1e28bed346fd48541ac) and backend
-796f25ff52724db56313916e129df4b252a682fd
-(tree 10d76a3de555b567fde93a74b5f90b8d9ba76978), migration head b19d8e4c720a.
+01695530df670a94ac28f8b3bf36cc34b5b7a942
+(tree e88ea0c57f9fac39545322532a5992d5a2927676), migration head b19d8e4c720a.
 It is preparation until the hosted job actually passes.
 
 The full frontend acceptance already passed 458/458 cases, strict Dashboard and
@@ -32,7 +32,7 @@ reschedule, cancellation, completion changes and approval; private review;
 selective history sharing/revocation; custody transfer/decline/cancel; and awarded
 service conversation/revocation. Their assertions and scenarios remain intact.
 `accepted/PROVENANCE.json` records every copied byte hash. Copied changes bind the exact PostgreSQL identity 170011 to 170006 and API URL
-to8918, within the accepted static fixture's8900–8999 port range; the entry wrapper binds
+to 8918, within the accepted static fixture's 8900–8999 port range; the entry wrapper binds
 the reusable source verifiers and their explicit environment guards to this pair.
 Their service requests and initial quotes are seeded through real services;
 these phases do not prove normal UI request creation or quote submission.
@@ -59,3 +59,22 @@ This does not prove every management, transactions, editorial, listing inventory
 research/PDF or billing UI. Those areas retain separate unit/native evidence and
 must not be described as covered by these browser journeys. F08 newsletter and
 F09 account deletion are absent from both source pins and this proposal.
+
+The separate service-intake successor adds four groups to the plan, without
+rerunning or claiming the other 64 groups. Its workflow runs only the new intake
+phase. It seeds three users, one existing managed listing and one explicitly
+opted-in member preference, with no initial requests, quotes, projects or action
+receipts. A normal English owner form checks the reviewed-provider default,
+deliberately chooses opt-in members, selects one actual member, previews the
+shared brief, acknowledges sharing and creates the request. The selected member
+opens the received request in Spanish, accepts it, and submits the first quote
+through its real form. The owner reads the actual comparison; foreign and guest
+reads remain denied. Three whole-page 390 geometries, three actual mutations and
+the final one-request/one-recipient/one-quote/three-action DB facts are required.
+The prior port guard, source pins, provider refusal and owned cleanup remain.
+
+This intake proof binds backend test-only successor 01695530df670a94ac28f8b3bf36cc34b5b7a942.
+Its only change from the frozen 64-group pair's backend 796f25ff is the historical
+test fixture in tests/test_service_workflow_migration.py. The hosted Git guard
+verifies that exact one-file delta. All product and migration bytes are identical;
+the separate 64-group result retains its original exact source pin and receipt.

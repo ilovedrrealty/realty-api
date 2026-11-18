@@ -43,15 +43,16 @@ def main():
         for key in ("unexpected_mutations", "unexpected_browser_mutations", "page_errors"):
             assert value.get(key, 0) == 0
         assert value.get("external_navigation", False) is False
-        if phase == "owner":
-            assert value["writes"] == 9 and len(value["geometry"]) == 6
+        if phase in ("owner", "intake"):
+            assert value["writes"] == (9 if phase == "owner" else 3)
+            assert len(value["geometry"]) == (6 if phase == "owner" else 3)
             for dimensions in value["geometry"]:
                 assert set(dimensions) == {"name", "lang", "width", "document", "body"}
                 assert re.fullmatch(r"[a-z_]{1,60}", dimensions["name"]) and dimensions["lang"] in ("en", "es")
                 assert dimensions["width"] in (320, 390)
                 assert all(type(dimensions[key]) is int and 0 < dimensions[key] <= dimensions["width"]
                            for key in ("document", "body"))
-            print("PLATFORM_OWNER_GEOMETRY " + json.dumps(value["geometry"], separators=(",", ":")))
+            print("PLATFORM_PHASE_GEOMETRY " + json.dumps({"phase": phase, "checks": value["geometry"]}, separators=(",", ":")))
         print("PLATFORM_PHASE_BROWSER_RESULT " + json.dumps({"phase": phase, "status": "PASS",
               "checks": item["checks"], "check_count": len(item["checks"]), "native": 0}, separators=(",", ":")))
     elif mode in ("api", "failure"):
@@ -84,6 +85,13 @@ def main():
             assert len(facts) == 1 and facts[0]["status"] == "PASS"
             assert facts[0].get("external_transport_attempts", 0) == 0
             assert facts[0].get("unexpected_mutations", 0) == 0
+            if phase == "intake":
+                assert facts[0] == {"status": "PASS", "users": 3, "listings": 1, "opted_in_preferences": 1,
+                    "requests": 1, "recipients": 1, "accepted_recipients": 1, "first_quotes": 1,
+                    "retained_actions": 3, "successful_ui_mutations": 3, "no_seeded_requests_or_quotes": True,
+                    "live_provider_calls": 0, "incidental_leads_or_jobs": 0, "projects_created": 0,
+                    "all_accounts_active": True, "login_file_absent": True}
+                print("SERVICE_INTAKE_FIXTURE_RESULT " + json.dumps(facts[0], separators=(",", ":")))
         print("PLATFORM_PHASE_API_RESULT " + json.dumps(expected, separators=(",", ":")))
     else:
         raise RuntimeError("Exact parser mode required")

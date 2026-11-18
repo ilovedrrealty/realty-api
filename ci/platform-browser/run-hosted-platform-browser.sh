@@ -6,7 +6,7 @@ die() { printf 'PLATFORM_BROWSER_REFUSED %s\n' "$1" >&2; exit 1; }
 bounded() { timeout --kill-after=8s "$@"; }
 [[ $# == 5 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 &&
-   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-property-network-browser-20261118-v2 &&
+   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-property-network-service-intake-browser-20261118 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die HOSTED_EXACT_EVENT_REQUIRED
 ops="$1"; frontend="$2"; relay="$3"; backend="$4"; migration="$5"
 [[ "$ops" == "$GITHUB_WORKSPACE/build-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-source" &&
@@ -17,15 +17,16 @@ for checkout in "$ops" "$frontend" "$relay" "$backend" "$migration"; do
   [[ $(realpath "$checkout") == "$checkout" && -z "$current" && ! -e "$checkout/.env" && ! -L "$checkout/.env" ]] || die CLEAN_CHECKOUT_REQUIRED
 done
 [[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" &&
-   $(git -C "$ops" rev-parse HEAD^) == 76698867d0642ac179cc48c1cc0ca6f92cd649b5 ]] || die EXACT_OPERATIONS_REQUIRED
+   $(git -C "$ops" rev-parse HEAD^) == 095f57b74953766869dc2b1824387eae3b131ce3 ]] || die EXACT_OPERATIONS_REQUIRED
 delta=$(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD)
-[[ "$delta" == "$(cat "$ops/ci/platform-browser/v2-delta.txt")" ]] || die EXACT_PORT_CORRECTION_FILES_REQUIRED
-backend_commit=796f25ff52724db56313916e129df4b252a682fd
-backend_tree=10d76a3de555b567fde93a74b5f90b8d9ba76978
+[[ "$delta" == "$(cat "$ops/ci/platform-browser/intake-delta.txt")" ]] || die EXACT_INTAKE_ADDITION_FILES_REQUIRED
+backend_commit=01695530df670a94ac28f8b3bf36cc34b5b7a942
+backend_tree=e88ea0c57f9fac39545322532a5992d5a2927676
 [[ $(git -C "$backend" rev-parse HEAD) == "$backend_commit" &&
    $(git -C "$backend" rev-parse HEAD^{tree}) == "$backend_tree" &&
-   $(git -C "$backend" rev-parse HEAD^) == 081868373f318498ddaa835de6496aa6e62d6f57 &&
+   $(git -C "$backend" rev-parse HEAD^) == 796f25ff52724db56313916e129df4b252a682fd &&
    $(git -C "$migration" rev-parse HEAD) == c193a925ba57ea2d67ea48c44e5262817885c8a2 ]] || die EXACT_BACKEND_RECIPE_REQUIRED
+[[ $(git -C "$backend" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) == tests/test_service_workflow_migration.py ]] || die EXACT_TEST_ONLY_BACKEND_SUCCESSOR_REQUIRED
 frontend_commit=7ec86e649fa1830fa159274759e22212035469bb
 frontend_tree=0e492a8ef36c25074917a1e28bed346fd48541ac
 frontend_paths=563
@@ -315,6 +316,7 @@ for language in ('en', 'es'):
                  for key, name in (('nav', 'nav'), ('delivery', 'lead_delivery'), ('communications', 'communications'),
                                    ('feeds', 'inquiry_feeds'), ('share', 'contact_share'))})
     (browser/f'{language}.json').write_text(json.dumps(copy), encoding='utf-8')
+    (browser/f'property-network-{language}.json').write_bytes((workspace/f'apps/dashboard/src/locale/{language}/property_network.json').read_bytes())
 url = 'https://registry.npmjs.org/playwright-core/-/playwright-core-1.64.1.tgz'
 with urllib.request.urlopen(url, timeout=30) as response:
     assert response.geturl() == url
@@ -373,12 +375,8 @@ landing=$(bounded 25s docker create "${runtime[@]}" --memory 192m --memory-swap 
   node /serve-landing.mjs) || die LANDING_SERVER_CREATE_FAILED
 bounded 20s docker start "$dashboard" "$landing" >/dev/null || die STATIC_SERVERS_START_FAILED
 
-phases=(owner members negotiation visits review history custody conversation core)
-drivers=(run-owner-project-browser.mjs accepted/run-member-community-browser.mjs
-         accepted/run-service-negotiation-browser.mjs accepted/run-service-visits-browser.mjs
-         accepted/run-service-review-browser.mjs accepted/run-history-share-browser.mjs
-         accepted/run-private-custody-browser.mjs accepted/run-service-conversation-browser.mjs
-         accepted-core/run-communications-browser.mjs)
+phases=(intake)
+drivers=(run-service-intake-browser.mjs)
 for index in "${!phases[@]}"; do
   phase="${phases[$index]}"
   phase_nonce=$(python3 -I -B -c 'from uuid import uuid4; print(uuid4().hex)')
@@ -436,5 +434,5 @@ for index in "${!phases[@]}"; do
   verify_source || die BROWSER_ALTERED_FRONTEND_SOURCE
   [[ -z $(git -C "$backend" status --porcelain=v1 --untracked-files=all) ]] || die BROWSER_ALTERED_BACKEND_SOURCE
 done
-printf 'PLATFORM_HOSTED_BROWSER_RESULT operations=%s frontend=%s backend=%s phases=9 checks=64 owner_geometry=6 core_geometry=24 renting_geometry=6 live_provider_calls=0 run=%s attempt=1\n' \
+printf 'PLATFORM_HOSTED_BROWSER_RESULT operations=%s frontend=%s backend=%s phases=1 checks=4 intake_geometry=3 live_provider_calls=0 run=%s attempt=1\n' \
   "$GITHUB_SHA" "$frontend_commit" "$backend_commit" "$GITHUB_RUN_ID"

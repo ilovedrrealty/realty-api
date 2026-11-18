@@ -10,10 +10,11 @@ import traceback
 from urllib import request as urllib_request
 from unittest.mock import patch
 
-COMMIT = "796f25ff52724db56313916e129df4b252a682fd"
-TREE = "10d76a3de555b567fde93a74b5f90b8d9ba76978"
+COMMIT = "01695530df670a94ac28f8b3bf36cc34b5b7a942"
+TREE = "e88ea0c57f9fac39545322532a5992d5a2927676"
 HEAD = "b19d8e4c720a"
 PHASES = {
+    "intake": "serve_service_intake_fixture",
     "owner": "serve_owner_project_fixture",
     "members": "serve_member_community_fixture",
     "negotiation": "serve_service_negotiation_fixture",

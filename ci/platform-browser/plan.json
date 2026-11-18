@@ -1,6 +1,6 @@
 {
-  "backend": "796f25ff52724db56313916e129df4b252a682fd",
-  "backend_tree": "10d76a3de555b567fde93a74b5f90b8d9ba76978",
+  "backend": "01695530df670a94ac28f8b3bf36cc34b5b7a942",
+  "backend_tree": "e88ea0c57f9fac39545322532a5992d5a2927676",
   "head": "b19d8e4c720a",
   "frontend": "7ec86e649fa1830fa159274759e22212035469bb",
   "frontend_tree": "0e492a8ef36c25074917a1e28bed346fd48541ac",
@@ -131,7 +131,23 @@
         "zero_external_api_writes_tracking_and_page_errors",
         "renting_desktop_and_mobile_navigation_en_es"
       ]
+    },
+    {
+      "phase": "intake",
+      "driver": "run-service-intake-browser.mjs",
+      "prefix": "SERVICE_INTAKE_BROWSER_RESULT",
+      "checks": [
+        "normal_owner_request_form_explicit_provider_choice_preview_and_consent",
+        "selected_provider_accepts_invitation_from_received_request",
+        "provider_submits_first_real_quote_from_spanish_form",
+        "owner_compares_exact_quote_while_foreign_and_anonymous_access_stays_private"
+      ]
     }
   ],
-  "total_checks": 64
+  "total_checks": 68,
+  "execution_phases": [
+    "intake"
+  ],
+  "execution_checks": 4,
+  "retained_recipe_checks_not_rerun": 64
 }

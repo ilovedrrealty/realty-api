@@ -1,0 +1,69 @@
+name: Isolated normal service request and first quote browser journey
+
+on:
+  push:
+    branches: [codex-ci-property-network-service-intake-browser-20261118]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: property-network-intake-browser-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  browser:
+    if: >-
+      github.repository == 'ilovedrrealty/realty-api' &&
+      github.event.repository.private == false &&
+      github.event.created == true && github.event.deleted == false &&
+      github.event.forced == false &&
+      github.event.before == '0000000000000000000000000000000000000000' &&
+      github.run_attempt == 1 && github.event.after == github.sha &&
+      github.workflow_sha == github.sha
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Read exact browser operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          path: build-ops
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Read exact accepted integrated frontend
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: ilovedrrealty/iLoveDRRealty
+          ref: 7ec86e649fa1830fa159274759e22212035469bb
+          path: frontend-source
+          fetch-depth: 3
+          persist-credentials: false
+      - name: Read accepted synthetic static export recipe
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: d49acd7d48e92dac6d06b1678570bc137fb6a5ba
+          path: landing-relay
+          persist-credentials: false
+      - name: Read exact reviewed integrated backend
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 01695530df670a94ac28f8b3bf36cc34b5b7a942
+          path: browser-backend
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Read accepted isolated Python dependency recipe
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: c193a925ba57ea2d67ea48c44e5262817885c8a2
+          path: migration-relay
+          persist-credentials: false
+      - name: Build runtime assets and exercise one normal service intake journey
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$RUNNER_ENVIRONMENT" == github-hosted && "$RUNNER_OS" == Linux && "$RUNNER_ARCH" == X64 ]]
+          bash --noprofile --norc -n "$GITHUB_WORKSPACE/build-ops/ci/platform-browser/run-hosted-platform-browser.sh"
+          exec bash --noprofile --norc "$GITHUB_WORKSPACE/build-ops/ci/platform-browser/run-hosted-platform-browser.sh" \
+            "$GITHUB_WORKSPACE/build-ops" "$GITHUB_WORKSPACE/frontend-source" \
+            "$GITHUB_WORKSPACE/landing-relay" "$GITHUB_WORKSPACE/browser-backend" "$GITHUB_WORKSPACE/migration-relay"
