@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "source_scope": "Exact frozen helper copies plus separate query generator successor; synthetic tests only.",
+  "files": {
+    "outputs/website-growth-20261022/backups/daily-schema-catalog-read-only.sql": "06b8e6c46068e10845b4e17122906c336cbc704804bb1809f1e2f4b71910920d",
+    "outputs/website-growth-20261022/backups/make-daily-full-public-query.py": "1234f9b892a3c491ad0a7057e3c5e8bc983430232bb931b286a5fcbc352daa29",
+    "outputs/website-growth-20261022/backups/make-daily-compressed-query.py": "a2050dacc7f118b45e495bbba63f9ddc8a694528e427e2e6682585d49b4f1202",
+    "outputs/website-growth-20261022/backups/receive-daily-compressed-snapshot.py": "c587281e57bcb1c2aa3fc02d8b10290b278e2b216db59d4c78140550322d8545",
+    "outputs/website-growth-20261022/backups/finalize-daily-full-public-backup.py": "2b31968a446d240fcf312a21fc44cb7aa0587773c803b0911f9571ec312a8d8c",
+    "outputs/property-network-20261101/backup-query-compatibility-20261118/make-daily-full-public-query-v2.py": "b2dd42e123ffe718a0759dd9b9000e6e2e197b50c6ba6135801903ec28a05658"
+  }
+}
