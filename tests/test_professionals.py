@@ -515,6 +515,39 @@ class ProfessionalTests(unittest.TestCase):
             self.assertTrue(missing.isdisjoint(row.published_data))
             self.assertEqual(row.version, approved["version"])
 
+    def test_google_links_use_explicit_review_approved_snapshot_versions_and_contact_withdrawal(self):
+        original = {"google_profile_url": "https://www.google.com/maps/place/Synthetic+Business/",
+                    "google_maps_embed_url": "https://www.google.com/maps/embed?pb=!1m2!1m1!1d1"}
+        replacement = {"google_profile_url": "https://maps.app.goo.gl/SyntheticNext123", "google_maps_embed_url": ""}
+        for managed in (False, True):
+            with self.subTest(managed=managed):
+                data = draft("Synthetic Google managed" if managed else "Synthetic Google owner", **original)
+                private = self.managed(data) if managed else self.save(data)
+                self.assertEqual((private["review_status"], private["listing_status"]), ("draft", "hidden"))
+                path = f"/professionals/{private['id']}"
+                self.call("GET", path, "other", status=404)
+                pending = self.managed_submit(private) if managed else self.submit(private)
+                self.call("GET", path, "other", status=404)
+                approved = self.moderate(pending)
+                public = self.call("GET", path, "other")
+                self.assertEqual({key: public[key] for key in original}, original)
+                self.assertFalse({"rating", "reviews", "review_count", "google_verified"}.intersection(public))
+                changed_data = {**data, **replacement}
+                changed = self.managed_save(approved, changed_data) if managed else self.save(changed_data, version=approved["version"])
+                self.assertEqual({key: self.call("GET", path, "other")[key] for key in original}, original)
+                if managed:
+                    self.managed_save(approved, changed_data, status=409)
+                else:
+                    self.save(changed_data, version=approved["version"], status=409)
+                revoked_data = {**changed_data, "public_contact_consent": False}
+                revoked = self.managed_save(changed, revoked_data) if managed else self.save(revoked_data, version=changed["version"])
+                self.assertEqual(revoked["listing_status"], "hidden")
+                self.call("GET", path, "other", status=404)
+                with Session(self.engine) as db:
+                    saved = db.get(ProfessionalProfile, UUID(private["id"]))
+                    self.assertEqual({key: saved.published_data[key] for key in original}, original)
+                    self.assertEqual({key: saved.draft_data[key] for key in replacement}, replacement)
+
     def test_managed_photo_assets_are_profile_scoped_immutable_and_do_not_change_saved_versions(self):
         managed, second = self.managed(), self.managed(actor="admin_b")
         image = io.BytesIO()
