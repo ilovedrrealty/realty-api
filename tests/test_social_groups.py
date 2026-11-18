@@ -80,8 +80,9 @@ class SocialGroupsTest(unittest.TestCase):
 
     def edit(self, group_id, current, **changes):
         fields = {key: current[key] for key in ("name", "description", "purpose", "area_label", "visibility", "join_policy", "post_policy", "comments_enabled")}
+        image_id = changes.pop("image_media_id", (current.get("image") or {}).get("id"))
         fields.update(changes)
-        body = GroupEdit(submission_id=uuid4(), expected_version=current["version"], image_media_id=None, **fields)
+        body = GroupEdit(submission_id=uuid4(), expected_version=current["version"], image_media_id=image_id, **fields)
         return self.service.edit_group(self.db, self.users["owner"], group_id, body)["current"]
 
     def assert_unavailable(self, call):
@@ -360,3 +361,116 @@ class SocialGroupsTest(unittest.TestCase):
             self.assertEqual(created.json()["current"]["visibility"], "private")
         finally:
             client.close()
+
+    def test_pending_members_cannot_read_private_group_images(self):
+        from PIL import Image
+        image = BytesIO()
+        Image.new("RGB", (2, 2), "white").save(image, "PNG")
+        group_id, current = self.group()
+        with patch.object(self.service.storage, "store_image"):
+            photo = self.service.upload_media(self.db, self.users["owner"], group_id, "group_image", uuid4(), image.getvalue())["current"]
+        current = self.edit(group_id, current, image_media_id=photo["id"])
+        self.invite(group_id)
+        pending = self.service.group_view(self.db, self.users["member"], self.service.group_for(self.db, self.users["member"], group_id))
+        self.assertIsNone(pending["image"])
+        with patch.object(self.service.storage, "read_image", return_value=b"synthetic image") as read:
+            self.assert_unavailable(lambda: self.service.media_bytes(self.db, self.users["member"], UUID(photo["id"])))
+            read.assert_not_called()
+            self.accept(group_id)
+            self.assertEqual(self.service.media_bytes(self.db, self.users["member"], UUID(photo["id"])), b"synthetic image")
+
+        network_id, network = self.group(visibility="network")
+        with patch.object(self.service.storage, "store_image"):
+            public_image = self.service.upload_media(self.db, self.users["owner"], network_id, "group_image", uuid4(), image.getvalue())["current"]
+        network = self.edit(network_id, network, image_media_id=public_image["id"])
+        self.service.own_membership_action(self.db, self.users["other"], network_id, MembershipAction(
+            submission_id=uuid4(), expected_membership_version=0, action="request", member_alias="Pending requester"))
+        self.assertIsNotNone(self.service.group_view(self.db, self.users["other"], self.service.group_for(self.db, self.users["other"], network_id))["image"])
+        self.edit(network_id, network, visibility="private")
+        hidden = self.service.group_view(self.db, self.users["other"], self.service.group_for(self.db, self.users["other"], network_id))
+        self.assertEqual(hidden["membership"]["state"], "requested")
+        self.assertIsNone(hidden["image"])
+        with patch.object(self.service.storage, "read_image") as read:
+            self.assert_unavailable(lambda: self.service.media_bytes(self.db, self.users["other"], UUID(public_image["id"])))
+            read.assert_not_called()
+
+    def test_moderator_demotion_conceals_hidden_comment_receipt(self):
+        group_id, _ = self.group()
+        self.invite(group_id)
+        member = self.accept(group_id)
+        moderator = self.service.manage_member(self.db, self.users["owner"], group_id, self.users["member"].user_code,
+            ManageMember(submission_id=uuid4(), expected_membership_version=member["version"], action="set_role", role="moderator"))["current"]
+        self.invite(group_id, actor="other")
+        self.accept(group_id, actor="other")
+        post = self.service.create_post(self.db, self.users["owner"], group_id,
+            GroupPostCreate(submission_id=uuid4(), body="Shared parent"))["current"]
+        comment = self.service.create_comment(self.db, self.users["other"], UUID(post["id"]),
+            GroupCommentCreate(submission_id=uuid4(), body="Hidden comment sentinel"))["current"]
+        body = HideComment(submission_id=uuid4(), expected_version=comment["version"], action="hide")
+        self.service.hide_comment(self.db, self.users["member"], UUID(comment["id"]), body)
+        self.service.manage_member(self.db, self.users["owner"], group_id, self.users["member"].user_code,
+            ManageMember(submission_id=uuid4(), expected_membership_version=moderator["version"], action="set_role", role="member"))
+        receipt = self.service.own_submission(self.db, self.users["member"], body.submission_id)
+        self.assertIsNone(receipt["current"])
+        from models.property_network import NetworkBlock
+        self.db.add(NetworkBlock(blocker_id=self.users["other"].id, blocked_id=self.users["member"].id))
+        self.db.commit()
+        self.assertIsNone(self.service.own_submission(self.db, self.users["member"], body.submission_id)["current"])
+        self.assertEqual(self.service.comments(self.db, self.users["member"], UUID(post["id"]), 1)["total"], 0)
+
+    def test_cached_parent_is_refreshed_after_another_session_hides_it(self):
+        from models.social_groups import NetworkGroupPost, NetworkGroupComment
+        from models.user import User
+        group_id, _ = self.group()
+        self.invite(group_id)
+        self.accept(group_id)
+        post = self.service.create_post(self.db, self.users["owner"], group_id,
+            GroupPostCreate(submission_id=uuid4(), body="Parent before moderation"))["current"]
+        identity = UUID(post["id"])
+        cached = self.db.get(NetworkGroupPost, identity)
+        self.assertEqual(cached.status, "visible")
+        with self.Session() as other:
+            owner = other.get(User, self.users["owner"].id)
+            self.service.moderate_post(other, owner, identity,
+                ModeratePost(submission_id=uuid4(), expected_version=post["version"], action="hide"))
+        # The request has the same cached hint it could have loaded before
+        # waiting behind the moderator's group lock. The parent must refresh.
+        self.assertEqual(cached.status, "visible")
+        self.assert_unavailable(lambda: self.service.create_comment(self.db, self.users["member"], identity,
+            GroupCommentCreate(submission_id=uuid4(), body="Must not reach hidden parent")))
+        self.assertEqual(self.db.query(NetworkGroupComment).filter_by(post_id=identity).count(), 0)
+
+    def test_closed_groups_allow_withdrawal_but_no_new_activity(self):
+        for closure in ("archived", "owner_suspended"):
+            group_id, current = self.group(visibility="network")
+            self.invite(group_id)
+            member = self.accept(group_id)
+            invitation = self.invite(group_id, actor="other")
+            request = self.service.own_membership_action(self.db, self.users["third"], group_id, MembershipAction(
+                submission_id=uuid4(), expected_membership_version=0, action="request", member_alias="Waiting requester"))["current"]
+            if closure == "archived":
+                self.service.archive(self.db, self.users["owner"], group_id,
+                    ArchiveGroup(submission_id=uuid4(), expected_version=current["version"], action="archive"))
+            else:
+                self.users["owner"].status = "suspended"
+                self.db.commit()
+            for call in (
+                lambda: self.accept(group_id, actor="other", version=invitation["version"]),
+                lambda: self.service.create_post(self.db, self.users["member"], group_id,
+                    GroupPostCreate(submission_id=uuid4(), body="Closed activity")),
+                lambda: self.service.own_membership_action(self.db, self.users["platform"], group_id, MembershipAction(
+                    submission_id=uuid4(), expected_membership_version=0, action="request", member_alias="New requester")),
+            ):
+                with self.assertRaises(HTTPException) as denied:
+                    call()
+                self.assertEqual(denied.exception.status_code, 409)
+                self.db.rollback()
+            for actor, action, version in (("member", "leave", member["version"]),
+                                            ("other", "decline_invite", invitation["version"]),
+                                            ("third", "cancel", request["version"])):
+                result = self.service.own_membership_action(self.db, self.users[actor], group_id, MembershipAction(
+                    submission_id=uuid4(), expected_membership_version=version, action=action))["current"]
+                self.assertEqual(result["state"], {"leave": "left", "decline_invite": "declined", "cancel": "cancelled"}[action])
+            if closure == "owner_suspended":
+                self.users["owner"].status = "active"
+                self.db.commit()

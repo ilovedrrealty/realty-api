@@ -172,7 +172,7 @@ def group_view(db, user, group):
             "post_policy": group.post_policy, "comments_enabled": group.comments_enabled, "status": group.status,
             "version": group.version, "owner_alias": group.owner_alias, "my_role": role,
             "membership": membership_view(db, member) if member else None, "member_count": count,
-            "image": media_view(image) if image else None, "publication_summary": summary,
+            "image": media_view(image) if image and can_feed else None, "publication_summary": summary,
             "can_read_feed": can_feed, "can_read_members": bool(role or user.role == "admin"),
             "can_manage": managers and writable, "can_moderate": _can_moderate(db, user, group),
             "can_post": bool(role and writable), "can_join": not role and writable and _state(member) not in {"blocked", "invited", "requested"},
@@ -196,8 +196,7 @@ def _current(db, user, action):
         if action.target_kind == "post":
             return post_view(db, user, post_for(db, user, action.target_id))
         if action.target_kind == "comment":
-            row = db.get(Comment, action.target_id)
-            post_for(db, user, row.post_id)
+            row = comment_for(db, user, action.target_id)
             return comment_view(db, user, row)
         if action.target_kind == "media":
             row = db.get(Media, action.target_id)
@@ -371,14 +370,16 @@ def own_membership_action(db, user, identity, body):
     replay = _replay(db, user, body, operation, identity)
     if replay:
         return replay
-    group_for(db, user, identity)
-    _require_write(db, group)
+    withdrawing = operation in {"cancel", "decline_invite", "leave"}
+    if not withdrawing:
+        group_for(db, user, identity)
+        _require_write(db, group)
     if user.id == group.owner_id:
         raise HTTPException(409, "The group owner can archive the group instead of leaving")
     row = db.query(Membership).filter_by(group_id=identity, user_id=user.id).populate_existing().with_for_update().first()
     _version(row, body.expected_membership_version)
     state = _state(row)
-    if state == "blocked" or _blocked(db, user.id, group.owner_id):
+    if state == "blocked" or not withdrawing and _blocked(db, user.id, group.owner_id):
         unavailable()
     new_state = None
     if operation in {"join", "request"}:
@@ -604,7 +605,9 @@ def _author(db, group, author_id):
 
 
 def post_for(db, user, identity):
-    row = db.get(Post, identity)
+    # A write can have loaded its parent hint before waiting for the group
+    # lock. Re-read moderation state rather than trusting that identity map.
+    row = db.query(Post).filter_by(id=identity).populate_existing().first()
     if row is None:
         unavailable()
     group = group_for(db, user, row.group_id)
@@ -700,6 +703,18 @@ def comment_view(db, user, row):
             "can_hide": row.author_id == user.id or _can_moderate(db, user, group)}
 
 
+def comment_for(db, user, identity):
+    row = db.query(Comment).filter_by(id=identity).populate_existing().first()
+    if row is None:
+        unavailable()
+    post = post_for(db, user, row.post_id)
+    group = group_for(db, user, post.group_id)
+    if not _can_moderate(db, user, group) and (
+            _blocked(db, user.id, row.author_id) or row.hidden and row.author_id != user.id):
+        unavailable()
+    return row
+
+
 def comments(db, user, identity, number):
     post = post_for(db, user, identity)
     group = group_for(db, user, post.group_id)
@@ -754,6 +769,9 @@ def authorize_media(db, user, row):
         unavailable()
     group = group_for(db, user, row.group_id)
     if row.kind == "group_image" and group.image_media_id == row.id:
+        if not (_role(db, user, group) or user.role == "admin" or (
+                group.status == "active" and group.visibility == "network" and _owner_active(db, group))):
+            unavailable()
         return row
     if row.post_id:
         post_for(db, user, row.post_id)
