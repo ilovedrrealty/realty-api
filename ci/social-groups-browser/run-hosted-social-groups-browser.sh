@@ -6,7 +6,7 @@ die() { printf 'PLATFORM_BROWSER_REFUSED %s\n' "$1" >&2; exit 1; }
 bounded() { timeout --kill-after=8s "$@"; }
 [[ $# == 6 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 &&
-   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-social-groups-browser-20261118-v7 &&
+   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-social-groups-browser-20261118-v8 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die HOSTED_EXACT_EVENT_REQUIRED
 ops="$1"; frontend="$2"; baseline="$3"; backend="$4"; migration="$5"; relay="$6"
 [[ "$ops" == "$GITHUB_WORKSPACE/build-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-source" &&
@@ -26,7 +26,7 @@ ci/social-groups-browser/run-social-groups-browser.mjs
 EXACT_OPERATIONS
 )
 [[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" &&
-   $(git -C "$ops" rev-parse HEAD^) == c0a865fa73a4a75583552f6c168114f72424e4d6 &&
+   $(git -C "$ops" rev-parse HEAD^) == 1d6668a926eb8e26b0f33bf810f48b2a09639877 &&
    $(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) == "$expected_operations" ]] || die EXACT_OPERATIONS_REQUIRED
 backend_commit=4e23cc8b643a4b07f4e14042e530e6271dad9c8f
 backend_tree=8093ea7aa9fd8f87a842e2527c715a8c482ac1fc
@@ -322,6 +322,12 @@ for index in "${!phases[@]}"; do
     env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp GITHUB_ACTIONS=true GITHUB_REPOSITORY=ilovedrrealty/realty-api \
     ILDR_BROWSER_FIXTURES=/browser-fixtures/fixtures.json PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \
     node "/browser-run/${drivers[$index]}" >"$state/browser-$phase.log" 2>&1 || browser_native=$?
+  exit_class=nonzero
+  if [[ "$browser_native" == 0 ]]; then exit_class=success
+  elif [[ "$browser_native" == 124 ]]; then exit_class=timeout
+  elif ((browser_native >= 128)); then exit_class=signal
+  fi
+  printf 'SOCIAL_GROUPS_BROWSER_NATIVE_EXIT code=%s classification=%s\n' "$browser_native" "$exit_class"
   # Preserve the genuine API final-state proof even when browser assertions fail.
   bounded 35s docker stop --time 25 "$api" >/dev/null || die API_GRACEFUL_STOP_REQUIRED
   api_native=$(bounded 5s docker inspect --format '{{.State.ExitCode}}' "$api")

@@ -1,4 +1,5 @@
 import { lstat, readFile, readdir } from 'node:fs/promises'
+import { writeSync } from 'node:fs'
 import { chromium } from 'playwright-core'
 
 const api = 'http://127.0.0.1:8918', dashboard = 'http://127.0.0.1:4175', landing = 'http://127.0.0.1:8917'
@@ -17,7 +18,31 @@ const errorTypes = { Error: 0, TypeError: 0, ReferenceError: 0, SyntaxError: 0, 
 const pendingAwaits = new Set()
 let lastAwait = 'none', failedAwait = 'none'
 let diagnosticCopies = {}
+let processFailureSeen = false
 class Failure extends Error {}
+function processFailure(event, cause) {
+  if (processFailureSeen) return
+  processFailureSeen = true
+  let type = 'non_error', stack = ''
+  try {
+    const known = ['Error', 'TypeError', 'ReferenceError', 'SyntaxError', 'RangeError', 'TimeoutError', 'TargetClosedError']
+    type = known.includes(cause?.name) ? cause.name : cause instanceof Error ? 'other_error' : 'non_error'
+    stack = typeof cause?.stack === 'string' ? cause.stack : ''
+  } catch { /* Never print arbitrary rejection values or error getters. */ }
+  const frames = [], seen = new Set()
+  for (const match of stack.matchAll(/run-social-groups-browser\.mjs:([0-9]{1,6}):([0-9]{1,5})/g)) {
+    const line = Number(match[1]), column = Number(match[2]), key = line + ':' + column
+    if (line < 1 || line > 10000 || column < 1 || column > 10000 || seen.has(key)) continue
+    frames.push({ line, column }); seen.add(key)
+    if (frames.length === 8) break
+  }
+  const phase = /^[A-Za-z][A-Za-z0-9_]{0,79}$/.test(stage) ? stage : 'unknown'
+  try { writeSync(1, 'SOCIAL_GROUPS_PROCESS_FAILURE ' + JSON.stringify({ event, phase, error_type: type, own_frames: frames }) + '\n') }
+  catch { /* The shell still records the nonzero native exit. */ }
+  process.exit(1)
+}
+process.on('uncaughtException', cause => processFailure('uncaught_exception', cause))
+process.on('unhandledRejection', cause => processFailure('unhandled_rejection', cause))
 const check = (value, reason) => { if (!value) throw new Failure(reason) }
 function advance(value) {
   stage = value; clearTimeout(timer); console.log('SOCIAL_GROUPS_BROWSER_STAGE ' + value)

@@ -12,7 +12,20 @@ lines = path.read_bytes().splitlines()
 failed = False
 diagnostics = []
 loopback = []
+process_failures = []
 for line in lines:
+    if line.startswith(b"SOCIAL_GROUPS_PROCESS_FAILURE "):
+        assert mode == "browser" and len(line) <= 2048 and not process_failures
+        value = json.loads(line.split(b" ", 1)[1])
+        assert set(value) == {"event", "phase", "error_type", "own_frames"}
+        assert value["event"] in {"uncaught_exception", "unhandled_rejection"}
+        assert isinstance(value["phase"], str) and re.fullmatch(r"[A-Za-z][A-Za-z0-9_]{0,79}", value["phase"])
+        assert value["error_type"] in {"Error", "TypeError", "ReferenceError", "SyntaxError", "RangeError", "TimeoutError", "TargetClosedError", "other_error", "non_error"}
+        assert isinstance(value["own_frames"], list) and len(value["own_frames"]) <= 8
+        for frame in value["own_frames"]:
+            assert set(frame) == {"line", "column"} and all(type(number) is int and 1 <= number <= 10000 for number in frame.values())
+        process_failures.append(value)
+        failed = True
     if line.startswith(b"SOCIAL_GROUPS_LOOPBACK_STATE "):
         assert mode == "browser" and len(line) <= 256 and len(loopback) < 8
         value = json.loads(line.split(b" ", 1)[1])
@@ -77,6 +90,8 @@ if diagnostics:
     print("SOCIAL_GROUPS_ENTRY_DIAGNOSTIC " + json.dumps(diagnostics[0], sort_keys=True))
 for value in loopback:
     print("SOCIAL_GROUPS_LOOPBACK_STATE " + json.dumps(value, sort_keys=True))
+for value in process_failures:
+    print("SOCIAL_GROUPS_PROCESS_FAILURE " + json.dumps(value, sort_keys=True))
 assert native == "0" and not failed
 prefix = b"SOCIAL_GROUPS_BROWSER_RESULT " if mode == "browser" else b"SOCIAL_GROUPS_FIXTURE_RESULT "
 rows = [json.loads(line[len(prefix):]) for line in lines if line.startswith(prefix)]
