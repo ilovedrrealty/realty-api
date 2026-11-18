@@ -88,6 +88,7 @@ class AcceptInvite(ResolveInvite, Submission):
 
 
 class GroupPostCreate(Submission):
+    expected_group_version: int = Field(ge=1)
     body: str = Field(default="", max_length=4000)
     media_ids: list[UUID] = Field(default_factory=list, max_length=6)
 

@@ -661,6 +661,7 @@ def create_post(db, user, identity, body):
     if replay:
         return replay
     _require_member(db, user, group)
+    _version(group, body.expected_group_version)
     photos = []
     for media_id in sorted(body.media_ids, key=str):
         photo = db.query(Media).filter_by(id=media_id).populate_existing().with_for_update().first()

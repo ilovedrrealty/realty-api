@@ -34,7 +34,14 @@ class GroupInputTest(unittest.TestCase):
         identity = uuid4()
         for fields in ({}, {"media_ids": [identity, identity]}, {"body": "\x00"}):
             with self.assertRaises(ValidationError):
-                GroupPostCreate(submission_id=uuid4(), **fields)
+                GroupPostCreate(submission_id=uuid4(), expected_group_version=1, **fields)
+
+    def test_post_requires_captured_group_version(self):
+        for fields in ({}, {"expected_group_version": 0}, {"expected_group_version": None}):
+            with self.assertRaises(ValidationError):
+                GroupPostCreate(submission_id=uuid4(), body="Captured private draft", **fields)
+        body = GroupPostCreate(submission_id=uuid4(), expected_group_version=1, body="Captured private draft")
+        self.assertEqual(body.expected_group_version, 1)
 
 
 @unittest.skipUnless(os.environ.get("SOCIAL_GROUPS_FIXTURE") == "yes", "requires owned isolated PostgreSQL")
@@ -90,6 +97,11 @@ class SocialGroupsTest(unittest.TestCase):
             call()
         self.assertIn(error.exception.status_code, (403, 404))
         self.db.rollback()
+
+    def post_input(self, group_id, **fields):
+        from models.social_groups import NetworkGroup
+        version = self.db.query(NetworkGroup).filter_by(id=group_id).populate_existing().one().version
+        return GroupPostCreate(submission_id=uuid4(), expected_group_version=version, **fields)
 
     def test_private_group_create_replay_and_targeted_consent(self):
         from models.social_groups import NetworkGroup, NetworkGroupAction
@@ -189,14 +201,14 @@ class SocialGroupsTest(unittest.TestCase):
     def test_visibility_withdrawal_never_republishes_private_history(self):
         group_id, current = self.group()
         private = self.service.create_post(self.db, self.users["owner"], group_id,
-            GroupPostCreate(submission_id=uuid4(), body="Private historical post"))["current"]
+            self.post_input(group_id, body="Private historical post"))["current"]
         with self.assertRaises(HTTPException) as unpublished:
             self.edit(group_id, current, visibility="network")
         self.assertEqual(unpublished.exception.status_code, 422)
         self.db.rollback()
         current = self.edit(group_id, current, visibility="network", publication_acknowledged=True)
         public = self.service.create_post(self.db, self.users["owner"], group_id,
-            GroupPostCreate(submission_id=uuid4(), body="Registered network post"))["current"]
+            self.post_input(group_id, body="Registered network post"))["current"]
         visible = self.service.posts(self.db, self.users["other"], group_id, 1)
         self.assertEqual([row["id"] for row in visible["items"]], [public["id"]])
         self.assert_unavailable(lambda: self.service.post_for(self.db, self.users["other"], UUID(private["id"])))
@@ -239,7 +251,7 @@ class SocialGroupsTest(unittest.TestCase):
         self.invite(group_id)
         active = self.accept(group_id)
         pending = self.service.create_post(self.db, self.users["member"], group_id,
-            GroupPostCreate(submission_id=uuid4(), body="Pending member post"))["current"]
+            self.post_input(group_id, body="Pending member post"))["current"]
         self.assertEqual(pending["status"], "pending")
         promoted = self.service.manage_member(self.db, self.users["owner"], group_id, self.users["member"].user_code,
             ManageMember(submission_id=uuid4(), expected_membership_version=active["version"], action="set_role", role="moderator"))["current"]
@@ -269,7 +281,7 @@ class SocialGroupsTest(unittest.TestCase):
             photo = self.service.upload_media(self.db, self.users["member"], group_id, "post", uuid4(), image.getvalue())["current"]
             self.assertEqual(store.call_count, 1)
         post = self.service.create_post(self.db, self.users["member"], group_id,
-            GroupPostCreate(submission_id=uuid4(), body="Private group photo", media_ids=[photo["id"]]))["current"]
+            self.post_input(group_id, body="Private group photo", media_ids=[photo["id"]]))["current"]
         discussion = self.service.create_comment(self.db, self.users["owner"], UUID(post["id"]),
             GroupCommentCreate(submission_id=uuid4(), body="This photo", media_id=photo["id"]))["current"]
         self.assertEqual(discussion["media_id"], photo["id"])
@@ -403,7 +415,7 @@ class SocialGroupsTest(unittest.TestCase):
         self.invite(group_id, actor="other")
         self.accept(group_id, actor="other")
         post = self.service.create_post(self.db, self.users["owner"], group_id,
-            GroupPostCreate(submission_id=uuid4(), body="Shared parent"))["current"]
+            self.post_input(group_id, body="Shared parent"))["current"]
         comment = self.service.create_comment(self.db, self.users["other"], UUID(post["id"]),
             GroupCommentCreate(submission_id=uuid4(), body="Hidden comment sentinel"))["current"]
         body = HideComment(submission_id=uuid4(), expected_version=comment["version"], action="hide")
@@ -425,7 +437,7 @@ class SocialGroupsTest(unittest.TestCase):
         self.invite(group_id)
         self.accept(group_id)
         post = self.service.create_post(self.db, self.users["owner"], group_id,
-            GroupPostCreate(submission_id=uuid4(), body="Parent before moderation"))["current"]
+            self.post_input(group_id, body="Parent before moderation"))["current"]
         identity = UUID(post["id"])
         cached = self.db.get(NetworkGroupPost, identity)
         self.assertEqual(cached.status, "visible")
@@ -457,7 +469,7 @@ class SocialGroupsTest(unittest.TestCase):
             for call in (
                 lambda: self.accept(group_id, actor="other", version=invitation["version"]),
                 lambda: self.service.create_post(self.db, self.users["member"], group_id,
-                    GroupPostCreate(submission_id=uuid4(), body="Closed activity")),
+                    self.post_input(group_id, body="Closed activity")),
                 lambda: self.service.own_membership_action(self.db, self.users["platform"], group_id, MembershipAction(
                     submission_id=uuid4(), expected_membership_version=0, action="request", member_alias="New requester")),
             ):
@@ -505,7 +517,7 @@ class SocialGroupsTest(unittest.TestCase):
             with patch.object(self.service.storage, "store_image"):
                 photo = self.service.upload_media(self.db, self.users["third"], group_id, "post", uuid4(), image.getvalue())["current"]
             self.service.create_post(self.db, self.users["third"], group_id,
-                GroupPostCreate(submission_id=uuid4(), body="Retained private photo", media_ids=[photo["id"]]))
+                self.post_input(group_id, body="Retained private photo", media_ids=[photo["id"]]))
             if closure == "archived":
                 self.service.archive(self.db, self.users["owner"], group_id,
                     ArchiveGroup(submission_id=uuid4(), expected_version=current["version"], action="archive"))
@@ -593,3 +605,42 @@ class SocialGroupsTest(unittest.TestCase):
             owner = reloaded.get(User, owner_id)
             row = next(item for item in self.service.members(reloaded, owner, group_id, "all", 1)["items"] if item["user_code"] == code)
             self.assertEqual(row["version"], invited["version"])
+
+    def test_private_post_draft_rejects_new_group_audience_but_committed_replay_survives(self):
+        from PIL import Image
+        from models.social_groups import NetworkGroupAction, NetworkGroupMedia, NetworkGroupPost
+        from models.user import User
+        group_id, current = self.group()
+        image = BytesIO()
+        Image.new("RGB", (3, 2), "white").save(image, "PNG")
+        with patch.object(self.service.storage, "store_image"):
+            photo = self.service.upload_media(self.db, self.users["owner"], group_id, "post", uuid4(), image.getvalue())["current"]
+        draft = GroupPostCreate(submission_id=uuid4(), expected_group_version=current["version"],
+            body="Private draft before publication", media_ids=[photo["id"]])
+        committed_body = GroupPostCreate(submission_id=uuid4(), expected_group_version=current["version"],
+            body="Committed private post before publication")
+        committed = self.service.create_post(self.db, self.users["owner"], group_id, committed_body)
+        # A different session changes the audience while the original session
+        # still holds its private-composer version and an unattached photo.
+        fields = {key: current[key] for key in ("name", "description", "purpose", "area_label", "join_policy", "post_policy", "comments_enabled")}
+        with self.Session() as publisher:
+            owner = publisher.get(User, self.users["owner"].id)
+            self.service.edit_group(publisher, owner, group_id, GroupEdit(submission_id=uuid4(),
+                expected_version=current["version"], visibility="network", publication_acknowledged=True, **fields))
+        before = (self.db.query(NetworkGroupPost).filter_by(group_id=group_id).count(),
+                  self.db.query(NetworkGroupAction).filter_by(group_id=group_id).count())
+        with self.assertRaises(HTTPException) as changed:
+            self.service.create_post(self.db, self.users["owner"], group_id, draft)
+        self.assertEqual(changed.exception.status_code, 409)
+        self.db.rollback()
+        self.assertEqual((self.db.query(NetworkGroupPost).filter_by(group_id=group_id).count(),
+                          self.db.query(NetworkGroupAction).filter_by(group_id=group_id).count()), before)
+        self.assertIsNone(self.db.get(NetworkGroupMedia, UUID(photo["id"])).post_id)
+        self.assertIsNone(self.db.query(NetworkGroupAction).filter_by(actor_id=self.users["owner"].id,
+            submission_id=draft.submission_id).first())
+        replay = self.service.create_post(self.db, self.users["owner"], group_id, committed_body)
+        self.assertEqual(replay["target_id"], committed["target_id"])
+        self.assertEqual(replay["current"]["created_audience"], "private")
+        self.assertEqual((self.db.query(NetworkGroupPost).filter_by(group_id=group_id).count(),
+                          self.db.query(NetworkGroupAction).filter_by(group_id=group_id).count()), before)
+        self.assertEqual(self.service.posts(self.db, self.users["other"], group_id, 1)["items"], [])
