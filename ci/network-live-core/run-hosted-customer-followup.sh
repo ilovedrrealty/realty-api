@@ -4,7 +4,7 @@ die() { printf 'CUSTOMER_FOLLOWUP_REFUSED %s\n' "$1" >&2; exit 1; }
 bounded() { timeout --kill-after=8s "$@"; }
 
 [[ $# == 6 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api ]] || die CI_REQUIRED
-[[ ${GITHUB_REF:-} == refs/heads/codex-ci-network-live-core-native-20261118-v2 && ${GITHUB_RUN_ATTEMPT:-} == 1 &&
+[[ ${GITHUB_REF:-} == refs/heads/codex-ci-network-live-core-native-20261118-v3 && ${GITHUB_RUN_ATTEMPT:-} == 1 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die EXACT_EVENT_REQUIRED
 [[ ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 ]] || die HOSTED_LINUX_REQUIRED
 ops="$1"; application="$2"; prior="$3"; recipe="$4"; legacy="$5"; live="$6"
@@ -19,7 +19,7 @@ done
 app_commit=$(git -C "$application" rev-parse HEAD)
 app_tree=$(git -C "$application" rev-parse 'HEAD^{tree}')
 [[ "$app_commit" == 796f25ff52724db56313916e129df4b252a682fd && "$app_tree" == 10d76a3de555b567fde93a74b5f90b8d9ba76978 &&
-   $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" show -s --format=%P HEAD) == 6b049ea0f90e3db186583add2af4d67959405701 &&
+   $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" && $(git -C "$ops" show -s --format=%P HEAD) == ed878d5d9504305084b572cf74310d366d3d1f89 &&
    ! -e "$application/.env" && ! -L "$application/.env" ]] || die EXACT_IMMUTABLE_PRODUCT_REQUIRED
 # The only candidate successor change corrects the established four-key
 # public catalog test; every product and migration blob remains reviewed081868.
@@ -27,7 +27,7 @@ app_tree=$(git -C "$application" rev-parse 'HEAD^{tree}')
    $(git -C "$application" diff --name-only HEAD^ HEAD) == tests/test_professionals.py &&
    $(git -C "$application" diff --numstat HEAD^ HEAD) == $'2\t2\ttests/test_professionals.py' ]] ||
   die EXACT_TEST_ONLY_SOURCE_SUCCESSOR_REQUIRED
-[[ $(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) == $'.github/workflows/network-live-core-native.yml\nci/network-live-core/run-hosted-customer-followup.sh\nci/network-live-core/verify-customer-followup.py\nci/network-live-core/verify-live-delivery-rollback.py\nci/network-live-core/verify-live-delivery-schema.py' ]] ||
+[[ $(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) == $'.github/workflows/network-live-core-native.yml\nci/network-live-core/run-hosted-customer-followup.sh' ]] ||
   die EXACT_OPERATIONS_DELTA_REQUIRED
 [[ $(git -C "$prior" rev-parse HEAD) == e660040e0c514aca3f7f5b7d7a5007e4fdc596c4 &&
    $(git -C "$prior" rev-parse 'HEAD^{tree}') == 4e230dcfd86ad1a3353ca3b30efe4a425e60f884 &&
@@ -138,7 +138,7 @@ for ((attempt=0; attempt<60; attempt++)); do
 done
 [[ "$ready" == 1 && $(bounded 5s docker exec "$pg" ls /sys/class/net) == lo ]] || die LOOPBACK_POSTGRES_REQUIRED
 bounded 10s docker exec "$pg" psql -X -h 127.0.0.1 -p 55449 -U postgres -d "$database" -v ON_ERROR_STOP=1 \
-  -c 'CREATE ROLE anon NOLOGIN; CREATE ROLE authenticated NOLOGIN; CREATE ROLE service_role NOLOGIN' \
+  -c 'CREATE ROLE anon NOLOGIN NOINHERIT; CREATE ROLE authenticated NOLOGIN NOINHERIT; CREATE ROLE service_role NOLOGIN NOINHERIT' \
   -c "COMMENT ON DATABASE $database IS 'ildr-communications-ci:$nonce'" >/dev/null || die DATABASE_MARKER_REQUIRED
 
 test_container=$(bounded 25s docker create --label "$label=$run_key" --network "container:$pg" --user "$(id -u):$(id -g)" \
