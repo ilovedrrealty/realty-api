@@ -1,0 +1,19 @@
+{
+  "commit": "54266a09109a1a012aa3de0ddf39c8487d4289b3",
+  "path": "ci/network-live-core/verify-live-delivery-schema.py",
+  "source_sha256": "e0f95d6b711e9381ed749b85880d1083f1bfcc8f01f827c5495cc061f6fc7a80",
+  "extracted_blocks": {
+    "RehearsalFailure": "c79c0d41b3d214037bc80d984ce6bff4cbc161a74dd284ec3bbba30fdb388edb",
+    "require": "2830b1adbb090abd706fe56360f5dbbc9219ce8f738ebf5854879200a5f990b4",
+    "connection": "0c8972593ca8fd8083e66851bc71ecf79747f443681a3788a1e9b0e191cfee1b",
+    "query": "2ff5df193d856b37dbb3f1620189d2cace52c7d7360a8c93ddf0f8039ab0a34d",
+    "table_names": "3b29dcc006769e8e8508bcff4702006c8a8a5651231f8c695c3a28a95fa71036",
+    "catalog": "819ce31e294476d35eced69e1a6c56734d7e3cc3e6b8ad276ddf2665ff6d57d1",
+    "snapshot": "97c6e3e274d2d3ecef21a3e9cc567cdc2ed9aeee36223a5d528b6fc0ddad7b76",
+    "verify_check_render_controls": "109f328b7e0bd74853ea4c94259d9feb4468a72b9a45b3f8b11087956556ce35"
+  },
+  "old_tables": 92,
+  "status": "source-only reuse; new groups acceptance not run",
+  "legacy_new_tables": 67,
+  "copied_helper_sha256": "5869dcbd30dc659a649fc6c2bbbe2de1337904ef11e4b91d6ad1992ef7ea9c2f"
+}

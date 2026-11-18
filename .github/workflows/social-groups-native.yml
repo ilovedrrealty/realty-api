@@ -1,0 +1,65 @@
+name: Isolated social groups native proof
+
+on:
+  push:
+    branches: [codex-ci-social-groups-native-20261118]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: social-groups-native-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  rehearsal:
+    if: >-
+      github.repository == 'ilovedrrealty/realty-api' &&
+      github.event.repository.private == false && github.event.created == true &&
+      github.event.deleted == false && github.event.forced == false &&
+      github.event.before == '0000000000000000000000000000000000000000' &&
+      github.run_attempt == 1 && github.event.after == github.sha && github.workflow_sha == github.sha
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Read exact native operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          path: groups-ops
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Read exact groups candidate before running tests
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 4404b3f1c4160b0df7c71d56780f410128c9d446
+          path: groups-app
+          fetch-depth: 5
+          persist-credentials: false
+      - name: Read unchanged live dependency baseline
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 01695530df670a94ac28f8b3bf36cc34b5b7a942
+          path: groups-base
+          persist-credentials: false
+      - name: Read accepted Python dependency recipe
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: c193a925ba57ea2d67ea48c44e5262817885c8a2
+          path: groups-recipe
+          persist-credentials: false
+      - name: Read exact preceding map runtime
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 4d21cb3ae2b14475828ff8fbe710b22c34c3a53b
+          path: groups-previous
+          persist-credentials: false
+      - name: Run22 groups contracts,99-table upgrade,old runtime and archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          runner="$GITHUB_WORKSPACE/groups-ops/ci/social-groups-native/run-hosted-native.sh"
+          bash --noprofile --norc -n "$runner"
+          exec bash --noprofile --norc "$runner" "$GITHUB_WORKSPACE/groups-ops" \
+            "$GITHUB_WORKSPACE/groups-app" "$GITHUB_WORKSPACE/groups-base" "$GITHUB_WORKSPACE/groups-recipe" \
+            "$GITHUB_WORKSPACE/groups-previous"
