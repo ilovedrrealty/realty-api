@@ -2,7 +2,7 @@ name: Isolated merged private-platform full frontend acceptance
 
 on:
   push:
-    branches: [codex-ci-property-network-frontend-20261118]
+    branches: [codex-ci-property-network-frontend-20261118-v2]
 
 permissions:
   contents: read
@@ -35,9 +35,9 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: ilovedrrealty/iLoveDRRealty
-          ref: e9a5041d6ca46f9b8448ea494e635c11cdea4434
+          ref: 7ec86e649fa1830fa159274759e22212035469bb
           path: frontend-source
-          fetch-depth: 2
+          fetch-depth: 3
           persist-credentials: false
       - name: Read accepted static export fixture
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1

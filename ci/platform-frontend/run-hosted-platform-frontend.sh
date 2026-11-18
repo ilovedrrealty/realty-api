@@ -8,7 +8,7 @@ bounded() { timeout --kill-after=8s "$@"; }
 
 [[ $# == 3 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 &&
-   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-property-network-frontend-20261118 &&
+   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-property-network-frontend-20261118-v2 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die HOSTED_EXACT_EVENT_REQUIRED
 ops="$1"; frontend="$2"; relay="$3"
 [[ "$ops" == "$GITHUB_WORKSPACE/build-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-source" &&
@@ -19,16 +19,19 @@ for checkout in "$ops" "$frontend" "$relay"; do
     die CLEAN_CHECKOUT_REQUIRED
 done
 [[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" &&
-   $(git -C "$ops" rev-parse 'HEAD^') == 3a4d8d4d632010b2868d44d55acf493561d76c1b ]] || die EXACT_OPERATIONS_REQUIRED
+   $(git -C "$ops" rev-parse 'HEAD^') == a260fb8465f53c433396884cf1ea4f20a99955aa ]] || die EXACT_OPERATIONS_REQUIRED
 delta=$(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) || die EXACT_DELTA_REQUIRED
 [[ "$delta" == $'.github/workflows/property-network-frontend.yml\nci/platform-frontend/run-hosted-platform-frontend.sh' ]] || die EXACT_DELTA_REQUIRED
-frontend_commit=e9a5041d6ca46f9b8448ea494e635c11cdea4434
-frontend_tree=8b743c4dadad09e5328716b96d748ba7f6be7f0b
+frontend_commit=7ec86e649fa1830fa159274759e22212035469bb
+frontend_tree=0e492a8ef36c25074917a1e28bed346fd48541ac
 frontend_paths=563
 [[ $(git -C "$frontend" rev-parse HEAD) == "$frontend_commit" &&
    $(git -C "$frontend" rev-parse 'HEAD^{tree}') == "$frontend_tree" &&
-   $(git -C "$frontend" rev-parse HEAD^) == 480c3bd53bcfd16d95e9e4d974c97429e00a0e68 &&
-   $(git -C "$frontend" rev-parse HEAD^2) == 12f5b00fc5aa4040cb91c8ecc483812999c0e33e ]] || die EXACT_FRONTEND_REQUIRED
+   $(git -C "$frontend" rev-parse HEAD^) == e9a5041d6ca46f9b8448ea494e635c11cdea4434 &&
+   $(git -C "$frontend" rev-parse HEAD^1^1) == 480c3bd53bcfd16d95e9e4d974c97429e00a0e68 &&
+   $(git -C "$frontend" rev-parse HEAD^1^2) == 12f5b00fc5aa4040cb91c8ecc483812999c0e33e ]] || die EXACT_FRONTEND_REQUIRED
+[[ $(git -C "$frontend" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) == \
+   $'tests/due-work-reminders.test.cjs\ntests/service-operations.test.cjs' ]] || die EXACT_TEST_ONLY_SUCCESSOR_REQUIRED
 [[ $(git -C "$relay" rev-parse HEAD) == d49acd7d48e92dac6d06b1678570bc137fb6a5ba ]] || die EXACT_RELAY_REQUIRED
 landing_fixture="$relay/ci/frontend"
 landing_script="$relay/ci/cumulative-landing/landing.cjs"
@@ -220,7 +223,7 @@ bounded 600s docker run "${prepare[@]}" --network none \
   node --test --test-concurrency=1 --test-reporter=tap "${tests[@]}" >"$state/contracts.log" 2>&1 || native=$?
 python3 -I -B - "$state/contracts.log" "$native" <<'PY' || die EXACT_CONTRACTS_REQUIRED
 from pathlib import Path
-import re, sys
+import json, re, sys
 
 source = Path(sys.argv[1])
 assert source.stat().st_size <= 4 * 1024 * 1024
@@ -228,10 +231,23 @@ data = source.read_bytes()
 rows = {name: int(value) for name, value in re.findall(rb"(?m)^# (tests|pass|fail|skipped) ([0-9]{1,5})$", data)}
 print("INTEGRATED_FRONTEND_CONTRACTS native=" + str(int(sys.argv[2])) + " " +
       " ".join(f"{key.decode()}={rows.get(key, 0)}" for key in (b"tests", b"pass", b"fail", b"skipped")))
-for index in re.findall(rb"(?m)^not ok ([1-9][0-9]{0,4}) - ", data)[:12]:
-    print("INTEGRATED_CONTRACT_FAILURE index=" + index.decode("ascii"))
+failures = list(re.finditer(rb"(?m)^not ok ([1-9][0-9]{0,4}) - ([^\r\n]{1,500})$", data))
+for position, failure in enumerate(failures[:12]):
+    end = failures[position + 1].start() if position + 1 < len(failures) else len(data)
+    block = data[failure.start():end]
+    location = re.search(rb"(?m)^  location: ['\"]?/work/(tests/[A-Za-z0-9_./-]+\.test\.cjs):([0-9]{1,5}):", block)
+    code = re.search(rb"(?m)^  code: ['\"]?([A-Z][A-Z0-9_]{1,60})", block)
+    dependency = re.search(rb"Unexpected dependency ([A-Za-z0-9_./@-]{1,120})", block)
+    title = failure[2].decode("utf-8", errors="replace")
+    safe_title = (len(title) <= 240 and not re.search(r"[@\x00-\x1f]|://|[a-f0-9]{32}", title))
+    report = {"index": int(failure[1]), "file": location[1].decode() if location else None,
+              "line": int(location[2]) if location else None,
+              "title": title if safe_title else None,
+              "code": code[1].decode() if code else None,
+              "missing_fixture_dependency": dependency[1].decode() if dependency else None}
+    print("INTEGRATED_CONTRACT_FAILURE " + json.dumps(report, ensure_ascii=True, sort_keys=True))
 assert sys.argv[2] == "0" and set(rows) == {b"tests", b"pass", b"fail", b"skipped"}
-assert rows[b"tests"] > 0 and rows[b"pass"] == rows[b"tests"] and rows[b"fail"] == rows[b"skipped"] == 0
+assert rows == {b"tests": 458, b"pass": 458, b"fail": 0, b"skipped": 0}
 PY
 verify_source || die CONTRACTS_ALTERED_SOURCE
 
