@@ -8,8 +8,8 @@
   "frontend_tree": "e57b136e251493e2ee4b5b81e836843e8bd9e7a8",
   "frontend_parent": "7b9ec53f54141ef66b92466de4dde81f5bc0f69e",
   "frontend_tracked_blobs": 587,
-  "operations_parent": "a78cd7b197b30ef0740d9e63cf2ff54360a902dd",
-  "proposed_first_ref": "codex-ci-professional-google-browser-20261125-v6",
+  "operations_parent": "b0be68e0dd31b8befd5d1e34afee85b12c8bd0d3",
+  "proposed_first_ref": "codex-ci-professional-google-browser-20261125-v7",
   "contracts": {
     "files": 60,
     "tests": 489,
@@ -141,35 +141,35 @@
   "limits": "Synthetic profile updates only; no real contact import, account/invite/outreach, billing, keys, role/permission change, project/group mutation, stored ratings/reviews, provider message or production mutation. Native38 and the prior broad platform suites are retained, not repeated.",
   "publication": "Root reviews the exact six-file operations tree before any first absent-ref isolated push. This plan is not a production deployment authorization; root owns combined publication and recovery.",
   "prior_attempt": {
-    "run": 45543949507,
-    "job": 138968904011,
-    "operations": "a78cd7b197b30ef0740d9e63cf2ff54360a902dd",
+    "run": 45544971614,
+    "job": 138972265308,
+    "operations": "b0be68e0dd31b8befd5d1e34afee85b12c8bd0d3",
     "status": "ACTUAL_TERMINAL_FAILURE_READ",
     "fresh_vite": "PASS",
-    "browser": "entry_admin_ready LOCATOR_OR_EVENT_DEADLINE; V5 added multiple normal language precondition awaits under one phase; exact failedawait not proven",
-    "census": {
-      "diagnostic_read_error": false,
-      "en_language": false,
-      "es_language": true,
-      "forms": 1,
-      "heading_en": 0,
-      "heading_es": 1,
-      "page_errors": 0,
-      "route_matches": true,
-      "search_inputs": 1,
-      "search_label_en": 0,
-      "search_label_es": 1,
-      "workspace_matches": true
-    },
+    "emitted_phase": "entry_admin_ready",
+    "reason": "LOCATOR_OR_EVENT_DEADLINE",
+    "own_frames": [
+      {
+        "column": 46,
+        "line": 178
+      },
+      {
+        "column": 3,
+        "line": 293
+      }
+    ],
+    "actual_failed_await": "second Spanish searchAdmin of identical managedName after successful English editor and normal ES toggle; waitForResponse expects new list GET",
+    "diagnosis": "AdminProfessionals setSearch(samequery)/setOffset(0) leaves effect dependencies unchanged, so no new list GET; fresh detail GET still required",
+    "prior_inference_correction": "V4/V5 ES census is later intended Spanish state, not evidence of initial Admin locale mismatch. Remove speculative V5 locale precondition.",
     "owned_cleanup": "verified",
     "artifacts": [],
-    "receipt": "professional-google-browser-45543949507-v5-failure.json",
-    "receipt_sha256": "a9acdfbea43a36d701cb88343760a137542efab2ef952d46a0acfed56c0eee5b",
-    "log_sha256": "bc47afd21691d1576987be044b4c7e885dcc0da8b3b0b1e0255ef55d665065d6"
+    "receipt": "professional-google-browser-45544971614-v6-failure.json",
+    "receipt_sha256": "05a5066d8173187550fa4807e5d4fe81d23947ea1c7fcca3e03736393176f1f6",
+    "log_sha256": "8578754dd8fe4b6781e21c371c5b5f4ebf86d70d1a3e903a3bbf7d86c19ecf44"
   },
   "unchanged_ops_files": {
     "fixture": "41d1b798d22e93364b12e472a200bd3b86c85467318c8c27adf9d236a1ff2bb0",
-    "checker": "All original success/API/census predicates byte unchanged; adds bounded own-driver numericframes failure marker parser only."
+    "checker": "Identical Git blob to b0be68e0; all success/API/failure/census/ownframes predicates unchanged."
   },
   "retained_prior_attempt_v1": {
     "run": 44297510933,
@@ -263,8 +263,9 @@
   },
   "admin_locale_precondition": {
     "evidence": "V4 actual Admin Spanish form and search label, EN absent; route/workspace correct and pageErrors0",
-    "correction": "Await the actual English or Spanish search control. If Spanish is visible, use the existing normal Idioma sidebar toggle to select English, then require the original exact English search. Existing English-managed-editor check still runs before its planned normal switch to Spanish/geometry.",
-    "limits": "No forced localStorage, i18n injection, response mocking, fixture mutation, locator weakening or removed check. All39 checks/sixjourneys/eightgeometries/tenwrites unchanged; checker/fixture unchanged. Does not claim why initial Admin locale was Spanish."
+    "correction": "Original exact English Admin search readiness restored; planned real English editor then normal Spanish switch retained.",
+    "limits": "No forced localStorage, i18n injection, response mocking, fixture mutation, locator weakening or removed check. All39 checks/sixjourneys/eightgeometries/tenwrites unchanged; checker/fixture unchanged. Does not claim why initial Admin locale was Spanish.",
+    "status": "SUPERSEDED_SPECULATIVE_CHANGE_REMOVED_V7"
   },
   "retained_prior_attempt_v4": {
     "run": 45542975757,
@@ -314,5 +315,43 @@
     "path_scope": "Only exact /browser-run/run-professional-google-browser.mjs stack coordinates are retained; filename/path is never emitted.",
     "privacy": "No error message, stack, exception, URL, DOM, ID, cookie, header or privatecontext printed. Existing sourceconstant phase/reason and deduplicated numeric coordinates only.",
     "acceptance": "Parser strictly whitelists fields/types/counts and alwaysmarks failure; all existing predicates and39checks/sixjourneys/eightgeometries/tenwrites unchanged. No product, fixture, languageflow or lifecycle changes."
+  },
+  "retained_prior_attempt_v5": {
+    "run": 45543949507,
+    "job": 138968904011,
+    "operations": "a78cd7b197b30ef0740d9e63cf2ff54360a902dd",
+    "status": "ACTUAL_TERMINAL_FAILURE_READ",
+    "fresh_vite": "PASS",
+    "browser": "entry_admin_ready LOCATOR_OR_EVENT_DEADLINE; V5 added multiple normal language precondition awaits under one phase; exact failedawait not proven",
+    "census": {
+      "diagnostic_read_error": false,
+      "en_language": false,
+      "es_language": true,
+      "forms": 1,
+      "heading_en": 0,
+      "heading_es": 1,
+      "page_errors": 0,
+      "route_matches": true,
+      "search_inputs": 1,
+      "search_label_en": 0,
+      "search_label_es": 1,
+      "workspace_matches": true
+    },
+    "owned_cleanup": "verified",
+    "artifacts": [],
+    "receipt": "professional-google-browser-45543949507-v5-failure.json",
+    "receipt_sha256": "a9acdfbea43a36d701cb88343760a137542efab2ef952d46a0acfed56c0eee5b",
+    "log_sha256": "bc47afd21691d1576987be044b4c7e885dcc0da8b3b0b1e0255ef55d665065d6"
+  },
+  "repeated_admin_search": {
+    "evidence": "Actual ownsource frames178/293 pinsecondidenticalSpanishsearch; originalsource effect onlydependssearch/review/visibility/offset/revision, unchanged primitive filterstate doesnotissueGET",
+    "correction": "Track last successful synthetic query perAdminpage. Always normal fill/apply click; changed query must produce real GET200 with exact q; identical known successful query doesnot invent a fresh list request. Always require actual200 detail GET and exact profile identity.",
+    "stages": [
+      "G02_english_managed_search",
+      "G02_spanish_managed_search",
+      "G03_admin_owner_review",
+      "G05_admin_owner_reapproval"
+    ],
+    "preserved": "All39 checks/sixjourneys/eightgeometries/tenwrites/oneCAS/all protected data/fixture and mandatory fresh detail GET remain unchanged. No product or provider changes."
   }
 }

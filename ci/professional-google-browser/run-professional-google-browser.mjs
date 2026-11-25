@@ -5,7 +5,7 @@ const API = 'http://127.0.0.1:8918', DASH = 'http://127.0.0.1:4175'
 const checks = ['owner_google_validation_private_save', 'admin_managed_google_private_edit',
   'explicit_review_publication_and_audience', 'manual_embed_load_hide_and_external_fallback',
   'approved_snapshot_and_source_change_remount', 'consent_withdrawal_and_legacy_blank_compatibility']
-const contexts = [], geometryChecks = [], allowedGoogle = new WeakSet()
+const contexts = [], geometryChecks = [], allowedGoogle = new WeakSet(), adminSearchQueries = new WeakMap()
 let browser, facts, stage = 'fixture', timer, frameHold = null, frameBudget = 0, profileBudget = 0
 let pageErrors = 0, externalWrites = 0, unexpectedMutations = 0, beforeClick = 0
 let frameRequests = 0, profileRequests = 0, authScripts = 0, ownerPuts = 0
@@ -96,13 +96,7 @@ async function openMenu(context, copy, item) {
   await button(page.locator('aside'), copy.nav[item]).click()
   advance(entry + '_ready')
   if (item === 'professional-profile') await page.getByLabel(copy.professionals.google.profile_url, { exact: true }).waitFor()
-  if (item === 'professionals') {
-    const requestedSearch = page.getByLabel(copy.professionals.search, { exact: true })
-    const spanishSearch = page.getByLabel(diagnosticCopies.es.professionals.search, { exact: true })
-    await requestedSearch.or(spanishSearch).first().waitFor()
-    if (await spanishSearch.isVisible()) await language(page, diagnosticCopies.es)
-    await requestedSearch.waitFor()
-  }
+  if (item === 'professionals') await page.getByLabel(copy.professionals.search, { exact: true }).waitFor()
   if (item === 'professional-directory') await page.getByRole('heading', { name: copy.professionals.directory_search.title, exact: true }).waitFor()
   return page
 }
@@ -175,9 +169,12 @@ async function submitOwner(page, copy, expectedVersion) {
 async function searchAdmin(page, copy, name, id) {
   await foreground(page)
   await page.getByLabel(copy.professionals.search, { exact: true }).fill(name)
-  const [response] = await Promise.all([page.waitForResponse(value => matches(value, '/admin/professionals', 'GET')),
-    button(page, copy.professionals.search_apply).click()])
-  check(response.status() === 200, 'ACTUAL_ADMIN_SEARCH_REQUIRED')
+  if (adminSearchQueries.get(page) !== name) {
+    const [response] = await Promise.all([page.waitForResponse(value => matches(value, '/admin/professionals', 'GET')
+      && new URL(value.url()).searchParams.get('q') === name), button(page, copy.professionals.search_apply).click()])
+    check(response.status() === 200, 'ACTUAL_ADMIN_SEARCH_REQUIRED')
+    adminSearchQueries.set(page, name)
+  } else await button(page, copy.professionals.search_apply).click()
   const card = page.getByRole('heading', { name, exact: true, level: 2 }).locator('xpath=ancestor::article[1]')
   const [detail] = await Promise.all([page.waitForResponse(value => matches(value, `/admin/professionals/${id}`, 'GET')),
     button(card, copy.professionals.review_profile).click()])
@@ -284,12 +281,14 @@ try {
 
   advance('G02_managed_private_editor')
   const adminPage = await openMenu(admin, en, 'professionals')
+  advance('G02_english_managed_search')
   await searchAdmin(adminPage, en, facts.managedName, facts.managedProfileId)
   await button(adminPage.getByRole('dialog'), en.professionals.managed_edit).click()
   await adminPage.getByRole('dialog', { name: en.professionals.managed_edit, exact: true }).getByLabel(en.professionals.google.profile_url, { exact: true }).waitFor()
   await button(adminPage.getByRole('dialog'), en.professionals.managed_close).click()
   await button(adminPage.getByRole('dialog'), en.professionals.close).click()
   await language(adminPage, en)
+  advance('G02_spanish_managed_search')
   await searchAdmin(adminPage, es, facts.managedName, facts.managedProfileId)
   await button(adminPage.getByRole('dialog'), es.professionals.managed_edit).click()
   const managed = adminPage.getByRole('dialog', { name: es.professionals.managed_edit, exact: true })
@@ -311,6 +310,7 @@ try {
   check(await peerPage.getByLabel(en.professionals.google.profile_url, { exact: true }).inputValue() === facts.nextProfileUrl, 'STALE_DRAFT_MUST_BE_RETAINED')
   await read(member, `/professionals/${facts.ownerProfileId}`, 404)
   await read(guest, '/professionals?limit=24&offset=0', 401)
+  advance('G03_admin_owner_review')
   await searchAdmin(adminPage, es, facts.ownerName, facts.ownerProfileId); await approve(adminPage, es, 4)
   const memberPage = await openMenu(member, en, 'professional-directory')
   const legacy = await openMember(memberPage, en, facts.legacyName, facts.legacyProfileId)
@@ -340,6 +340,7 @@ try {
   check(oldPublic.google_profile_url === facts.profileUrl && oldPublic.google_maps_embed_url === facts.embedUrl
     && await memberPage.locator('iframe').getAttribute('src') === facts.embedUrl, 'MEMBER_MUST_RETAIN_APPROVED_OLD_SOURCE')
   await submitOwner(ownerPage, en, 6)
+  advance('G05_admin_owner_reapproval')
   await searchAdmin(adminPage, es, facts.ownerName, facts.ownerProfileId); await approve(adminPage, es, 8)
   const current = memberPage.waitForResponse(response => matches(response, `/professionals/${facts.ownerProfileId}`, 'GET'))
   await foreground(memberPage); await memberPage.evaluate(() => window.dispatchEvent(new Event('focus')))
