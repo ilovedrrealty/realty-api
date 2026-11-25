@@ -1,0 +1,144 @@
+{
+  "schema": "backup_transport_json_native_acceptance_v1",
+  "status": "PREPARED_PENDING_FULL_COLD_REVIEW_FREEZE_ROOT_FIRST_PUSH",
+  "operations_parent": "7d67d07968919a9361d6b0e69d792d46f652fc99",
+  "first_ref": "codex-ci-backup-transport-json-v1-20261125",
+  "source_candidate_sha256": "a964425d0f5ba6d76ab89ffb7ba78acbbae47df30b9bf6818c528915bf558c1c",
+  "candidate_tests_sha256": "1fdf9d584b2f6272e1f63ff2729ad7e3366c93fe523a3ad2e013155c0c34249c",
+  "reference_v2_sha256": "b2dd42e123ffe718a0759dd9b9000e6e2e197b50c6ba6135801903ec28a05658",
+  "frozen_sources": "All212parent mode/type/blobs remain unchanged; seven new paths only. Original20/V3/V4/V5 and staged7d67 wrapper/test/worker preserved.17oldmanifest pins+b256V5helper+staged3 explicitpins checked; all mounts read-only; nonce public-code mirror only.",
+  "runtime": {
+    "recipe_commit": "c193a925ba57ea2d67ea48c44e5262817885c8a2",
+    "dockerfile_sha256": "e546d8c5668b87ef28e604107bbb330e6f4b3873cf0208b4d24ca378bd0851f9",
+    "requirements": "Unchanged accepted PGPy0.6.0/pyasn10.6.1/cryptography50.0.2 compatibility recipe; never product requirements.",
+    "python_digest": "sha256:673719e071ecf27434fd2635bbd8d00f49f4fdd81f243143438a42ced8bedf60",
+    "postgres_digest": "sha256:b86568d3e0fe1dfaeff52714f9da36f206a30e4c49131b82bf96982d78627409",
+    "postgres_version_num": 170006,
+    "postgres_memory_bytes": 536870912,
+    "postgres_memory_swap_bytes": 536870912,
+    "client_memory_bytes": 1073741824,
+    "postgres_cpus": 1,
+    "client_cpus": 2,
+    "shared_buffers": "128MB",
+    "work_mem": "4MB",
+    "max_parallel_workers_per_gather": 0,
+    "jit": "off",
+    "namespace": "Network-none PostgreSQL; client shares only owned loopback network namespace; no Docker socket or host credentials in containers.",
+    "database_storage": "Exact owned anonymous Docker volume, disk-backed. Cgroup totals include reclaimable file cache. Verified removal/volume absence in finally; no host production data mount."
+  },
+  "phases": {
+    "compact": {
+      "public_tables": 99,
+      "fixture_schema": "Current real99table names; representative enums/functions/checks/sequence/bytea and exact trade-contact/source column contracts. This is synthetic schema/data, not a claim of reproducing every production DDL definition.",
+      "sequence_control": "Advance the owned mutable sequence once after the first catalog is prepared, then establish immutable baseline before either query. Both snapshots must capture current sequence values and leave all state unchanged.",
+      "bytea": "Original accepted binary and PNG rows round-trip through native jsonb_populate_record; four compact direct comparison row checks, and downstream validation too.",
+      "pure_generator_contracts": 4,
+      "downstream": "New finalJSON-object writer only, same7d67snapshot/digest/cipher prefix+PGP options. Actual fulltransport cursor typeOID114/dict exact4keys, original frozen receiver exact SHA/length, all original finalizer validation/raw3cleanup, one exact intercepted sealer dispatch.",
+      "v2_v5_comparison": "Parsed complete snapshots equal after removing ONLY top-level captured_at_utc. Every payload string/count/hash/full schema/storage field must match; timestamp types checked. Explicit per-table UTF8 payload byte equality and SHA256 equality verified for all99 names. All proof fresh for V5.",
+      "storage_inventory_reference": "Three actual native oldV4/newV5 byte/hash/count comparisons in separate statements: real17-object fixture, emptydataset, inlineparameterized3canonicalrecords with nestedJSON/Unicode/quotes/backslashes/JSONnull/SQLnullmetadata/date/reversedinput and tiedtimestamps. No fixture row mutation.",
+      "staged_wrapper_contracts": 4,
+      "native_json_controls": "Three small parameterized actualnative JSON/JSONB pairs with Unicode/escaped/nested/null typed mappings; verify OID114/3802 and exactPythonobjects. Separately actual fulltransport decoder binding, not only constantcontrol. Run both oldstaged4 and newJSONwrapper4 actual file-controls."
+    },
+    "guards": {
+      "cases": [
+        "row_bound",
+        "byte_bound",
+        "schema_bound",
+        "tableset_bound"
+      ],
+      "independent_predicates": "Assert exact four-boolean matrix: only row/count, byte, schema fingerprint or table-set condition fails for its named case. Row case1000001small integer rows stays under64MiB; byte case100000small rows exceeds64MiB and stays under1M.",
+      "schema": "Add a column after query generation; table set unchanged.",
+      "table_set": "Deliberately supply old99table list with the current100table schema fingerprint to isolate the table-set guard; no candidate SQL mutation.",
+      "proof": "Actual guarded SELECT returns only failure/count metadata and no payload/hash/fullschema. Actual owned-only EXPLAIN ANALYZE FORMATJSON requires all99payload CTEs plus map/metadata CTE nodes present with ActualLoops=0.",
+      "whole_output_limit": "The genuine final67108864-byte text guard remains unchanged. It necessarily follows payload construction; no claim that its branches stay unevaluated. This plan does not replace the real byte limit with a smaller test constant.",
+      "wrapped_proof": "Fresh wrapped query for each original isolated failure matrix: all99payload and2mapmetadata CTEs present with ActualLoops0; three outer MATERIALIZED snapshot,digest,cipher CTEs each present once and ActualLoops1, processing only the safe guard-failure metadata. Original unwrapped guard proof remains mandatory too."
+    },
+    "stress": {
+      "contacts": 5633,
+      "contact_row_bytes": 9317650,
+      "sources": 5640,
+      "source_row_bytes": 8743189,
+      "storage_objects": 34315,
+      "notes": "Exact native SUM(octet_length(to_jsonb(row)::text)) totals, calibrated with <=1000-character deterministic varied MD5-chunk padding inside synthetic source notes. Unicode, quotes, backslashes and control escapes retained. Storage metadata has realistic nested/string/numeric values; its measured bytes are reported rather than invented from production.",
+      "execution": "Fresh same fullV5 pressure/inventory comparison, unchanged3MATERIALIZED prefix, finaljson_build_object only. Actual fulltransport OID114/dict exact4keys and receivedbytesSHA required, original receiver/finalizer/sealer1/raw3/preservation/start/process/metrics/source/cleanup unchanged. Same512MiBPG/1GiBclient/60sSQL/480sphase; zeroOOM.",
+      "state": "All99 rows/payload hashes/full catalog/mutable sequences/storage hashes unchanged after baseline. This does not access or copy any production record."
+    }
+  },
+  "metrics": {
+    "postgres": "Actual cgroup v2 memory.current/peak/events before and after each entire phase. Zero oom/oom_kill/group events, peak<=512MiB, Docker Runningtrue/OOMKilledfalse/RestartCount0 and unchanged native pg_postmaster_start_time required.",
+    "client": "Actual client cgroup start/end/whole-phase peak including receiver child processes, capped1GiB, zero OOM counters plus native process0/stopped/notOOM.",
+    "duration": "Monotonic complete phase elapsed and measured full transport SQL + receiver/validation durations. Statement timeout60s, client phase timeout480s.",
+    "interpretation": "Peaks include fixture construction/file cache/child helpers across the whole phase, not isolated SQL backend RSS. The64MiB public input/output limit is not a RAM ceiling. Dedicated synthetic envelopes do not guarantee live production concurrency/resources."
+  },
+  "finalizer_boundary": {
+    "executed": "Unchanged validation/coverage/row-hash/profile/storage checks, exact sealer argv and main finally raw3 cleanup.",
+    "intercepted": "Only subprocess invocation of the downstream source-history/archive sealer. No owner public/private key access, no archive encryption, no Git ancestry bundling, no cloud upload or success-index change claimed."
+  },
+  "failure_controls": "Strict exact result key/type/count checks, native exits plus client/Postgres process/oom facts binding. Missing metrics, unexpected fields, changed source bytes, guard misclassification or missing lazy plan nodes fail closed. No raw payload, IDs, URLs, exception text or query plans printed.",
+  "cleanup": "Nonce-labelled owned containers/image/scratch only; exact marked test databases dropped/absence checked; owned anonymous volumes removed/absence queried authoritatively. No artifact uploads; root independently inspects actual artifacts[].",
+  "production_freeze": "No production SQL/captures/configuration/helper adoption before root accepted native results. Checkpoint20261125T063100Z remains the last verified checkpoint until a later actual complete encrypted capture is separately verified. No automatic retry of failed production jobs.",
+  "review": "Root full source/ops review and independent cold review, immutable exactsevenpath firstnewref push byroot only. No adoption before actual complete native and encrypted recovery proof.",
+  "local_checks": "Actual bounded strict-parser3positive/52negative PASS; runtimechecker+embeddedPythonAST2/PLANJSON PASS plus Groupworker/candidate/testAST3 (5total); newJSONwrapper four file-only controls PASS. Source receipt json-transport-source-static-controls-20261125.json SHAaeaa1b5cef9359c80e85ef03f66b6a04c00a8f5120237d12d16456ba42f502e2; parser receipt json-transport-parser-bounded-controls-20261125.json. No SQL/native/container/build/browser/provider/push. Finalreviewbinds exact source hashes; all17/parentfiles unchanged.",
+  "primary_docs": [
+    "https://www.postgresql.org/docs/17/functions-json.html",
+    "https://raw.githubusercontent.com/postgres/postgres/REL_17_6/src/backend/utils/adt/json.c",
+    "https://raw.githubusercontent.com/postgres/postgres/REL_17_6/src/backend/utils/adt/jsonb.c",
+    "https://www.psycopg.org/docs/extras.html#json-adaptation"
+  ],
+  "run_scope": "Fresh compact/completeV2 snapshot equivalence/storage/bytea, original+wrapped4guard99+2lazy/3fence proof, and full identical5633/5640/34315 pressure through finalJSON writer/originalreceiver/finalizer. Current real cursorOID114+decodedexact4fieldmapping+recoveredplainbytesSHA bindings mandatory; no retained compact/guard result substitutes.",
+  "failure_observation": "Before strict result gate, always emit finite actual Docker native/client/PG status, elapsed, native pg_postmaster_start comparison and available finite cgroup current/peak/OOM counters. Unavailable/malformed diagnostic states cannot satisfy original success gates. Original strict6+optionalSock format/OOMzero/512MiB/1GiB/native/process gates unchanged. Native failures add only first actual bounded5character SQLSTATE or unavailable and finer constant transport/receiver/validation stages; never exception text/query/body/SQLplan.",
+  "immutable_v3_reference_sha256": "15dfcfff1630e377fab399067efa249186f8c7aadb50ec1890b0213bd67e0768",
+  "candidate_change": "SeparateV5 changes ONLY the storage.objects inventory array expanded jsonb_agg to exactnativejsonb_build_object(... )::text comma-space string_agg with same bucket/name ordering. NewimmutableV4refhash and truthfulqueryversion are interface metadata only. Buckets/otherstoragefields/metadata/maps/guards/limits/original PGP remain identical. Memory benefit is an unproven reduction hypothesis, not a proven cause/adoption.",
+  "prior_v3_failure": {
+    "commit": "e604c26509d3a7e948f9452e50d2675bc5c48b6d",
+    "actual_terminal_result": "Owned PG OOM at transport_select independently read by root; peak536870912,oom1,oom_kill1,postgres_oom_killedtrue; native/client1, no clientOOM, cleanup/artifacts[]. V3/originals immutable; no production adoption."
+  },
+  "immutable_v4_reference_sha256": "831bf05fa10e7cb3ad387cfdf89991ea5fa64245560b68487a1370866b26f8b3",
+  "source_candidate_change": "SeparateV5 changes ONLY the storage.objects inventory array expanded jsonb_agg to exactnativejsonb_build_object(... )::text comma-space string_agg with same bucket/name ordering. NewimmutableV4refhash and truthfulqueryversion are interface metadata only. Buckets/otherstoragefields/metadata/maps/guards/limits/original PGP remain identical. Memory benefit is an unproven reduction hypothesis, not a proven cause/adoption.",
+  "primary_stage_evidence": {
+    "run": 45590492049,
+    "job": 139123122398,
+    "commit": "0b3fa573f62b146899197317a9ff768e1b02fa57",
+    "log_utf8_bytes": 37957,
+    "log_sha256": "6819f83ef0e78857f2028152ad7523a02689c6d529a99716f3139e1836232daa",
+    "root_receipt": "backup-v4-stage-45590492049-root-failure.json",
+    "root_receipt_sha256": "9450a383f01865321e1a3c8d0c1524557543ccc96c5a6cd3a892732fcda6d33d",
+    "independent_receipt": "backup-v4-stage-45590492049-release-primary-failure.json",
+    "independent_receipt_sha256": "600ab23a69e2138a5cf78ff7c977874b20fc7cbb1728cd126ae1b1b4865acdf1",
+    "observed": "Map19,056,582B completed/noOOM; storage351B completed/noOOM; fulluncompressed snapshot actualPG512MiB OOM beforecompression. Peaks wholephase including fixture/cache: map536870912withOOM0,storage410374144,full536870912oom1/oomkill1. Compression not required forfailure; specific internalcause not proven. All3cleanup/finalcleanup/artifacts[]."
+  },
+  "staged_transport_contract": {
+    "stages": [
+      "snapshot",
+      "digest",
+      "cipher"
+    ],
+    "counts": {
+      "snapshot": 1,
+      "digest": 1,
+      "cipher": 1
+    },
+    "source_change": "Only separate new wrapper around exact V5 snapshot SQL. MATERIALIZED snapshot,digest,cipher stages aim to separate large expression evaluation and lifetime overlap. This is an unproven hypothesis until actual complete native memory/recovery proof; no benefit or adoption claimed.",
+    "unchanged": "Original PGP compression options/digest/payload metadata/recovery interface, JSONB public payload semantics, all bytes/count/hash guards and cap values. No credential/key/provider/production operations."
+  },
+  "json_envelope_contract": {
+    "only_query_change": "Exactlyone final jsonb_build_object token becomes json_build_object. Complete7d67snapshot/digest/cipher prefix, PGP options,4literalkeys/valueexpressions/transport_result alias/CLIplan interface remain identical.",
+    "hypothesis": "PostgreSQL17.6 json_build_object constructs textual JSON; jsonb_build_object builds a binary JsonbValue object. This may reduce final-envelope allocation/overlap; no rootcause or memory benefit guarantee. Native complete pressure/recovery proof required.",
+    "decoder": "Official psycopg2 defaults parse both JSON andJSONB toPythonobjects. Receiver consumes a JSONfile exactfieldvalues/PGPbytes, not SQLtype/keyorder/whitespace. Native actualfulltransport cursorOID+dict and recoveredbytes/SHA must prove current compatibility.",
+    "excluded": "Not a TEXT-string result, no manual JSON concatenation, no capincrease, no innergenerator/datafields/options changes, no production helper adoption or ownerencrypted/cloud/index acceptance before full gates."
+  },
+  "previous_staged_failure": {
+    "run": 45601179171,
+    "job": 139160186583,
+    "log_utf8_bytes": 37046,
+    "log_sha256": "0de0b0e4f4d38213b613ca18a0ece82206e28ce7c97300555a5dd7d7851853f0",
+    "observed": "Freshcompact+wrappedguardsPASS; fullstress staged_transport_selectPG512MiBOOM1/kill1,cleanup/artifacts[]. No adoption."
+  },
+  "previous_cipher_components": {
+    "run": 45603956260,
+    "job": 139169822920,
+    "log_utf8_bytes": 36826,
+    "log_sha256": "e7e1b592a3b40272b10b69753ae89979d5bee0f5f0b576eaf05b98349d4413b8",
+    "observed": "Both fresh cipherwithoutdigest/withdigest scalarlengthSHA completed native0/noOOM butPGwholephasepeak exactly512MiB; diagnostic only/no headroom. Full envelope previouslyfailed; allocatorcause stillunproven."
+  }
+}
