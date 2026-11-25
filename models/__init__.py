@@ -45,3 +45,5 @@ from .history_share import NetworkHistoryShare, NetworkHistoryShareAction
 from .property_custody import NetworkPropertyCustodyTransfer, NetworkPropertyCustodyAction
 from .social_groups import (NetworkGroup, NetworkGroupMembership, NetworkGroupInviteLink,
     NetworkGroupPost, NetworkGroupComment, NetworkGroupMedia, NetworkGroupAction)
+from .native_inbox import (InboxPreference, InboxBlock, InboxConversation, InboxCommand,
+    InboxEntry, InboxReadState, InboxAudit)
