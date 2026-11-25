@@ -1,0 +1,319 @@
+{
+  "schema": "profile_customization_save_diagnostic_v3_plan",
+  "status": "PREPARED_SOURCE_ONLY_ROOT_AND_COLD_REVIEW_REQUIRED",
+  "operations_parent": "7454c57fe36e0bdd8ab74e5d65189820f53915bd",
+  "proposed_first_ref": "codex-ci-profile-customization-save-diagnostic-v3-20261125",
+  "new_paths": 5,
+  "original_plan_git_lf_sha256": "a9ac5ee949b7933cbf3845b0b969e092307a8c01b053fe5f6b3fa53fb8c7e764",
+  "original_plan_reused_readonly": "ci/profile-customization-browser/PLAN.json",
+  "frontend": {
+    "commit": "3b7d8190951fcdca574d7af98bb1bbf62c97e764",
+    "tree": "c18447b2c1c11d5761e8c22831625a3dd5e3e7ec",
+    "parent": "09bfd9f54ec8bca8a1d0488a571d8dbac0df2743",
+    "original_merge": "5ecb7c6e16268f1e8edd1b54d70f11e605e57a02",
+    "original_merge_tree": "cde32bcf2a4ce876ab7610a003bbe188543849c3",
+    "source_blobs": 620,
+    "unchanged_outside_reviewed_two_tests": 618,
+    "fix_chain": [
+      {
+        "child": "09bfd9f54ec8bca8a1d0488a571d8dbac0df2743",
+        "parent": "5ecb7c6e16268f1e8edd1b54d70f11e605e57a02"
+      },
+      {
+        "child": "3b7d8190951fcdca574d7af98bb1bbf62c97e764",
+        "parent": "09bfd9f54ec8bca8a1d0488a571d8dbac0df2743"
+      }
+    ],
+    "only_test_paths_and_sha256": {
+      "tests/realtor-sale-catalog.test.cjs": "b2a45690dd716d6ba0bb6b1126ca4e20ff32a48a73938d52bbf4db262d3d33d7",
+      "tests/service-operations.test.cjs": "4a42d9a0a5d84b2d59c0802d7891b72e2c71b58d76d45fa5864cbad41cd1aa0f"
+    },
+    "source_guard": "Preserve all original5ec merge/12profile+2CSS/28composed-path exact mode/type/blob checks, then append exact two-test-file LF hash/parent/delta checks; final entire620 tuple equality. No generic whitelist or production-file mutation.",
+    "fetch_depth": 18,
+    "test_files": 65,
+    "fresh_standalone_typecheck": false,
+    "fresh_vite": true,
+    "fresh_owned_api_next": true,
+    "source_proposal": {
+      "path": "C:\\Users\\hotel\\Documents\\Codex\\2026-10-13\\i-3\\outputs\\property-network-20261101\\profile-contract-adapters-v2-source-proposal-20261125.json",
+      "bytes": 6763,
+      "sha256": "dd57df661c17cf3ca04a687f28f4309b371b9463a31485726d74154d041b468b"
+    },
+    "source_root_and_independent_cold": [
+      {
+        "path": "C:\\Users\\hotel\\Documents\\Codex\\2026-10-13\\i-3\\outputs\\property-network-20261101\\profile-contract-adapters-3b7d-root-full-source-review-20261125.json",
+        "bytes": 2667,
+        "sha256": "60943f3728c14b2d366f5e69cb7831ba82a6f26186dec4b3e59ade53f155c51a"
+      },
+      {
+        "path": "C:\\Users\\hotel\\Documents\\Codex\\2026-10-13\\i-3\\outputs\\property-network-20261101\\profile-contract-adapters-3b7d-google-full-cold-review-20261125.json",
+        "bytes": 2817,
+        "sha256": "06988f0decf9e4c081b983741b45ba78e831e6bccf276e37df7702d217e77718"
+      }
+    ],
+    "root_first_review_push": {
+      "path": "C:\\Users\\hotel\\Documents\\Codex\\2026-10-13\\i-3\\outputs\\property-network-20261101\\profile-contract-adapters-3b7d-root-first-push-20261125.json",
+      "bytes": 1291,
+      "sha256": "0c8faf3aa03f900a4dc1589146e7f87f72a5e6cc8cd696d7e586b052110be44f"
+    },
+    "retained_full_tests": 544,
+    "retained_standalone_typecheck_run": 45649221182,
+    "retained544_and_strict_full_source_identity_required": true
+  },
+  "backend": {
+    "commit": "a75f9c26f3bceb14afcb6e1150e1b2a3d50fbada",
+    "tree": "12bbe32d4a6578bc58741c3f10f55bfccbf07e39",
+    "application_source": "2ff311999d41b7719f64b61dc9d7fc04c3465cd4",
+    "contract": "profile-customization-contract-v4-20261125.json",
+    "contract_sha256": "573002892d45a8df38674956db7c97e621e2ecd15cf6e6b9bd1a0d76d6cde6dc",
+    "native_gate": "ACTUAL root and independent Release accepted run45630574556/job139262326424 on exacta75; retained without rerun.",
+    "migration": "Genuine owned106 bootstrap from accepted179, then actual e8b5a3d1f907. Table count stays106; exact four nullable column additions, checks/index/trigger/function/revoked execute must be validated. Original rows compared on original-column projection; original catalog changes limited to reviewed additive DDL."
+  },
+  "reused_exact_assets": {
+    "ci/profile-customization-browser/serve_fixture.py": "91a79810c6d8b395721a6ff936d6d6c195be5920e48b33efb1f675619a015284"
+  },
+  "same_written_contract": {
+    "journeys": 24,
+    "geometry": 32,
+    "contexts": 14,
+    "presence": 12,
+    "actual_logins": 12,
+    "ui_mutation_requests": 20,
+    "upload_successes": 6,
+    "profile_saves": 8,
+    "stale_refusals": 2,
+    "auth_refusals": 4,
+    "uncertain_commits": 2,
+    "api_boundary_checks": 16,
+    "control_transitions": 28,
+    "denial_projection_checks": 8,
+    "stale_context_checks": 2,
+    "page_errors": 0,
+    "unexpected_mutations": 0,
+    "external_writes": 0,
+    "tracking_requests": 0
+  },
+  "same_ordered_ui_requests_per_locale": [
+    {
+      "method": "POST",
+      "path": "/property-network/me/profile/media",
+      "kind": "avatar",
+      "status": 201
+    },
+    {
+      "method": "POST",
+      "path": "/property-network/me/profile/media",
+      "kind": "cover",
+      "status": 201
+    },
+    {
+      "method": "PUT",
+      "path": "/property-network/me/profile",
+      "expected_version": 1,
+      "selection": "A/C",
+      "status": 200,
+      "result_version": 2
+    },
+    {
+      "method": "POST",
+      "path": "/property-network/me/profile/media",
+      "kind": "avatar_replacement",
+      "status": 201
+    },
+    {
+      "method": "PUT",
+      "path": "/property-network/me/profile",
+      "expected_version": 2,
+      "selection": "B/null",
+      "status": 200,
+      "result_version": 3
+    },
+    {
+      "method": "PUT",
+      "path": "/property-network/me/profile",
+      "expected_version": 3,
+      "selection": "B/null",
+      "body": "staleBio",
+      "status": 409
+    },
+    {
+      "method": "PUT",
+      "path": "/property-network/me/profile",
+      "expected_version": 4,
+      "selection": "B/null",
+      "body": "uncertainBio",
+      "status": 200,
+      "result_version": 5,
+      "browser_response": "aborted_after_real_commit"
+    },
+    {
+      "method": "PUT",
+      "path": "/property-network/me/profile",
+      "expected_version": 5,
+      "selection": "null/null",
+      "body": "uncertainBio",
+      "status": 200,
+      "result_version": 6
+    },
+    {
+      "method": "POST",
+      "path": "/property-network/me/profile/media",
+      "kind": "avatar",
+      "status": 403
+    },
+    {
+      "method": "PUT",
+      "path": "/property-network/me/profile",
+      "expected_version": 6,
+      "selection": "null/null",
+      "body": "deniedBio",
+      "status": 403
+    }
+  ],
+  "same_ordered_controls": {
+    "en": [
+      "advance_target_version",
+      "author_private",
+      "author_members",
+      "peer_members",
+      "revoke_peer_assignment",
+      "restore_peer_assignment",
+      "peer_private",
+      "target_private",
+      "target_members",
+      "target_avatar_none",
+      "target_avatar_restore",
+      "target_unverified_upload",
+      "target_verified_upload",
+      "target_unverified_save",
+      "target_verified_save"
+    ],
+    "es": [
+      "advance_target_version",
+      "author_private",
+      "author_members",
+      "revoke_peer_assignment",
+      "restore_peer_assignment",
+      "target_private",
+      "target_members",
+      "target_avatar_none",
+      "target_avatar_restore",
+      "target_unverified_upload",
+      "target_verified_upload",
+      "target_unverified_save",
+      "target_verified_save"
+    ]
+  },
+  "runtime": {
+    "parent": "3f0804935b66315652cec2daf8ad4d586af7d254",
+    "inherited_ops_tuples": 400,
+    "new_paths": 3,
+    "extra_reference_mount": "/baseline106=17943ba1714673c51c43cdbb800106f91612f527",
+    "marker": "ildr-profile-customization-browser-ci:$nonce",
+    "inventory": "/opt/contact-import/baseline-inventory.json",
+    "helper_git_lf_sha256": "388fcae33bf63234df9739ac7405c1a2d49b4914af2a32d56e9023fdb7ed144e",
+    "proof": "Same original source/asset/inventory/runtime/caps/provider-refusal/real134 retained/private files and whole106 preservation and owned cleanup. Only fresh current544+standalone actual typecheck+Vite+Next/browser on reviewed test-only FE successor; sharing remains separate and no Group source is included.",
+    "new_runner": "ci/profile-customization-browser-v2/run-hosted.sh",
+    "assets_reused_readonly": "ci/profile-customization-browser"
+  },
+  "historical_failure": {
+    "path": "C:\\Users\\hotel\\Documents\\Codex\\2026-10-13\\i-3\\outputs\\property-network-20261101\\profile-customization-browser-45643997530-root-failure.json",
+    "bytes": 1652,
+    "sha256": "987fac48b359bc6fb5cd31608ea6dc358505a7a7ebbac5dc28d714e9162d99f5"
+  },
+  "native134_actual_retained_root": {
+    "path": "C:\\Users\\hotel\\Documents\\Codex\\2026-10-13\\i-3\\outputs\\property-network-20261101\\profile-customization-native-45630574556-root-acceptance.json",
+    "bytes": 5413,
+    "sha256": "fae8e784ae35d1f1d5ad6a28bd3ff8211e3ebcf60e497404989a79588744359c"
+  },
+  "native134_actual_retained_independent": {
+    "path": "C:\\Users\\hotel\\Documents\\Codex\\2026-10-13\\i-3\\outputs\\property-network-20261101\\profile-customization-native-45630574556-release-acceptance.json",
+    "bytes": 6666,
+    "sha256": "1e6fb040c83279352bc4cd0f50b11be2327135067d4620165954565e4ee0f73c"
+  },
+  "acceptance_limits": [
+    "No Group6ef/0bc source or native162 substitution in this profile lane.",
+    "All403 original operations mode/type/blob tuples remain immutable. New driver/checker preserve24journeys/32geometry/20UIrequests/28controls/16boundaries/full106/private-file ledger; only failed-save diagnostics are added.",
+    "Retain actual544/65 and separateDashboardtsc on exact3b7d from45649221182, not a fresh claim. FreshVite/Next artifacts and original complete browser/API checks remain mandatory.",
+    "Any valid diagnostic record is always a failure, even if a laterPASS result appears. No raw identifiers/content/cookies/URLs/errors or extraHTTP/actions are allowed.",
+    "No application/native/browser/test/build/install/provider/production/push performed by this source preparation.",
+    "Root and independent FULL cold review required before root-only first isolated push."
+  ],
+  "local_checks": {
+    "status": "PASS_BOUNDED_SOURCE_DIAGNOSTIC_PARSER_ONLY",
+    "node_syntax_exit": 0,
+    "original_whole_driver_reversal_exact": true,
+    "original_whole_checker_reversal_exact": true,
+    "immutable_old_fixture_GitLF_SHA256": "91a79810c6d8b395721a6ff936d6d6c195be5920e48b33efb1f675619a015284",
+    "helper_cases": 7,
+    "helper_original_exception_identity_retained": true,
+    "helper_observed_maximum_record_bytes": 557,
+    "helper_no_private_fixture_values_or_duplicate_emission": true,
+    "AST_units": 11,
+    "parser_baseline_positive": 2,
+    "valid_census_always_failure_controls": 3,
+    "parser_negative_controls": 34,
+    "control_receipts": [
+      {
+        "path": "C:\\Users\\hotel\\Documents\\Codex\\2026-10-13\\i-3\\outputs\\property-network-20261101\\profile-save-diagnostic-v3-helper-controls-20261125.json",
+        "bytes": 323,
+        "sha256": "7bc46e02c7cd354f93d5025b5ec411cecf3db1069fa926db39fc255f6b2fddce"
+      },
+      {
+        "path": "C:\\Users\\hotel\\Documents\\Codex\\2026-10-13\\i-3\\outputs\\property-network-20261101\\profile-save-diagnostic-v3-parser-controls-20261125.json",
+        "bytes": 1689,
+        "sha256": "d30d3ec05f6ae6c1bda71b9573f8f2a7e290be6833b40c61d2ce2e460c6adc05"
+      }
+    ],
+    "Bash_unavailable_locally_hosted_bash_n_required": true,
+    "no_application_native_DB_build_install_browser_provider_push": true
+  },
+  "all403_inherited_tuples_immutable": true,
+  "diagnostic_contract": {
+    "scope": "Only when the original exact saved-notice wait fails after realPUT200, read bounded public DOM counts and raw receipt/request predicates; preserve the original exception and all existing success assertions.",
+    "marker": "PROFILE_BROWSER_SAVE_CENSUS",
+    "max_record_bytes": 1024,
+    "collection_deadline_ms": 2000,
+    "counts": "14 source-owned DOM counts capped at20, with explicit counts_capped boolean. No raw DOM text or attributes.",
+    "request_receipt": "Only request-valid/can_edit-valid booleans, finite actualPUT200/versions and selectedID equality booleans; no IDs/names/content/body/cookies/URLs/errors emitted.",
+    "side_effects": "No extra HTTP, mutations, clicks, sleeps, React state, or data writes.",
+    "parser": "Single strict typed <=1KiB record; duplicate/extra/wrong-type/unknown stage rejected; any valid diagnostic always fails acceptance even with laterPASS."
+  },
+  "retained_actual_checks": {
+    "frontend": "3b7d8190951fcdca574d7af98bb1bbf62c97e764",
+    "tree": "c18447b2c1c11d5761e8c22831625a3dd5e3e7ec",
+    "run": 45649221182,
+    "job": 139328773856,
+    "contracts": 544,
+    "test_files": 65,
+    "standalone_Dashboard_tsc_exit": 0,
+    "full_source_620_tuples_exact": true,
+    "primary_bytes": 119506,
+    "primary_SHA256": "e9fb5c4a299598269515bde02fad37ac959348667eee54334780de98621351c0",
+    "receipt": "profile-browser-v2-45649221182-release-failure.json",
+    "browser_failed_after_these_phases": true,
+    "not_claimed_current_again": true
+  },
+  "fresh_required_next": {
+    "Dashboard_Vite_build": true,
+    "Landing_Next_build": true,
+    "profile_browser24_geometry32": true,
+    "API20writes28controls16boundaries_full106_private_files": true,
+    "same_immutable_fixture": true,
+    "same_provider_process_cleanup_caps": true
+  },
+  "source_failure": {
+    "run": 45649221182,
+    "job": 139328773856,
+    "stage": "en_save_persist_and_readonly",
+    "reason": "TIMEOUT",
+    "source_wait": "Exact localized saved-notice visibility after awaited PUT200 receipt parsing.",
+    "product_cause_unproved": true,
+    "no_unconditional_parent_refresh_unmount_proved": true
+  },
+  "immutable_driver_checker_reference_assets": {
+    "ci/profile-customization-browser/run-browser.mjs": "d454a45fe05ab6fcda982fecece7fef2ae709bee599fa6b85e540d541818be1c",
+    "ci/profile-customization-browser/check-result.py": "1b0ab1e3add5d35dbefab1392197187f71cb798be74b3ebf3ace8f7ef3d88343"
+  },
+  "diagnostic_derivation": "New driver/checker copies add failure-only bounded observation and strict always-failing census parser; original success actions/predicates/results are unchanged. New driver is explicitly overlaid into browser-run after the immutable old fixture/tools copy."
+}

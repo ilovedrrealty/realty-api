@@ -1,0 +1,83 @@
+name: Isolated private profile save-notice diagnostic
+on:
+  push:
+    branches: [codex-ci-profile-customization-save-diagnostic-v3-20261125]
+permissions:
+  contents: read
+concurrency:
+  group: profile-customization-save-diagnostic-v3-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  browser:
+    if: >-
+      github.repository == 'ilovedrrealty/realty-api' &&
+      github.event.repository.private == false &&
+      github.event.created == true && github.event.deleted == false &&
+      github.event.forced == false &&
+      github.event.before == '0000000000000000000000000000000000000000' &&
+      github.run_attempt == 1 && github.event.after == github.sha && github.workflow_sha == github.sha
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Read exact reviewed operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          path: build-ops
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Read exact reviewed combined profile frontend
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: ilovedrrealty/iLoveDRRealty
+          ref: 3b7d8190951fcdca574d7af98bb1bbf62c97e764
+          path: frontend-source
+          fetch-depth: 18
+          persist-credentials: false
+      - name: Read exact reviewed profile customization API
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: a75f9c26f3bceb14afcb6e1150e1b2a3d50fbada
+          path: browser-backend
+          fetch-depth: 10
+          persist-credentials: false
+      - name: Read exact previous API for genuine99-table bootstrap
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 8957b18520d15dac503e0e4a5ce4b2455135d601
+          path: browser-previous
+          persist-credentials: false
+      - name: Read unchanged dependency baseline
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 01695530df670a94ac28f8b3bf36cc34b5b7a942
+          path: current-platform
+          persist-credentials: false
+      - name: Read accepted Python dependency recipe
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: c193a925ba57ea2d67ea48c44e5262817885c8a2
+          path: migration-relay
+          persist-credentials: false
+      - name: Read accepted static Dashboard server
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 3007728fd67c5889a8373e41ff3ffa5cc50d839b
+          path: browser-relay
+          persist-credentials: false
+      - name: Read exact accepted106-table migration baseline
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 17943ba1714673c51c43cdbb800106f91612f527
+          path: profile-baseline106
+          fetch-depth: 6
+          persist-credentials: false
+      - name: Run fresh builds and profile browser with retained544 and strict proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          runner="$GITHUB_WORKSPACE/build-ops/ci/profile-customization-save-diagnostic-v3/run-hosted.sh"
+          bash --noprofile --norc -n "$runner"
+          exec bash --noprofile --norc "$runner" "$GITHUB_WORKSPACE/build-ops" "$GITHUB_WORKSPACE/frontend-source" \
+            "$GITHUB_WORKSPACE/current-platform" "$GITHUB_WORKSPACE/browser-backend" "$GITHUB_WORKSPACE/migration-relay" \
+            "$GITHUB_WORKSPACE/browser-relay" "$GITHUB_WORKSPACE/browser-previous" "$GITHUB_WORKSPACE/profile-baseline106"
