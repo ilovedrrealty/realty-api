@@ -1,7 +1,7 @@
 name: Isolated native Inbox migration and authorization acceptance
 on:
   push:
-    branches: [codex-ci-native-inbox-default-v4-20261125]
+    branches: [codex-ci-native-inbox-fixture-v5-20261125]
 permissions:
   contents: read
 concurrency:
@@ -29,9 +29,9 @@ jobs:
       - name: Read exact reviewed private Inbox API
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: b0ae4518c8ef5e9733fb87109a5370e287af2670
+          ref: 79e9311874e3ea91e45b990629965534d41bb5fa
           path: inbox-app
-          fetch-depth: 4
+          fetch-depth: 5
           persist-credentials: false
       - name: Read exact previous99-table source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1

@@ -16,8 +16,8 @@ from urllib import request as urllib_request
 from unittest.mock import patch
 import unittest
 
-COMMIT = "b0ae4518c8ef5e9733fb87109a5370e287af2670"
-TREE = "522d1ce30298fb220affc33548e95c789dd2712c"
+COMMIT = "79e9311874e3ea91e45b990629965534d41bb5fa"
+TREE = "657ee2a606d932953a18c63d8d0962dc4b03af27"
 PREVIOUS_COMMIT = "8957b18520d15dac503e0e4a5ce4b2455135d601"
 PREVIOUS_TREE = "11ab69db36eb30881e4f3086578201f584c4092d"
 OLD_HEAD, HEAD = "c4e2a7319b60", "d8f4c2a91e67"
@@ -347,7 +347,8 @@ def run():
         old_preserved(catalog, database, legacy, before, schema)
         require(all(catalog.query(database, "SELECT count(*) FROM public."+name)==[(0,)] for name in INBOX),
             "canonical_private_inbox_rows_unmodified_required")
-        require(catalog.query(database, "SELECT nspname FROM pg_namespace WHERE nspname LIKE 'native_inbox_test_%' OR nspname LIKE 'inbox_model_%'")==[],
+        require(catalog.query(database, "SELECT nspname FROM pg_namespace WHERE nspname LIKE %s OR nspname LIKE %s",
+            ("native_inbox_test_%", "inbox_model_%"))==[],
             "owned_unit_schemas_removed_required")
         privacy(catalog, database)
         require(not ATTEMPTS and len(captured.getvalue().encode())<=2*1024*1024, "zero_provider_bounded_capture_required")
