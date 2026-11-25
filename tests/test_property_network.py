@@ -595,6 +595,35 @@ class PropertyNetworkRoutes(unittest.TestCase):
         self.profile("pro", avatar_media_id=None)
         self.assertIsNone(self.request("GET", path, "outsider").json()["items"][0]["author"]["avatar_media_id"])
 
+    def test_project_comment_keeps_project_actor_name_and_separate_author_photo_privacy(self):
+        project = self.project()
+        self.assign(project, "pro")
+        avatar = self.profile_photo("pro")
+        self.profile("pro", display_name="A separate network alias", visibility="private", avatar_media_id=avatar["id"])
+        update, _ = self.update(project)
+        path = f"/updates/{update['id']}/comments"
+        comment = self.request("POST", path, "pro", {"submission_id": str(uuid4()), "body": "Assigned professional's comment"})
+        self.assertEqual(comment.status_code, 201, comment.text)
+        current = self.request("GET", path).json()["items"][0]
+        self.assertEqual(current["author"]["display_name"], "pro")
+        self.assertIsNone(current["author"]["avatar_media_id"])
+        self.profile("pro", display_name="A separate network alias", visibility="members")
+        current = self.request("GET", path).json()["items"][0]
+        self.assertEqual((current["author"]["display_name"], current["author"]["avatar_media_id"]), ("pro", avatar["id"]))
+        self.request("PUT", f"/me/blocks/{self.codes['owner']}", "pro", {"blocked": True})
+        current = self.request("GET", path).json()["items"][0]
+        self.assertEqual(current["author"]["display_name"], "pro")
+        self.assertIsNone(current["author"]["avatar_media_id"])
+        self.assertEqual(self.request("GET", f"/projects/{project['id']}").status_code, 200)
+        self.request("PUT", f"/me/blocks/{self.codes['owner']}", "pro", {"blocked": False})
+        self.assertEqual(self.request("GET", path).json()["items"][0]["author"]["avatar_media_id"], avatar["id"])
+        # Existing project-member and progress actors retain their legacy shape.
+        members = self.request("GET", f"/projects/{project['id']}/members").json()
+        self.assertTrue(all("avatar_media_id" not in member for member in members))
+        progress, _ = self.update(project, "pro")
+        self.assertEqual(progress["author"]["display_name"], "pro")
+        self.assertNotIn("avatar_media_id", progress["author"])
+
 
 class PrivateImageContracts(unittest.TestCase):
     def test_reencode_strips_metadata_and_records_real_dimensions_and_digest(self):
