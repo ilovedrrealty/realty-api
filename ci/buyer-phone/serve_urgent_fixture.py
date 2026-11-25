@@ -125,7 +125,7 @@ def native_regression(application, url, database, helpers, rows, catalog):
     tables = helpers.table_names(database)
     require(len(tables) == 99 and helpers.snapshot(database, tables) == rows
         and helpers.catalog(database, tables) == catalog
-        and helpers.query(database, "SELECT count(*) FROM pg_namespace WHERE nspname LIKE 'admin_agent_test_%'") == [(0,)],
+        and helpers.query(database, "SELECT count(*) FROM pg_namespace WHERE nspname LIKE %s", ('admin_agent_test_%',)) == [(0,)],
         'native_public_baseline_and_test_schema_cleanup_required')
 
 
