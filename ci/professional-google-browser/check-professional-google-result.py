@@ -9,8 +9,18 @@ assert mode in {"browser", "api"} and re.fullmatch(r"[0-9]{1,3}", native)
 path = Path(filename)
 assert path.is_file() and path.stat().st_size <= 2 * 1024 * 1024
 lines = path.read_bytes().splitlines()
-failed, loopback = False, []
+failed, loopback, diagnostics = False, [], []
 for line in lines:
+    if line.startswith(b"PROFESSIONAL_GOOGLE_ADMIN_ENTRY_CENSUS "):
+        assert mode == "browser" and len(line) <= 1024 and not diagnostics
+        value = json.loads(line.split(b" ", 1)[1])
+        flags = {"route_matches", "workspace_matches", "en_language", "es_language", "diagnostic_read_error"}
+        counts = {"search_label_en", "search_label_es", "heading_en", "heading_es", "forms", "search_inputs", "page_errors"}
+        assert set(value) == flags | counts
+        assert all(type(value[key]) is bool for key in flags)
+        assert all(type(value[key]) is int and 0 <= value[key] <= 999 for key in counts)
+        diagnostics.append(value)
+        failed = True
     if line.startswith(b"PROFESSIONAL_GOOGLE_LOOPBACK_STATE "):
         assert mode == "browser" and len(line) <= 256 and len(loopback) < 8
         value = json.loads(line.split(b" ", 1)[1])
@@ -31,6 +41,8 @@ for line in lines:
         failed = True
 for row in loopback:
     print("PROFESSIONAL_GOOGLE_LOOPBACK_STATE " + json.dumps(row, sort_keys=True))
+for value in diagnostics:
+    print("PROFESSIONAL_GOOGLE_ADMIN_ENTRY_CENSUS " + json.dumps(value, sort_keys=True))
 assert native == "0" and not failed
 prefix = b"PROFESSIONAL_GOOGLE_BROWSER_RESULT " if mode == "browser" else b"PROFESSIONAL_GOOGLE_FIXTURE_RESULT "
 rows = [json.loads(line[len(prefix):]) for line in lines if line.startswith(prefix)]

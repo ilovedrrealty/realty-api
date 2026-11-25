@@ -9,6 +9,7 @@ const contexts = [], geometryChecks = [], allowedGoogle = new WeakSet()
 let browser, facts, stage = 'fixture', timer, frameHold = null, frameBudget = 0, profileBudget = 0
 let pageErrors = 0, externalWrites = 0, unexpectedMutations = 0, beforeClick = 0
 let frameRequests = 0, profileRequests = 0, authScripts = 0, ownerPuts = 0
+let adminEntryPage = null, diagnosticCopies = null
 class Failure extends Error {}
 const check = (condition, reason) => { if (!condition) throw new Failure(reason) }
 const button = (scope, name) => scope.getByRole('button', { name, exact: true })
@@ -80,6 +81,7 @@ async function foreground(page) {
 }
 async function openMenu(context, copy, item) {
   const page = await context.newPage()
+  if (item === 'professionals') adminEntryPage = page
   const entry = item === 'professionals' ? 'entry_admin'
     : item === 'professional-directory' ? 'entry_member' : 'entry_owner'
   advance(entry + '_document')
@@ -97,6 +99,31 @@ async function openMenu(context, copy, item) {
   if (item === 'professionals') await page.getByLabel(copy.professionals.search, { exact: true }).waitFor()
   if (item === 'professional-directory') await page.getByRole('heading', { name: copy.professionals.directory_search.title, exact: true }).waitFor()
   return page
+}
+async function adminEntryCensus() {
+  const value = { route_matches: false, workspace_matches: false, en_language: false, es_language: false,
+    search_label_en: 0, search_label_es: 0, heading_en: 0, heading_es: 0, forms: 0, search_inputs: 0,
+    page_errors: Math.min(999, pageErrors), diagnostic_read_error: false }
+  try {
+    if (!adminEntryPage || adminEntryPage.isClosed() || !diagnosticCopies) throw new Error()
+    const page = adminEntryPage, { en, es } = diagnosticCopies
+    const url = new URL(page.url())
+    value.route_matches = url.origin === DASH && url.pathname === '/professionals'
+    value.workspace_matches = url.searchParams.get('workspace') === 'admin'
+    const language = await page.evaluate(() => localStorage.getItem('ildr_lang'))
+    value.en_language = language === 'en'; value.es_language = language === 'es'
+    const counts = await Promise.all([
+      page.getByLabel(en.professionals.search, { exact: true }).count(),
+      page.getByLabel(es.professionals.search, { exact: true }).count(),
+      page.getByRole('heading', { name: en.nav.professionals, level: 1, exact: true }).count(),
+      page.getByRole('heading', { name: es.nav.professionals, level: 1, exact: true }).count(),
+      page.locator('form').count(), page.locator('input[type="search"]').count(),
+    ])
+    for (const [index, key] of ['search_label_en', 'search_label_es', 'heading_en', 'heading_es', 'forms', 'search_inputs'].entries()) {
+      value[key] = Math.min(999, counts[index])
+    }
+  } catch { value.diagnostic_read_error = true }
+  console.log('PROFESSIONAL_GOOGLE_ADMIN_ENTRY_CENSUS ' + JSON.stringify(value))
 }
 async function language(page, copy) {
   await foreground(page)
@@ -218,6 +245,7 @@ try {
   const fixture = JSON.parse(await readFile(process.env.ILDR_BROWSER_FIXTURES, 'utf8'))
   check(fixture.scope === 'professional-google-only', 'EXACT_FIXTURE_SCOPE_REQUIRED'); facts = fixture.facts
   const en = JSON.parse(await readFile('/browser-run/en.json', 'utf8')), es = JSON.parse(await readFile('/browser-run/es.json', 'utf8'))
+  diagnosticCopies = { en, es }
   browser = await chromium.launch({ headless: true })
   const owner = await contextFor(fixture.accounts.owner, 'owner'), admin = await contextFor(fixture.accounts.admin, 'admin')
   const member = await contextFor(fixture.accounts.member, 'buyer'), guest = await contextFor()
@@ -343,6 +371,7 @@ try {
     else if (cause?.name === 'TimeoutError') reason = 'LOCATOR_OR_EVENT_DEADLINE'
     else if (typeof cause?.message === 'string' && cause.message.includes('strict mode violation')) reason = 'STRICT_LOCATOR'
   } catch { /* Only finite classifications are emitted, never arbitrary error values. */ }
+  if (stage === 'entry_admin_ready') await adminEntryCensus()
   console.log('PROFESSIONAL_GOOGLE_BROWSER_FAILURE ' + stage + ' ' + reason)
   process.exitCode = 1
 } finally {
