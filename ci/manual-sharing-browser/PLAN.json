@@ -1,8 +1,8 @@
 {
-  "schema": "manual-sharing-rental-wrap-v6",
+  "schema": "manual-sharing-calculator-selector-v7",
   "status": "PREPARED_FOR_ROOT_FULL_AND_INDEPENDENT_COLD_REVIEW_NO_PUSH_OR_HOSTED_EXECUTION",
-  "operations_parent": "6200c41d72de34e0263d247326f191e6c1c436c4",
-  "proposed_first_ref": "codex-ci-manual-sharing-title-v6-20261125",
+  "operations_parent": "c3951a8b3f292bc72f630b1c86408d2519733a2c",
+  "proposed_first_ref": "codex-ci-manual-sharing-calculator-v7-20261125",
   "frontend": {
     "commit": "6ca7880c5b154a9c370ea47bffd00d4d89838c4f",
     "tree": "afdd8907ac05275c72aa4efa87de847adf80a78c",
@@ -76,7 +76,7 @@
     "privacy": "No raw body, contact fields, credentials, fixture secret, privateID, arbitrary URL/stack or downloaded image bytes in logs; artifacts[]"
   },
   "proof_scope": "Retain actualdbad531/65 andstandalone strict45605073716 onlyafter native exactsourceguard reverses allfour CSS target edits (prose,mortgage,title,location) in twofiles and proves all614otherblobs/tests unchanged. FreshVite/itsactualtypecheck and LandingNext plus original20/44/full106/4view8control/PNG/clipboard/native/privacy required; native95 retained45588133254. Existing strictanonymousreplay remains exact6200; no earlierfailure is fullacceptance.",
-  "review_and_release": "Three-path ops successor off6200 and exact FE6ca sourcechild need rootFULL and independentcold before root firstpush. Driver/checker/nativefixture bytes identical6200, all20/44/full106/PNG/privateprovider gates preserved.",
+  "review_and_release": "Four-path ops successor offc395 requires rootFULL and Releaseindependentcold before root firstpush. Frontend6ca/backend179 and complete runtime/fixture/checker/sourceguard/freshbuild/alloriginalmetrics unchanged. Calculator-only semanticallycorrect locator preserves existing unique-panel assertion.",
   "written_finite_browser_contract": {
     "journeys": 20,
     "geometry": 44,
@@ -162,12 +162,14 @@
   ],
   "local_checks": {
     "python_ast_units": 11,
-    "actual_readonly_whole_css_chain_composition_guard_native": 0,
-    "driver_checker_fixture_byte_equal_parent": true,
-    "source_guard_reverses_prose_mortgage_title_location_to_tested_dbad": true,
-    "all_other614_blobs_and_tests_unchanged": true,
+    "browser_node_syntax_native": 0,
+    "actual_helper_regex_positive": 3,
+    "actual_helper_regex_negative": 6,
+    "driver_reversing_only_helper_and_two_calculator_callsite_selectors_equals_parent": true,
+    "native_fixture_and_checker_byte_unchanged": true,
+    "all_original_cardinality_actions_metrics_and_success_predicates_unchanged": true,
     "git_bash_runner_syntax_native": null,
-    "scope": "Pure AST/readonly Git sourceguard only; no new product tests/build/application/browser/DB/install/provider/push. Existing parsercases retained because checker unchanged. Hosted Bashsyntax required; no localBashproof."
+    "scope": "Pure AST/Node/inert locator regex/source-bytes only; no UI/browser/count acceptance, producttests/build/application/DB/install/provider/push. HostedBashsyntax required; no localBashproof."
   },
   "diagnostic_scope": "Failure-only on an unchanged viewport/control geometry predicate: at most one strict 12KiB census; scan at most2500 body elements, emit24 bounded rows with fixed tag/scope/source-known-class enums and integer width/left/right/client/scroll only plus known label/viewport totals. Never text, URL, ID, computed-style strings, attributes, source data or screenshot. The parser always marks a census asFAIL, rejects duplicate/unknown/wrong-mode/private/oversized/boolean-integer fields. Existing failure/ownframes remain binding. No extra click/read/write/route change, fixture byte-identical, original20/44/4views/8controls/PNG/provider/privacy predicates unchanged.",
   "prior_actual_failures": [
@@ -241,6 +243,17 @@
       "scope": "Englishboth-property completegeometry/assets/transport/sourcechange/stale-close sequence passed; full20/44/ENES/APIunaccepted. FreshVite0/Next0, cleanup/artifacts[].",
       "primary_bytes": 105992,
       "primary_sha256": "d6a95d4ec5ad4fd5e65dd0ad70a9bbdd8e5c667162bfdfe46eaef183ac36cf43"
+    },
+    {
+      "operations": "c3951a8b3f292bc72f630b1c86408d2519733a2c",
+      "run": 45614191785,
+      "job": 139205237757,
+      "status": "FAIL",
+      "phase": "en_calculator",
+      "reason": "UNIQUE_MANUAL_SHARE_PANEL_REQUIRED",
+      "primary_bytes": 105327,
+      "primary_sha256": "eada34318f14e5e127f41e67173ca8f04fc191280ae44253e30ac2d7b7be8570",
+      "scope": "Englishboth-property, rentmobilegeometry andpublicresource sequencepassed; calculatorcountfailed. FreshVite0/Next0,cleanup/artifacts[]; full20/44/APIledger unaccepted."
     }
   ],
   "observed_source_correction": "Inherited source9c66 alreadyfixesprose/mortgagetext. Exact new6ca onefilechild wraps only measured H1 title(anywhere) and exact locationflexspan(min-w-0,anywhere) so anonymousflextext can shrink/wrap. Values/format/visibility/auth/fetch/formulas/sharepayload unchanged; no clipping/hiding/layoutredesign.",
@@ -260,5 +273,11 @@
     "source_proven_transport": "Route.fetch uses BrowserContextAPIRequestContext. _innerFetch copies original headers, then server _updateRequestCookieHeader injects context jar cookies when Cookie header is absent. This signed Admin browser deliberately has such a cookie while app freshfetch usescredentialsomit. Native fixture rightly refuses authenticated freshpublicreads.",
     "exact_fix": "Require original paused GET allHeaders contain noCookie/noAuthorization and exactLandingOrigin/JSONAccept before any replay. Replay identical headers plus explicit emptyCookie to prevent APIRequest jar injection. Keep actualresponse200/native noStore/anonymousguard and original20/44/full106/PNG/privacy gates. No extra GET/retry/action/productchange.",
     "failure_diagnostic": "Only if actualheldresponse is non200, log one <=512B exact phase/status(integer100..599 excluding200) plus5header-presence/expected-value booleans. No header values, token, URL, body or IDs. Strict parser alwaysfails any diagnostic, rejects wrongmode/duplicateJSONkeys/unknownfields/types/status. Originalfailureassertion stillbinding."
+  },
+  "calculator_selector_correction": {
+    "actual_source": "Exact6ca Calculator.tsx rootisdiv and ResourceShare mountsinsideplainwrapper nearline280; app/calculator/page returnsCalculator directly; RootLayout renderschildrenwithoutmain. ManualShareActions rendersdetails with directsummary copy.open.",
+    "proven_mismatch": "Driverdefault main-details-first scope cannotlocate the calculator sharepanel; optionalWebKit calculator repeats thatscope. Actualcount notlogged, but exactsource proves missingmain ancestry.",
+    "exact_change": "Only calculator Chromium journey andoptionalWebKit calculator use one helper: details filtered by directsummary and anchored escaped exactlocalized copy.open. No .first() or fallback; unchanged open() still requires exactlyone panel. Other explicit card/section/default route selectors unchanged.",
+    "preserved": "Same navigate/input/click/copy/assets/geometry/Escape/native actions,20/44/full106/4views/PNG/privacy. No product/sourcepin/extraHTTP/retry/delay/assertionweakening."
   }
 }

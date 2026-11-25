@@ -216,6 +216,10 @@ async function associatedSelect(scope, label) {
   }, label)) found.push(candidates.nth(index))
   check(found.length === 1, 'UNIQUE_ASSOCIATED_PUBLIC_SELECT_REQUIRED'); return found[0]
 }
+function calculatorSharePanel(page, copy) {
+  const label = copy.open.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return page.locator('details').filter({ has: page.locator(':scope > summary').filter({ hasText: new RegExp('^' + label + '$') }) })
+}
 async function open(panel, copy) {
   check(await panel.count() === 1, 'UNIQUE_MANUAL_SHARE_PANEL_REQUIRED')
   if (!await panel.evaluate(node => node.open)) await panel.locator('summary').click()
@@ -434,7 +438,7 @@ async function localeRun(locale) {
   const resource = generic(facts.resource.title[locale], 'https://ilovedrrealty.com/blog/#resource-' + facts.resource.id)
   await simpleJourney(pages.anonymous, LANDING, '/blog/#resource-' + facts.resource.id,
     page => page.locator('#resource-' + facts.resource.id + ' details'), locale + '_public_resource', resource, copy)
-  await simpleJourney(pages.anonymous, LANDING, '/calculator/?private_input=999888777', null, locale + '_calculator',
+  await simpleJourney(pages.anonymous, LANDING, '/calculator/?private_input=999888777', page => calculatorSharePanel(page, copy), locale + '_calculator',
     generic(copy.calculator, 'https://ilovedrrealty.com/calculator/'), copy, async page => {
       const input = page.locator('input[type=number]').first(); await input.waitFor(); await input.fill('777777'); await input.press('Tab')
     })
@@ -462,7 +466,7 @@ async function optionalWebKit() {
     const context = await contextFor('en', null, engine, true), page = await context.newPage()
     const copy = JSON.parse(await readFile('/browser-run/en.json', 'utf8')).share
     await navigate(page, LANDING, '/calculator/', true)
-    const panel = page.locator('main details').first(); await open(panel, copy)
+    const panel = calculatorSharePanel(page, copy); await open(panel, copy)
     const content = { title: copy.calculator, facts: [], url: 'https://ilovedrrealty.com/calculator/', audience: 'public' }
     const text = await preview(panel, content, copy, false, false)
     await prepareAndDownload(page, panel, copy, 'en', 'post', false, text, true)

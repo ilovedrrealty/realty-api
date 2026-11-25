@@ -1,7 +1,7 @@
-name: Isolated manual sharing rental text wrapping acceptance
+name: Isolated manual sharing semantic calculator acceptance
 on:
   push:
-    branches: [codex-ci-manual-sharing-title-v6-20261125]
+    branches: [codex-ci-manual-sharing-calculator-v7-20261125]
 permissions:
   contents: read
 concurrency:
