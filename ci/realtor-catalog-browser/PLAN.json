@@ -1,0 +1,109 @@
+{
+  "schema": "realtor-sale-catalog-browser-acceptance-v1",
+  "status": "PREPARED_PENDING_CROSS_REVIEW_ROOT_FULL_AND_FIRST_PUSH",
+  "operations_parent": "0ae10a984486fa076f74c4458950ffa266405f2d",
+  "proposed_first_ref": "codex-ci-realtor-catalog-browser-20261125",
+  "frontend": "e8efa3990dfbc5446fda7fd33f26801a18f07b46",
+  "frontend_tree": "491ac01d8a6a17231065ca66f6d241b96d1f5d5a",
+  "frontend_parent": "dd510f6f9b0b5ba31c25cef9a6460f913a0b54be",
+  "frontend_review_base": "06d7f74965896ae23d47e7701fc1dbfd9815cc40",
+  "frontend_tracked_blobs": 597,
+  "backend": "8957b18520d15dac503e0e4a5ce4b2455135d601",
+  "backend_tree": "11ab69db36eb30881e4f3086578201f584c4092d",
+  "backend_parent": "d90a68cbfa07f42a02a841f7730999d96f40dc60",
+  "source_scope": "Reviewed frontend catalog and one-account navigation only. Existing public active sale/both API is unchanged. No schema, model, requirement, manifest, lockfile, service, role, hotel permission, recipient, account or billing change. No publication in this job.",
+  "contracts": {
+    "expected_files": 63,
+    "expected_tests": 509,
+    "fresh_full_run_required": true,
+    "strict": "Run the complete current exact frontend509 contract suite and actual strict Dashboard typecheck; every process exit and exact pass/fail/skip totals are binding.",
+    "builds": "Fresh exact Dashboard Vite and actual Landing Next export against the owned API. All597 Git blobs rehashed after each executed phase; source parent/review-base existence+ancestry and successful unchanged manifest/schema diff exits required. Eight frontend commits are fetched."
+  },
+  "native": {
+    "rerun": false,
+    "retained_exact_backend": "8957b18520d15dac503e0e4a5ce4b2455135d601",
+    "accepted_run": 45551910844,
+    "accepted_cases": 10,
+    "scope": "Previously root-accepted native10 for exact unchanged API. This job does not repeat or claim current execution of those cases."
+  },
+  "runtime": {
+    "dependency_baseline": "01695530df670a94ac28f8b3bf36cc34b5b7a942",
+    "python_recipe": "c193a925ba57ea2d67ea48c44e5262817885c8a2",
+    "static_dashboard_recipe": "3007728fd67c5889a8373e41ff3ffa5cc50d839b",
+    "accepted_group_fixture_sha256": "e0c5f0971c7c13ed47063907f01fa6ef01590b00fa2855eb1ecb16a38b99463e",
+    "accepted_landing_server_path": "ci/buyer-phone/serve-landing.mjs",
+    "accepted_landing_server_sha256": "f03f06dae7c31f3415dad15492ff581ff94f6c87a519449f84d64780c10e0cbd",
+    "postgres": "Pinned17.6/170006; fresh nonce-marked DB in network-none loopback namespace.",
+    "node": "Pinned24.22.1 digest; exact existing lockfile installation and no host credentials in containers.",
+    "browser": "Pinned Playwright image; exact SRI-verified playwright-core1.64.1; accepted existing setup.",
+    "ports": {
+      "api": 8918,
+      "dashboard": 4175,
+      "landing": 8917,
+      "postgres": 55449
+    }
+  },
+  "browser": {
+    "locales": [
+      "en",
+      "es"
+    ],
+    "widths": [
+      320,
+      390
+    ],
+    "catalog": "Real Realtor all-active sale and both across different agents and owners; 24-row server pagination; location/type/minimum beds/estimated USD min/max/editable rate/sort/reset; original currency cards and existing public detail/contact/share path.",
+    "entries": "Actual Realtor home, navigation, own member profile and Settings account profile. Preserve managed My Listings and omit edit/lead/client/payout controls from public cards.",
+    "authorization": "Actual Buyer and Owner direct/forged workspace denied. Actual Admin can use catalog in any non-Admin workspace; shortcut chooses Realtor. Do not make selected workspace an identity or permission gate.",
+    "arlyn": "Only the exact root-verified UUID with actual realtor role gets additional navigation; unrelated Realtors do not. Existing real Admin plus Admin workspace rule preserved. Fixed hotel URL, EN/ES separate-sign-in/accounts/data note, no hotel request or access grant.",
+    "draft_guard": "Actual unsaved member-profile input and genuine cancel/dismiss of the existing navigation confirmation must retain draft and prevent new tab/navigation; no simulated success publication.",
+    "errors_stale": "Browser aborts one narrowly owned catalog transport per locale, requires real error state then successful actual HTTP retry. Actual component abort cleanup and late out-of-order response suppression are additionally exercised by the current fresh full509 source contract suite; browser result makes no claim of a separate browser stale-response hold.",
+    "external_requests": "Block every non-owned browser request. No real hotel or provider sign-in, account invitation, inquiry, lead, share/message send or external mutation.",
+    "presence": "Actual foreground/visibility receipt; only accepted loopback offline model when native navigator.onLine is false, never override visibility.",
+    "journeys": 24,
+    "journeys_per_locale": [
+      "home_entry",
+      "catalog_inventory",
+      "sidebar_entry",
+      "catalog_filters",
+      "catalog_fx",
+      "catalog_error_retry",
+      "account_entry",
+      "member_entry",
+      "arlyn_navigation_guard",
+      "other_realtor_no_portal",
+      "admin_navigation_and_catalog",
+      "buyer_owner_route_guards"
+    ],
+    "geometry": 32,
+    "geometry_labels_per_locale": [
+      "home",
+      "catalog",
+      "realtor_account",
+      "arlyn_account",
+      "member_profile",
+      "admin",
+      "buyer_denied",
+      "owner_denied"
+    ],
+    "presence_receipts": 10,
+    "contexts": 10,
+    "api_boundary_checks": 16,
+    "portal_link_checks": 8,
+    "portal_absence_checks": 10,
+    "canonical_detail_checks": 2,
+    "dirty_guard_checks": 2,
+    "transport_abort_checks": 2,
+    "detail_boundary": "Actual card href must match configured owned Landing http://127.0.0.1:8917/listing/{UUID}/. This validates existing canonical route shape, not new detail page behavior. Do not navigate detail or trigger existing listing-view writes.",
+    "portal_count_scope": "Four visible fixed-link checks per locale: Arlyn account body, Arlyn account sidebar, Arlyn own-member sidebar with dirty guard, and unchanged Admin Admin-workspace sidebar. No claim that the separate AdminSettings page mounts UserSettings profile appearance."
+  },
+  "fixture": {
+    "baseline": "Accepted99-table schema with85contacts86sources/82ownercontacts/46privateprofiles retained. Add only one synthetic exact-UUID Arlyn Realtor (6users total), two own member profiles and synthetic inventory before preservation baseline:31 listings total = retained1 rent +27active sale/both across two agents and two owners +new rent/draft/archive. No real account/data is used.",
+    "after": "Complete all99 catalog/rows/sequences unchanged, including31 listings/27 catalog inventory,85contacts86sources/82owner/46privateprofiles/6users/9acceptedjobs/CMS7/2floorplans. Eight distinct actual API access boundary tuples and exactly10 synthetic login requests required.",
+    "credentials": "Random synthetic secrets stay inside owned0600 facts inode/memory, never logged/uploaded; exact inode removed in finally on pass/failure."
+  },
+  "privacy": "No raw URLs, request bodies, account/contact IDs, credentials, private notes, payloads or exception text in logs. Strict finite key/type/count receipts and source-owned failure enums only; native nonzero always binding.",
+  "cleanup": "Accepted nonce-label owned container/image/scratch cleanup and guarded per-phase DB drop. No broad removal/killing. No artifact upload actions; root independently verifies actual artifacts[].",
+  "release": "Root owns full/cold review, first absent-ref push, actual terminal/cleanup/artifact inspection and later publication. Preparation is not acceptance.",
+  "local_checks": "Four immutable runtime Git blob hashes verified (including exact LF Landing server f03f06da); all seven runner inline Python blocks parsed only;15 finite checker controls PASS (2 valid and13 native/type/count/geometry/privacy failures). No local Bash available in bundled Git, so required bash-n runs in the workflow before the runner. No local installation/fullsuite/build/browser/database/provider calls. Crossreviews and any additional static checks recorded before freeze."
+}
