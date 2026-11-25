@@ -1,0 +1,68 @@
+{
+  "schema": "native-inbox-owned-native-acceptance-v1",
+  "status": "PREPARED_PENDING_ROOT_FULL_AND_COLD_REVIEW_NO_PUSH",
+  "operations_parent": "236a1951e956d28ccb97dc5c8bb72f562383c444",
+  "proposed_first_ref": "codex-ci-native-inbox-20261125",
+  "backend": "2c8b085f9a583ca757cece9ea4ea46c169aab638",
+  "backend_tree": "8475f663f1628fe2b733507fdfe9f98f2b45adbe",
+  "backend_parent": "057dd1b79874a297202f9c5ec6f8300b8e3bd684",
+  "previous_backend": "8957b18520d15dac503e0e4a5ce4b2455135d601",
+  "previous_tree": "11ab69db36eb30881e4f3086578201f584c4092d",
+  "scope": "Backend native acceptance only. No frontend/browser or resilience-source acceptance claim.",
+  "migration": {
+    "previous_head": "c4e2a7319b60",
+    "head": "d8f4c2a91e67",
+    "legacy_catalog_tables": 99,
+    "legacy_modeled_tables": 98,
+    "new_private_tables": 7,
+    "final_catalog_tables": 106,
+    "final_modeled_tables": 105,
+    "previous_start": "Actual previous8957 bootstrap+Alembic head in an isolated child process before any current-model import; exact source and current c4 head verified. No Inbox table can be precreated by current bootstrap.",
+    "forward": "Exact current2c8 Alembic upgrade head; accepted retained-record seed has82 protected owner contacts/46 private drafts/9 accepted outbox jobs/CMS7/2 floorplans. All99 old table definitions/ACL/triggers/enums/functions/data/sequences unchanged except alembic head and the one additive native guard function.",
+    "new_model_parity": "Independent model materialization in a unique owned schema with checkfirst=False creates105 actual model tables. Compare new7 PostgreSQL-native column order/type/nullability/default/identity/generated fields, checks/PK/unique/FK definitions including deferral and indexes including validity/readiness; normalize only owned-schema/public qualification. Native Boolean deparser positive/negative controls retained. Legacy99 exact accepted catalog remains baseline, not a claim that old migration-only definitions equal raw model metadata.",
+    "privacy": "Broad default client grants applied only in owned fixture before new migration; actual7 RLS=true/no policies/no PUBLIC/anon/authenticated/service_role privileges; seven active retention triggers; guard SECURITY INVOKER with no client execute rights.",
+    "empty_rollback": "With canonical new Inbox tables empty, actual Alembic downgrade c4 retains exact old99 catalog/rows/sequences; actual reupgrade d8 restores identical full106 catalog."
+  },
+  "suites": [
+    {
+      "label": "inbox",
+      "module": "test_native_inbox",
+      "class": "NativeInboxTests",
+      "actual_source_cases": 15,
+      "auth": "Real signed JWT against current SQL users; no auth override. Owned schema105 without Alembic bookkeeping genuinely creates seven new tables by migration."
+    },
+    {
+      "label": "safety",
+      "class": "HostedSafetyTests",
+      "operations_cases": 2,
+      "scope": "Borrow unchanged source fixture helpers only, explicit blocked-pair Admin intervention refusal and no extra entry/command/audit; actual64KiB/origin/rate-limit safety. Distinct from source15."
+    },
+    {
+      "label": "legacy_award",
+      "module": "test_service_conversation",
+      "class": "PrivateAwardedServiceConversation",
+      "actual_source_cases": 5
+    },
+    {
+      "label": "legacy_negotiation",
+      "module": "test_service_negotiation",
+      "class": "PrivateServiceNegotiationConversation",
+      "actual_source_cases": 5
+    }
+  ],
+  "total_cases": 27,
+  "legacy_fixture_database": "Existing source fixtures demand ildr_platform_test_20261025. A SECOND fresh DB with exactly that name is created in this nonce-owned network-none PG container, bound to a unique nonce comment; source guard is not replaced or patched. Canonical retained DB is separately nonce-named. Both DBs marker-checked/dropped and absence rechecked even on native failure.",
+  "runtime": {
+    "baseline": "01695530df670a94ac28f8b3bf36cc34b5b7a942",
+    "recipe": "c193a925ba57ea2d67ea48c44e5262817885c8a2",
+    "dockerfile_sha256": "e546d8c5668b87ef28e604107bbb330e6f4b3873cf0208b4d24ca378bd0851f9",
+    "python": "3.11-slim@sha256:673719e071ecf27434fd2635bbd8d00f49f4fdd81f243143438a42ced8bedf60",
+    "postgres": "17.6@sha256:b86568d3e0fe1dfaeff52714f9da36f206a30e4c49131b82bf96982d78627409",
+    "accepted_helpers": "Exact SHA-verified unchanged social-groups-browser fixture + catalog/retained records helpers; source commit/tree constants explicitly adapted to reviewed current/previous source before existing readonly/exact checkout guards. No original99 hardcoded acceptance reused as106.",
+    "dependencies": "Same accepted baseline inventory plus hash-pinned openpyxl3.1.5/defusedxml0.7.1/et-xmlfile2.0.0 binary wheels; pip check and exact installed inventory.",
+    "isolation": "No network except private loopback namespace with PG17.6; env -i/empty provider keys/workers disabled, read-only source/ops mounts, bounded resources, HTTP/SMTP/Resend refusal counters. No host credentials or artifacts."
+  },
+  "cleanup": "Native process exit/running/OOM checked; both exact nonce-marked DBs dropped and absent; only current-run labeled containers/image and checked owned scratch deleted; read-only source clean. No production queries/providers/sends/accounts/role/settings/billing changes.",
+  "failure_gate": "27 exact executed cases, zero errors/failures/skips/provider attempts, four exact suite counts and all preservation flags. Native/client nonzero/timeout/OOM/running/missing/duplicate/wrong-type markers cannot pass. Only finite counts/known method/failure enum diagnostics, no raw exception SQL/private bodies/tokens/credentials.",
+  "local_validation": "Actual PASS checker1positive/11negative controls, Python/inline AST, PLAN JSON and git whitespace. No local native/DB/build/provider actions. Bash syntax is checked by workflow before execution; not claimed locally."
+}
