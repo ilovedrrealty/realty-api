@@ -1,11 +1,11 @@
 {
   "schema": "native-inbox-owned-native-acceptance-v1",
   "status": "PREPARED_PENDING_ROOT_FULL_AND_COLD_REVIEW_NO_PUSH",
-  "operations_parent": "22b5254d55710d128aae3b47f31278dc38e835bc",
-  "proposed_first_ref": "codex-ci-native-inbox-parity-v3-20261125",
-  "backend": "2c8b085f9a583ca757cece9ea4ea46c169aab638",
-  "backend_tree": "8475f663f1628fe2b733507fdfe9f98f2b45adbe",
-  "backend_parent": "057dd1b79874a297202f9c5ec6f8300b8e3bd684",
+  "operations_parent": "5a1258535ed1d7ca7dbcc171fdfd615e9af35614",
+  "proposed_first_ref": "codex-ci-native-inbox-default-v4-20261125",
+  "backend": "b0ae4518c8ef5e9733fb87109a5370e287af2670",
+  "backend_tree": "522d1ce30298fb220affc33548e95c789dd2712c",
+  "backend_parent": "2c8b085f9a583ca757cece9ea4ea46c169aab638",
   "previous_backend": "8957b18520d15dac503e0e4a5ce4b2455135d601",
   "previous_tree": "11ab69db36eb30881e4f3086578201f584c4092d",
   "scope": "Backend native acceptance only. No frontend/browser or resilience-source acceptance claim.",
@@ -65,7 +65,7 @@
   },
   "cleanup": "Native process exit/running/OOM checked; both exact nonce-marked DBs dropped and absent; only current-run labeled containers/image and checked owned scratch deleted; read-only source clean. No production queries/providers/sends/accounts/role/settings/billing changes.",
   "failure_gate": "27 exact executed cases, zero errors/failures/skips/provider attempts, four exact suite counts and all preservation flags. Native/client nonzero/timeout/OOM/running/missing/duplicate/wrong-type markers cannot pass. Only finite counts/known method/failure enum diagnostics, no raw exception SQL/private bodies/tokens/credentials.",
-  "local_validation": "Actual PASS checker1positive/17negative controls incl valid census that still fails, invalid table/type/default/extra field; Python/inline AST/PLAN JSON/diff whitespace. Native27 NOT PASSED; previous run stopped before tests.",
+  "local_validation": "Changed verifier/inline AST and PLAN JSON valid; whitespace clean. Checker identical to5a125 so its actual1positive/17negative controls retained. Newexact27 native cases remainUNRUN; no local heavy/DB/provider actions.",
   "original_operations_base": "236a1951e956d28ccb97dc5c8bb72f562383c444",
   "source_guard_correction": "8957 base commit existence and ancestry explicitly checked. Source diff exit bound before empty-output comparison; missing/corrupt base cannot pass as an empty change set.",
   "known_previous_failure": {
@@ -79,5 +79,24 @@
     "owned_cleanup_verified": true,
     "artifacts": []
   },
-  "diagnostic_scope": "Failure-only bounded new7 schema census: section/table/source field, presence flags/differing tuple positions, finite default categories. No SQL/default text/private values or exceptions. At most3 samples; typed allowlist<=1536bytes always fails gate. Strict original projection equality and all27 predicates unchanged. Likely zero-literal representation difference remains unproven until actual census; no normalization or product change."
+  "diagnostic_scope": "Previous diagnostic evidence remains immutable. Existing failure-only typed bounded census and strict projection equality are unchanged; no semantic default normalization or assertion exception is introduced.",
+  "confirmed_parity_evidence": {
+    "run": 45580165101,
+    "job": 139087912435,
+    "census": {
+      "columns": 1,
+      "constraints": 0,
+      "indexes": 0,
+      "table": "inbox_conversations",
+      "field": "last_sequence",
+      "different_positions": [
+        5
+      ],
+      "actual_default_kind": "zero_bare",
+      "expected_default_kind": "zero_bigint_quoted"
+    },
+    "result": "Failure/no source cases executed; bothDBs removed/noOOM/artifacts[]/cleanup independently checked by root.",
+    "source_correction": "Only models/native_inbox.py adds SQLAlchemytext import and explicittext(0) default to match unchanged bareDEFAULT0 migration. No equality/normalization/API/policy/test-count changes.",
+    "fetch_depth": 4
+  }
 }

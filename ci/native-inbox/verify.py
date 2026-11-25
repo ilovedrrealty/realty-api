@@ -16,8 +16,8 @@ from urllib import request as urllib_request
 from unittest.mock import patch
 import unittest
 
-COMMIT = "2c8b085f9a583ca757cece9ea4ea46c169aab638"
-TREE = "8475f663f1628fe2b733507fdfe9f98f2b45adbe"
+COMMIT = "b0ae4518c8ef5e9733fb87109a5370e287af2670"
+TREE = "522d1ce30298fb220affc33548e95c789dd2712c"
 PREVIOUS_COMMIT = "8957b18520d15dac503e0e4a5ce4b2455135d601"
 PREVIOUS_TREE = "11ab69db36eb30881e4f3086578201f584c4092d"
 OLD_HEAD, HEAD = "c4e2a7319b60", "d8f4c2a91e67"

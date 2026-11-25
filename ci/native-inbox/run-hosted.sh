@@ -4,7 +4,7 @@ umask 077
 die() { printf 'INBOX_NATIVE_REFUSED %s\n' "$1" >&2; exit 1; }
 bounded() { timeout --kill-after=8s "$@"; }
 [[ $# == 5 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
-   ${GITHUB_REF:-} == refs/heads/codex-ci-native-inbox-parity-v3-20261125 && ${GITHUB_RUN_ATTEMPT:-} == 1 &&
+   ${GITHUB_REF:-} == refs/heads/codex-ci-native-inbox-default-v4-20261125 && ${GITHUB_RUN_ATTEMPT:-} == 1 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 ]] || die EXACT_HOSTED_EVENT_REQUIRED
 ops="$1"; application="$2"; baseline="$3"; recipe="$4"; previous="$5"
@@ -17,18 +17,17 @@ done
 expected_operations=$(cat <<'EXACT_OPERATIONS'
 .github/workflows/native-inbox.yml
 ci/native-inbox/PLAN.json
-ci/native-inbox/check.py
 ci/native-inbox/run-hosted.sh
 ci/native-inbox/verify.py
 EXACT_OPERATIONS
 )
 [[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" &&
-   $(git -C "$ops" show -s --format=%P HEAD) == 22b5254d55710d128aae3b47f31278dc38e835bc &&
+   $(git -C "$ops" show -s --format=%P HEAD) == 5a1258535ed1d7ca7dbcc171fdfd615e9af35614 &&
    $(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) == "$expected_operations" &&
-   $(git -C "$application" rev-parse HEAD) == 2c8b085f9a583ca757cece9ea4ea46c169aab638 &&
-   $(git -C "$application" rev-parse 'HEAD^{tree}') == 8475f663f1628fe2b733507fdfe9f98f2b45adbe &&
-   $(git -C "$application" rev-parse HEAD^) == 057dd1b79874a297202f9c5ec6f8300b8e3bd684 &&
-   $(git -C "$application" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) == $'docs/NATIVE-INBOX-CONTRACT.md\ntests/test_native_inbox.py' &&
+   $(git -C "$application" rev-parse HEAD) == b0ae4518c8ef5e9733fb87109a5370e287af2670 &&
+   $(git -C "$application" rev-parse 'HEAD^{tree}') == 522d1ce30298fb220affc33548e95c789dd2712c &&
+   $(git -C "$application" rev-parse HEAD^) == 2c8b085f9a583ca757cece9ea4ea46c169aab638 &&
+   $(git -C "$application" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) == models/native_inbox.py &&
    $(git -C "$baseline" rev-parse HEAD) == 01695530df670a94ac28f8b3bf36cc34b5b7a942 &&
    $(git -C "$baseline" rev-parse 'HEAD^{tree}') == e88ea0c57f9fac39545322532a5992d5a2927676 &&
    $(git -C "$recipe" rev-parse HEAD) == c193a925ba57ea2d67ea48c44e5262817885c8a2 &&
@@ -157,4 +156,4 @@ bounded 10s docker exec "$pg" psql -X -h 127.0.0.1 -p 55449 -U postgres -d postg
   -v ON_ERROR_STOP=1 -c "SELECT count(*) FROM pg_database WHERE datname='$legacy_db'") == 0 ]] || die OWNED_LEGACY_DATABASE_ABSENCE_REQUIRED
 printf 'INBOX_NATIVE_DATABASE_REMOVED canonical=true legacy=true\n'
 [[ "$checked" == 0 && -z $(git -C "$application" status --porcelain=v1 --untracked-files=all) ]] || die EXACT_NATIVE_ACCEPTANCE_REQUIRED
-printf 'INBOX_NATIVE_HOSTED_RESULT operations=%s backend=2c8b085f9a583ca757cece9ea4ea46c169aab638 tests=27 schema_tables=106 legacy_tables=99 new_private_tables=7 live_provider_calls=0 run=%s attempt=1\n' "$GITHUB_SHA" "$GITHUB_RUN_ID"
+printf 'INBOX_NATIVE_HOSTED_RESULT operations=%s backend=b0ae4518c8ef5e9733fb87109a5370e287af2670 tests=27 schema_tables=106 legacy_tables=99 new_private_tables=7 live_provider_calls=0 run=%s attempt=1\n' "$GITHUB_SHA" "$GITHUB_RUN_ID"
