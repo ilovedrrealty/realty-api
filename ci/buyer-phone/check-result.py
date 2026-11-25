@@ -9,9 +9,27 @@ assert mode in {'browser', 'api'} and re.fullmatch(r'[0-9]{1,3}', native)
 path = Path(filename)
 assert path.is_file() and path.stat().st_size <= 2 * 1024 * 1024
 failed = False
-presence, geometry, native_results = [], [], []
+presence, geometry, native_results, phone_traces = [], [], [], []
 lines = path.read_bytes().splitlines()
 for line in lines:
+    if line.startswith(b'URGENT_SYNTHETIC_PHONE_TRACE '):
+        assert mode == 'browser' and len(line) <= 16384 and len(phone_traces) < 2
+        trace = json.loads(line.split(b' ', 1)[1])
+        assert set(trace) == {'locale', 'rows'} and trace['locale'] in {'en', 'es'}
+        assert trace['locale'] not in phone_traces and type(trace['rows']) is list and 2 <= len(trace['rows']) <= 64
+        assert trace['rows'][0]['phase'] == 'initial' and trace['rows'][-1]['phase'] == 'final'
+        for row in trace['rows']:
+            assert set(row) == {'phase', 'digits', 'length', 'start', 'end', 'country', 'key', 'input_type', 'connected'}
+            assert row['phase'] in {'initial', 'keydown', 'input', 'keyup', 'final'}
+            assert type(row['digits']) is str and re.fullmatch(r'[0-9]{0,20}', row['digits'])
+            assert all(type(row[key]) is int for key in ('length', 'start', 'end'))
+            assert 0 <= row['length'] <= 40 and -1 <= row['start'] <= row['length'] and -1 <= row['end'] <= row['length']
+            assert type(row['country']) is str and re.fullmatch(r'[a-z]{2}|unknown', row['country'])
+            assert type(row['key']) is str and re.fullmatch(r'[0-9+]|End|none|other', row['key'])
+            assert row['input_type'] in {'insertText', 'insertReplacementText', 'insertFromPaste', 'deleteContentBackward', 'none', 'other'}
+            assert type(row['connected']) is bool
+        phone_traces.append(trace['locale'])
+        print('URGENT_SYNTHETIC_PHONE_TRACE ' + json.dumps(trace, sort_keys=True))
     if line.startswith(b'URGENT_NATIVE_RESULT '):
         assert mode == 'api' and len(line) <= 512 and not native_results
         counts = json.loads(line.split(b' ', 1)[1])
@@ -52,6 +70,7 @@ if mode == 'browser':
         'signup_requests': 0, 'page_errors': 0, 'external_writes': 0}
     assert type(value['blocked_external_requests']) is int and 0 <= value['blocked_external_requests'] <= 999
     assert all(type(value[key]) is int for key in set(value) - {'status', 'locales'})
+    assert phone_traces == ['en', 'es']
     assert len(presence) == 4 and len(geometry) == 8 and {(row['label'], row['width']) for row in geometry} == {
         (label, width) for label in ('en_buyer_assignment', 'es_buyer_assignment', 'en_signup', 'es_signup') for width in (320, 390)}
     for row in presence:

@@ -51,6 +51,31 @@ async function contextFor(locale, account, role) {
     const native = navigator.onLine
     if (!native) Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => true })
     Object.defineProperty(window, '__ildrUrgentOnline', { value: { before: native, modeled: !native } })
+    if (location.origin !== landing || !/^\/signup\/?$/.test(location.pathname)) return
+    // Passive observations are installed before load, without a pre-entry round trip.
+    const rows = [], allowedTypes = ['insertText', 'insertReplacementText', 'insertFromPaste', 'deleteContentBackward']
+    const capture = (phase, event) => {
+      if (rows.length >= 64) return
+      const input = event?.target || document.querySelector('input[type=tel]')
+      if (!(input instanceof HTMLInputElement) || input.type !== 'tel') return
+      const selector = document.querySelector('button[aria-label="Country selector"]')
+      const country = selector?.getAttribute('data-country') || 'unknown'
+      const key = event?.key || 'none', inputType = event?.inputType || 'none'
+      rows.push({ phase, digits: input.value.replace(/\D/g, '').slice(0, 20), length: input.value.length,
+        start: input.selectionStart ?? -1, end: input.selectionEnd ?? -1,
+        country: /^[a-z]{2}$/.test(country) ? country : 'unknown',
+        key: /^[0-9+]$/.test(key) || key === 'End' || key === 'none' ? key : 'other',
+        input_type: allowedTypes.includes(inputType) || inputType === 'none' ? inputType : 'other',
+        connected: input.isConnected })
+    }
+    const observer = event => capture(event.type, event)
+    for (const type of ['keydown', 'input', 'keyup']) document.addEventListener(type, observer, { capture: true, passive: true })
+    window.__ildrUrgentPhoneTrace = { rows, finish: () => {
+      capture('final', { target: document.querySelector('input[type=tel]') })
+      for (const type of ['keydown', 'input', 'keyup']) document.removeEventListener(type, observer, true)
+      return rows
+    } }
+    document.addEventListener('DOMContentLoaded', () => capture('initial'), { once: true, passive: true })
   }, { locale, dash: DASH, landing: LANDING })
   if (account) {
     const reply = await context.request.post(API + '/auth/login', { data: account, headers: { Origin: DASH }, timeout: 15000 })
@@ -139,6 +164,10 @@ async function phoneJourney(copy, locale) {
   const phone = form.locator('input[type=tel]'), full = '+5491123456789'
   advance('signup_' + locale + '_typing')
   await phone.fill('+54'); await phone.press('End'); await phone.pressSequentially('91123456789')
+  const trace = await page.evaluate(() => {
+    const rows = window.__ildrUrgentPhoneTrace.finish(); delete window.__ildrUrgentPhoneTrace; return rows
+  })
+  console.log('URGENT_SYNTHETIC_PHONE_TRACE ' + JSON.stringify({ locale, rows: trace }))
   check((await phone.inputValue()).replace(/\D/g, '') === full.slice(1), 'ARGENTINA_FINAL_TYPED_DIGIT_REQUIRED')
   await phone.fill(full)
   check((await phone.inputValue()).replace(/\D/g, '') === full.slice(1), 'ARGENTINA_PASTE_REQUIRED')
