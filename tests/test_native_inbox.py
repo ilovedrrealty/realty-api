@@ -525,7 +525,7 @@ class NativeInboxTests(unittest.TestCase):
                 {"schema": self.schema, "names": list(self.revision.TABLES)}).all()
             self.assertEqual(len(flags), 7)
             self.assertTrue(all(row.relrowsecurity for row in flags))
-            self.assertEqual(db.execute(text("SELECT count(*) FROM pg_policy WHERE polrelid IN (SELECT oid FROM pg_class WHERE relnamespace=cast(:schema AS regnamespace))")).scalar(), 0)
+            self.assertEqual(db.execute(text("SELECT count(*) FROM pg_policy WHERE polrelid IN (SELECT oid FROM pg_class WHERE relnamespace=cast(:schema AS regnamespace))"), {"schema": self.schema}).scalar(), 0)
             for name in self.revision.TABLES:
                 actual = inspect(db).get_columns(name, schema=self.schema)
                 expected = Base.metadata.tables[name].columns
