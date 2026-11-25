@@ -8,6 +8,7 @@ from fastapi import HTTPException
 from sqlalchemy import and_, or_
 from models.user import User
 from models.property_network import NetworkBlock
+from services.property_network import author_avatar
 from models.social_groups import (NetworkGroup as Group, NetworkGroupMembership as Membership,
     NetworkGroupInviteLink as Link, NetworkGroupPost as Post, NetworkGroupComment as Comment,
     NetworkGroupMedia as Media, NetworkGroupAction as Action)
@@ -184,7 +185,7 @@ def group_view(db, user, group):
             "created_at": group.created_at, "updated_at": group.updated_at}
 
 
-def _current(db, user, action):
+def _current(db, user, action, *, author_visuals=False):
     try:
         if action.target_kind == "membership":
             row = db.get(Membership, action.target_id)
@@ -198,10 +199,10 @@ def _current(db, user, action):
             group = group_for(db, user, action.group_id)
             return link_view(db.get(Link, action.target_id)) if _can_manage(db, user, group) else None
         if action.target_kind == "post":
-            return post_view(db, user, post_for(db, user, action.target_id))
+            return post_view(db, user, post_for(db, user, action.target_id), author_visuals=author_visuals)
         if action.target_kind == "comment":
             row = comment_for(db, user, action.target_id)
-            return comment_view(db, user, row)
+            return comment_view(db, user, row, author_visuals=author_visuals)
         if action.target_kind == "media":
             row = db.get(Media, action.target_id)
             authorize_media(db, user, row)
@@ -212,21 +213,22 @@ def _current(db, user, action):
     return None
 
 
-def receipt(db, user, row):
+def receipt(db, user, row, *, author_visuals=False):
     return {"submission_id": str(row.submission_id), "operation": row.operation, "target_id": str(row.target_id),
-            "applied_at": row.created_at, "result_versions": row.result_versions, "current": _current(db, user, row)}
+            "applied_at": row.created_at, "result_versions": row.result_versions,
+            "current": _current(db, user, row, author_visuals=author_visuals)}
 
 
-def _replay(db, user, body, operation, target):
+def _replay(db, user, body, operation, target, *, author_visuals=False):
     row = db.query(Action).filter_by(actor_id=user.id, submission_id=body.submission_id).first()
     if row:
         if row.creation_sha256 != _digest(body, operation, target):
             raise HTTPException(409, "This submission identifier was already used")
-        return receipt(db, user, row)
+        return receipt(db, user, row, author_visuals=author_visuals)
     return None
 
 
-def _finish(db, user, group, body, operation, kind, row, digest_target, *, reason="", link_id=None):
+def _finish(db, user, group, body, operation, kind, row, digest_target, *, reason="", link_id=None, author_visuals=False):
     db.flush()
     action = Action(group_id=group.id, actor_id=user.id, submission_id=body.submission_id, operation=operation,
                     target_kind=kind, target_id=row.id, creation_sha256=_digest(body, operation, digest_target),
@@ -235,15 +237,15 @@ def _finish(db, user, group, body, operation, kind, row, digest_target, *, reaso
     db.add(action)
     db.commit()
     db.refresh(action)
-    return receipt(db, user, action)
+    return receipt(db, user, action, author_visuals=author_visuals)
 
 
-def own_submission(db, user, identity):
+def own_submission(db, user, identity, *, author_visuals=False):
     eligible(user)
     row = db.query(Action).filter_by(actor_id=user.id, submission_id=identity).first()
     if row is None:
         unavailable()
-    return receipt(db, user, row)
+    return receipt(db, user, row, author_visuals=author_visuals)
 
 
 def listed(db, user, view, term, number):
@@ -608,11 +610,16 @@ def accept_link(db, user, body):
     return _finish(db, user, group, body, "link_accept", "membership", row, link.id, link_id=link.id)
 
 
-def _author(db, group, author_id):
+def _author(db, viewer, group, author_id, *, author_visuals=False):
     user = db.get(User, author_id)
     member = _member(db, group, author_id)
     alias = group.owner_alias if group.owner_id == author_id else member.member_alias if member else None
-    return {"user_code": user.user_code if user else None, "display_name": alias or "Former member"}
+    result = {"user_code": user.user_code if user else None, "display_name": alias or "Former member"}
+    # Group membership/moderation grants no author-profile picture permission.
+    # The opt-in is presentation only: cached clients retain the exact old shape.
+    if author_visuals:
+        result["avatar_media_id"] = author_avatar(db, viewer, user) if user else None
+    return result
 
 
 def post_for(db, user, identity):
@@ -632,9 +639,10 @@ def post_for(db, user, identity):
     return row
 
 
-def post_view(db, user, row):
+def post_view(db, user, row, *, author_visuals=False):
     group = group_for(db, user, row.group_id)
-    return {"id": str(row.id), "group_id": str(row.group_id), "author": _author(db, group, row.author_id),
+    return {"id": str(row.id), "group_id": str(row.group_id),
+            "author": _author(db, user, group, row.author_id, author_visuals=author_visuals),
             "body": row.body, "media_ids": row.media_ids, "created_audience": row.created_audience,
             "status": row.status, "version": row.version, "created_at": row.created_at,
             "can_hide": user.id == row.author_id or _can_moderate(db, user, group),
@@ -643,7 +651,7 @@ def post_view(db, user, row):
                                 and group.comments_enabled and row.status == "visible")}
 
 
-def posts(db, user, identity, number):
+def posts(db, user, identity, number, *, author_visuals=False):
     group = group_for(db, user, identity)
     if not group_view(db, user, group)["can_read_feed"]:
         unavailable()
@@ -652,12 +660,13 @@ def posts(db, user, identity, number):
         query = query.filter(Post.author_id.notin_(_excluded(db, user)), or_(Post.status == "visible", Post.author_id == user.id))
     if not _role(db, user, group) and user.role != "admin":
         query = query.filter_by(status="visible", created_audience="network")
-    return _page(query.order_by(Post.created_at.desc(), Post.id), number, lambda row: post_view(db, user, row))
+    return _page(query.order_by(Post.created_at.desc(), Post.id), number,
+                 lambda row: post_view(db, user, row, author_visuals=author_visuals))
 
 
-def create_post(db, user, identity, body):
+def create_post(db, user, identity, body, *, author_visuals=False):
     user, group = _locked(db, user, identity)
-    replay = _replay(db, user, body, "post_create", identity)
+    replay = _replay(db, user, body, "post_create", identity, author_visuals=author_visuals)
     if replay:
         return replay
     _require_member(db, user, group)
@@ -677,16 +686,16 @@ def create_post(db, user, identity, body):
     db.flush()
     for photo in photos:
         photo.post_id = row.id
-    return _finish(db, user, group, body, "post_create", "post", row, identity)
+    return _finish(db, user, group, body, "post_create", "post", row, identity, author_visuals=author_visuals)
 
 
-def moderate_post(db, user, identity, body):
+def moderate_post(db, user, identity, body, *, author_visuals=False):
     hint = db.get(Post, identity)
     if hint is None:
         unavailable()
     user, group = _locked(db, user, hint.group_id)
     operation = "post_approve" if body.action == "approve" else "post_hide"
-    replay = _replay(db, user, body, operation, identity)
+    replay = _replay(db, user, body, operation, identity, author_visuals=author_visuals)
     if replay:
         return replay
     post_for(db, user, identity)
@@ -703,13 +712,14 @@ def moderate_post(db, user, identity, body):
     else:
         row.status = "hidden"
     row.version += 1
-    return _finish(db, user, group, body, operation, "post", row, identity, reason=body.reason)
+    return _finish(db, user, group, body, operation, "post", row, identity, reason=body.reason, author_visuals=author_visuals)
 
 
-def comment_view(db, user, row):
+def comment_view(db, user, row, *, author_visuals=False):
     post = db.get(Post, row.post_id)
     group = group_for(db, user, post.group_id)
-    return {"id": str(row.id), "post_id": str(row.post_id), "author": _author(db, group, row.author_id),
+    return {"id": str(row.id), "post_id": str(row.post_id),
+            "author": _author(db, user, group, row.author_id, author_visuals=author_visuals),
             "body": row.body, "media_id": str(row.media_id) if row.media_id else None, "hidden": row.hidden,
             "version": row.version, "created_at": row.created_at,
             "can_hide": row.author_id == user.id or _can_moderate(db, user, group)}
@@ -727,21 +737,22 @@ def comment_for(db, user, identity):
     return row
 
 
-def comments(db, user, identity, number):
+def comments(db, user, identity, number, *, author_visuals=False):
     post = post_for(db, user, identity)
     group = group_for(db, user, post.group_id)
     query = db.query(Comment).filter_by(post_id=identity)
     if not _can_moderate(db, user, group):
         query = query.filter(Comment.author_id.notin_(_excluded(db, user)), or_(Comment.hidden.is_(False), Comment.author_id == user.id))
-    return _page(query.order_by(Comment.created_at, Comment.id), number, lambda row: comment_view(db, user, row))
+    return _page(query.order_by(Comment.created_at, Comment.id), number,
+                 lambda row: comment_view(db, user, row, author_visuals=author_visuals))
 
 
-def create_comment(db, user, identity, body):
+def create_comment(db, user, identity, body, *, author_visuals=False):
     hint = db.get(Post, identity)
     if hint is None:
         unavailable()
     user, group = _locked(db, user, hint.group_id)
-    replay = _replay(db, user, body, "comment_create", identity)
+    replay = _replay(db, user, body, "comment_create", identity, author_visuals=author_visuals)
     if replay:
         return replay
     _require_member(db, user, group)
@@ -754,16 +765,16 @@ def create_comment(db, user, identity, body):
             raise HTTPException(422, "Choose a photo belonging to this group post")
     row = Comment(post_id=identity, author_id=user.id, submission_id=body.submission_id, body=body.body, media_id=body.media_id)
     db.add(row)
-    return _finish(db, user, group, body, "comment_create", "comment", row, identity)
+    return _finish(db, user, group, body, "comment_create", "comment", row, identity, author_visuals=author_visuals)
 
 
-def hide_comment(db, user, identity, body):
+def hide_comment(db, user, identity, body, *, author_visuals=False):
     hint = db.get(Comment, identity)
     if hint is None:
         unavailable()
     parent = db.get(Post, hint.post_id)
     user, group = _locked(db, user, parent.group_id)
-    replay = _replay(db, user, body, "comment_hide", identity)
+    replay = _replay(db, user, body, "comment_hide", identity, author_visuals=author_visuals)
     if replay:
         return replay
     post_for(db, user, parent.id)
@@ -773,7 +784,7 @@ def hide_comment(db, user, identity, body):
     _version(row, body.expected_version)
     row.hidden = True
     row.version += 1
-    return _finish(db, user, group, body, "comment_hide", "comment", row, identity, reason=body.reason)
+    return _finish(db, user, group, body, "comment_hide", "comment", row, identity, reason=body.reason, author_visuals=author_visuals)
 
 
 def authorize_media(db, user, row):

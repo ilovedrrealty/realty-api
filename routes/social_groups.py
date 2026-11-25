@@ -111,41 +111,43 @@ def accept_link(request: Request, response: Response, body: AcceptInvite,
 
 
 @router.get("/groups/{group_id}/posts")
-def posts(group_id: UUID, page: int = Page, user=Depends(get_current_user), db: Session = Depends(get_db)):
-    return service.posts(db, user, group_id, page)
+def posts(group_id: UUID, page: int = Page, author_visuals: bool = Query(default=False),
+          user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return service.posts(db, user, group_id, page, author_visuals=author_visuals)
 
 
 @router.post("/groups/{group_id}/posts", status_code=201)
 @limiter.limit("30/minute")
 def create_post(request: Request, response: Response, group_id: UUID, body: GroupPostCreate,
-                user=Depends(get_current_user), db: Session = Depends(get_db)):
-    return service.create_post(db, user, group_id, body)
+                author_visuals: bool = Query(default=False), user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return service.create_post(db, user, group_id, body, author_visuals=author_visuals)
 
 
 @router.post("/group-posts/{post_id}/actions")
 @limiter.limit("30/minute")
 def moderate_post(request: Request, response: Response, post_id: UUID, body: ModeratePost,
-                  user=Depends(get_current_user), db: Session = Depends(get_db)):
-    return service.moderate_post(db, user, post_id, body)
+                  author_visuals: bool = Query(default=False), user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return service.moderate_post(db, user, post_id, body, author_visuals=author_visuals)
 
 
 @router.get("/group-posts/{post_id}/comments")
-def comments(post_id: UUID, page: int = Page, user=Depends(get_current_user), db: Session = Depends(get_db)):
-    return service.comments(db, user, post_id, page)
+def comments(post_id: UUID, page: int = Page, author_visuals: bool = Query(default=False),
+             user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return service.comments(db, user, post_id, page, author_visuals=author_visuals)
 
 
 @router.post("/group-posts/{post_id}/comments", status_code=201)
 @limiter.limit("30/minute")
 def create_comment(request: Request, response: Response, post_id: UUID, body: GroupCommentCreate,
-                   user=Depends(get_current_user), db: Session = Depends(get_db)):
-    return service.create_comment(db, user, post_id, body)
+                   author_visuals: bool = Query(default=False), user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return service.create_comment(db, user, post_id, body, author_visuals=author_visuals)
 
 
 @router.post("/group-comments/{comment_id}/actions")
 @limiter.limit("30/minute")
 def hide_comment(request: Request, response: Response, comment_id: UUID, body: HideComment,
-                 user=Depends(get_current_user), db: Session = Depends(get_db)):
-    return service.hide_comment(db, user, comment_id, body)
+                 author_visuals: bool = Query(default=False), user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return service.hide_comment(db, user, comment_id, body, author_visuals=author_visuals)
 
 
 @router.post("/groups/{group_id}/media", status_code=201)
@@ -166,5 +168,6 @@ def media(media_id: UUID, user=Depends(get_current_user), db: Session = Depends(
 
 
 @router.get("/group-submissions/{submission_id}")
-def submission(submission_id: UUID, user=Depends(get_current_user), db: Session = Depends(get_db)):
-    return service.own_submission(db, user, submission_id)
+def submission(submission_id: UUID, author_visuals: bool = Query(default=False),
+               user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return service.own_submission(db, user, submission_id, author_visuals=author_visuals)

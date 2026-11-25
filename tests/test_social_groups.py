@@ -2,6 +2,7 @@
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 from io import BytesIO
+import json
 import os
 import secrets
 import threading
@@ -102,6 +103,197 @@ class SocialGroupsTest(unittest.TestCase):
         from models.social_groups import NetworkGroup
         version = self.db.query(NetworkGroup).filter_by(id=group_id).populate_existing().one().version
         return GroupPostCreate(submission_id=uuid4(), expected_group_version=version, **fields)
+
+    def chosen_profile(self, actor, *, visibility="members"):
+        from models.property_network import SocialNetworkProfile
+        user = self.users[actor]
+        user.avatar_url = "https://account.invalid/private-picture.jpg"
+        profile = SocialNetworkProfile(user_id=user.id, display_name="Different network alias",
+            bio="Synthetic biography", status_text="", visibility=visibility,
+            wall_policy="own_only", comments_enabled=True, version=1)
+        self.db.add(profile)
+        self.db.flush()
+        photo = self.profile_picture(actor)
+        profile.avatar_media_id = photo.id
+        self.db.commit()
+        return profile, photo
+
+    def profile_picture(self, actor, kind="avatar"):
+        from models.property_network import NetworkMedia
+        identity = uuid4()
+        # Metadata-only private profile fixture; serialization never reads bytes.
+        photo = NetworkMedia(id=identity, uploader_id=self.users[actor].id,
+            profile_user_id=self.users[actor].id, profile_kind=kind,
+            object_key=f"synthetic-group-author/{identity}.webp", sha256="a" * 64,
+            byte_count=12, width=2, height=2)
+        self.db.add(photo)
+        self.db.flush()
+        return photo
+
+    def test_opted_authors_keep_group_alias_and_independent_profile_privacy(self):
+        from models.property_network import NetworkBlock
+        group_id, _ = self.group()
+        self.invite(group_id)
+        active = self.accept(group_id)
+        owner_profile, owner_photo = self.chosen_profile("owner")
+        member_profile, member_photo = self.chosen_profile("member")
+        post = self.service.create_post(self.db, self.users["owner"], group_id,
+            self.post_input(group_id, body="Authorized group body"))["current"]
+        self.assertEqual(set(post["author"]), {"user_code", "display_name"})
+        self.assertEqual(post["author"]["display_name"], "Shared owner alias")
+        def feed(viewer):
+            return self.service.posts(self.db, self.users[viewer], group_id, 1, author_visuals=True)["items"][0]
+        self.assertEqual(feed("member")["author"]["avatar_media_id"], str(owner_photo.id))
+        owner_profile.visibility = "private"
+        self.db.commit()
+        promoted = self.service.manage_member(self.db, self.users["owner"], group_id,
+            self.users["member"].user_code, ManageMember(submission_id=uuid4(),
+                expected_membership_version=active["version"], action="set_role", role="moderator"))["current"]
+        self.assertEqual(promoted["role"], "moderator")
+        self.assertIsNone(feed("member")["author"]["avatar_media_id"])
+        self.assertEqual(feed("member")["body"], "Authorized group body")
+        self.assertEqual(feed("platform")["author"]["avatar_media_id"], str(owner_photo.id))
+        comment = self.service.create_comment(self.db, self.users["member"], UUID(post["id"]),
+            GroupCommentCreate(submission_id=uuid4(), body="Authorized group comment"), author_visuals=True)["current"]
+        self.assertEqual(comment["author"], {"user_code": self.users["member"].user_code,
+            "display_name": "Shared member alias", "avatar_media_id": str(member_photo.id)})
+        block = NetworkBlock(blocker_id=self.users["member"].id, blocked_id=self.users["owner"].id)
+        self.db.add(block)
+        self.db.commit()
+        # Group owner moderation can retain the comment, never its blocked author's image.
+        hidden_image = self.service.comments(self.db, self.users["owner"], UUID(post["id"]), 1, author_visuals=True)["items"][0]
+        self.assertEqual(hidden_image["body"], "Authorized group comment")
+        self.assertIsNone(hidden_image["author"]["avatar_media_id"])
+        self.db.delete(block)
+        self.users["member"].email_verified = False
+        self.db.commit()
+        self.assertIsNone(self.service.comments(self.db, self.users["owner"], UUID(post["id"]), 1,
+            author_visuals=True)["items"][0]["author"]["avatar_media_id"])
+        self.assertEqual(member_profile.display_name, "Different network alias")
+
+    def test_author_selection_replacement_and_removal_never_use_account_or_cover(self):
+        from services.property_network import media_for_reader
+        group_id, _ = self.group()
+        self.invite(group_id)
+        self.accept(group_id)
+        profile, old = self.chosen_profile("member")
+        post = self.service.create_post(self.db, self.users["member"], group_id,
+            self.post_input(group_id, body="Retained author text"), author_visuals=True)["current"]
+        def author():
+            return self.service.posts(self.db, self.users["owner"], group_id, 1, author_visuals=True)["items"][0]["author"]
+        self.assertEqual(author()["avatar_media_id"], str(old.id))
+        replacement = self.profile_picture("member")
+        cover = self.profile_picture("member", "cover")
+        profile.avatar_media_id, profile.cover_media_id = replacement.id, cover.id
+        self.db.commit()
+        self.assertEqual(author()["avatar_media_id"], str(replacement.id))
+        self.assert_unavailable(lambda: media_for_reader(self.db, self.users["owner"], old.id))
+        self.assertEqual(media_for_reader(self.db, self.users["member"], old.id).id, old.id)
+        profile.avatar_media_id = None
+        self.db.commit()
+        self.assertEqual(author(), {"user_code": self.users["member"].user_code,
+            "display_name": "Shared member alias", "avatar_media_id": None})
+        self.assertNotIn("account.invalid", json.dumps(author()))
+        self.assertEqual(post["body"], "Retained author text")
+
+    def test_optin_and_privacy_replay_change_only_current_projection(self):
+        from models.social_groups import NetworkGroupAction, NetworkGroupComment, NetworkGroupPost
+        group_id, _ = self.group()
+        profile, photo = self.chosen_profile("owner")
+        body = self.post_input(group_id, body="Same committed post")
+        legacy = self.service.create_post(self.db, self.users["owner"], group_id, body)
+        opted = self.service.create_post(self.db, self.users["owner"], group_id, body, author_visuals=True)
+        self.assertEqual(legacy["target_id"], opted["target_id"])
+        self.assertEqual(set(legacy["current"]["author"]), {"user_code", "display_name"})
+        self.assertEqual(opted["current"]["author"]["avatar_media_id"], str(photo.id))
+        comment_body = GroupCommentCreate(submission_id=uuid4(), body="Same committed comment")
+        comment = self.service.create_comment(self.db, self.users["owner"], UUID(legacy["target_id"]), comment_body)
+        original = [(r.submission_id, r.creation_sha256, r.result_versions.copy()) for r in
+                    self.db.query(NetworkGroupAction).filter_by(group_id=group_id).order_by(NetworkGroupAction.id)]
+        profile.avatar_media_id = None
+        self.db.commit()
+        current = self.service.create_post(self.db, self.users["owner"], group_id, body, author_visuals=True)
+        self.assertIsNone(current["current"]["author"]["avatar_media_id"])
+        same_comment = self.service.create_comment(self.db, self.users["owner"], UUID(legacy["target_id"]),
+            comment_body, author_visuals=True)
+        self.assertEqual(same_comment["target_id"], comment["target_id"])
+        self.assertIsNone(same_comment["current"]["author"]["avatar_media_id"])
+        self.assertEqual(self.service.own_submission(self.db, self.users["owner"], body.submission_id,
+            author_visuals=True)["current"]["author"], current["current"]["author"])
+        self.assertEqual(set(self.service.own_submission(self.db, self.users["owner"], comment_body.submission_id)
+            ["current"]["author"]), {"user_code", "display_name"})
+        self.assertEqual([(r.submission_id, r.creation_sha256, r.result_versions) for r in
+            self.db.query(NetworkGroupAction).filter_by(group_id=group_id).order_by(NetworkGroupAction.id)], original)
+        self.assertEqual(self.db.query(NetworkGroupPost).filter_by(group_id=group_id).count(), 1)
+        self.assertEqual(self.db.query(NetworkGroupComment).filter_by(post_id=UUID(legacy["target_id"])).count(), 1)
+        self.invite(group_id)
+        self.accept(group_id)
+        member_profile, member_photo = self.chosen_profile("member")
+        member_post = self.service.create_post(self.db, self.users["member"], group_id,
+            self.post_input(group_id, body="Moderated author content"))["current"]
+        moderation = ModeratePost(submission_id=uuid4(), expected_version=member_post["version"], action="hide")
+        old_receipt = self.service.moderate_post(self.db, self.users["owner"], UUID(member_post["id"]), moderation)
+        opted_receipt = self.service.moderate_post(self.db, self.users["owner"], UUID(member_post["id"]),
+            moderation, author_visuals=True)
+        self.assertEqual(set(old_receipt["current"]["author"]), {"user_code", "display_name"})
+        self.assertEqual(opted_receipt["current"]["author"]["avatar_media_id"], str(member_photo.id))
+        before = [(r.submission_id, r.creation_sha256, r.result_versions.copy()) for r in
+                  self.db.query(NetworkGroupAction).filter_by(group_id=group_id).order_by(NetworkGroupAction.id)]
+        member_profile.visibility = "private"
+        self.db.commit()
+        denied_picture = self.service.moderate_post(self.db, self.users["owner"], UUID(member_post["id"]),
+            moderation, author_visuals=True)
+        resolved = self.service.own_submission(self.db, self.users["owner"], moderation.submission_id,
+            author_visuals=True)
+        self.assertIsNone(denied_picture["current"]["author"]["avatar_media_id"])
+        self.assertEqual(resolved["current"]["author"], denied_picture["current"]["author"])
+        self.assertEqual(denied_picture["current"]["body"], "Moderated author content")
+        self.assertEqual([(r.submission_id, r.creation_sha256, r.result_versions) for r in
+            self.db.query(NetworkGroupAction).filter_by(group_id=group_id).order_by(NetworkGroupAction.id)], before)
+
+    def test_real_routes_optin_all_seven_paths_without_breaking_cached_clients(self):
+        import jwt
+        from config import settings
+        from fastapi.testclient import TestClient
+        from main import app
+        from models.social_groups import NetworkGroupAction
+        self.chosen_profile("owner")
+        with TestClient(app) as client:
+            client.cookies.set("ildr_token", jwt.encode({"sub": str(self.users["owner"].id)}, settings.jwt_secret, algorithm="HS256"))
+            for query, fields in (("", {"user_code", "display_name"}),
+                                  ("?author_visuals=true", {"user_code", "display_name", "avatar_media_id"})):
+                group_id, _ = self.group()
+                post_body = self.post_input(group_id, body="Route group body").model_dump(mode="json")
+                def request(method, path, body=None):
+                    response = client.request(method, path + query, json=body,
+                        headers={"Origin": settings.origins_list[0]} if method == "POST" else {})
+                    self.assertIn(response.status_code, (200, 201))
+                    self.assertEqual(response.headers.get("cache-control"), "no-store")
+                    return response.json()
+                post = request("POST", f"/property-network/groups/{group_id}/posts", post_body)["current"]
+                self.assertEqual(set(post["author"]), fields)
+                self.assertEqual(set(request("GET", f"/property-network/groups/{group_id}/posts")["items"][0]["author"]), fields)
+                comment_body = {"submission_id": str(uuid4()), "body": "Route comment"}
+                comment = request("POST", f"/property-network/group-posts/{post['id']}/comments", comment_body)["current"]
+                self.assertEqual(set(comment["author"]), fields)
+                self.assertEqual(set(request("GET", f"/property-network/group-posts/{post['id']}/comments")["items"][0]["author"]), fields)
+                hidden = request("POST", f"/property-network/group-comments/{comment['id']}/actions",
+                    {"submission_id": str(uuid4()), "expected_version": comment["version"], "action": "hide"})["current"]
+                self.assertEqual(set(hidden["author"]), fields)
+                moderated = request("POST", f"/property-network/group-posts/{post['id']}/actions",
+                    {"submission_id": str(uuid4()), "expected_version": post["version"], "action": "hide"})["current"]
+                self.assertEqual(set(moderated["author"]), fields)
+                self.assertEqual(set(request("GET", f"/property-network/group-submissions/{post_body['submission_id']}")["current"]["author"]), fields)
+                resolved = request("GET", f"/property-network/group-submissions/{comment_body['submission_id']}")["current"]
+                self.assertEqual(set(resolved["author"]), fields)
+                false_read = client.get(f"/property-network/groups/{group_id}/posts?author_visuals=false")
+                self.assertEqual(set(false_read.json()["items"][0]["author"]), {"user_code", "display_name"})
+                before = self.db.query(NetworkGroupAction).filter_by(group_id=group_id).count()
+                rejected = client.post(f"/property-network/groups/{group_id}/posts?author_visuals=not-a-boolean",
+                    json=self.post_input(group_id, body="Rejected query").model_dump(mode="json"),
+                    headers={"Origin": settings.origins_list[0]})
+                self.assertEqual(rejected.status_code, 422)
+                self.assertEqual(self.db.query(NetworkGroupAction).filter_by(group_id=group_id).count(), before)
 
     def test_private_group_create_replay_and_targeted_consent(self):
         from models.social_groups import NetworkGroup, NetworkGroupAction
