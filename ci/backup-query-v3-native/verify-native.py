@@ -289,10 +289,15 @@ def client_memory():
     current = (root / "memory.current").read_text().strip()
     peak = (root / "memory.peak").read_text().strip()
     require(re.fullmatch(r"[0-9]{1,12}", current) and re.fullmatch(r"[0-9]{1,12}", peak), "actual_client_cgroup_metrics_required")
-    events = dict(line.split() for line in (root / "memory.events").read_text().splitlines())
-    require(events.get("oom") == "0" and events.get("oom_kill") == "0"
-            and events.get("oom_group_kill", "0") == "0" and 0 < int(current) <= int(peak) <= 1073741824,
-            "bounded_zero_oom_client_required")
+    events = {}
+    for line in (root / "memory.events").read_text().splitlines():
+        match = re.fullmatch(r"(low|high|max|oom|oom_kill|oom_group_kill|sock_throttled) ([0-9]{1,12})", line)
+        require(match is not None and match[1] not in events, "strict_documented_client_event_keys_required")
+        events[match[1]] = int(match[2])
+    require({"low", "high", "max", "oom", "oom_kill", "oom_group_kill"} <= set(events),
+            "all_six_client_event_keys_required")
+    require(events["oom"] == events["oom_kill"] == events["oom_group_kill"] == 0
+            and 0 < int(current) <= int(peak) <= 1073741824, "bounded_zero_oom_client_required")
     return int(current), int(peak)
 
 

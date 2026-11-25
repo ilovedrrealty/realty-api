@@ -4,7 +4,7 @@ umask 077
 die() { printf 'BACKUP_V3_NATIVE_REFUSED %s\n' "$1" >&2; exit 1; }
 bounded() { timeout --kill-after=8s "$@"; }
 [[ $# == 2 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
-   ${GITHUB_REF:-} == refs/heads/codex-ci-backup-query-v3-native-v2-20261125 && ${GITHUB_RUN_ATTEMPT:-} == 1 &&
+   ${GITHUB_REF:-} == refs/heads/codex-ci-backup-query-v3-memory-diagnostic-20261125 && ${GITHUB_RUN_ATTEMPT:-} == 1 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 ]] || die EXACT_HOSTED_EVENT_REQUIRED
 ops="$1"; recipe="$2"
@@ -14,16 +14,16 @@ for checkout in "$ops" "$recipe"; do
      ! -e "$checkout/.env" && ! -L "$checkout/.env" ]] || die CLEAN_SOURCE_REQUIRED
 done
 [[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" &&
-   $(git -C "$ops" show -s --format=%P HEAD) == ff02265b5e83af439ffebfbd24314fc625f59d8c &&
+   $(git -C "$ops" show -s --format=%P HEAD) == 9501970a87a119625255b097cd3e6203ea8fcea3 &&
    $(git -C "$recipe" rev-parse HEAD) == c193a925ba57ea2d67ea48c44e5262817885c8a2 ]] || die EXACT_PINS_REQUIRED
 python3 -I -B - "$ops" <<'PY_SCOPE'
 from pathlib import Path
 import subprocess,sys
 root=Path(sys.argv[1]);base='ci/backup-query-v3-native/'
 expected={'.github/workflows/backup-query-v3-native.yml',*(base+name for name in (
-    'PLAN.json','run-hosted.sh','source-manifest.json'))}
+    'PLAN.json','run-hosted.sh','check-result.py','verify-native.py'))}
 changed=subprocess.check_output(['git','-C',str(root),'diff-tree','--no-commit-id','--name-status','-r','HEAD^','HEAD'],text=True).splitlines()
-assert len(expected)==4 and set(changed)=={'M\t'+name for name in expected}
+assert len(expected)==5 and set(changed)=={'M\t'+name for name in expected}
 assert not any(path.is_symlink() for path in (root/base).rglob('*'))
 PY_SCOPE
 tools="$ops/ci/backup-query-v3-native"
@@ -122,6 +122,7 @@ for phase in compact guards stress; do
     bounded 10s docker exec "$pg" sh -c 'cat /sys/fs/cgroup/memory.current; cat /sys/fs/cgroup/memory.peak; cat /sys/fs/cgroup/memory.events'
   }
   metrics >"$state/$phase-before-memory.txt" || die ACTUAL_CGROUP_V2_METRICS_REQUIRED
+  python3 -I -B "$tools/check-result.py" --memory-preflight "$state/$phase-before-memory.txt" || die CGROUP_MEMORY_PREFLIGHT_REFUSED
   client=$(bounded 25s docker create --label "$label=$run_key" --network "container:$pg" --user "$(id -u):$(id -g)" \
     --read-only --init --cap-drop ALL --security-opt no-new-privileges:true --pids-limit 128 --cpus 2 \
     --memory 1024m --memory-swap 1024m --tmpfs /tmp:rw,exec,size=128m \

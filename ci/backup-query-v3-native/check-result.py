@@ -4,31 +4,56 @@ from pathlib import Path
 import re
 import sys
 
-phase, filename, native, client_state, pg_state, before_file, after_file, elapsed = sys.argv[1:]
-assert phase in {"compact", "guards", "stress"}
-assert re.fullmatch(r"[0-9]{1,3}", native) and re.fullmatch(r"[0-9]{1,6}", elapsed)
-assert 0 <= int(elapsed) <= 480000
-
-
 def bounded(path, limit):
     path = Path(path)
     assert path.is_file() and not path.is_symlink() and 0 < path.stat().st_size <= limit
     return path.read_bytes()
 
 
-def memory(filename):
+def metric_refused(source, reason, key="not_applicable"):
+    assert source in {"preflight", "before", "after"}
+    assert reason in {"header_shape", "byte_bounds", "line_shape", "duplicate_key", "unsupported_key", "missing_required_counter", "nonzero_or_missing_oom"}
+    assert key in {"low", "high", "max", "oom", "oom_kill", "oom_group_kill", "sock_throttled", "unknown_not_whitelisted", "not_applicable"}
+    print("BACKUP_V3_NATIVE_METRIC_DIAGNOSTIC " + json.dumps({"status": "FAIL", "source": source,
+        "reason": reason, "key": key}, sort_keys=True, separators=(",", ":")), flush=True)
+    raise AssertionError("actual_cgroup_metric_refused")
+
+
+def memory(filename, source):
     lines = bounded(filename, 2048).decode("ascii").splitlines()
-    assert len(lines) >= 4 and all(re.fullmatch(r"[0-9]{1,12}", item) for item in lines[:2])
+    if not (len(lines) >= 4 and all(re.fullmatch(r"[0-9]{1,12}", item) for item in lines[:2])):
+        metric_refused(source, "header_shape")
     current, peak = map(int, lines[:2])
-    assert 0 < current <= peak <= 536870912
+    if not 0 < current <= peak <= 536870912:
+        metric_refused(source, "byte_bounds")
     events = {}
     for line in lines[2:]:
-        match = re.fullmatch(r"(low|high|max|oom|oom_kill|oom_group_kill) ([0-9]{1,12})", line)
-        assert match and match[1] not in events
+        match = re.fullmatch(r"(low|high|max|oom|oom_kill|oom_group_kill|sock_throttled) ([0-9]{1,12})", line)
+        if not match:
+            diagnostic = re.fullmatch(r"(low|high|max|oom|oom_kill|oom_group_kill|sock_throttled) ([0-9]{1,12})", line)
+            metric_refused(source, "unsupported_key" if diagnostic else "line_shape",
+                diagnostic[1] if diagnostic else "unknown_not_whitelisted")
+        if match[1] in events:
+            metric_refused(source, "duplicate_key", match[1])
         events[match[1]] = int(match[2])
-    assert events.get("oom") == 0 and events.get("oom_kill") == 0 and events.get("oom_group_kill", 0) == 0
+    required = {"low", "high", "max", "oom", "oom_kill", "oom_group_kill"}
+    if not required <= set(events):
+        metric_refused(source, "missing_required_counter", sorted(required - set(events))[0])
+    if not (events["oom"] == 0 and events["oom_kill"] == 0 and events["oom_group_kill"] == 0):
+        metric_refused(source, "nonzero_or_missing_oom")
     return current, peak, events
 
+
+if len(sys.argv) == 3 and sys.argv[1] == "--memory-preflight":
+    _, _, events = memory(sys.argv[2], "preflight")
+    print("BACKUP_V3_NATIVE_MEMORY_PREFLIGHT " + json.dumps({"status": "PASS", "original_six_keys_present": True,
+        "contains_sock_throttled": "sock_throttled" in events}, sort_keys=True, separators=(",", ":")), flush=True)
+    raise SystemExit(0)
+
+phase, filename, native, client_state, pg_state, before_file, after_file, elapsed = sys.argv[1:]
+assert phase in {"compact", "guards", "stress"}
+assert re.fullmatch(r"[0-9]{1,3}", native) and re.fullmatch(r"[0-9]{1,6}", elapsed)
+assert 0 <= int(elapsed) <= 480000
 
 prefix = b"BACKUP_V3_NATIVE_RESULT "
 reports = []
@@ -73,8 +98,8 @@ else:
     if phase == "stress":
         assert type(report["storage_metadata_bytes"]) is int and 0 < report["storage_metadata_bytes"] <= 67108864
 
-before_current, before_peak, before_events = memory(before_file)
-after_current, after_peak, after_events = memory(after_file)
+before_current, before_peak, before_events = memory(before_file, "before")
+after_current, after_peak, after_events = memory(after_file, "after")
 assert after_peak >= before_peak
 assert native == "0" and client_state == "0 false false" and pg_state == "true false 0"
 print(prefix.decode() + json.dumps(report, sort_keys=True, separators=(",", ":")))
@@ -82,4 +107,5 @@ print("BACKUP_V3_NATIVE_MEMORY " + json.dumps({"phase": phase, "limit_bytes": 53
     "before_current_bytes": before_current, "before_peak_bytes": before_peak,
     "after_current_bytes": after_current, "whole_phase_peak_bytes": after_peak,
     "oom_events": 0, "oom_kill_events": 0, "native": 0, "client_oom_killed": False,
+    "contains_sock_throttled_before": "sock_throttled" in before_events, "contains_sock_throttled_after": "sock_throttled" in after_events,
     "postgres_restart_count": 0, "phase_elapsed_ms": int(elapsed)}, sort_keys=True, separators=(",", ":")))

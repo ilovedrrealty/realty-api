@@ -1,7 +1,7 @@
 name: Isolated backup v3 PostgreSQL semantics and memory acceptance
 on:
   push:
-    branches: [codex-ci-backup-query-v3-native-v2-20261125]
+    branches: [codex-ci-backup-query-v3-memory-diagnostic-20261125]
 permissions:
   contents: read
 concurrency:
