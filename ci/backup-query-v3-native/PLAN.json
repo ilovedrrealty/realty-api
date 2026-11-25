@@ -1,0 +1,84 @@
+{
+  "schema": "backup_query_v3_native_acceptance_v1",
+  "status": "PREPARED_PENDING_FULL_COLD_REVIEW_FREEZE_ROOT_FIRST_PUSH",
+  "operations_parent": "be0d5962292a7a473ea8db06271c7c79a57e3938",
+  "first_ref": "codex-ci-backup-query-v3-native-20261125",
+  "source_candidate_sha256": "15dfcfff1630e377fab399067efa249186f8c7aadb50ec1890b0213bd67e0768",
+  "candidate_tests_sha256": "584eb158cb0a967a0010e1e7f8e4c0308e645b1a8bbbd40b542290994fc98dd4",
+  "reference_v2_sha256": "b2dd42e123ffe718a0759dd9b9000e6e2e197b50c6ba6135801903ec28a05658",
+  "frozen_sources": "All inherited11 accepted compatibility files unchanged. Original20 recovery helpers and approvedv2 outside this checkout are untouched. Runtime candidate and mirror hashes are checked before/after native work.",
+  "runtime": {
+    "recipe_commit": "c193a925ba57ea2d67ea48c44e5262817885c8a2",
+    "dockerfile_sha256": "e546d8c5668b87ef28e604107bbb330e6f4b3873cf0208b4d24ca378bd0851f9",
+    "requirements": "Unchanged accepted PGPy0.6.0/pyasn10.6.1/cryptography50.0.2 compatibility recipe; never product requirements.",
+    "python_digest": "sha256:673719e071ecf27434fd2635bbd8d00f49f4fdd81f243143438a42ced8bedf60",
+    "postgres_digest": "sha256:b86568d3e0fe1dfaeff52714f9da36f206a30e4c49131b82bf96982d78627409",
+    "postgres_version_num": 170006,
+    "postgres_memory_bytes": 536870912,
+    "postgres_memory_swap_bytes": 536870912,
+    "client_memory_bytes": 1073741824,
+    "postgres_cpus": 1,
+    "client_cpus": 2,
+    "shared_buffers": "128MB",
+    "work_mem": "4MB",
+    "max_parallel_workers_per_gather": 0,
+    "jit": "off",
+    "namespace": "Network-none PostgreSQL; client shares only owned loopback network namespace; no Docker socket or host credentials in containers.",
+    "database_storage": "Exact owned anonymous Docker volume, disk-backed. Cgroup totals include reclaimable file cache. Verified removal/volume absence in finally; no host production data mount."
+  },
+  "phases": {
+    "compact": {
+      "public_tables": 99,
+      "fixture_schema": "Current real99table names; representative enums/functions/checks/sequence/bytea and exact trade-contact/source column contracts. This is synthetic schema/data, not a claim of reproducing every production DDL definition.",
+      "v2_v3_comparison": "Parsed complete snapshots equal after removing ONLY top-level captured_at_utc. Every payload string/count/hash/full schema/storage field must match; timestamp types checked.",
+      "sequence_control": "Advance the owned mutable sequence once after the first catalog is prepared, then establish immutable baseline before either query. Both snapshots must capture current sequence values and leave all state unchanged.",
+      "bytea": "Original accepted binary and PNG rows round-trip through native jsonb_populate_record; four compact direct comparison row checks, and downstream validation too.",
+      "pure_generator_contracts": 4,
+      "downstream": "Complete original PGP wrapper, exact frozen receiver, exact SHA/length, all original finalizer validation and finally cleanup, one checked intercepted sealer dispatch."
+    },
+    "guards": {
+      "cases": [
+        "row_bound",
+        "byte_bound",
+        "schema_bound",
+        "tableset_bound"
+      ],
+      "independent_predicates": "Assert exact four-boolean matrix: only row/count, byte, schema fingerprint or table-set condition fails for its named case. Row case1000001small integer rows stays under64MiB; byte case100000small rows exceeds64MiB and stays under1M.",
+      "schema": "Add a column after query generation; table set unchanged.",
+      "table_set": "Deliberately supply old99table list with the current100table schema fingerprint to isolate the table-set guard; no candidate SQL mutation.",
+      "proof": "Actual guarded SELECT returns only failure/count metadata and no payload/hash/fullschema. Actual owned-only EXPLAIN ANALYZE FORMATJSON requires all99payload CTEs plus map/metadata CTE nodes present with ActualLoops=0.",
+      "whole_output_limit": "The genuine final67108864-byte text guard remains unchanged. It necessarily follows payload construction; no claim that its branches stay unevaluated. This plan does not replace the real byte limit with a smaller test constant."
+    },
+    "stress": {
+      "contacts": 5633,
+      "contact_row_bytes": 9317650,
+      "sources": 5640,
+      "source_row_bytes": 8743189,
+      "storage_objects": 34315,
+      "notes": "Exact native SUM(octet_length(to_jsonb(row)::text)) totals, calibrated with <=1000-character deterministic varied MD5-chunk padding inside synthetic source notes. Unicode, quotes, backslashes and control escapes retained. Storage metadata has realistic nested/string/numeric values; its measured bytes are reported rather than invented from production.",
+      "execution": "Only v3 plus original PGP wrapper under pressure; never full oldv2 stress. Independent per-table hashes/counts, bytea and original receiver/finalizer are still checked.",
+      "state": "All99 rows/payload hashes/full catalog/mutable sequences/storage hashes unchanged after baseline. This does not access or copy any production record."
+    }
+  },
+  "metrics": {
+    "postgres": "Actual cgroup v2 memory.current/peak/events before and after each entire phase. Zero oom/oom_kill/group events, peak<=512MiB, Docker Runningtrue/OOMKilledfalse/RestartCount0 and unchanged native pg_postmaster_start_time required.",
+    "client": "Actual client cgroup start/end/whole-phase peak including receiver child processes, capped1GiB, zero OOM counters plus native process0/stopped/notOOM.",
+    "duration": "Monotonic complete phase elapsed and measured full transport SQL + receiver/validation durations. Statement timeout60s, client phase timeout480s.",
+    "interpretation": "Peaks include fixture construction/file cache/child helpers across the whole phase, not isolated SQL backend RSS. The64MiB public input/output limit is not a RAM ceiling. Dedicated synthetic envelopes do not guarantee live production concurrency/resources."
+  },
+  "finalizer_boundary": {
+    "executed": "Unchanged validation/coverage/row-hash/profile/storage checks, exact sealer argv and main finally raw3 cleanup.",
+    "intercepted": "Only subprocess invocation of the downstream source-history/archive sealer. No owner public/private key access, no archive encryption, no Git ancestry bundling, no cloud upload or success-index change claimed."
+  },
+  "failure_controls": "Strict exact result key/type/count checks, native exits plus client/Postgres process/oom facts binding. Missing metrics, unexpected fields, changed source bytes, guard misclassification or missing lazy plan nodes fail closed. No raw payload, IDs, URLs, exception text or query plans printed.",
+  "cleanup": "Nonce-labelled owned containers/image/scratch only; exact marked test databases dropped/absence checked; owned anonymous volumes removed/absence queried authoritatively. No artifact uploads; root independently inspects actual artifacts[].",
+  "production_freeze": "No production SQL/captures/configuration/helper adoption before root accepted native results. Checkpoint20261125T063100Z remains the last verified checkpoint until a later actual complete encrypted capture is separately verified. No automatic retry of failed production jobs.",
+  "review": "Root full review and independent reciprocal Release cold review before any first push. No new paid service/account/billing change.",
+  "local_checks": "Actual bounded checks passed: four Python ASTs, one embedded Python AST, three JSON files, immutable candidate/inherited-source checks, three valid result controls and sixteen invalid native/type/count/privacy/memory controls. No local Docker/database/build/installation/heavy tests. Required Bash syntax validation runs in hosted workflow before execution.",
+  "primary_docs": [
+    "https://www.postgresql.org/docs/17/using-explain.html",
+    "https://www.postgresql.org/docs/17/queries-with.html",
+    "https://docs.kernel.org/admin-guide/cgroup-v2.html",
+    "https://docs.docker.com/engine/containers/resource_constraints/"
+  ]
+}

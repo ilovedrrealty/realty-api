@@ -1,0 +1,13 @@
+{
+  "schema": "backup_v3_native_sources_v1",
+  "accepted_native_commit": "be0d5962292a7a473ea8db06271c7c79a57e3938",
+  "accepted_actual_run": 44235565280,
+  "accepted_harness_sha256": "6462912c23fa3b25589d1885b837f633d9d2df0f483c8bd162446da4dbddc908",
+  "accepted_requirements_sha256": "3412fd2f86d6ad95ca998cd69b3c58aae852b04801bb72d08042f01066d66bd9",
+  "candidate_files": {
+    "candidate/make-daily-full-public-query-v3.py": "15dfcfff1630e377fab399067efa249186f8c7aadb50ec1890b0213bd67e0768",
+    "candidate/test-query-v3.py": "584eb158cb0a967a0010e1e7f8e4c0308e645b1a8bbbd40b542290994fc98dd4",
+    "fixture-table-names.json": "896a9bccd9dd1d11f6a1b9f229ebc7d2d71fea5ad1a6551187b741d614be1079"
+  },
+  "source_scope": "Public reviewed code only; no production records, captures, settings, keys or credentials. Inherited six frozen source copies stay unchanged."
+}
