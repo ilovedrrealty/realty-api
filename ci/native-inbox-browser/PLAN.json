@@ -1,8 +1,8 @@
 {
-  "schema": "native-inbox-browser-control-locator-v5",
+  "schema": "native-inbox-browser-poll-window-v6",
   "status": "FROZEN_PENDING_ROOT_FULL_AND_INDEPENDENT_COLD_REVIEW_NO_PUSH",
-  "operations_parent": "bde31d9af95e480b2232e7bddcc234b5833c335b",
-  "proposed_first_ref": "codex-ci-native-inbox-browser-control-locator-v5-20261125",
+  "operations_parent": "b2f6da3b0c69ac4f7f349a58e1c88cd2cb4fcfbd",
+  "proposed_first_ref": "codex-ci-native-inbox-browser-poll-window-v6-20261125",
   "frontend": "6015987e33375ed012996dddb27ca092532d793c",
   "frontend_tree": "dfc17c06f665e3088d56a0582013f5516ec6c106",
   "frontend_parent": "caa0e22f41f0d9d9d88e15fe7795dae776008408",
@@ -140,7 +140,7 @@
   "privacy": "Only bounded finite typed counts, approved source enums, source-owned line/column diagnostics; native failures, malformed/missing/duplicate receipts remain failures.",
   "cleanup": "Nonce label-checked containers/images/scratch; marker checked owned DB drop and absence; read-only source clean. No artifact upload; root independently verifies terminal/native/OOM/running/cleanup and actual artifacts[].",
   "release": "Root owns full source/ops plus independent review, first absent-ref push, actual hosted acceptance and later production changes. Preparation is not acceptance.",
-  "local_checks": "Fresh Node syntax, Python/embedded AST, unchanged checker controls and exact driver source audit only; no app, browser, native DB, provider or build run.",
+  "local_checks": "Actual Node syntax and Git diffcheck only for one-line response-bound change; inherited checker/fixture bytes unchanged. No app/browser/native/build/provider run.",
   "backend_parents": [
     "79e9311874e3ea91e45b990629965534d41bb5fa",
     "07b2b7c762b129c5b6ea978299ba69e528e3189e"
@@ -183,5 +183,22 @@
     "scope": "Driver-only labelledControl for every thread message/manual textarea and actual entry_kind/reported_direction/reported_outcome select callsite. Audit review_reason has no selection call in unchanged driver, so no new action. Unique scoped direct control, real HTML labels association, exact normalized remaining label copy after control subtree removed from detached clone; no DOM/input changes.",
     "audit": "Existing denial/expired/legacy/invalid-link composer absence assertions already use CSS textarea/form counts and remain byte-unchanged. Frozen uncertain draft is read via stable scoped textarea; post-resolution wait and boundary clear use same helper. Actual dirty-navigation-cancel case edits checkbox, unchanged. All ordinary inputs/checkboxes unchanged.",
     "preserved": "All original fills/selects/values/2001ASCII disabled and2000astral4000UTF16 actionability/count/clear assertions; four denial DOM absence checks;32commands/70audits/24journeys/32geometry/provider0/99and106preservation/cleanup; same523/strict retained, freshVite/Next/UI required. No product change, force, sleep, private framework state, input DOM writes, extra command or message."
+  },
+  "passive_poll_window_correction": {
+    "actual_failure": {
+      "run": 45598836580,
+      "job": 139151999037,
+      "operations": "b2f6da3b0c69ac4f7f349a58e1c88cd2cb4fcfbd",
+      "stage": "en_entries",
+      "reason": "TIMEOUT",
+      "source_line": 422,
+      "log_utf8_bytes": 104395,
+      "log_sha256": "4b9c0ef773d92fe6971dbfe3ba63773ef93da995310cfc4634c5aea3a4eb71c4",
+      "actual": "Englishcodepoint checks/read/cursor then actual Agentpost completed; timeout from buyer incomingWhileOlder waiter. No INPUT_CENSUS. Partial browser/APIledger notaccepted; ownedcleanup/artifacts[] confirmed."
+    },
+    "source_basis": "Exact601 useInboxRead.ts delegates to networkFreshness.ts: successful request finally schedules nextpoll30000ms; request deadline15000ms. Browser defaultresponse timeout15000 cannot cover one passivepoll+read cycle when headless foreground causes no fresh focus/visibility event or earlier poll already completed.",
+    "scope": "Only incomingWhileOlder response timeout45000ms. Original cursor/total/IDs/order assertions, Agentpost/foreground order,60sstage and600souter remain unchanged; no sleep/forcedevent/extraPOST/product change. A race is source-supported possibility, not directly observed proof.",
+    "audit": "All other waitForResponse operations accompany explicit UIcommand/cursorchange/refresh/review renewal and use freshly mounted/refreshed read, not passive30s polling. Expiry explicitlyclicks refresh; no timeout change there.",
+    "preserved": "Same179/601,523and95retainedproofs, freshVite/Next/UI, all32commands/70audit/24journeys/32geometry/fourDOMdenials/99and106preservation/provider0/cleanup."
   }
 }

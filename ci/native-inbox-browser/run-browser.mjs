@@ -419,7 +419,8 @@ async function runLocale(locale, copy) {
   await displayedThread(buyer, thread, parked, copy)
   await threadAt(pages.agent, copy, facts.buyerThread)
   await post(pages.agent, copy, 'agent', facts.messages[locale].message)
-  const incomingWhileOlder = buyer.waitForResponse(r => messagingResponse(r, '/conversations/' + facts.buyerThread + '/entries') && new URL(r.url()).searchParams.get('cursor') === first.next_cursor)
+  // Source read loop polls every30s with a15s request bound; focus may not emit in headless contexts.
+  const incomingWhileOlder = buyer.waitForResponse(r => messagingResponse(r, '/conversations/' + facts.buyerThread + '/entries') && new URL(r.url()).searchParams.get('cursor') === first.next_cursor, { timeout: 45000 })
   await foreground(buyer)
   const arrivalResponse = await incomingWhileOlder, arrival = await arrivalResponse.json()
   check(arrivalResponse.status() === 200 && arrival.total === expectedSequence + 1 && arrival.cursor === first.next_cursor
