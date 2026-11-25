@@ -24,6 +24,7 @@ PHASES = {"compact", "guards", "stress"}
 V3_REL = Path("outputs/property-network-20261101/backup-query-memory-20261125")
 FROZEN_REL = Path("outputs/website-growth-20261022/backups")
 stage = "isolation"
+first_sqlstate = "unavailable"
 
 
 class Refused(RuntimeError):
@@ -42,10 +43,21 @@ def connect(database):
                            options="-cstatement_timeout=60000 -clock_timeout=4000")
 
 
+def capture_sqlstate(error):
+    global first_sqlstate
+    value = getattr(error, "pgcode", None)
+    if first_sqlstate == "unavailable" and isinstance(error, psycopg2.Error) and isinstance(value, str) and re.fullmatch(r"[0-9A-Z]{5}", value):
+        first_sqlstate = value
+
+
 def rows(database, statement, parameters=()):
-    with closing(connect(database)) as db, db.cursor() as cursor:
-        cursor.execute(statement, parameters)
-        return cursor.fetchall()
+    try:
+        with closing(connect(database)) as db, db.cursor() as cursor:
+            cursor.execute(statement, parameters)
+            return cursor.fetchall()
+    except psycopg2.Error as error:
+        capture_sqlstate(error)
+        raise
 
 
 def identity(phase):
@@ -235,19 +247,24 @@ def state(workspace, database, names):
 
 
 def downstream(old, workspace, database, names, job, stamp):
+    global stage
+    stage = "transport_prepare"
     frozen = workspace / FROZEN_REL
     old.native(frozen / "make-daily-compressed-query.py", "--input", job / "snapshot-read-only.sql", "--output", job / "transport-read-only.sql")
     begin = time.monotonic()
+    stage = "transport_select"
     transport = rows(database, (job / "transport-read-only.sql").read_text())[0][0]
     sql_ms = int((time.monotonic() - begin) * 1000)
     require(set(transport) == {"transport", "plaintext_bytes", "plaintext_sha256", "payload_base64"}
             and transport["transport"] == "PGP_COMPRESSED_V1", "original_transport_interface_required")
     (job / "transport-result.json").write_text(json.dumps(transport), encoding="utf8")
+    stage = "receiver"
     received = json.loads(old.native(frozen / "receive-daily-compressed-snapshot.py", "--stamp", stamp))
     raw = (job / "recovery-snapshot.json").read_bytes()
     require(received["status"] == "PASS" and not received["private_key_accessed"] and not received["owner_passphrase_used"]
             and len(raw) == transport["plaintext_bytes"] and sha256(raw).hexdigest() == transport["plaintext_sha256"], "whole_receiver_bytes_sha_required")
     snapshot = json.loads(raw)
+    stage = "native_snapshot_validation"
     old.validate_snapshot(database, names, snapshot)
     (frozen / "storage-inventory-baseline.json").write_text(json.dumps({"storage_inventory_state": snapshot["storage_inventory_state"]}), encoding="utf8")
     spec = importlib.util.spec_from_file_location("native_v3_unchanged_finalizer", frozen / "finalize-daily-full-public-backup.py")
@@ -262,6 +279,7 @@ def downstream(old, workspace, database, names, job, stamp):
             expected += ["--include", name]
         require(command == expected and check is True, "exact_sealer_dispatch_required")
         calls.append(True)
+    stage = "finalizer_validation"
     with patch.object(sys, "argv", [str(frozen / "finalize-daily-full-public-backup.py"), "--stamp", stamp]), \
             patch.object(finalizer.subprocess, "run", side_effect=sealer_boundary), \
             redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
@@ -269,6 +287,7 @@ def downstream(old, workspace, database, names, job, stamp):
     validation = json.loads((job / "snapshot-validation.json").read_text())
     require(validation["status"] == "PASS" and validation["all_public_tables_included"] and validation["all_profiles_private"]
             and validation["storage_metadata_matches_verified_baseline"] and len(calls) == 1, "full_frozen_finalizer_validation_required")
+    stage = "raw_cleanup"
     require(all(not (job / name).exists() for name in ("schema-catalog.json", "recovery-snapshot.json", "transport-result.json")), "all_three_raw_files_removed_required")
     return {"transport_sql_ms": sql_ms, "plaintext_bytes": len(raw), "compressed_bytes": received["compressed_bytes"],
             "receiver_and_validation_ms": int((time.monotonic() - begin) * 1000), "sealer_boundary_calls": len(calls)}
@@ -394,6 +413,7 @@ def run(phase):
                 require(state(workspace, database, names) == before, "v2_v3_queries_leave_all_state_unchanged_required")
             stage = phase + "_whole_transport_receiver_finalizer"
             details = downstream(old, workspace, database, names, job, stamp)
+            stage = phase + "_post_state"
             require(state(workspace, database, names) == before, "all_99_rows_catalog_sequences_storage_unchanged_required")
             if phase == "stress":
                 require(rows(database, "SELECT count(*),sum(octet_length(to_jsonb(t)::text)) FROM public.trade_contacts t") == [(5633, 9317650)]
@@ -425,8 +445,9 @@ if __name__ == "__main__":
     try:
         result = run(phase)
     except Exception as error:
+        capture_sqlstate(error)
         kind = type(error).__name__
-        result = {"status": "FAIL", "phase": phase if phase in PHASES else "invalid", "stage": stage,
+        result = {"status": "FAIL", "phase": phase if phase in PHASES else "invalid", "stage": stage, "sqlstate": first_sqlstate,
             "error_type": kind if re.fullmatch(r"[A-Za-z][A-Za-z0-9_]{0,62}", kind) else "UnhandledError",
             "reason": str(error) if isinstance(error, Refused) and re.fullmatch(r"[a-z_0-9]{1,90}", str(error)) else "unexpected_failure"}
     print("BACKUP_V3_NATIVE_RESULT " + json.dumps(result, sort_keys=True, separators=(",", ":")), flush=True)

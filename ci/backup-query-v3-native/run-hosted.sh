@@ -4,7 +4,7 @@ umask 077
 die() { printf 'BACKUP_V3_NATIVE_REFUSED %s\n' "$1" >&2; exit 1; }
 bounded() { timeout --kill-after=8s "$@"; }
 [[ $# == 2 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
-   ${GITHUB_REF:-} == refs/heads/codex-ci-backup-query-v3-memory-diagnostic-20261125 && ${GITHUB_RUN_ATTEMPT:-} == 1 &&
+   ${GITHUB_REF:-} == refs/heads/codex-ci-backup-query-v3-stress-observation-20261125 && ${GITHUB_RUN_ATTEMPT:-} == 1 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 ]] || die EXACT_HOSTED_EVENT_REQUIRED
 ops="$1"; recipe="$2"
@@ -14,7 +14,7 @@ for checkout in "$ops" "$recipe"; do
      ! -e "$checkout/.env" && ! -L "$checkout/.env" ]] || die CLEAN_SOURCE_REQUIRED
 done
 [[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" &&
-   $(git -C "$ops" show -s --format=%P HEAD) == 9501970a87a119625255b097cd3e6203ea8fcea3 &&
+   $(git -C "$ops" show -s --format=%P HEAD) == 154d75c0f3b3193295883dd71c174682b63af943 &&
    $(git -C "$recipe" rev-parse HEAD) == c193a925ba57ea2d67ea48c44e5262817885c8a2 ]] || die EXACT_PINS_REQUIRED
 python3 -I -B - "$ops" <<'PY_SCOPE'
 from pathlib import Path
@@ -95,7 +95,7 @@ for base in "docker.io/library/python:3.11-slim@$python_digest" "$postgres"; do
 done
 bounded 600s docker build --platform linux/amd64 --pull=false --quiet --label "$label=$run_key" --build-arg "PYTHON_DIGEST=$python_digest" \
   --file "$dockerfile" --tag "$image" "$state/build" >"$state/build.log" 2>&1 || die ACCEPTED_DEPENDENCY_BUILD_FAILED
-for phase in compact guards stress; do
+for phase in stress; do
   phase_nonce=$(python3 -I -B -c 'from uuid import uuid4; print(uuid4().hex)')
   [[ "$phase_nonce" =~ ^[a-f0-9]{32}$ ]] || die PHASE_NONCE_REQUIRED
   mkdir "$state/$phase"
@@ -121,6 +121,7 @@ for phase in compact guards stress; do
     owned "$pg" || return 1
     bounded 10s docker exec "$pg" sh -c 'cat /sys/fs/cgroup/memory.current; cat /sys/fs/cgroup/memory.peak; cat /sys/fs/cgroup/memory.events'
   }
+  pg_before_start=$(bounded 8s docker exec "$pg" psql -XAt -h 127.0.0.1 -p 55449 -U postgres -d postgres -v ON_ERROR_STOP=1 -c 'SELECT pg_postmaster_start_time()::text') || die POSTMASTER_START_REQUIRED
   metrics >"$state/$phase-before-memory.txt" || die ACTUAL_CGROUP_V2_METRICS_REQUIRED
   python3 -I -B "$tools/check-result.py" --memory-preflight "$state/$phase-before-memory.txt" || die CGROUP_MEMORY_PREFLIGHT_REFUSED
   client=$(bounded 25s docker create --label "$label=$run_key" --network "container:$pg" --user "$(id -u):$(id -g)" \
@@ -137,9 +138,18 @@ for phase in compact guards stress; do
   elapsed_ms=$(( $(python3 -I -B -c 'import time; print(time.monotonic_ns()//1000000)') - started_ms ))
   client_state=$(bounded 15s docker inspect --format '{{.State.ExitCode}} {{.State.Running}} {{.State.OOMKilled}}' "$client") || die ACTUAL_CLIENT_STATE_REQUIRED
   pg_state=$(bounded 15s docker inspect --format '{{.State.Running}} {{.State.OOMKilled}} {{.RestartCount}}' "$pg") || die ACTUAL_POSTGRES_STATE_REQUIRED
-  metrics >"$state/$phase-after-memory.txt" || die ACTUAL_FINAL_CGROUP_METRICS_REQUIRED
+  pg_diagnostic=$(bounded 15s docker inspect --format '{{.State.Status}} {{.State.ExitCode}} {{.State.Running}} {{.State.OOMKilled}} {{.RestartCount}}' "$pg") || die ACTUAL_POSTGRES_DIAGNOSTIC_REQUIRED
+  start_state=unavailable
+  if pg_after_start=$(bounded 8s docker exec "$pg" psql -XAt -h 127.0.0.1 -p 55449 -U postgres -d postgres -v ON_ERROR_STOP=1 -c 'SELECT pg_postmaster_start_time()::text' 2>"$state/$phase-start-read.log"); then
+    start_state=changed
+    [[ "$pg_before_start" != "$pg_after_start" ]] || start_state=unchanged
+  fi
+  metrics >"$state/$phase-after-memory.txt" 2>"$state/$phase-memory-read.log" || :
+  python3 -I -B "$tools/check-result.py" --observed-processes "$phase" "$native" "$client_state" "$pg_diagnostic" "$start_state" \
+    "$state/$phase-before-memory.txt" "$state/$phase-after-memory.txt" "$elapsed_ms" || die SAFE_PHASE_DIAGNOSTIC_REQUIRED
   python3 -I -B "$tools/check-result.py" "$phase" "$state/$phase.log" "$native" "$client_state" "$pg_state" \
     "$state/$phase-before-memory.txt" "$state/$phase-after-memory.txt" "$elapsed_ms" || die COMPLETE_NATIVE_AND_MEMORY_PROOF_REQUIRED
+  [[ "$start_state" == unchanged ]] || die UNCHANGED_NATIVE_POSTMASTER_REQUIRED
   bounded 20s docker rm -v "$client" >/dev/null || die OWNED_CLIENT_REMOVAL_REQUIRED
   bounded 25s docker stop --time 15 "$pg" >/dev/null || die OWNED_POSTGRES_STOP_REQUIRED
   bounded 20s docker rm -v "$pg" >/dev/null || die OWNED_POSTGRES_REMOVAL_REQUIRED
@@ -147,4 +157,4 @@ done
 for checkout in "$ops" "$recipe"; do
   [[ -z $(git -C "$checkout" status --porcelain=v1 --untracked-files=all) ]] || die SOURCE_CHANGED
 done
-printf 'BACKUP_V3_NATIVE_ACCEPTANCE commit=%s run=%s attempt=1 phases=compact,guards,stress pg_memory_bytes=536870912 receiver=original finalizer=validation_sealer_intercept\n' "$GITHUB_SHA" "$GITHUB_RUN_ID"
+printf 'BACKUP_V3_NATIVE_ACCEPTANCE commit=%s run=%s attempt=1 phase=stress retained_compact_guards_run=45580426016 pg_memory_bytes=536870912 receiver=original finalizer=validation_sealer_intercept\n' "$GITHUB_SHA" "$GITHUB_RUN_ID"

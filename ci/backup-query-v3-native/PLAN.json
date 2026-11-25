@@ -1,8 +1,8 @@
 {
   "schema": "backup_query_v3_native_acceptance_v1",
   "status": "PREPARED_PENDING_FULL_COLD_REVIEW_FREEZE_ROOT_FIRST_PUSH",
-  "operations_parent": "9501970a87a119625255b097cd3e6203ea8fcea3",
-  "first_ref": "codex-ci-backup-query-v3-memory-diagnostic-20261125",
+  "operations_parent": "154d75c0f3b3193295883dd71c174682b63af943",
+  "first_ref": "codex-ci-backup-query-v3-stress-observation-20261125",
   "source_candidate_sha256": "15dfcfff1630e377fab399067efa249186f8c7aadb50ec1890b0213bd67e0768",
   "candidate_tests_sha256": "584eb158cb0a967a0010e1e7f8e4c0308e645b1a8bbbd40b542290994fc98dd4",
   "reference_v2_sha256": "b2dd42e123ffe718a0759dd9b9000e6e2e197b50c6ba6135801903ec28a05658",
@@ -74,7 +74,7 @@
   "cleanup": "Nonce-labelled owned containers/image/scratch only; exact marked test databases dropped/absence checked; owned anonymous volumes removed/absence queried authoritatively. No artifact uploads; root independently inspects actual artifacts[].",
   "production_freeze": "No production SQL/captures/configuration/helper adoption before root accepted native results. Checkpoint20261125T063100Z remains the last verified checkpoint until a later actual complete encrypted capture is separately verified. No automatic retry of failed production jobs.",
   "review": "Root full review and independent reciprocal Release cold review before any first push. No new paid service/account/billing change.",
-  "local_checks": "Actual bounded PASS: two Python ASTs, one embedded Python AST;10positive and38negative controls across complete phase receipts, host preflight/full parser and actual extracted client-memory function. Includes documented optional sock_throttled, unknown/duplicate/malformed/negative/oversized fields, missing mandatory/OOM fields, nonzeroOOM, native1/137/running/restart/wrongtype/privatefield/peak violations. No native/DB/Docker/build/install/provider actions; Bash-n remains hosted gate.",
+  "local_checks": "Actual bounded PASS18controls:5valid process/memory observations including nativefailure/OOM/unavailable/invalidformat facts,1strict successful result,12negative process/native/missing/OOM/privacy/SQLSTATE controls. Actual extracted capture_sqlstate retains first53200 over latercleanup08006. Two Python ASTs/embedded AST/PLAN JSON checked; candidate/fixture/11pinmanifest unchanged. No native/DB/Docker/build/install/provider actions. Diagnostic elapsed accepts kill-grace<=500s only for observing failure; original success phase<=480s unchanged.",
   "primary_docs": [
     "https://www.postgresql.org/docs/17/using-explain.html",
     "https://www.postgresql.org/docs/17/queries-with.html",
@@ -90,5 +90,17 @@
     "artifacts": [],
     "owned_cleanup": "Root independently verified actual marker."
   },
-  "metric_diagnostic": "Before any native client starts, parse actual owned PostgreSQL cgroup metrics. Require all six original documented keys, unique full key/value lines and zero oom/oom_kill/oom_group_kill. Permit only the newly documented sock_throttled counter as a bounded nonnegative integer; it is not an OOM counter. Reject every unknown key, duplicate, missing required key or malformed/negative/oversized value. Emit contains_sock_throttled boolean on actual preflight and before/after whole-phase memory receipts. Failure output contains finite reason/key enums only, never arbitrary raw lines. Original native/process/512MiB envelope/cleanup gates unchanged. The client memory.events parser applies the same seven-key finite format and six mandatory keys, with unchanged1GiB peak and all three OOM counters zero; it prints only constant refusal reason on failure."
+  "metric_diagnostic": "Before any native client starts, parse actual owned PostgreSQL cgroup metrics. Require all six original documented keys, unique full key/value lines and zero oom/oom_kill/oom_group_kill. Permit only the newly documented sock_throttled counter as a bounded nonnegative integer; it is not an OOM counter. Reject every unknown key, duplicate, missing required key or malformed/negative/oversized value. Emit contains_sock_throttled boolean on actual preflight and before/after whole-phase memory receipts. Failure output contains finite reason/key enums only, never arbitrary raw lines. Original native/process/512MiB envelope/cleanup gates unchanged. The client memory.events parser applies the same seven-key finite format and six mandatory keys, with unchanged1GiB peak and all three OOM counters zero; it prints only constant refusal reason on failure.",
+  "retained_actual_proof": {
+    "run": 45580426016,
+    "job": 139088787682,
+    "commit": "154d75c0f3b3193295883dd71c174682b63af943",
+    "compact": "Actual parsed equivalence/4pure/original receiver+finalizer/99preservation PASS; PGpeak176328704, clientpeak53465088; sock_throttled observed, OOMzero.",
+    "guards": "Actual4independentconditions/99payload+2mapmetadataActualLoops0 PASS; PGpeak419926016, clientpeak41472000; zeroOOM.",
+    "stress": "Actual failure OperationalError in coarse whole transport stage; cause unproven, memory/process facts missing in old failure path.",
+    "artifacts": [],
+    "owned_cleanup": "Root independently observed actual marker."
+  },
+  "run_scope": "Fresh stress-only owned PostgreSQL fixture, same exact5633/5640/34315/native byte totals/99tables/PG512MiB/client1GiB/full original transport/receiver/finalizer/preservation. Retain independently accepted compact+guard proof from154; never claim they reran here. No oldv2 stress.",
+  "failure_observation": "Before strict result gate, always emit finite actual Docker native/client/PG status, elapsed, native pg_postmaster_start comparison and available finite cgroup current/peak/OOM counters. Unavailable/malformed diagnostic states cannot satisfy original success gates. Original strict6+optionalSock format/OOMzero/512MiB/1GiB/native/process gates unchanged. Native failures add only first actual bounded5character SQLSTATE or unavailable and finer constant transport/receiver/validation stages; never exception text/query/body/SQLplan."
 }

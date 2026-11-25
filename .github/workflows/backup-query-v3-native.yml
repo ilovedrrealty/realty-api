@@ -1,7 +1,7 @@
 name: Isolated backup v3 PostgreSQL semantics and memory acceptance
 on:
   push:
-    branches: [codex-ci-backup-query-v3-memory-diagnostic-20261125]
+    branches: [codex-ci-backup-query-v3-stress-observation-20261125]
 permissions:
   contents: read
 concurrency:
@@ -32,7 +32,7 @@ jobs:
           ref: c193a925ba57ea2d67ea48c44e5262817885c8a2
           path: migration-recipe
           persist-credentials: false
-      - name: Run owned compact, guard and production-volume pressure cases
+      - name: Run owned stress with retained compact and guard proof
         shell: bash
         run: |
           set -euo pipefail
