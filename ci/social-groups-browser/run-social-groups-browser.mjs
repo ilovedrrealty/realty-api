@@ -87,10 +87,16 @@ async function session(locale, account, role, storageState) {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true,
     serviceWorkers: 'block', permissions: ['clipboard-read', 'clipboard-write'], ...(storageState ? { storageState } : {}) })
   contexts.push(context); context.setDefaultTimeout(15000); context.setDefaultNavigationTimeout(20000)
-  context.on('page', page => page.on('pageerror', error => {
-    pageErrors++
-    errorTypes[Object.hasOwn(errorTypes, error.name) ? error.name : 'other']++
-  }))
+  context.on('page', page => {
+    page.on('pageerror', error => {
+      pageErrors++
+      errorTypes[Object.hasOwn(errorTypes, error.name) ? error.name : 'other']++
+    })
+    // The known page also covers requests held by a page-level race route.
+    page.on('request', req => {
+      if (invitePages.has(page) && /accounts\.google\.com\/gsi\//.test(req.url())) inviteProviders++
+    })
+  })
   context.on('response', response => {
     const url = new URL(response.url()), resource = response.request().resourceType()
     const method = response.request().method(), path = url.pathname
@@ -109,7 +115,6 @@ async function session(locale, account, role, storageState) {
   context.on('request', req => {
     const url = new URL(req.url())
     if (/google-analytics|googletagmanager|doubleclick|facebook\.com\/tr/.test(url.href)) trackingRequests++
-    if (invitePages.has(req.frame()?.page()) && /accounts\.google\.com\/gsi\//.test(url.href)) inviteProviders++
     for (const token of tokens) {
       if (url.href.includes(token) || Object.values(req.headers()).some(value => value.includes(token))) tokenLeaks++
       if ((req.postData() || '').includes(token) && ![

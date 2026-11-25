@@ -6,8 +6,8 @@
   "frontend": "7b9ec53f54141ef66b92466de4dde81f5bc0f69e",
   "frontend_tree": "8baac20b593e6cf4cfc964fa95333e7a856de7d8",
   "frontend_parent": "5d2afabca5560cb06166ad6af8efa3a06f8d4b6c",
-  "operations_parent": "1d6668a926eb8e26b0f33bf810f48b2a09639877",
-  "proposed_first_ref": "codex-ci-social-groups-browser-20261118-v8",
+  "operations_parent": "24e67473a238ab730992c6c17bcee217200fac77",
+  "proposed_first_ref": "codex-ci-social-groups-browser-20261125-v9",
   "accepted_runtime_recipe": "3007728fd67c5889a8373e41ff3ffa5cc50d839b",
   "contracts": {
     "files": 59,
@@ -172,17 +172,44 @@
     "change": "Explicit GroupRole inference with the same runtime whitelist and boolean narrowing of unknown-valued read errors before JSX. No type cast bypass, validation or assertion relaxation."
   },
   "prior_attempt": {
-    "run": 44298415860,
-    "job": 134781400458,
-    "status": "ACTUAL_FAILURE_READ_BY_ROOT",
-    "source": "1d6668a926eb8e26b0f33bf810f48b2a09639877",
-    "current_vite": "actualPASS; same7b9 product;V2full480/strict retained",
-    "browser_failure": "Two validloopbackpresence records then native nonzero without browserfailure/diagnostic/result marker. Exactnativecode notprinted by priorwrapper.",
-    "api": "Partialstateverification RuntimeError; no product-defect claim",
-    "owned_cleanup": "verified",
+    "schema": "social-groups-browser-terminal-receipt-v1",
+    "run_id": 44300302840,
+    "job_id": 134787991882,
+    "attempt": 1,
+    "source": "24e67473a238ab730992c6c17bcee217200fac77",
+    "branch": "codex-ci-social-groups-browser-20261118-v8",
+    "status": "completed",
+    "conclusion": "failure",
+    "frontend": "7b9ec53f54141ef66b92466de4dde81f5bc0f69e",
+    "backend": "4e23cc8b643a4b07f4e14042e530e6271dad9c8f",
+    "current_vite": "PASS",
+    "retained_frontend": {
+      "run_id": 44287063765,
+      "job_id": 134742332787,
+      "contracts": 480,
+      "strict_native": 0
+    },
+    "browser_native": {
+      "code": 1,
+      "classification": "nonzero"
+    },
+    "process_failure": {
+      "error_type": "Error",
+      "event": "uncaught_exception",
+      "own_frames": [
+        {
+          "column": 29,
+          "line": 112
+        }
+      ],
+      "phase": "G05_fragment_invitation"
+    },
+    "browser_result_present": false,
+    "fixture_result": "FAIL_PARTIAL_STATE_NOT_ACCEPTED",
+    "owned_cleanup": "VERIFIED_EXACT_SOURCE_AND_RUN",
     "artifacts": [],
-    "source_url": "https://github.com/ilovedrrealty/realty-api/actions/runs/44298415860",
-    "correction": "Capture only first uncaughtException/unhandledRejection stage/type andown-driver numericframe positions, exit1 without rawerror output; printactual shell nativecode/classification beforechecker. Preserve every expression including req.frame until concrete evidence."
+    "diagnosis": "The observed own-driver line112/column29 resolves req.frame() for every request before testing the Google OAuth URL. No response payload or raw exception message was captured.",
+    "publication": "NONE"
   },
   "retained_prior_attempt": {
     "run": 44285281874,
@@ -431,5 +458,25 @@
     "failure": "Synchronous safe stdoutwrite thenexit1; checker marksFAIL evenif anormalfailuremarker isabsent. No conversionto success.",
     "native_exit": "Printactual0..255 scalar classifiedsuccess/timeout/signal/nonzero. Signalcode alone makesno OOM claim.",
     "behavior": "No change to product,existingeventhandlers,locators,payloads,flow or12/16 assertions; diagnostic-only beforeproven cause."
+  },
+  "retained_prior_attempt_v7": {
+    "run": 44298415860,
+    "job": 134781400458,
+    "status": "ACTUAL_FAILURE_READ_BY_ROOT",
+    "source": "1d6668a926eb8e26b0f33bf810f48b2a09639877",
+    "current_vite": "actualPASS; same7b9 product;V2full480/strict retained",
+    "browser_failure": "Two validloopbackpresence records then native nonzero without browserfailure/diagnostic/result marker. Exactnativecode notprinted by priorwrapper.",
+    "api": "Partialstateverification RuntimeError; no product-defect claim",
+    "owned_cleanup": "verified",
+    "artifacts": [],
+    "source_url": "https://github.com/ilovedrrealty/realty-api/actions/runs/44298415860",
+    "correction": "Capture only first uncaughtException/unhandledRejection stage/type andown-driver numericframe positions, exit1 without rawerror output; printactual shell nativecode/classification beforechecker. Preserve every expression including req.frame until concrete evidence."
+  },
+  "request_page_attribution": {
+    "cause": "Actual V8 own-driver line112col29 throws while resolving req.frame() for an unframed request before the Google URL predicate. No product failure claim.",
+    "correction": "Use each known page request event to count invite-page Google OAuth requests. Context-wide passive token/tracking/mutation observer remains unchanged and sees all requests including held requests; no catch-and-ignore or skipped audit.",
+    "coverage": "The invitation page is explicitly created, registered in invitePages and then navigated. Its page listener is attached by context page event before navigation. Existing inviteProviders===0 assertion remains.",
+    "unchanged": "All66 check calls/12journeys/16geometries, authoritative fixture, result checker, product source, native24 and retained480/strict proof.",
+    "local_verification": "Syntax/AST/JSON/diff plus finite mock event attribution regression only. No local install/build/browser/DB."
   }
 }
