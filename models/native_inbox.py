@@ -1,6 +1,6 @@
 """Private native conversations; external-channel entries are manual records only."""
 from sqlalchemy import (BigInteger, Boolean, CheckConstraint, Column, ForeignKey, ForeignKeyConstraint, Index,
-                        Integer, Text, TIMESTAMP, UniqueConstraint, func)
+                        Integer, Text, TIMESTAMP, UniqueConstraint, func, text)
 from sqlalchemy.dialects.postgresql import UUID
 
 from database import Base
@@ -32,7 +32,7 @@ class InboxConversation(Base):
     created_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
     brokerage_subject_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"))
     policy_version = Column(Text, nullable=False)
-    last_sequence = Column(BigInteger, nullable=False, server_default="0")
+    last_sequence = Column(BigInteger, nullable=False, server_default=text("0"))
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())
     last_entry_at = Column(TIMESTAMP(timezone=True))
     __table_args__ = (
