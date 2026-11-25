@@ -1,8 +1,8 @@
 {
-  "schema": "native-inbox-browser-lifecycle-diagnostic-v8",
+  "schema": "native-inbox-browser-commit-ready-v9",
   "status": "FROZEN_PENDING_ROOT_FULL_AND_INDEPENDENT_COLD_REVIEW_NO_PUSH",
-  "operations_parent": "9240ec3e0dea209d16795dc5993b9519d90af6d6",
-  "proposed_first_ref": "codex-ci-native-inbox-browser-lifecycle-diagnostic-v8-20261125",
+  "operations_parent": "80e597512fc67b994f011b6a373185faed49a6f5",
+  "proposed_first_ref": "codex-ci-native-inbox-browser-commit-ready-v9-20261125",
   "frontend": "6015987e33375ed012996dddb27ca092532d793c",
   "frontend_tree": "dfc17c06f665e3088d56a0582013f5516ec6c106",
   "frontend_parent": "caa0e22f41f0d9d9d88e15fe7795dae776008408",
@@ -140,7 +140,7 @@
   "privacy": "Only bounded finite typed counts, approved source enums, source-owned line/column diagnostics; native failures, malformed/missing/duplicate receipts remain failures.",
   "cleanup": "Nonce label-checked containers/images/scratch; marker checked owned DB drop and absence; read-only source clean. No artifact upload; root independently verifies terminal/native/OOM/running/cleanup and actual artifacts[].",
   "release": "Root owns full source/ops plus independent review, first absent-ref push, actual hosted acceptance and later production changes. Preparation is not acceptance.",
-  "local_checks": "Actual Node syntax0/checkerPythonAST1; strictbaseline1PASS, validdiagnostics7allalwaysfailed (mainflow/lifecycle/combined),49negativecontrols PASS inclduplicatekeys/operations/unknownprivatefields/types/size/stage/status/cookieconsistency/frames. No browser/native/build/SQL/provider execution; unchangedfixture and successpredicates.",
+  "local_checks": "Actual Node syntax0/Gitdiffcheck0 and source reversal proof only; no app/browser/native/build/SQL/provider. Current checker/fixture untouched, prior strict controls retained.",
   "backend_parents": [
     "79e9311874e3ea91e45b990629965534d41bb5fa",
     "07b2b7c762b129c5b6ea978299ba69e528e3189e"
@@ -242,5 +242,22 @@
     "privacy": "No raw error/message/header/value/body/cookie/IDs/URL. Singlemain-flow marker<=1024B; <=3route markers with distinctsourceoperations each<=1024B, stricttyped/enum/duplicatekeys; everydiagnostic alwaysfails. Cookie observation<=2s locally, noHTTP.",
     "preserved": "All source179/601success paths, originalglobalfail/uncaught hooks, 15s0retryroutefetch, actual201/noStore/receipt/abort/frozenUUID/resolver/noresend,60s/600scaps, all32commands70audit24journeys32geometry/fourdenials/provider0/privatepreservation/cleanup. Same523/95retained, freshViteNext/UI stillrequired.",
     "primary_source": "https://raw.githubusercontent.com/microsoft/playwright/v1.64.1/packages/playwright-core/src/client/fetch.ts"
+  },
+  "uncertain_handler_synchronization": {
+    "actual_failure": {
+      "run": 45605344097,
+      "job": 139174660333,
+      "operations": "80e597512fc67b994f011b6a373185faed49a6f5",
+      "mainflow_reason": "FROZEN_ORIGINAL_ATTEMPT_REQUIRED",
+      "stage": "en_uncertain_committed_response",
+      "log_utf8_bytes": 105169,
+      "log_sha256": "2aa59921baf10512829b290d7ebc68f95a7d8e252dfe69aa498bb807d8a63bf1",
+      "root_receipt": "native-inbox-browser-45605344097-root-failure.json",
+      "secondary": "After mainflowfailure, cleanup closedcontext and pendingroutefetch rejectedclosed; earlier generic fetch/dispose reports didnotprove product/transport defect."
+    },
+    "source_confirmed": "Exact601 InboxShared43-44 renders Check result whenever pending&&!denied, includingbusy=true with disabled={busy}. useInboxCommand27 establishes pending before asyncmutation.send. Therefore visible button doesnotestablish owned201receipt/abort/failureoutcome.",
+    "minimal_change": "Deferred owned-handler completion resolves ONLYafter same201/noStore/parse/dispose/recordCommand/route.abort allfinish. Mainflow awaitsit after originalpostclick, then samevisibleCheckresult and actualpublicDOMuniquebutton enabled. Existing FROZENreceipt/body/postdisabled and explicitresolver/noresend checks unchanged.",
+    "preserved": "No sleep/force/retry/extraHTTPorPOST/productchange. Same32commands70audit24journeys32geometry/fourdenials, original15sroutefetch/0retries/60sstage/600souter, allV8finitefailurediagnostics,179/601/523/95retainedproofs, freshViteNext/privacy/provider0/cleanup.",
+    "parser": "Checker and fixture byteunchanged; no newreceiptmarker or weakened assertion."
   }
 }

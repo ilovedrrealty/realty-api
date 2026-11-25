@@ -350,7 +350,8 @@ async function uncertain(page, context, copy, locale) {
   const thread = panel(page, copy.inbox.thread), path = API + '/messaging/conversations/' + facts.buyerThread + '/entries'
   await (await labelledControl(thread, 'select', copy.inbox.entry_kind)).selectOption('message')
   await (await labelledControl(thread, 'textarea', copy.inbox.message_body)).fill(facts.messages[locale].uncertain)
-  let held = false, actualReceipt
+  let held = false, actualReceipt, committedAndAbortedReady
+  const committedAndAborted = new Promise(resolve => { committedAndAbortedReady = resolve })
   const handler = async route => {
     const request = route.request()
     if (request.method() !== 'POST' || held) return route.continue()
@@ -376,12 +377,20 @@ async function uncertain(page, context, copy, locale) {
     }
     recordCommand('buyer', actualReceipt)
     await route.abort('failed')
+    committedAndAbortedReady()
   }
   await page.route(path, handler)
   const before = methods.get(context).filter(x => x.path.endsWith('/entries')).length
   try {
     await button(thread, copy.inbox.post_message).click()
+    // Visibility alone includes the initial busy attempt. Observe the actual
+    // owned commit+abort, then the normal enabled resolver before assertions.
+    await committedAndAborted
     await button(thread, copy.inbox.check_result).waitFor()
+    await page.waitForFunction(label => {
+      const matches = [...document.querySelectorAll('main button')].filter(node => node.textContent?.trim() === label)
+      return matches.length === 1 && !matches[0].matches(':disabled')
+    }, copy.inbox.check_result)
     check(held && actualReceipt?.action === 'entry_created' && await (await labelledControl(thread, 'textarea', copy.inbox.message_body)).inputValue() === facts.messages[locale].uncertain,
       'FROZEN_ORIGINAL_ATTEMPT_REQUIRED')
     check(await button(thread, copy.inbox.post_message).isDisabled(), 'PENDING_ATTEMPT_LOCKS_SEND')
