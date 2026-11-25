@@ -1,0 +1,36 @@
+{
+  "schema": "private-contact-sharing-native-acceptance-v1",
+  "status": "PREPARED_PENDING_ROOT_FULL_AND_COLD_REVIEW_NO_PUSH",
+  "operations_parent": "b03cd9e9a1805513ba358e6d1fcf11e433eb660c",
+  "proposed_first_ref": "codex-ci-contact-sharing-native-20261125",
+  "backend": "8957b18520d15dac503e0e4a5ce4b2455135d601",
+  "backend_tree": "11ab69db36eb30881e4f3086578201f584c4092d",
+  "backend_parent": "d90a68cbfa07f42a02a841f7730999d96f40dc60",
+  "scope": "One private Admin-only GET contact detail endpoint. This job does not rerun the separate buyer-agent/Signup suite or claim frontend/browser acceptance.",
+  "native": {
+    "module": "tests.test_admin_trade_contacts",
+    "methods": 10,
+    "required": "All10 actual PASS, zero failures/errors/skips/provider attempts, original new deep-link authorization test included in AST inventory",
+    "authentication_scope": "Existing native suite supplies supported role identities through get_current_user override and exercises real require_admin/routes/validation/SQL. Anonymous tests use unchanged actual authentication. This is not a real-cookie browser authentication proof.",
+    "trusted_origin": "http://localhost:5174 exactly as existing suite",
+    "database": "One fresh marked nonce-owned database with full99 bootstrap/migrations and accepted synthetic retained-record seed. It is separate from every browser/urgent database.",
+    "expected_mutation": "The entire ten-case native import/filter suite intentionally adds66 synthetic contacts and68 source observations. Never claim the complete fixture is unchanged after these tests.",
+    "new_records": "Exactly66+68, only Synthetic contractor UUID names from this native suite, source rows exclusively reference those newly added records, source authorities limited to the existing three synthetic values",
+    "preservation": "All85 original contacts and86 original source observations byte-identical; all other97 table rows and all sequences unchanged; complete99 catalog and migration head unchanged. Original82 owner contacts/46 private professional profiles/9 accepted jobs/CMS7/2 floorplans retained.",
+    "new_method": "test_contact_deep_link_is_admin_only_and_preserves_owner_records: owner-source private row with2 observations; anon/non-Admin denied/no-store; Admin exact list/detail parity; missing404/malformed422; row/evidence read snapshot unchanged"
+  },
+  "runtime": {
+    "baseline": "01695530df670a94ac28f8b3bf36cc34b5b7a942",
+    "python_recipe": "c193a925ba57ea2d67ea48c44e5262817885c8a2",
+    "dockerfile_sha256": "e546d8c5668b87ef28e604107bbb330e6f4b3873cf0208b4d24ca378bd0851f9",
+    "python_image": "python3.11-slim pinned sha256:673719e071ecf27434fd2635bbd8d00f49f4fdd81f243143438a42ced8bedf60",
+    "postgres_image": "postgres17.6 pinned sha256:b86568d3e0fe1dfaeff52714f9da36f206a30e4c49131b82bf96982d78627409",
+    "accepted_helpers": "Exact unchanged group-browser helper SHAe0c5f097 plus its SHA-verified catalog/retained-record helpers. Only source commit/tree constants are set to the reviewed contact source before its existing source/loopback/read-only checks.",
+    "dependencies": "Original baseline inventory plus hash-pinned binary openpyxl3.1.5/defusedxml0.7.1/et-xmlfile2.0.0; pip check and exact actual inventory comparison",
+    "transport": "API/tests execute inside network-none loopback namespace with PG127.0.0.1:55449, empty env/provider keys, workers disabled, explicit HTTP/SMTP/Resend refusal counters"
+  },
+  "cleanup": "Native container exit/running/OOM inspected. Exact nonce-marked DB is dropped and absence rechecked even when native result fails; then only current-run labeled containers/image and owned scratch are removed by bounded cleanup. Read-only clean source mounts unchanged. No secrets/facts/screenshots/artifacts uploaded.",
+  "result_safety": "Only bounded count/status/known test method markers are emitted. Generic source-owned failure enums; no raw exceptions, traceback, SQL, records, private notes, URLs or credentials. Native nonzero/timeout/OOM cannot pass the result checker.",
+  "local_validation": "PASS Python AST for both tools and shell inline Python block, PLAN JSON and git diff check; actual checker1positive+9negative controls (native/client nonzero, running, OOM, bool-as-int, wrong counts, extra field, provider attempt, explicit failure marker). Native ten cases not executed locally; Bash is unavailable locally and syntax is checked before execution by workflow. No local install/full build/browser/DB/provider actions.",
+  "publication": "Root must FULL-review this exact patch plus independent cold review and push only the first absent review ref. Root owns all product publication. This prepared plan is not execution evidence."
+}
