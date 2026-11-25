@@ -1,17 +1,18 @@
 {
   "schema": "contact-profile-sharing-browser-acceptance-v1",
   "status": "PREPARED_PENDING_ROOT_FULL_COLD_REVIEW_AND_FIRST_PUSH",
-  "operations_parent": "236a1951e956d28ccb97dc5c8bb72f562383c444",
-  "proposed_first_ref": "codex-ci-profile-sharing-browser-20261125",
-  "frontend": "351d60f2c35ec25f1a62e1b8a6653602debf19d9",
-  "frontend_tree": "2f2ed141f02ced926ab2f48356995d21add4cce0",
-  "frontend_parent": "96425b7cecb65293ae6c96c89a6f6a28e70da443",
+  "operations_parent": "9a80dc30b79999b86160d23428c532b27cd0da74",
+  "proposed_first_ref": "codex-ci-profile-sharing-browser-20261125-v2",
+  "frontend": "3b9434c008179a3f64893c4139c3d4a10bed6fc4",
+  "frontend_tree": "083f63c952673c6ae58f0abe18b38913341b2815",
+  "frontend_parent": "351d60f2c35ec25f1a62e1b8a6653602debf19d9",
   "frontend_review_base": "06d7f74965896ae23d47e7701fc1dbfd9815cc40",
   "frontend_tracked_blobs": 592,
   "backend": "8957b18520d15dac503e0e4a5ce4b2455135d601",
   "backend_tree": "11ab69db36eb30881e4f3086578201f584c4092d",
   "backend_parent": "d90a68cbfa07f42a02a841f7730999d96f40dc60",
   "source_scope": "Reviewed source only. No schema, model, requirement, package manifest, lockfile, provider, role, visibility, recipient or billing change. No publication in this acceptance job.",
+  "v2_source_reason": "Actual first run45554365253 failed3 of498 contracts before strict/build/API/browser. All3 failed native UI adapter leaves reproduce import.meta SyntaxError loading actual new sharing component in the old CommonJS VM. The sole successor frontend change adds exact known unset Vite setting, actual URL constructor retaining blob spies, and actual namespaced translations to that test adapter. Every original test body and all production code remain byte-identical. This job reruns fresh498 plus first strict/Vite/Next/browser; it does not label the first run accepted.",
   "contracts": {
     "expected_files": 62,
     "expected_tests": 498,
@@ -68,5 +69,5 @@
   "privacy": "No raw request bodies, contact/profile identifiers, URLs, credentials, notes, source data, clipboard/native payload or exception text in logs. Checker emits only strict source-enum failures, typed counts, locale/geometry and preservation booleans. Failed process exits remain binding.",
   "cleanup": "Accepted nonce-label container/image cleanup, read-only source mounts, guarded private scratch removal and owned DB drop checks. No broad killing/deletion and no uploaded artifact actions; root verifies artifacts[] on the actual run.",
   "release": "Root owns exact full/cold review, first absent-ref push, actual terminal result inspection and later production release. Preparing this job is not browser acceptance or publication.",
-  "local_checks": "PASS: both Python AST files, seven inline Python AST blocks, PLAN JSON, Node browser syntax, review-base object/ancestry/depth and explicit diff-exit guard checks, two finite-parser positive and twelve negative cases (native failures, Boolean-as-count, altered preservation, duplicate/missing results, unknown fields, hostile diagnostics and geometry); no private text emitted. No local dependency installs, app builds, browser, native DB or provider calls. Workflow runs bash -n before the runner; no local Bash is assumed. Actual hosted contracts/builds/browser remain unrun."
+  "local_checks": "V2 bounded static validation: original API/driver/checker bytes and full runner body from RUNNER_TEMP guard onward unchanged; same592/full498/20journeys24geometry18links22nativecaptures12pages. Updated source/parent/branch pins and depth6 retain explicit06d7 object/ancestor and successful-diff guards. Prior AST2+inline7/Node/JSON/parser2positive12negative checks retained; V2 new delta AST/JSON/diff checks required before freeze. No local installs/full builds/browser/DB/provider actions; workflow runs bash -n. Fresh V2 hosted acceptance remains unrun."
 }

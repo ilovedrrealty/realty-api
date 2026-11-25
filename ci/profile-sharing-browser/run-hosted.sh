@@ -6,7 +6,7 @@ die() { printf 'PLATFORM_BROWSER_REFUSED %s\n' "$1" >&2; exit 1; }
 bounded() { timeout --kill-after=8s "$@"; }
 [[ $# == 6 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 &&
-   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-profile-sharing-browser-20261125 &&
+   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-profile-sharing-browser-20261125-v2 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die HOSTED_EXACT_EVENT_REQUIRED
 ops="$1"; frontend="$2"; baseline="$3"; backend="$4"; migration="$5"; relay="$6"
 [[ "$ops" == "$GITHUB_WORKSPACE/build-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-source" &&
@@ -20,23 +20,20 @@ done
 expected_operations=$(cat <<'EXACT_OPERATIONS'
 .github/workflows/profile-sharing-browser.yml
 ci/profile-sharing-browser/PLAN.json
-ci/profile-sharing-browser/check-result.py
-ci/profile-sharing-browser/run-browser.mjs
 ci/profile-sharing-browser/run-hosted.sh
-ci/profile-sharing-browser/serve_fixture.py
 EXACT_OPERATIONS
 )
 [[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" &&
-   $(git -C "$ops" show -s --format=%P HEAD) == 236a1951e956d28ccb97dc5c8bb72f562383c444 &&
+   $(git -C "$ops" show -s --format=%P HEAD) == 9a80dc30b79999b86160d23428c532b27cd0da74 &&
    $(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) == "$expected_operations" ]] || die EXACT_OPERATIONS_REQUIRED
 backend_commit=8957b18520d15dac503e0e4a5ce4b2455135d601
 backend_tree=11ab69db36eb30881e4f3086578201f584c4092d
-frontend_commit=351d60f2c35ec25f1a62e1b8a6653602debf19d9
-frontend_tree=2f2ed141f02ced926ab2f48356995d21add4cce0
+frontend_commit=3b9434c008179a3f64893c4139c3d4a10bed6fc4
+frontend_tree=083f63c952673c6ae58f0abe18b38913341b2815
 frontend_paths=592
 [[ $(git -C "$backend" rev-parse HEAD) == "$backend_commit" && $(git -C "$backend" rev-parse HEAD^{tree}) == "$backend_tree" &&
    $(git -C "$frontend" rev-parse HEAD) == "$frontend_commit" && $(git -C "$frontend" rev-parse HEAD^{tree}) == "$frontend_tree" &&
-   $(git -C "$frontend" rev-parse HEAD^) == 96425b7cecb65293ae6c96c89a6f6a28e70da443 &&
+   $(git -C "$frontend" rev-parse HEAD^) == 351d60f2c35ec25f1a62e1b8a6653602debf19d9 &&
    $(git -C "$baseline" rev-parse HEAD) == 01695530df670a94ac28f8b3bf36cc34b5b7a942 &&
    $(git -C "$baseline" rev-parse HEAD^{tree}) == e88ea0c57f9fac39545322532a5992d5a2927676 &&
    $(git -C "$migration" rev-parse HEAD) == c193a925ba57ea2d67ea48c44e5262817885c8a2 &&
@@ -48,7 +45,7 @@ git -C "$frontend" merge-base --is-ancestor 06d7f74965896ae23d47e7701fc1dbfd9815
 backend_schema_delta=$(git -C "$backend" diff --name-only HEAD^ HEAD -- requirements.txt models alembic) || die BACKEND_SCHEMA_DIFF_REQUIRED
 frontend_manifest_delta=$(git -C "$frontend" diff --name-only 06d7f74965896ae23d47e7701fc1dbfd9815cc40 HEAD -- package.json package-lock.json apps/dashboard/package.json apps/landing/package.json) || die FRONTEND_MANIFEST_DIFF_REQUIRED
 [[ -z "$backend_schema_delta" && -z "$frontend_manifest_delta" ]] || die UNCHANGED_SCHEMA_AND_MANIFESTS_REQUIRED
-printf 'SHARING_BUILD_SCOPE frontend_source=351d60f2c35ec25f1a62e1b8a6653602debf19d9 backend_source=8957b18520d15dac503e0e4a5ce4b2455135d601 new_sharing_tests=6 expected_full_tests=498 current_strict=true landing_product=changed native10=retained_45551910844_not_rerun\n'
+printf 'SHARING_BUILD_SCOPE frontend_source=3b9434c008179a3f64893c4139c3d4a10bed6fc4 backend_source=8957b18520d15dac503e0e4a5ce4b2455135d601 new_sharing_tests=6 expected_full_tests=498 current_strict=true landing_product=changed native10=retained_45551910844_not_rerun\n'
 [[ -d ${RUNNER_TEMP:-} && $(realpath "$RUNNER_TEMP") == "$RUNNER_TEMP" ]] || die HOST_SCRATCH_REQUIRED
 nonce=$(python3 -I -B -c 'from uuid import uuid4; print(uuid4().hex)')
 [[ "$nonce" =~ ^[a-f0-9]{32}$ ]] || die EXACT_NONCE_REQUIRED

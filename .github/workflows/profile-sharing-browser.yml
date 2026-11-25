@@ -1,7 +1,7 @@
 name: Isolated contact and profile sharing browser acceptance
 on:
   push:
-    branches: [codex-ci-profile-sharing-browser-20261125]
+    branches: [codex-ci-profile-sharing-browser-20261125-v2]
 permissions:
   contents: read
 concurrency:
@@ -30,9 +30,9 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: ilovedrrealty/iLoveDRRealty
-          ref: 351d60f2c35ec25f1a62e1b8a6653602debf19d9
+          ref: 3b9434c008179a3f64893c4139c3d4a10bed6fc4
           path: frontend-source
-          fetch-depth: 5
+          fetch-depth: 6
           persist-credentials: false
       - name: Read exact reviewed private contact API
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
