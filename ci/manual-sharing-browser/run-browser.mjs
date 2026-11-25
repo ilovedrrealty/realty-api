@@ -171,23 +171,51 @@ async function overflowCensus(page, panel, label, width) {
   // Failure-only, numeric DOM facts and fixed source-owned class tokens; no text/URLs/IDs/styles.
   const value = await panel.evaluate((share, { label, width }) => {
     const integer = value => Math.max(-100000, Math.min(100000, Math.round(Number.isFinite(value) ? value : 0)))
-    const allowedTags = new Set(['MAIN', 'DIV', 'SECTION', 'ARTICLE', 'DETAILS', 'SUMMARY', 'FORM', 'INPUT', 'TEXTAREA', 'SELECT', 'BUTTON', 'A', 'PRE', 'IMG', 'IFRAME', 'H1', 'H2', 'H3', 'P', 'SPAN', 'LABEL', 'SVG'])
+    const allowedTags = new Set(['MAIN', 'DIV', 'SECTION', 'ARTICLE', 'DETAILS', 'SUMMARY', 'FORM', 'INPUT', 'TEXTAREA', 'SELECT', 'BUTTON', 'A', 'PRE', 'IMG', 'IFRAME', 'H1', 'H2', 'H3', 'P', 'SPAN', 'LABEL', 'SVG', 'TABLE', 'THEAD', 'TBODY', 'TR', 'TH', 'TD'])
     const allowedClasses = ['min-w-0', 'max-w-full', 'w-full', 'max-w-310', 'grid', 'grid-cols-1', 'grid-cols-2', 'sm:grid-cols-4', 'lg:grid-cols-[1fr_360px]',
       'gap-3', 'gap-10', 'p-4', 'p-5.5', 'px-6', 'flex', 'inline-flex', 'flex-wrap', 'shrink-0', 'whitespace-pre-wrap', 'break-words',
-      '[overflow-wrap:anywhere]', 'overflow-hidden', 'overflow-x-auto', 'rounded-xl', 'rounded-2xl', 'text-[18px]', 'font-sans', 'listing-prose']
+      '[overflow-wrap:anywhere]', 'overflow-hidden', 'overflow-x-auto', 'rounded-xl', 'rounded-2xl', 'text-[18px]', 'font-sans', 'listing-prose',
+      'justify-between', 'items-center', 'gap-3.5', 'mb-3.5', 'px-1.5', 'h-45', 'text-4.25', 'text-6.5', 'font-bold', 'min-w-105', 'border-collapse',
+      'text-xs', 'text-sm', 'text-3.25', 'grid-cols-3', 'p-5', 'py-3.5', 'px-4', 'flex-1', 'items-end', 'justify-around', 'gap-0.75', 'gap-1.25', 'mb-4', 'gap-2', 'font-semibold', 'mb-1.5', 'leading-none', 'text-[11.5px]']
+    const viewport = document.documentElement.clientWidth, styles = new WeakMap()
+    const styleOf = node => {
+      if (!styles.has(node)) {
+        const style = getComputedStyle(node)
+        styles.set(node, { position: ['static', 'relative', 'absolute', 'fixed', 'sticky'].includes(style.position) ? style.position : 'other',
+          clips: ['hidden', 'clip', 'auto', 'scroll'].includes(style.overflowX) })
+      }
+      return styles.get(node)
+    }
     const nodes = [...document.body.querySelectorAll('*')].slice(0, 2500), rows = []
     for (const node of nodes) {
       const box = node.getBoundingClientRect()
-      if (box.width <= 0 || box.height <= 0 || !(box.right > innerWidth + 1 || box.left < -1 || node.scrollWidth > node.clientWidth + 1)) continue
+      if (box.width <= 0 || box.height <= 0 || !(box.right > viewport + 1 || box.left < -1 || node.scrollWidth > node.clientWidth + 1)) continue
+      const position = styleOf(node).position
+      let visibleLeft = box.left, visibleRight = Math.max(box.right, box.left + (node.scrollWidth || 0)), clipCount = 0, applied = false
+      let uncertain = ['absolute', 'fixed', 'other'].includes(position), ancestor = node
+      // Sorting heuristic only: normal-flow horizontal overflow clips. Positioned escape contexts remain conservative.
+      for (let depth = 0; ancestor && depth < 32; depth++, ancestor = ancestor.parentElement) {
+        const style = styleOf(ancestor)
+        if (style.clips) {
+          clipCount++
+          if (!uncertain) {
+            const bounds = ancestor.getBoundingClientRect(), left = bounds.left + (ancestor.clientLeft || 0)
+            visibleLeft = Math.max(visibleLeft, left); visibleRight = Math.min(visibleRight, left + ancestor.clientWidth); applied = true
+          }
+        }
+        if (ancestor !== node && ['absolute', 'fixed', 'other'].includes(style.position)) uncertain = true
+      }
       rows.push({ tag: allowedTags.has(node.tagName) ? node.tagName : 'OTHER', scope: node === share || share.contains(node) ? 'share' : node.contains(share) ? 'ancestor' : 'page',
         classes: allowedClasses.filter(token => node.classList.contains(token)).slice(0, 8), width: integer(box.width), left: integer(box.left), right: integer(box.right),
-        client: integer(node.clientWidth), scroll: integer(node.scrollWidth) })
+        client: integer(node.clientWidth), scroll: integer(node.scrollWidth), position, clip_count: clipCount, clipping_applied: applied,
+        visible_left: integer(visibleLeft), visible_right: integer(visibleRight), outside_client: visibleRight > visibleLeft && (visibleRight > viewport + 1 || visibleLeft < -1) })
     }
-    rows.sort((a, b) => b.right - a.right || b.scroll - b.client - (a.scroll - a.client) || a.width - b.width)
+    rows.sort((a, b) => Number(b.outside_client) - Number(a.outside_client) || b.visible_right - a.visible_right || b.scroll - b.client - (a.scroll - a.client) || a.width - b.width)
     return { label, width, inner: integer(innerWidth), client: integer(document.documentElement.clientWidth), scroll: integer(document.documentElement.scrollWidth),
       scanned: nodes.length, matches: rows.length, rows: rows.slice(0, 24) }
   }, { label, width })
-  writeSync(1, 'MANUAL_SHARE_OVERFLOW_CENSUS ' + JSON.stringify(value) + '\n')
+  const line = 'MANUAL_SHARE_OVERFLOW_CENSUS ' + JSON.stringify(value) + '\n'
+  if (Buffer.byteLength(line, 'utf8') <= 12288) writeSync(1, line)
 }
 async function geometry(page, panel, label, optional = false) {
   const values = []

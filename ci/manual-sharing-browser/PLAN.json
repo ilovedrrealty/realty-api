@@ -1,8 +1,8 @@
 {
-  "schema": "manual-sharing-visible-ready-v8",
+  "schema": "manual-sharing-clipping-diagnostic-v9",
   "status": "PREPARED_FOR_ROOT_FULL_AND_INDEPENDENT_COLD_REVIEW_NO_PUSH_OR_HOSTED_EXECUTION",
-  "operations_parent": "3147eac6e38b674a2ceea0326a2c1b2321edf143",
-  "proposed_first_ref": "codex-ci-manual-sharing-ready-v8-20261125",
+  "operations_parent": "5842f0fb4ec037e55acb3df841e1f7a2c44b3e01",
+  "proposed_first_ref": "codex-ci-manual-sharing-clip-v9-20261125",
   "frontend": {
     "commit": "6ca7880c5b154a9c370ea47bffd00d4d89838c4f",
     "tree": "afdd8907ac05275c72aa4efa87de847adf80a78c",
@@ -76,7 +76,7 @@
     "privacy": "No raw body, contact fields, credentials, fixture secret, privateID, arbitrary URL/stack or downloaded image bytes in logs; artifacts[]"
   },
   "proof_scope": "Retain actualdbad531/65 andstandalone strict45605073716 onlyafter native exactsourceguard reverses allfour CSS target edits (prose,mortgage,title,location) in twofiles and proves all614otherblobs/tests unchanged. FreshVite/itsactualtypecheck and LandingNext plus original20/44/full106/4view8control/PNG/clipboard/native/privacy required; native95 retained45588133254. Existing strictanonymousreplay remains exact6200; no earlierfailure is fullacceptance.",
-  "review_and_release": "Four-path ops successor off3147 requires rootFULL and Releasecold before root firstpush. Source6ca/179/wholeCSSguard/retaineddbad531strict/freshViteNext/current20/44/full106/4views/PNG/privacy unchanged. No priorfailure isacceptance.",
+  "review_and_release": "Five-path diagnostic-only successor off5842 needs rootFULL and Releasecold beforefirstpush. No source/productfix/pinchange/request/retry/delay/action/viewportpredicate change. Originalchecker successconditions/fullledger remainbinding; censusalwaysfails.",
   "written_finite_browser_contract": {
     "journeys": 20,
     "geometry": 44,
@@ -163,11 +163,25 @@
   "local_checks": {
     "python_ast_units": 11,
     "browser_node_syntax_native": 0,
-    "driver_reversing_only_one_visible_wait_equals_parent": true,
-    "checker_and_native_fixture_byte_identical": true,
-    "original_strict_count_actions_default15s_metrics_and_success_predicates_unchanged": true,
+    "strict_parser_positive_controls": 3,
+    "strict_parser_negative_controls": 32,
+    "valid_censuses_always_fail_controls": 3,
+    "maximal_allowed_numeric_row_record_utf8_bytes": 10320,
+    "driver_outside_only_failure_census_equals_parent": true,
+    "native_fixture_byte_unchanged": true,
+    "synthetic_numeric_dom_controls": [
+      "client320_not_expanded359",
+      "scroll_table_deprioritized",
+      "absolute_fixed_conservative",
+      "scan2500",
+      "rows24",
+      "line12KiB",
+      "no_private_text_output"
+    ],
+    "receipt": "outputs/property-network-20261101/manual-sharing-clip-v9-static-controls-20261125.json",
+    "receipt_sha256": "f0b5ca6b85df1720e59f807e1018037ee61e28eee49e2f81dbe14e5505c93bed",
     "git_bash_runner_syntax_native": null,
-    "scope": "Pure AST/Node/sourcebytes only; no producttests/build/application/browser/DB/install/provider/push. Existing parser/helper controls retained; hostedBashsyntax required, no localBashproof."
+    "scope": "Pure parser/AST/actual-helper-on-inert-numeric-DOM/sourcebytes only; no realbrowser/UI/paint proof, producttests/build/application/DB/install/provider/push. HostedBashsyntax required, no localBashproof."
   },
   "diagnostic_scope": "Failure-only on an unchanged viewport/control geometry predicate: at most one strict 12KiB census; scan at most2500 body elements, emit24 bounded rows with fixed tag/scope/source-known-class enums and integer width/left/right/client/scroll only plus known label/viewport totals. Never text, URL, ID, computed-style strings, attributes, source data or screenshot. The parser always marks a census asFAIL, rejects duplicate/unknown/wrong-mode/private/oversized/boolean-integer fields. Existing failure/ownframes remain binding. No extra click/read/write/route change, fixture byte-identical, original20/44/4views/8controls/PNG/provider/privacy predicates unchanged.",
   "prior_actual_failures": [
@@ -264,6 +278,17 @@
       "primary_bytes": 105328,
       "primary_sha256": "2ad9c60e83c39b5b5d8137b5c3cd7ec344832e470194a8a972e0cde29814027e",
       "scope": "Both-property/rental sequencepassed; unchangedpublicresource scopefailed earlier than its priorc395pass; Calculatornotreached. FreshVite0/Next0,cleanup/artifacts[]; full20/44/APIledger unaccepted."
+    },
+    {
+      "operations": "5842f0fb4ec037e55acb3df841e1f7a2c44b3e01",
+      "run": 45616972913,
+      "job": 139214764620,
+      "status": "FAIL",
+      "phase": "en_calculator_geometry_320",
+      "reason": "VIEWPORT_OVERFLOW",
+      "primary_bytes": 108458,
+      "primary_sha256": "035c3acda4a6afc0c75cb5519f779600dac4f589bd753892794b07fd98bc2216",
+      "scope": "Resource readiness andcalculator selector passed. Census26matches/24emitted showed contained420pxtable and400pxhero decoration, docclient320/scroll359. Actualuncontainedleaf notyetproven; noCSSfix. FreshVite0/Next0,cleanup/artifacts[]; full20/44/APIledger unaccepted."
     }
   ],
   "observed_source_correction": "Inherited source9c66 alreadyfixesprose/mortgagetext. Exact new6ca onefilechild wraps only measured H1 title(anywhere) and exact locationflexspan(min-w-0,anywhere) so anonymousflextext can shrink/wrap. Values/format/visibility/auth/fetch/formulas/sharepayload unchanged; no clipping/hiding/layoutredesign.",
@@ -294,5 +319,12 @@
     "actual_source": "WebsiteSettingsProvider starts emptyWebsiteSettings anduseEffect awaits real/site/settings before setSettings; WebsiteResources maps resulting shownresources into article/details. Driver navigate returns afterDOMContentLoaded/foreground then open immediately counts without waiting.",
     "exact_change": "Only add panel.waitFor({state:visible}) first inopen under unchanged15sdefault. Existing strictcount===1, clickifclosed and headingwait remain inexactorder. Strictwait rejectsambiguity; no first/fallback/newretry/artificialdelay/timeoutchange/newrequest/action. Calculatorhelper andallother selectors remain exact3147.",
     "evidence_scope": "Source-backed asynchronous UIready correction. Actualrawcountwasunlogged, so no observedzero/runtimeacceptance claim."
+  },
+  "clipping_diagnostic_extension": {
+    "exact_scope": "Failure-only census compares candidates against fixed document.clientWidth (320/390), not expandedinnerWidth. Additional TABLE/THEAD/TBODY/TR/TH/TD and exactCalculator chart/Card/fieldclass tokens are fixed allowlists. Atmost2500scanned/24rows/single12KiBrecord remains enforced; alloriginalgeometry/actions/source/privacygates unchanged.",
+    "finite_fields": "Controlled position enum static/relative/absolute/fixed/sticky/other; integer clip_count0..32 and visible_left/right; booleanclipping_applied/outside_client. Existing tag/scope/classes/integerboxfields remain. No text/IDs/URLs/rawcomputedstyle/attributes/image output.",
+    "heuristic_limit": "Only a conservative sorting aid, notfullbrowserpaint/occlusionproof. Computed overflowX is reduced to a boolean; ordinary-flow clipping intervals are intersected throughatmost32ancestors. Absolute/fixed/unknown positioned escapecontexts stopadditionalclipping assumptions; these may remain prioritized evenwhen actuallyclipped. Transforms/clip-path/contain/complexcontainingblocks are not fullymodeled. Existingglobalviewportcheckneveruses the heuristic and stillfails unchanged.",
+    "priority_and_bound": "Prioritize outside_client from approximate visibleextent, then visible_right beforecontainedtable cells. Runtime checks encodedUTF8line<=12288 beforeprinting; ifoversized diagnostic is omitted and originalviewportfailure remains binding. Parserstrictsinglekeys/types/bounds/negativecontrols andalwaysFAIL behavior remains.",
+    "proof_scope": "Diagnostic-only source6ca/BE179 unchanged. No actualoffenderfix orsharingacceptance inferred; completeoriginal20/44/full106/4views/PNG/privacy stillrequired."
   }
 }

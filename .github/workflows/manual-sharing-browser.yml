@@ -1,7 +1,7 @@
-name: Isolated manual sharing visible panel readiness acceptance
+name: Isolated manual sharing bounded visible overflow diagnosis
 on:
   push:
-    branches: [codex-ci-manual-sharing-ready-v8-20261125]
+    branches: [codex-ci-manual-sharing-clip-v9-20261125]
 permissions:
   contents: read
 concurrency:

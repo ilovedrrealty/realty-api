@@ -93,17 +93,23 @@ def check(mode, filename, native):
             require(all(type(value[key]) is int and 0 <= value[key] <= 100000 for key in ("inner", "client", "scroll", "scanned", "matches"))
                 and 0 <= value["matches"] <= value["scanned"] <= 2500 and 0 < value["inner"] <= 100000, "bounded_overflow_dimensions_required")
             require(type(value["rows"]) is list and len(value["rows"]) == min(value["matches"], 24), "bounded_overflow_rows_required")
-            tags = {"MAIN", "DIV", "SECTION", "ARTICLE", "DETAILS", "SUMMARY", "FORM", "INPUT", "TEXTAREA", "SELECT", "BUTTON", "A", "PRE", "IMG", "IFRAME", "H1", "H2", "H3", "P", "SPAN", "LABEL", "SVG", "OTHER"}
+            tags = {"MAIN", "DIV", "SECTION", "ARTICLE", "DETAILS", "SUMMARY", "FORM", "INPUT", "TEXTAREA", "SELECT", "BUTTON", "A", "PRE", "IMG", "IFRAME", "H1", "H2", "H3", "P", "SPAN", "LABEL", "SVG", "TABLE", "THEAD", "TBODY", "TR", "TH", "TD", "OTHER"}
             classes = {'min-w-0', 'max-w-full', 'w-full', 'max-w-310', 'grid', 'grid-cols-1', 'grid-cols-2', 'sm:grid-cols-4', 'lg:grid-cols-[1fr_360px]',
                 'gap-3', 'gap-10', 'p-4', 'p-5.5', 'px-6', 'flex', 'inline-flex', 'flex-wrap', 'shrink-0', 'whitespace-pre-wrap', 'break-words',
-                '[overflow-wrap:anywhere]', 'overflow-hidden', 'overflow-x-auto', 'rounded-xl', 'rounded-2xl', 'text-[18px]', 'font-sans', 'listing-prose'}
+                '[overflow-wrap:anywhere]', 'overflow-hidden', 'overflow-x-auto', 'rounded-xl', 'rounded-2xl', 'text-[18px]', 'font-sans', 'listing-prose',
+                'justify-between', 'items-center', 'gap-3.5', 'mb-3.5', 'px-1.5', 'h-45', 'text-4.25', 'text-6.5', 'font-bold', 'min-w-105', 'border-collapse',
+                'text-xs', 'text-sm', 'text-3.25', 'grid-cols-3', 'p-5', 'py-3.5', 'px-4', 'flex-1', 'items-end', 'justify-around', 'gap-0.75', 'gap-1.25', 'mb-4', 'gap-2', 'font-semibold', 'mb-1.5', 'leading-none', 'text-[11.5px]'}
             for item in value["rows"]:
-                require(type(item) is dict and set(item) == {"tag", "scope", "classes", "width", "left", "right", "client", "scroll"}
+                require(type(item) is dict and set(item) == {"tag", "scope", "classes", "width", "left", "right", "client", "scroll", "position", "clip_count", "clipping_applied", "visible_left", "visible_right", "outside_client"}
                     and type(item["tag"]) is str and item["tag"] in tags and type(item["scope"]) is str and item["scope"] in {"share", "ancestor", "page"}, "exact_overflow_row_shape_required")
                 require(type(item["classes"]) is list and len(item["classes"]) <= 8 and all(type(part) is str and part in classes for part in item["classes"])
                     and len(set(item["classes"])) == len(item["classes"]), "source_known_overflow_classes_required")
                 require(all(type(item[key]) is int and -100000 <= item[key] <= 100000 for key in ("width", "left", "right", "client", "scroll"))
                     and all(item[key] >= 0 for key in ("width", "client", "scroll")), "integer_only_overflow_row_required")
+                require(type(item["position"]) is str and item["position"] in {"static", "relative", "absolute", "fixed", "sticky", "other"}
+                    and type(item["clip_count"]) is int and 0 <= item["clip_count"] <= 32
+                    and type(item["clipping_applied"]) is bool and type(item["outside_client"]) is bool
+                    and all(type(item[key]) is int and -100000 <= item[key] <= 100000 for key in ("visible_left", "visible_right")), "finite_clipping_heuristic_required")
             overflow.append(value)
             print("MANUAL_SHARE_OVERFLOW_CENSUS " + json.dumps(value, sort_keys=True), flush=True)
             failed = True
