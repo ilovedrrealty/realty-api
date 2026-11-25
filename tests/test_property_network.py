@@ -521,10 +521,17 @@ class PropertyNetworkRoutes(unittest.TestCase):
     def test_profile_history_intersection_and_profile_privacy_do_not_grant_access(self):
         shared, private = self.shared_profile_projects()
         visible, _ = self.update(shared)
+        correction, _ = self.update(shared, "pro", body="Correction by the assigned professional", correction_of=visible["id"])
         self.update(private, "other", body="Different owner's private history")
         path = f"/profiles/{self.codes['pro']}/history"
         result = self.request("GET", path).json()
-        self.assertEqual([item["id"] for item in result["items"]], [visible["id"]])
+        self.assertEqual({item["id"] for item in result["items"]}, {visible["id"], correction["id"]})
+        entries = {item["id"]: item for item in result["items"]}
+        self.assertEqual(entries[visible["id"]]["author"]["user_code"], self.codes["owner"])
+        self.assertEqual(entries[correction["id"]]["author"]["user_code"], self.codes["pro"])
+        self.assertEqual(entries[correction["id"]]["correction_of"], visible["id"])
+        self.assertIsNone(entries[visible["id"]]["correction_of"])
+        self.assertEqual(entries[correction["id"]]["project_title"], shared["title"])
         self.assertEqual(self.request("GET", path, "outsider").json()["items"], [])
         self.profile("pro", visibility="private")
         self.assertEqual(self.request("GET", path).status_code, 404)

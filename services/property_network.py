@@ -528,10 +528,8 @@ def profile_history(db, user, code, number):
     visible = profile_projects_query(db, user, code).with_entities(Project.id)
     query = db.query(Update, Project).join(Project, Project.id == Update.project_id).filter(Update.project_id.in_(visible))
     return page(query.order_by(Update.created_at.desc(), Update.id), number, lambda pair: {
-        "id": str(pair[0].id), "project_id": str(pair[1].id), "project_title": pair[1].title,
-        "service_category_ids": pair[1].service_category_ids, "project_status": pair[1].status,
-        "kind": pair[0].kind, "body": pair[0].body, "occurred_on": pair[0].occurred_on,
-        "media_ids": pair[0].media_ids, "created_at": pair[0].created_at})
+        **update_view(db, pair[0]), "project_title": pair[1].title,
+        "service_category_ids": pair[1].service_category_ids, "project_status": pair[1].status})
 
 
 def post_for(db, user, identity, *, lock=False, moderate=False):
