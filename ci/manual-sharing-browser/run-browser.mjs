@@ -221,6 +221,7 @@ function calculatorSharePanel(page, copy) {
   return page.locator('details').filter({ has: page.locator(':scope > summary').filter({ hasText: new RegExp('^' + label + '$') }) })
 }
 async function open(panel, copy) {
+  await panel.waitFor({ state: 'visible' })
   check(await panel.count() === 1, 'UNIQUE_MANUAL_SHARE_PANEL_REQUIRED')
   if (!await panel.evaluate(node => node.open)) await panel.locator('summary').click()
   await panel.getByRole('heading', { name: copy.heading, exact: true }).waitFor()

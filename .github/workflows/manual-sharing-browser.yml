@@ -1,7 +1,7 @@
-name: Isolated manual sharing semantic calculator acceptance
+name: Isolated manual sharing visible panel readiness acceptance
 on:
   push:
-    branches: [codex-ci-manual-sharing-calculator-v7-20261125]
+    branches: [codex-ci-manual-sharing-ready-v8-20261125]
 permissions:
   contents: read
 concurrency:
