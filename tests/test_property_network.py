@@ -550,6 +550,51 @@ class PropertyNetworkRoutes(unittest.TestCase):
         self.assertEqual(self.request("GET", f"/profiles/{self.codes['pro']}/projects").status_code, 404)
         self.assertEqual(self.request("GET", f"/projects/{shared['id']}").status_code, 200)
 
+    def author_wall_post(self):
+        self.profile()
+        self.profile("pro")
+        avatar = self.profile_photo("pro")
+        self.profile("pro", avatar_media_id=avatar["id"])
+        post = self.request("POST", f"/profiles/{self.codes['owner']}/posts", "pro", {
+            "submission_id": str(uuid4()), "body": "Professional authored this wall post", "media_ids": []}).json()
+        self.request("POST", f"/posts/{post['id']}/moderate", payload={"action": "approve"})
+        return post, avatar
+
+    def test_wall_and_comment_author_avatar_requires_own_profile_selection(self):
+        post, avatar = self.author_wall_post()
+        visible = self.request("GET", f"/profiles/{self.codes['owner']}/posts", "outsider").json()["items"][0]
+        self.assertEqual(visible["author"]["avatar_media_id"], avatar["id"])
+        comment = self.request("POST", f"/posts/{post['id']}/comments", "pro", {
+            "submission_id": str(uuid4()), "body": "Same chosen author image"}).json()
+        self.assertEqual(comment["author"]["avatar_media_id"], avatar["id"])
+        actual = self.request("GET", f"/posts/{post['id']}/comments", "outsider").json()["items"][0]
+        self.assertEqual(actual["author"]["avatar_media_id"], avatar["id"])
+        self.assertNotIn("avatar_url", actual["author"])
+
+    def test_visible_foreign_wall_does_not_expose_private_or_blocked_author_avatar(self):
+        post, avatar = self.author_wall_post()
+        self.profile("pro", visibility="private")
+        visible = self.request("GET", f"/profiles/{self.codes['owner']}/posts", "outsider").json()["items"][0]
+        self.assertEqual(visible["id"], post["id"])
+        self.assertIsNone(visible["author"]["avatar_media_id"])
+        self.assertEqual(self.request("GET", avatar["url"].removeprefix("/property-network"), "outsider").status_code, 404)
+        self.profile("pro", visibility="members")
+        self.request("PUT", f"/me/blocks/{self.codes['owner']}", "pro", {"blocked": True})
+        # Wall owner retains moderation visibility; that is not author-profile permission.
+        moderated = self.request("GET", f"/profiles/{self.codes['owner']}/posts").json()["items"][0]
+        self.assertIsNone(moderated["author"]["avatar_media_id"])
+
+    def test_author_avatar_withdrawal_and_replacement_follow_current_selection(self):
+        post, old = self.author_wall_post()
+        replacement = self.profile_photo("pro")
+        self.profile("pro", avatar_media_id=replacement["id"])
+        path = f"/profiles/{self.codes['owner']}/posts"
+        current = self.request("GET", path, "outsider").json()["items"][0]
+        self.assertEqual(current["author"]["avatar_media_id"], replacement["id"])
+        self.assertEqual(self.request("GET", old["url"].removeprefix("/property-network"), "outsider").status_code, 404)
+        self.profile("pro", avatar_media_id=None)
+        self.assertIsNone(self.request("GET", path, "outsider").json()["items"][0]["author"]["avatar_media_id"])
+
 
 class PrivateImageContracts(unittest.TestCase):
     def test_reencode_strips_metadata_and_records_real_dimensions_and_digest(self):

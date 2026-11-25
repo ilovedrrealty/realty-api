@@ -47,15 +47,34 @@ def active_user(db, code):
     return row
 
 
-def actor(db, user_id, *, project=False):
+def actor(db, user_id, *, project=False, viewer=None):
     row = db.get(User, user_id)
     if row is None:
-        return {"user_code": None, "display_name": "Former member"}
+        return {"user_code": None, "display_name": "Former member", **({"avatar_media_id": None} if viewer is not None else {})}
     profile = db.get(Profile, user_id) if not project else None
     # A wall must not expose a private account name when its author chose a
     # different network alias (or has not created a network profile yet).
     label = row.display_name if project else profile.display_name if profile else "Member"
-    return {"user_code": row.user_code, "display_name": label}
+    result = {"user_code": row.user_code, "display_name": label}
+    if viewer is not None:
+        result["avatar_media_id"] = author_avatar(db, viewer, row)
+    return result
+
+
+def author_avatar(db, viewer, author):
+    # Access to somebody else's wall never grants access to its author's image.
+    try:
+        _, profile = profile_for(db, viewer, author.user_code)
+        if profile is None or profile.avatar_media_id is None:
+            return None
+        photo = media_for_reader(db, viewer, profile.avatar_media_id)
+        if photo.profile_user_id != author.id or photo.profile_kind != "avatar":
+            return None
+        return str(photo.id)
+    except HTTPException as error:
+        if error.status_code != 404:
+            raise
+        return None
 
 
 def creation_digest(body):
@@ -549,7 +568,7 @@ def post_for(db, user, identity, *, lock=False, moderate=False):
 
 def post_view(db, user, row, profile):
     return {"id": str(row.id), "profile_user_code": db.get(User, row.profile_user_id).user_code,
-            "author": actor(db, row.author_id), "body": row.body, "media_ids": row.media_ids, "status": row.status,
+            "author": actor(db, row.author_id, viewer=user), "body": row.body, "media_ids": row.media_ids, "status": row.status,
             "can_moderate": user.id == row.profile_user_id or user.role == "admin",
             "can_comment": row.status == "visible" and profile.comments_enabled,
             "created_at": row.created_at}
@@ -599,7 +618,7 @@ def moderate_post(db, user, identity, body):
 
 
 def comment_view(db, user, row, wall_owner_id=None):
-    return {"id": str(row.id), "body": row.body, "author": actor(db, row.author_id, project=isinstance(row, ProjectComment)),
+    return {"id": str(row.id), "body": row.body, "author": actor(db, row.author_id, project=isinstance(row, ProjectComment), viewer=user),
             "hidden": bool(getattr(row, "hidden", False)), "created_at": row.created_at,
             "media_id": str(row.media_id) if row.media_id else None,
             "can_hide": wall_owner_id is not None and (user.role == "admin" or user.id in {wall_owner_id, row.author_id})}
@@ -691,7 +710,7 @@ def upload_media(db, user, project_id, raw, *, profile_kind=None):
     return media_view(row)
 
 
-def media_bytes(db, user, identity):
+def media_for_reader(db, user, identity):
     row = db.get(Media, identity)
     if row is None:
         raise HTTPException(404, "Photo not found")
@@ -711,4 +730,8 @@ def media_bytes(db, user, identity):
         post_for(db, user, row.post_id)
     elif row.uploader_id != user.id:
         raise HTTPException(404, "Photo not found")
-    return storage.read_image(row)
+    return row
+
+
+def media_bytes(db, user, identity):
+    return storage.read_image(media_for_reader(db, user, identity))
