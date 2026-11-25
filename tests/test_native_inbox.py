@@ -63,8 +63,8 @@ class NativeInboxTests(unittest.TestCase):
         # Install the legacy model catalog only. The reviewed migration must
         # genuinely create its seven tables, so parity is not a model self-test.
         legacy = [table for name, table in Base.metadata.tables.items() if not name.startswith("inbox_")]
-        if len(legacy) != 99:
-            raise AssertionError("Expected the unchanged legacy 99-table catalog")
+        if len(legacy) != 98:
+            raise AssertionError("Expected 98 legacy models plus Alembic bookkeeping in the full 99-table catalog")
         Base.metadata.create_all(cls.engine, tables=legacy)
         path = Path(__file__).resolve().parents[1] / "alembic/versions/d8f4c2a91e67_private_native_inbox.py"
         spec = importlib.util.spec_from_file_location("owned_native_inbox_revision", path)

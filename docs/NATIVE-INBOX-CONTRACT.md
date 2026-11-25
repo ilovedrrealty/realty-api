@@ -213,3 +213,11 @@ drafts. Current production contact/source counts reported by root are
 5,633/5,640 after the cooperative import; no production data is used or changed
 by local preparation. No local database, heavy build, push, migration or provider
 call is authorized by this contract.
+
+Catalog counts include `alembic_version`: the legacy 99-table catalog contains
+98 modeled tables, and the resulting 106-table catalog contains 105 modeled
+tables. The native unit fixture creates 98 legacy models then the actual seven
+Inbox tables in its own schema (105 tables without Alembic bookkeeping). A
+separate hosted fixture must initialize the real previous migration head
+`c4e2a7319b60`, then upgrade to `d8f4c2a91e67` and prove the full 99-to-106
+catalog transition; model creation alone is not that migration proof.
