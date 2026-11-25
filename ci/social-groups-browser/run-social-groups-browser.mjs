@@ -9,7 +9,7 @@ const checks = ['normal_menu_private_create_and_draft_cancel', 'direct_invitatio
   'registered_discovery_request_and_approval', 'publication_review_and_private_draft_version_binding',
   'open_join_leave_without_property_grants', 'withdrawal_and_next_request_photo_denial', 'manager_history_unblock_and_reinvite',
   'archive_and_closed_group_access_revocation', 'auth_loss_uncertain_status_and_second_invite_isolation']
-const contexts = [], geometries = [], tokens = new Set(), invitePages = new Set()
+const contexts = [], geometries = [], tokens = new Set(), invitePages = new Set(), nativeHolds = new Set()
 let browser, timer, stage = 'fixture', pageErrors = 0, externalWrites = 0, trackingRequests = 0
 let automaticAccepts = 0, tokenLeaks = 0, humanAcceptBudget = 0, linkAcceptRequests = 0, inviteProviders = 0
 let entryPage = null, entryCopy = null, entryInProgress = true
@@ -367,6 +367,60 @@ async function hold(page, path, method, predicate, mode = 'response') {
     release: async () => { release(); await observed('held_release', () => bounded(finishedPromise)); await page.unroute(matcher, handler) } }
 }
 
+// Chromium cannot replay intercepted multipart file bytes through route.fetch().
+// Pause only the original upload's real response, after the strict API fixture ran.
+async function holdNativeUploadResponse(page, path) {
+  check(/^\/property-network\/groups\/[a-f0-9-]{36}\/media$/.test(path), 'NATIVE_UPLOAD_ENDPOINT_REQUIRED')
+  const cdp = await bounded(page.context().newCDPSession(page))
+  let ready, captured, failure, requestId, closing, control
+  const readyPromise = new Promise(resolve => { ready = resolve })
+  const close = () => {
+    if (closing) return closing
+    closing = (async () => {
+      cdp.off('Fetch.requestPaused', onPaused)
+      try { await bounded(cdp.send('Fetch.disable')) }
+      finally {
+        try { await bounded(cdp.detach()) }
+        finally { nativeHolds.delete(control) }
+      }
+    })()
+    return closing
+  }
+  const capture = async event => {
+    if (event.request.method === 'OPTIONS') {
+      await bounded(cdp.send('Fetch.continueRequest', { requestId: event.requestId })); return
+    }
+    const url = new URL(event.request.url)
+    check(!requestId && event.request.method === 'POST' && url.origin === api && url.pathname === path
+      && !url.search && !url.hash, 'NATIVE_UPLOAD_SINGLE_SCOPE_REQUIRED')
+    requestId = event.requestId
+    console.log('SOCIAL_GROUPS_HELD_RESPONSE ' + JSON.stringify({ phase: stage, kind: 'media', method: 'POST', status: event.responseStatusCode }))
+    check(event.responseStatusCode === 201 && !event.responseErrorReason, 'HELD_REAL_SUCCESS_REQUIRED')
+    const body = await bounded(cdp.send('Fetch.getResponseBody', { requestId }))
+    check(typeof body.body === 'string' && typeof body.base64Encoded === 'boolean', 'NATIVE_UPLOAD_BODY_REQUIRED')
+    const raw = Buffer.from(body.body, body.base64Encoded ? 'base64' : 'utf8')
+    check(raw.length <= 131072, 'NATIVE_UPLOAD_BODY_BOUND_REQUIRED')
+    captured = { value: JSON.parse(raw.toString('utf8')) }
+    ready()
+  }
+  const onPaused = event => { capture(event).catch(cause => { failure = cause; ready() }) }
+  const getReady = () => observed('held_ready', async () => {
+    await bounded(readyPromise)
+    if (failure) throw failure
+    return captured
+  })
+  control = { ready: getReady, close, release: async () => {
+    try {
+      await getReady()
+      await observed('held_release', () => bounded(cdp.send('Fetch.failRequest', { requestId, errorReason: 'Failed' })))
+    } finally { await close() }
+  } }
+  nativeHolds.add(control); cdp.on('Fetch.requestPaused', onPaused)
+  try { await bounded(cdp.send('Fetch.enable', { patterns: [{ urlPattern: api + path, requestStage: 'Response' }] })) }
+  catch (cause) { try { await close() } finally { throw cause } }
+  return control
+}
+
 // The finite normal journeys below operate only on the fixture's one group.
 async function settings(page, copy, facts, changes, acknowledge = false) {
   await tab(page, copy, facts, 'settings')
@@ -602,7 +656,7 @@ try {
   advance('G12_uncertain_auth_loss')
   await tab(ownerPage, en, facts, 'feed')
   advance('G12_upload_hold')
-  const uncertainUpload = await hold(ownerPage, `${groupPath(facts.groupId)}/media`, 'POST', () => true, 'abort')
+  const uncertainUpload = await holdNativeUploadResponse(ownerPage, `${groupPath(facts.groupId)}/media`)
   advance('G12_upload_input')
   await ownerPage.locator('form input[type=file]').setInputFiles(fixture.files.photo)
   advance('G12_upload_ready')
@@ -752,6 +806,7 @@ try {
   check(finalDecline.value.current.state === 'declined', 'CLOSED_OWN_DECLINE_REQUIRED')
   const oversight = await request(admin, groupPath(facts.groupId))
   check(oversight.status() === 200 && !(await json(oversight)).can_post, 'ADMIN_OVERSIGHT_IS_NOT_MEMBERSHIP'); await oversight.dispose()
+  check(nativeHolds.size === 0, 'NATIVE_UPLOAD_HOLD_CLEANUP_REQUIRED')
   check(geometries.length === 16 && pageErrors === 0 && externalWrites === 0 && trackingRequests === 0
     && automaticAccepts === 0 && tokenLeaks === 0 && inviteProviders === 0, 'EXACT_PRIVACY_AND_GEOMETRY_REQUIRED')
   clearTimeout(timer)
@@ -764,6 +819,9 @@ try {
   process.exitCode = 1
 } finally {
   clearTimeout(timer)
+  for (const hold of nativeHolds) await hold.close().catch(() => {
+    console.log('SOCIAL_GROUPS_BROWSER_FAILURE ' + stage + ' NATIVE_UPLOAD_CLEANUP_REQUIRED'); process.exitCode = 1
+  })
   for (const context of contexts) await context.close().catch(() => {})
   if (browser) await browser.close().catch(() => {})
 }
