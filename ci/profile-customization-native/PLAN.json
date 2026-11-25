@@ -1,0 +1,230 @@
+{
+  "schema": "profile_customization_owned_native_acceptance_v1",
+  "status": "PREPARED_SOURCE_ONLY_NATIVE134_UNRUN_NO_PUSH",
+  "operations_parent": "93d96c5c8ad8fe3986dfbdcfb303274be630da29",
+  "proposed_first_ref": "codex-ci-profile-customization-native-v1-20261125",
+  "new_paths_only": [
+    ".github/workflows/profile-customization-native.yml",
+    "ci/profile-customization-native/PLAN.json",
+    "ci/profile-customization-native/blackhole-connect.py",
+    "ci/profile-customization-native/check.py",
+    "ci/profile-customization-native/run-hosted.sh",
+    "ci/profile-customization-native/verify.py"
+  ],
+  "backend": {
+    "commit": "a75f9c26f3bceb14afcb6e1150e1b2a3d50fbada",
+    "tree": "12bbe32d4a6578bc58741c3f10f55bfccbf07e39",
+    "parent": "2ff311999d41b7719f64b61dc9d7fc04c3465cd4",
+    "fetch_depth": 10,
+    "profile_base": "17943ba1714673c51c43cdbb800106f91612f527",
+    "profile_base_tree": "ff940a7b6e983d4c669202746d9676b4b82e9a06",
+    "source_blobs": 367,
+    "profile_changed_paths": [
+      "alembic/versions/e8b5a3d1f907_private_profile_visuals.py",
+      "models/property_network.py",
+      "routes/property_network.py",
+      "schemas/property_network.py",
+      "services/property_network.py",
+      "tests/test_profile_visual_inputs.py",
+      "tests/test_property_network.py"
+    ],
+    "git_lf_sha256": {
+      "alembic/versions/e8b5a3d1f907_private_profile_visuals.py": "b3f6560e24bca7134731e765a484ab8496f5d90a925b166e9cd575ed4fb6a799",
+      "models/property_network.py": "1a8a45dffaa6e0d82d89954b6588501a1169a0fc6fc0d08ddcb71f1e78f60620",
+      "routes/property_network.py": "749bc141967640eb9c100268e516e3b4dbd5bc32908bc9edca7d810921940026",
+      "schemas/property_network.py": "c5405fbbe84be4a40c22bba411e10d0649861fd40ded7f26f2619d5451c6f87b",
+      "services/property_network.py": "af9039cf31a7a011db281109e5aa618320b853f7b34e7636bc8a3e7055922b1f",
+      "tests/test_profile_visual_inputs.py": "2a55d722194c96e8c911cc57c2b495bca507457b6a11c5c9b7ea1334f46789e1",
+      "tests/test_property_network.py": "297655fe14f58e3a32beeb379e3e343648ba790c2a6da3d445705d8c84d8e70d"
+    },
+    "required_chain": [
+      "a75f9c26f3bceb14afcb6e1150e1b2a3d50fbada",
+      "2ff311999d41b7719f64b61dc9d7fc04c3465cd4",
+      "7c9017010e41ae07f40c36032ebb0f2c5880c861",
+      "db8e25ca74d98656ded1d56c5d3bcfe93a6401c7",
+      "17943ba1714673c51c43cdbb800106f91612f527"
+    ],
+    "unchanged_requirements_and_all_other_base_tuples": true
+  },
+  "predecessor_runtime": {
+    "commit": "93d96c5c8ad8fe3986dfbdcfb303274be630da29",
+    "tree": "40bebb792010ce7826c970af9e61b9dd32b02071",
+    "actual_prior_acceptance_run": 45588133254,
+    "actual_prior_tests": 95,
+    "scope": "Recipe/provenance only. All old95 files remain byte-unchanged; every95 case is freshly executed on current a75, never treated as retained-current acceptance."
+  },
+  "checkout_mounts": {
+    "current": "/application",
+    "real99_previous8957": "/previous",
+    "real106_reference179": "/baseline106",
+    "operations_ci": "/ci-tools"
+  },
+  "migration": {
+    "initial": "Real8957 bootstrap+c4 in clean child before current-model import. Verify original99 catalog/rows/sequences before and after real179 upgrade to d8.",
+    "baseline": "Use separate exact179 source checkout, never current Base.metadata to precreate the new columns. Then add two declared owned old-schema sentinel rows(one social profile, one generic unattached media row for an existing synthetic user) and capture seeded106 baseline.",
+    "forward": "Actual current a75 Alembic e8 upgrade from d8; exactly106 catalog/105 modeled tables. Four nullable profile/media columns with three FKs, two CHECKs, one profile-media index, one invoker guard function/trigger. No backfill, existing grants/policies/RLS unchanged.",
+    "bookkeeping": "106 catalog equals105 application-data tables plus alembic_version. Raw103 untouched application-table row hashes exact; two affected tables use old-column projection and new4 NULL checks; exactly one expected head row d8/e8 changes separately. Complete public sequence definitions, ownership and values remain equal.",
+    "independent_model_projection": "Before the empty downgrade/reupgrade, independently create actual105-table model schema and require strict native equality for nine tables: native7 plus two profile tables. Include physical attnum/order/type/null/default/identity/generated and actual FK/check/PK/unique/index definitions/validity; no ignored render differences or catalog-self-comparison.",
+    "ddl_acl_diff": "Exact four-column/FK/check/index/trigger additions. Native trigger ROW|BEFORE|INSERT|UPDATE type23, zeroargs/no WHEN/no column restriction/nonconstraint; new index valid+ready. Sole new function private owner-postgres SECURITY INVOKER without PUBLIC/anon/authenticated/service_role EXECUTE. Old function ACL/security, sequence definitions/owner/values and table grants/policies/RLS remain equal.",
+    "empty_cycle": "After strict nine-table physical projection, actual empty-new-visual e8 downgrade to d8 and reupgrade restores logical column definitions ordered by name, catalog/data/projections/sequence/ACL/head equality. PostgreSQL physical dropped-column attnum holes are not claimed to disappear. Only declared pre-e8 inert sentinel rows exist in canonical visual tables.",
+    "retention": "Two separate owned selected/unselected profile-visual data cases invoke actual downgrade and require refusal without discarded rows/IDs/bytes; do not alter canonical baseline."
+  },
+  "suites": [
+    {
+      "label": "inbox",
+      "cases": 15
+    },
+    {
+      "label": "safety",
+      "cases": 2
+    },
+    {
+      "label": "options",
+      "cases": 4
+    },
+    {
+      "label": "recovery",
+      "cases": 3
+    },
+    {
+      "label": "delivery",
+      "cases": 53
+    },
+    {
+      "label": "customer_copy",
+      "cases": 7
+    },
+    {
+      "label": "legacy_award",
+      "cases": 5
+    },
+    {
+      "label": "legacy_negotiation",
+      "cases": 5
+    },
+    {
+      "label": "profile",
+      "cases": 30
+    },
+    {
+      "label": "private_images",
+      "cases": 4
+    },
+    {
+      "label": "profile_inputs",
+      "cases": 3
+    },
+    {
+      "label": "retention",
+      "cases": 2
+    }
+  ],
+  "unchanged_handshake": {
+    "cases": 1,
+    "file_sha256": "ac58eb70c25035379974859710d4c56e9d0226f98479dd192384943a372196ea",
+    "semantics": "Exact accepted10s startup-handshake child25s with one startup packet, no application query and joined non-daemon owned thread. Only numeric IPv4 loopback; no universal query/DNS/failover deadline claim."
+  },
+  "total_required_cases": 134,
+  "test_scope": "PropertyNetworkRoutes uses its existing synthetic auth override plus actual SQL status/privacy/media checks in an owned schema; original15 Inbox/2 safety retain real signed-JWT/current-user auth and common limits. No real provider, account/role grant, secret or production data. No skipped or duplicated inherited class methods count as success.",
+  "preservation": {
+    "owner_contacts": 82,
+    "private_professional_imports": 46,
+    "canonical_users": 4,
+    "accepted_jobs": 9,
+    "cms_version": 7,
+    "floorplans": 2,
+    "declared_additional_sentinel_rows": 2,
+    "final": "Exact seeded106 row/logical-catalog/sequence definition+state snapshot, expected e8 head and postmaster start captured before8957 bootstrap. Raw103, two old-column projections/newNULL and separate version row exact. All model/Inbox/recovery/delivery/service/network owned schemas absent, both marked DBs removed, private artifacts absent."
+  },
+  "runtime": {
+    "postgres": "Exact accepted17.6 digest, network none/loopback only",
+    "postgres_memory_mib": 768,
+    "client_memory_mib": 1536,
+    "native_deadline_seconds": 900,
+    "existing_dependency_inventory_path": "/opt/inbox-native",
+    "files": "Read-only current/previous/baseline/CI mounts, env-i, no host credentials/env values, same pinned wheel/runtime recipe and marked cleanup. No new dependency/service/billing setting."
+  },
+  "result_contract": {
+    "exact_expected": {
+      "status": "PASS",
+      "tests": 134,
+      "resilience_source_tests": 67,
+      "inbox_tests": 15,
+      "hosted_safety_tests": 2,
+      "pure_options_tests": 4,
+      "owned_recovery_tests": 3,
+      "delivery_regression_tests": 53,
+      "customer_copy_tests": 7,
+      "owned_handshake_cases": 1,
+      "legacy_award_tests": 5,
+      "legacy_negotiation_tests": 5,
+      "profile_route_tests": 30,
+      "private_image_tests": 4,
+      "profile_input_tests": 3,
+      "profile_retention_tests": 2,
+      "old_tables": 99,
+      "schema_tables": 106,
+      "model_tables": 105,
+      "untouched_data_tables": 103,
+      "projected_data_tables": 2,
+      "new_nullable_columns": 4,
+      "baseline_visual_sentinel_rows": 2,
+      "owner_contacts_unchanged": 82,
+      "private_profiles_unchanged": 46,
+      "accepted_jobs_unchanged": 9,
+      "cms_version_unchanged": 7,
+      "floorplans_unchanged": 2,
+      "external_provider_attempts": 0,
+      "previous99_preserved_before_sentinels": true,
+      "raw103_data_unchanged": true,
+      "old2_column_projection_unchanged": true,
+      "all106_sequences_unchanged": true,
+      "old_rows_new_columns_null": true,
+      "exact_version_transition": true,
+      "exact_profile_ddl_delta": true,
+      "new9_model_ddl_projection_equal": true,
+      "private_rls_acl": true,
+      "old_acl_rls_unchanged": true,
+      "new_profile_guard_private_invoker": true,
+      "empty_downgrade_reupgrade_equal": true,
+      "selected_downgrade_refused": true,
+      "unselected_downgrade_refused": true,
+      "full106_final_rows_sequences_catalog_unchanged": true,
+      "all_owned_schemas_removed": true,
+      "server_start_unchanged": true,
+      "tcp_query_deadline_claimed": false
+    },
+    "count_rows": 12,
+    "count_total": 133,
+    "additional_owned_handshake": 1,
+    "result_line_max_bytes": 1536,
+    "parity_line_max_bytes": 1536,
+    "failure_line_max_bytes": 640,
+    "counts_line_max_bytes": 512,
+    "native_log_max_bytes": 2097152,
+    "policy": "Exact schema/types/duplicates/count/order/process/exit/noOOM/no provider/cleanup gates. Any valid diagnostic always fails. Source-owned metadata only; never raw SQL/default/private rows."
+  },
+  "local_checks": {
+    "status": "BOUNDED_STATIC_ONLY_PASS_NATIVE_UNRUN",
+    "parser_positive_cases": 2,
+    "parser_negative_cases": 44,
+    "valid_diagnostic_always_fails_cases": 3,
+    "result_record_bytes": 1487,
+    "parser_control_receipt": "outputs/property-network-20261101/profile-customization-native-parser-controls-20261125.json",
+    "parser_control_receipt_sha256": "3e252b9dbbad3a37c252e1a2a2d606c24a9f5da71aefb30775387d2072cdb95c",
+    "AST_checker_blackhole": 2,
+    "AST_embedded_runner": 2,
+    "worker_AST_only": true,
+    "worker_checker_expected_47_fields_equal": true,
+    "worker_cold_receipt": "outputs/property-network-20261101/profile-customization-native-worker-release-cold-review-20261125.json",
+    "worker_cold_receipt_sha256": "e6a3aa4bf203036364af69c4ab3112b7cbc676d881ad56c82fed4d5a65df1198",
+    "source_inventory_static_only": "PropertyNetworkRoutes30, PrivateImageContracts4, ProfileVisualInputs3 and retention2 AST inventories; no application/test execution.",
+    "native_run": false,
+    "provider_calls": 0,
+    "production_SQL": false,
+    "build_or_install": false,
+    "push": false
+  },
+  "publication": "Root FULL and independent cold before any first source/ops push. Actual hosted134/schema/privacy/preservation proof and coordinated FE/browser/recovery/canonical checks remain required; source preparation is not runtime or publication acceptance.",
+  "remaining_scope": "Profile FE/browser, coordinated recovery/publication and broader social-group author-selected avatar integration remain separate outstanding work."
+}
