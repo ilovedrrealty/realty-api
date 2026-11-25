@@ -1,0 +1,27 @@
+{
+  "schema": "backup_v4_stage_diagnostic_sources_v1",
+  "accepted_native_commit": "be0d5962292a7a473ea8db06271c7c79a57e3938",
+  "accepted_actual_run": 44235565280,
+  "accepted_harness_sha256": "6462912c23fa3b25589d1885b837f633d9d2df0f483c8bd162446da4dbddc908",
+  "accepted_requirements_sha256": "3412fd2f86d6ad95ca998cd69b3c58aae852b04801bb72d08042f01066d66bd9",
+  "candidate_files": {
+    "candidate/make-daily-full-public-query-v3.py": "15dfcfff1630e377fab399067efa249186f8c7aadb50ec1890b0213bd67e0768",
+    "candidate/make-daily-full-public-query-v4.py": "831bf05fa10e7cb3ad387cfdf89991ea5fa64245560b68487a1370866b26f8b3",
+    "candidate/test-query-v4.py": "9944fa2f97529ccb3c1218591993b0e5883df9feeae11cb0667e07cfc82418ae",
+    "fixture-table-names.json": "a703b97ad659b3f41c36c4b7ab470fd74751d79c02c2f2a72b63911620e16eb0"
+  },
+  "source_scope": "Public reviewed code only; unchanged V4/test4/V3reference+fixture and inherited11GitLFpins. Diagnostic projections only, no backup acceptance/provider/production data or captures.",
+  "inherited_files": {
+    ".github/workflows/backup-query-compatibility.yml": "a7e8cca088ef2c1113b87a58b892891fd50bd9f7132523c9c101037944d67014",
+    "ci/backup-query-compatibility/requirements.txt": "3412fd2f86d6ad95ca998cd69b3c58aae852b04801bb72d08042f01066d66bd9",
+    "ci/backup-query-compatibility/run-hosted.sh": "0c6f7436fb62228f7f81b6c47a0de13fbd6de4ec838bface44d3d2ffe3e9c0b8",
+    "ci/backup-query-compatibility/source-manifest.json": "286a082607ab69bb986eb40380b762c335911cb781efa4dead19fbe96f2ce887",
+    "ci/backup-query-compatibility/verify-synthetic.py": "6462912c23fa3b25589d1885b837f633d9d2df0f483c8bd162446da4dbddc908",
+    "ci/backup-query-compatibility/workspace/outputs/property-network-20261101/backup-query-compatibility-20261118/make-daily-full-public-query-v2.py": "b2dd42e123ffe718a0759dd9b9000e6e2e197b50c6ba6135801903ec28a05658",
+    "ci/backup-query-compatibility/workspace/outputs/website-growth-20261022/backups/daily-schema-catalog-read-only.sql": "06b8e6c46068e10845b4e17122906c336cbc704804bb1809f1e2f4b71910920d",
+    "ci/backup-query-compatibility/workspace/outputs/website-growth-20261022/backups/finalize-daily-full-public-backup.py": "2b31968a446d240fcf312a21fc44cb7aa0587773c803b0911f9571ec312a8d8c",
+    "ci/backup-query-compatibility/workspace/outputs/website-growth-20261022/backups/make-daily-compressed-query.py": "a2050dacc7f118b45e495bbba63f9ddc8a694528e427e2e6682585d49b4f1202",
+    "ci/backup-query-compatibility/workspace/outputs/website-growth-20261022/backups/make-daily-full-public-query.py": "1234f9b892a3c491ad0a7057e3c5e8bc983430232bb931b286a5fcbc352daa29",
+    "ci/backup-query-compatibility/workspace/outputs/website-growth-20261022/backups/receive-daily-compressed-snapshot.py": "c587281e57bcb1c2aa3fc02d8b10290b278e2b216db59d4c78140550322d8545"
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "schema": "backup_v4_owned_stage_diagnostic_v1",
+  "status": "PREPARED_PENDING_ROOT_FULL_AND_GOOGLE_FULL_COLD_NO_PUSH",
+  "operations_parent": "e4757dec1c6f4f413c056741bcbdc2cf576f1c83",
+  "first_ref": "codex-ci-backup-v4-stage-diagnostic-20261125",
+  "purpose": "Identify actual memory component behavior under the same owned pressure envelope before another generator decision. This never means backup acceptance and never changes success index, original/V2/V3/V4 or production helpers.",
+  "cases": {
+    "payload_map_only": "Exact generated V4 fullCTEprefix remains; replace ONLY exact final SELECT with map text length/SHA projection from ildr_payload_maps. Unreferenced metadata/storage/guard CTEs remain lazy; no row field is removed from payload maps.",
+    "storage_fingerprint_only": "Extract literal storage expression from SHA-pinned V4 source AST. Materialize that exact metadata/fingerprint expression once as text and select its length/SHA, no private rows returned.",
+    "full_snapshot_uncompressed": "Keep entire original generated guarded V4 SELECT including input/schema/tableset/output limits; wrap only to select uncompressed text length/SHA. No JSONB reparse or compression/receiver/finalizer execution."
+  },
+  "source_pins": "All unchanged V4/test4/V3reference and fixture pins plus original11GitLFsources repeated in source manifest; original namespace unchanged. Strict tenNEWpaths/sourceparent/read-only mounts; byte mirrors checked before/after each case.",
+  "fixture": {
+    "public_tables": 99,
+    "contacts": 5633,
+    "contact_row_bytes": 9317650,
+    "sources": 5640,
+    "source_row_bytes": 8743189,
+    "storage_objects": 34315,
+    "details": "Exact existing V4 synthetic table/column/Unicode/escape/bytea/sequence/storage fixture. Native counts and SUMtoJSONBrow byte totals proven BEFORE component execution, full99rows/catalog/sequences/storage baseline equal after. No production records copied."
+  },
+  "runtime": {
+    "recipe_commit": "c193a925ba57ea2d67ea48c44e5262817885c8a2",
+    "dockerfile_sha256": "e546d8c5668b87ef28e604107bbb330e6f4b3873cf0208b4d24ca378bd0851f9",
+    "requirements": "Unchanged accepted PGPy0.6.0/pyasn10.6.1/cryptography50.0.2 compatibility recipe; never product requirements.",
+    "python_digest": "sha256:673719e071ecf27434fd2635bbd8d00f49f4fdd81f243143438a42ced8bedf60",
+    "postgres_digest": "sha256:b86568d3e0fe1dfaeff52714f9da36f206a30e4c49131b82bf96982d78627409",
+    "postgres_version_num": 170006,
+    "postgres_memory_bytes": 536870912,
+    "postgres_memory_swap_bytes": 536870912,
+    "client_memory_bytes": 1073741824,
+    "postgres_cpus": 1,
+    "client_cpus": 2,
+    "shared_buffers": "128MB",
+    "work_mem": "4MB",
+    "max_parallel_workers_per_gather": 0,
+    "jit": "off",
+    "namespace": "Network-none PostgreSQL; client shares only owned loopback network namespace; no Docker socket or host credentials in containers.",
+    "database_storage": "Exact owned anonymous Docker volume, disk-backed. Cgroup totals include reclaimable file cache. Verified removal/volume absence in finally; no host production data mount."
+  },
+  "limits": "Unchanged SQL60s, phase480s,PG512MiB/swap512MiB and client1GiB. Six original eventkeys mandatory, optional documented sock key only, allOOMzero for observed completion; process/start/restart/cgroup facts always printed before strictcasegate. Diagnostic kill-grace500s may only observe failures, never pass480s gate.",
+  "failure_flow": "All three cases have fresh independent PG/client/nonceDB/volume. Record earlier component failure/OOM honestly and continue only after marked/container/volume cleanup verified; cleanup/isolation failure stops. Any case failure makes final diagnostic job fail. Allsuccess only means three component observations, never a backup.",
+  "result": "Typed ownedsynthetic selectedbyte length/SHA, generated/derived readonly querySHA, SQLduration, counts, no private payload/query/IDs/exceptiontext. Failure only finite stage/class/firstSQLSTATE. No backup-acceptance marker/artifact/provider/success-index writes.",
+  "cleanup": "Only exact nonce-owned DB, labeled containers/image and checked scratch; percase raw schema metadata removed and markedDBdrop verified when DB is reachable, originalsource/reference bytes unchanged. Authoritative prior ownedvolumeabsence required BEFORE nextcase and finaltrap rechecks allvolumes/source clean.",
+  "prior_actual_failure": {
+    "run": 45586601932,
+    "job": 139109683320,
+    "source_commit": "e4757dec1c6f4f413c056741bcbdc2cf576f1c83",
+    "result": "V4compact exact99payload/hash/fullV2semantics andall4guards passed. Fullstress originaltransport at transport_select OOM: actualPGpeak536870912/oom1/oomkill1/OOMKilledtrue, native/client1/no clientOOM/cleanup/artifacts[]. No V4 adoption.",
+    "root_receipt": "backup-v4-native-45586601932-root-failure.json",
+    "root_log_sha256": "0560808979812d4483517585ad90c93c2b3ea3f82febc68b9b4e7349ac6d087d"
+  },
+  "local_checks": "Actual strictchecker8positive/36negative PASS: all3case results/observations, observedOOM facts allowed onlydiagnostically but strictcase rejected, wrongtypes/counts/lengths/hash/limits/process/OOM/missing/duplicate/SQLSTATEprivacy rejected. One pure V4 file-only generator invocation in owned public-code mirror; actual extracted component_query3positive/3negative exactprojection controls passed. All5PythonASTs/embeddedsourceguard/PLAN/manifest valid. No SQL/native/DB/build/browser/provider/push.",
+  "pending": [
+    "Root full derivation/ops review and independentGoogle fullcold",
+    "Root exactfirstnewrefpush then primary actual threecase observations/cleanup/artifacts[]",
+    "Separate nextsource decision and complete backup acceptance remain required"
+  ]
+}
