@@ -1,0 +1,306 @@
+{
+  "schema": "profile_customization_finite_acceptance_plan_v1",
+  "status": "PREPARED_FOR_ROOT_FULL_AND_INDEPENDENT_COLD_REVIEW_NO_PUSH_OR_HOSTED_EXECUTION",
+  "frontend": {
+    "profile_source": "44a3fdae157039f42fad562bde281f7205ca19f3",
+    "sharing_css_source": "bb4a9c626fb96f93ae6d6bc55b5a2a67f85411ba",
+    "proposed_combined_tree": "cde32bcf2a4ce876ab7610a003bbe188543849c3",
+    "combined_commit": "5ecb7c6e16268f1e8edd1b54d70f11e605e57a02",
+    "source_blobs": 620,
+    "full_current_tests_required": 544,
+    "test_files": 65,
+    "current_strict": "Fresh full-app standalone strict plus actual Dashboard Vite build/typecheck",
+    "landing": "Fresh actual Landing Next build and exports",
+    "retained_proof_limit": "The dbad531 proof remains historical sharing proof only. Profile changes require fresh full544; no retained531 shortcut. Original full sharing20/44/full106/four-view/PNG acceptance is separately still required for the combined release."
+  },
+  "backend": {
+    "commit": "a75f9c26f3bceb14afcb6e1150e1b2a3d50fbada",
+    "tree": "12bbe32d4a6578bc58741c3f10f55bfccbf07e39",
+    "application_source": "2ff311999d41b7719f64b61dc9d7fc04c3465cd4",
+    "contract": "profile-customization-contract-v4-20261125.json",
+    "contract_sha256": "573002892d45a8df38674956db7c97e621e2ecd15cf6e6b9bd1a0d76d6cde6dc",
+    "native_gate": "ACTUAL root and independent Release accepted run45630574556/job139262326424 on exacta75; retained without rerun.",
+    "migration": "Genuine owned106 bootstrap from accepted179, then actual e8b5a3d1f907. Table count stays106; exact four nullable column additions, checks/index/trigger/function/revoked execute must be validated. Original rows compared on original-column projection; original catalog changes limited to reviewed additive DDL."
+  },
+  "browser_scope": {
+    "planned_journeys": 24,
+    "locales": [
+      "en",
+      "es"
+    ],
+    "planned_geometry": 32,
+    "widths": [
+      320,
+      390
+    ],
+    "geometry_labels": [
+      "own_profile",
+      "editor",
+      "preview",
+      "member_directory",
+      "other_profile",
+      "projects",
+      "history",
+      "denied"
+    ],
+    "scope": "Twelve journeys per locale, eight named geometry states at both widths per locale. These are a proposed written-driver contract, not executed metrics. Final exact actor/request/write/controls ledger must be derived from the actual fixture and driver before ops freeze.",
+    "engines": "Pinned owned Chromium main flow. Optional small WebKit selection/preview/Escape/mobile subset only if pinned executable exists; available must launch/pass, absence honest. Never claim iOS native/OS delivery.",
+    "actors": "Six synthetic actors keep existing actual account roles: admin/owner/pro(existingBuyer)/viewer(existingRealtor)/outsider/blocked. ENown targetOwner, ESown targetPro. Both have explicit seeded network aliases/private audience/version1 so no account-name fallback claim is needed.",
+    "limits": "Honor actual login10/min, profile-save20/min and profile-upload10/min. If twelve real logins need two windows, wait only remaining61s since last first-locale login in chunks<=30s; do not reset/disable/spoof limiters. Bound overall run and per-stage waits in reviewed runner."
+  },
+  "journeys_per_locale": [
+    {
+      "name": "own_profile_privacy",
+      "proof": "Real signed-in own profile uses explicit seeded network alias/private audience/version1. Account avatar in existing DashLayout is legitimate; assert no account image/name is copied into new ProfileVisuals/editor/payload. No create/upload/save on initial read."
+    },
+    {
+      "name": "chosen_photos_preview",
+      "proof": "Browser chooses actual valid synthetic PNG files through file inputs; real multipart201/reencoding/private local storage and blob previews. Native134 and current544 API/handler source cover invalid image/MIME/size rules; this browser does not claim an invalid file selection action. No save until explicit click."
+    },
+    {
+      "name": "save_persist_and_readonly",
+      "proof": "Save exact expected_version and selected IDs once; real fresh GET/reload shows same alias/audience/IDs and real no-store WebP bytes. Another permitted reader sees selected pictures and no editor/file input; no forged own prop/workspace grants edit."
+    },
+    {
+      "name": "replace_remove_and_retention",
+      "proof": "Upload replacement avatar, save it, then explicitly remove selected cover/avatar with null. Old pictures fail fresh other-reader GET404, including Admin after deselection; uploader retains private unused bytes. No delete request or deletion claim. Object URLs released when their keyed image unmounts."
+    },
+    {
+      "name": "dirty_guard_discard",
+      "proof": "Browser edits bio and locally removes cover after initial Save; actual native draft navigation Cancel retains exact draft, explicit Discard restores bio and A/C selection without saving. Seeded alias/status and explicit audience remain in exact saved payloads. No claim that this browser independently edits every text/select field."
+    },
+    {
+      "name": "version_conflict_and_uncertainty",
+      "proof": "Owned explicit profile-version advance makes stale Save409; fields/attempt remain locked until explicit reload. Separate actual successful PUT is committed but its browser response is aborted once; UI shows uncertain failure, never automatically repeats PUT, and explicit reload reads the committed result. No mocked success body/status, extra retry or provider request."
+    },
+    {
+      "name": "directory_wall_comment_avatars",
+      "proof": "Directory/member card and real wall/post comments show only author-selected private avatar IDs returned to the viewer. Private-project comments retain actual project actor name while using authorized chosen avatar. Author audience/block/deselection change removes later avatar access; a secondary image404 hides only that image, keeping independently authorized wall/comment text."
+    },
+    {
+      "name": "own_projects_paging",
+      "proof": "Work panels make no call until opened. Real server30-page project read and Next/Previous carry target code/page. Current ProjectView progress/status/category/title and existing workspace links render; there are no new write/assign/lead/client/private-management controls. Seed enough synthetic rows to exercise actual page2, not same-page fake metadata."
+    },
+    {
+      "name": "stakeholder_intersection",
+      "proof": "Target owns or actively participates in one shared and one unrelated private project. Viewer sees only accessible intersection; viewer-accessible project without target active participation and target project without viewer access remain absent. Assignment revoke removes target association without granting or revoking unrelated project authority. Profile private/block refusal is independent of project access."
+    },
+    {
+      "name": "actual_author_history",
+      "proof": "Real profile-history30-page feed retains owner-authored update and another contributor's correction. Display actual author/category/date/project status and correction notice; original remains. Authorized project photo stays private and opens through existing blob reader/workspace link. Existing ServiceHistoryItem endpoint remains old shape and still works."
+    },
+    {
+      "name": "current_denial_clears",
+      "proof": "Use actual owned verification/audience/block transitions to obtain real403/404 on current profile upload/save/work/media reads. Before another polling success, current cached header, draft, work and image nodes disappear. Retained actual-handler regression covers mutation/media401/403/404; anonymous real401 boundary is separate. Do not falsely claim all three denial codes as browser mutation flows unless written driver actually does so."
+    },
+    {
+      "name": "stale_cancel_and_error",
+      "proof": "Hold real old-target work/media request, navigate to another authorized target, then release/deny old request: aborted signal/key cannot replace or clear new target. Inline callback identity changes do not refetch current picture. Controlled transport read failure exposes error/reload, retains no unauthorized projection, and a deliberate retry can recover. No fixed sleeps, forced clicks or private React-state access."
+    }
+  ],
+  "fixture_and_ledger": {
+    "runtime": "Reuse root-reviewed exact pinned loopback-only Node/Python/PG17.6/Playwright runtime, readonly source mounts, owned nonce labels, native image processing and hash checks. Storage adapter writes only owned private temporary WebP files; no Supabase/provider network/bucket/settings action.",
+    "seed_before_baseline": "Genuine8957/c4\u2192179/d8\u2192a75/e8 and retained106 preservation first; then explicit6actor preparedfixture.33projects:32Ownerowned/Proactive(Stakeholder31) +1Stakeholderprivate-registryviewer-only(Proinactive).34updates:oneperproject+Admincorrection. Own/Proassociatedhistory33,Stakeholder-on-Pro32. Two privatebaselinefiles(Adminavatar+projectphoto), initialnetworkaliases andseparateaccountdisplaynames. No real user/role/provider writes.",
+    "allowed_ui_writes": "Only explicit avatar/cover uploads and expected-version PUT /me/profile according to authored per-locale ordered ledger. No Inbox/group/lead/contact/listing-view writes. Listing detail pages are not part of this lane.",
+    "planned_write_actions": "Per locale: uploadA+coverC then PUTexpected1\u21922 members(A/C); dirtyremoveCover+editBio/navigationCancel/Discard restoresA/C withoutwrite; uploadreplacementB thenPUTexpected2\u21923(B/null); explicitcontrol advancesversion3\u21924; stalePUTexpected3 refuses409; afterreload realPUTexpected4\u21925 commits uncertainBio but ownedresponseabort locksUI; finalPUTexpected5\u21926 removesavatar(null/null). Then oneupload403 andonePUTexpected6/deniedBio403 after current verification denial. Exactly3uploads201+4PUT200+1upload403+1PUT409+1PUT403 perlocale:20UIrequests total,8profile_saved audits+6newmedia, no resends.",
+    "controls": "Exactly28 ordered controls:13 perlocale plus ENpeer_members/peer_private pair. Two advance_target_version changes permanently contribute to expectedfinalversion6; all26 transient fields restored to immediatelypre-control values. No role/account creation or immutable history changes.",
+    "after": "Independently compare all106 catalog/rows/sequences to prepared baseline except finite expected newly selected/uploaded private profile rows, plus exact expected profile versions/selection and private file hashes. Original82owner contacts/46private professional drafts/9jobs/CMS7/floorplans2 remain unchanged; seven Inbox tables stay empty. Refuse any unmodeled mutation or provider/tracking request.",
+    "privacy": "No raw private names/bodies/UUIDs/source URLs/cookies/tokens/file bytes logged or artifact uploads. Finite numeric/boolean/enumerated receipts and exact typed parser; artifacts[]."
+  },
+  "release_conditions": [
+    "Root full/cold exact source union accepted and exact combined commit known before any new hosted ops freeze.",
+    "Root/Release native a75 schema/media/visibility/author/privacy suite actually passed; no source-only result presented as native success.",
+    "Fresh current544/full strict/Vite/Next and written exact real browser ledger/geometry success, with real mutation/privacy failures binding.",
+    "Owned processes/private files/database/container/volume removed and actual absence checked even on failure.",
+    "Original sharing acceptance separately complete; no weakening/rerun/publish by this planning lane. Root owns any push/migration/deployment/production checks."
+  ],
+  "explicitly_outstanding": [
+    "Group post/comment author avatar integration and its separate group-alias/audience/privacy proof are not included and remain unfinished.",
+    "No native OS share delivery, paid provider activation, automatic Google/account identity copying, real-time push or complete Facebook/LinkedIn parity claim."
+  ],
+  "operations_parent": "a6dbf82bbe5c01c5ed2df3343300a863f420b1db",
+  "proposed_first_ref": "codex-ci-profile-customization-browser-20261125",
+  "ownership": {
+    "google": [
+      "workflow",
+      "PLAN.json",
+      "run-hosted.sh",
+      "run-browser.mjs"
+    ],
+    "groups": [
+      "serve_fixture.py",
+      "check-result.py"
+    ]
+  },
+  "native_receipt": "profile-customization-native-45630574556-root-acceptance.json",
+  "native_receipt_independent_release": "profile-customization-native-45630574556-release-acceptance.json",
+  "written_contract": {
+    "journeys": 24,
+    "geometry": 32,
+    "contexts": 14,
+    "presence": 12,
+    "actual_logins": 12,
+    "ui_mutation_requests": 20,
+    "upload_successes": 6,
+    "profile_saves": 8,
+    "stale_refusals": 2,
+    "auth_refusals": 4,
+    "uncertain_commits": 2,
+    "api_boundary_checks": 16,
+    "control_transitions": 28,
+    "denial_projection_checks": 8,
+    "stale_context_checks": 2,
+    "page_errors": 0,
+    "unexpected_mutations": 0,
+    "external_writes": 0,
+    "tracking_requests": 0
+  },
+  "ordered_ui_requests_per_locale": [
+    {
+      "method": "POST",
+      "path": "/property-network/me/profile/media",
+      "kind": "avatar",
+      "status": 201
+    },
+    {
+      "method": "POST",
+      "path": "/property-network/me/profile/media",
+      "kind": "cover",
+      "status": 201
+    },
+    {
+      "method": "PUT",
+      "path": "/property-network/me/profile",
+      "expected_version": 1,
+      "selection": "A/C",
+      "status": 200,
+      "result_version": 2
+    },
+    {
+      "method": "POST",
+      "path": "/property-network/me/profile/media",
+      "kind": "avatar_replacement",
+      "status": 201
+    },
+    {
+      "method": "PUT",
+      "path": "/property-network/me/profile",
+      "expected_version": 2,
+      "selection": "B/null",
+      "status": 200,
+      "result_version": 3
+    },
+    {
+      "method": "PUT",
+      "path": "/property-network/me/profile",
+      "expected_version": 3,
+      "selection": "B/null",
+      "body": "staleBio",
+      "status": 409
+    },
+    {
+      "method": "PUT",
+      "path": "/property-network/me/profile",
+      "expected_version": 4,
+      "selection": "B/null",
+      "body": "uncertainBio",
+      "status": 200,
+      "result_version": 5,
+      "browser_response": "aborted_after_real_commit"
+    },
+    {
+      "method": "PUT",
+      "path": "/property-network/me/profile",
+      "expected_version": 5,
+      "selection": "null/null",
+      "body": "uncertainBio",
+      "status": 200,
+      "result_version": 6
+    },
+    {
+      "method": "POST",
+      "path": "/property-network/me/profile/media",
+      "kind": "avatar",
+      "status": 403
+    },
+    {
+      "method": "PUT",
+      "path": "/property-network/me/profile",
+      "expected_version": 6,
+      "selection": "null/null",
+      "body": "deniedBio",
+      "status": 403
+    }
+  ],
+  "ordered_controls": {
+    "en": [
+      "advance_target_version",
+      "author_private",
+      "author_members",
+      "peer_members",
+      "revoke_peer_assignment",
+      "restore_peer_assignment",
+      "peer_private",
+      "target_private",
+      "target_members",
+      "target_avatar_none",
+      "target_avatar_restore",
+      "target_unverified_upload",
+      "target_verified_upload",
+      "target_unverified_save",
+      "target_verified_save"
+    ],
+    "es": [
+      "advance_target_version",
+      "author_private",
+      "author_members",
+      "revoke_peer_assignment",
+      "restore_peer_assignment",
+      "target_private",
+      "target_members",
+      "target_avatar_none",
+      "target_avatar_restore",
+      "target_unverified_upload",
+      "target_verified_upload",
+      "target_unverified_save",
+      "target_verified_save"
+    ]
+  },
+  "runtime": {
+    "parent": "a6dbf82bbe5c01c5ed2df3343300a863f420b1db",
+    "inherited_ops_tuples": 394,
+    "new_paths": 6,
+    "extra_reference_mount": "/baseline106=17943ba1714673c51c43cdbb800106f91612f527",
+    "marker": "ildr-profile-customization-browser-ci:$nonce",
+    "inventory": "/opt/contact-import/baseline-inventory.json",
+    "helper_git_lf_sha256": "388fcae33bf63234df9739ac7405c1a2d49b4914af2a32d56e9023fdb7ed144e",
+    "proof": "Reuse exact accepted loopback/pinned Node24/Python3.11/PG17.6/Playwright1.64.1; only current544+separateactualtsctypecheck+Vite+Next+newprofilebrowser, no unchangednative134/sharingrerun."
+  },
+  "coverage_scope": {
+    "browser": [
+      "passive zero profile-work GET counter before first user open",
+      "replacement revokes actual two prior header objectURLs",
+      "actual current transport work abort then normal real200 ordered-page Refresh recovery",
+      "scoped profile/editor no-account-photo copying; legitimate existing DashLayout account photo allowed"
+    ],
+    "source_or_unit_only": [
+      "callback identity does not refetch image; actual current544 handler regression",
+      "invalid MIME/size before upload clientAPI; current544 and native134 image contracts",
+      "full text/select field bounds and payload allowlist; current544/native134"
+    ],
+    "not_claimed": [
+      "every possible upload MIME or keyboard/OS file chooser",
+      "immediate revocation without a new read or denied operation",
+      "complete Group author avatar integration in this source pair"
+    ]
+  },
+  "local_checks": {
+    "own_static_receipt": "C:\\Users\\hotel\\Documents\\Codex\\2026-10-13\\i-3\\outputs\\property-network-20261101\\profile-browser-own-static-controls-20261125.json",
+    "own_static_sha256": "44591ee3d0e897185c7ea844a80f378d495e8384da37a2834ba65d09cb6d4df6",
+    "python_ast_units": 13,
+    "readonly_source_union_guards_exit": 0,
+    "browser_Node_syntax_native": 0,
+    "parser_controls": "Groups actual3positive53negative and finalenum3positive7negative, source-only; separate receipts bound in proposal",
+    "native_or_browser_execution": false
+  }
+}
