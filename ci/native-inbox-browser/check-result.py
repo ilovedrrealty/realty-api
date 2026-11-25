@@ -10,7 +10,7 @@ path = Path(filename)
 assert path.is_file() and not path.is_symlink() and path.stat().st_size <= 2 * 1024 * 1024
 lines = path.read_bytes().splitlines()
 failed = False
-presence, geometry, frames, sql_failures, input_census, fetch_census = [], [], [], [], [], []
+presence, geometry, frames, sql_failures, input_census, fetch_census, main_flow = [], [], [], [], [], [], []
 labels = {f"{language}_{screen}" for language in ("en", "es") for screen in (
     "mine", "directory", "thread", "manual", "preferences", "blocks", "admin", "legacy")}
 def unique_fetch_pairs(items):
@@ -73,15 +73,31 @@ for line in lines:
             else:
                 assert all(value[key] == -1 for key in lengths)
         print("INBOX_BROWSER_INPUT_CENSUS " + json.dumps(value, sort_keys=True)); input_census.append(value); failed = True
+    if line.startswith(b"INBOX_BROWSER_MAIN_FLOW_FAILURE "):
+        assert mode == "browser" and len(line) <= 1024 and not main_flow
+        value = json.loads(line.split(b" ", 1)[1], object_pairs_hook=unique_fetch_pairs)
+        assert type(value) is dict and set(value) == {"stage", "reason", "error_name", "frames"}
+        assert type(value["stage"]) is str and re.fullmatch(r"[A-Za-z][A-Za-z0-9_]{0,95}", value["stage"])
+        assert type(value["reason"]) is str and re.fullmatch(r"[A-Z][A-Z0-9_]{0,95}", value["reason"])
+        assert value["error_name"] in {"Error", "TypeError", "SyntaxError", "TimeoutError", "TargetClosedError", "AbortError", "OtherError"}
+        assert type(value["frames"]) is list and len(value["frames"]) <= 8
+        assert all(type(row) is dict and set(row) == {"line", "column"} and all(type(row[key]) is int and 0 < row[key] <= 100000 for key in row) for row in value["frames"])
+        print("INBOX_BROWSER_MAIN_FLOW_FAILURE " + json.dumps(value, sort_keys=True)); main_flow.append(value); failed = True
     if line.startswith(b"INBOX_BROWSER_FETCH_CENSUS "):
-        assert mode == "browser" and len(line) <= 1024 and not fetch_census
+        assert mode == "browser" and len(line) <= 1024 and len(fetch_census) < 3
         value = json.loads(line.split(b" ", 1)[1], object_pairs_hook=unique_fetch_pairs)
         booleans = {"method_post", "path_matches", "origin_matches", "json_content_type", "cookie_observed", "cookie_present"}
-        assert type(value) is dict and set(value) == {"stage", "locale", "error_name", "transport_reason"} | booleans
+        assert type(value) is dict and set(value) == {"stage", "locale", "operation", "error_name", "transport_reason", "response_status", "no_store", "has_dispose", "receipt_phase", "receipt_failure"} | booleans
         assert value["locale"] in {"en", "es"} and value["stage"] == value["locale"]+"_uncertain_committed_response"
-        assert value["error_name"] in {"Error", "TypeError", "TimeoutError", "TargetClosedError", "AbortError", "OtherError"}
+        assert value["error_name"] in {"Error", "TypeError", "SyntaxError", "TimeoutError", "TargetClosedError", "AbortError", "OtherError"}
         assert value["transport_reason"] in {"connection_reset", "connection_refused", "timeout", "name_resolution", "invalid_header", "closed", "tls_error", "redirect_error", "other"}
-        assert all(type(value[key]) is bool for key in booleans)
+        assert all(type(value[key]) is bool for key in booleans | {"no_store", "has_dispose"})
+        assert value["operation"] in {"fetch", "receipt", "dispose"} and not any(row["operation"] == value["operation"] for row in fetch_census)
+        assert type(value["response_status"]) is int and (value["response_status"] == 0 or 100 <= value["response_status"] <= 599)
+        assert value["receipt_phase"] in {"not_checked", "status_checked", "json_parsed"}
+        assert value["receipt_failure"] in {"none", "commit_required", "json_parse", "other"}
+        if value["operation"] == "fetch":
+            assert value["response_status"] == 0 and not value["no_store"] and not value["has_dispose"] and value["receipt_phase"] == "not_checked" and value["receipt_failure"] == "none"
         assert not value["cookie_present"] or value["cookie_observed"]
         print("INBOX_BROWSER_FETCH_CENSUS " + json.dumps(value, sort_keys=True)); fetch_census.append(value); failed = True
     if line.startswith(b"INBOX_FIXTURE_SQL_FAILURE "):

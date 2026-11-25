@@ -41,6 +41,24 @@ function fail(error) {
   } catch { /* The nonzero exit remains authoritative. */ }
   process.exit(1)
 }
+function mainFlowFailure(error) {
+  let reason = 'PROCESS_ERROR', errorName = 'OtherError'
+  const frames = []
+  try {
+    if (error instanceof Failure && /^[A-Z][A-Z0-9_]{0,95}$/.test(error.message)) reason = error.message
+    else if (error?.name === 'TimeoutError') reason = 'TIMEOUT'
+    if (['Error', 'TypeError', 'SyntaxError', 'TimeoutError', 'TargetClosedError', 'AbortError'].includes(error?.name)) errorName = error.name
+    for (const line of String(error?.stack ?? '').split('\n')) {
+      const match = line.match(/(?:file:\/\/)?\/browser-run\/run-browser\.mjs:([0-9]{1,5}):([0-9]{1,5})\)?$/)
+      if (!match) continue
+      const frame = { line: Number(match[1]), column: Number(match[2]) }
+      if (frame.line > 0 && frame.column > 0 && !frames.some(x => x.line === frame.line && x.column === frame.column)) frames.push(frame)
+      if (frames.length === 8) break
+    }
+  } catch { /* Only finite source-owned diagnostics, never error text. */ }
+  try { writeSync(1, 'INBOX_BROWSER_MAIN_FLOW_FAILURE ' + JSON.stringify({ stage, reason, error_name: errorName, frames }) + '\n') }
+  catch { /* Preserve the original throw and cleanup. */ }
+}
 process.on('uncaughtException', fail)
 process.on('unhandledRejection', fail)
 const isMutation = request => !['GET', 'HEAD', 'OPTIONS'].includes(request.method())
@@ -285,14 +303,15 @@ async function manual(page, copy, actor, kind, body, locale) {
   await entry.getByText(copy.inbox.manual_record_notice, { exact: true }).waitFor()
   if (kind === 'manual_call') check((await entry.innerText()).includes(copy.inbox.outcomes.no_answer), 'REPORTED_CALL_OUTCOME_REQUIRED')
 }
-async function routeFetchFailureCensus(error, request, page, locale, path) {
-  const result = { stage: stage, locale, error_name: 'OtherError', transport_reason: 'other',
+async function routeFetchFailureCensus(error, request, page, locale, path, operation = 'fetch', response = null, receiptPhase = 'not_checked', receiptFailure = 'none') {
+  const result = { stage: stage, locale, operation, error_name: 'OtherError', transport_reason: 'other',
+    response_status: 0, no_store: false, has_dispose: false, receipt_phase: receiptPhase, receipt_failure: receiptFailure,
     method_post: false, path_matches: false, origin_matches: false, json_content_type: false,
     cookie_observed: false, cookie_present: false }
   let deadline
   try {
     const name = typeof error?.name === 'string' ? error.name : ''
-    if (['Error', 'TypeError', 'TimeoutError', 'TargetClosedError', 'AbortError'].includes(name)) result.error_name = name
+    if (['Error', 'TypeError', 'SyntaxError', 'TimeoutError', 'TargetClosedError', 'AbortError'].includes(name)) result.error_name = name
     // Classify internally only. Never emit an exception message, URL, header,
     // request/response body, cookie value, account or submission identifier.
     const message = typeof error?.message === 'string' ? error.message : ''
@@ -304,6 +323,12 @@ async function routeFetchFailureCensus(error, request, page, locale, path) {
       ['tls_error', /EPROTO|certificate|\bTLS\b|\bSSL\b/i], ['redirect_error', /redirect/i],
     ]
     result.transport_reason = reasons.find(([, pattern]) => pattern.test(message))?.[0] ?? 'other'
+    if (response !== null) {
+      const status = response.status()
+      result.response_status = Number.isInteger(status) && status >= 100 && status <= 599 ? status : 0
+      result.no_store = noStore(response)
+      result.has_dispose = typeof response.dispose === 'function'
+    }
     const headers = request.headers()
     result.method_post = request.method() === 'POST'
     result.path_matches = request.url() === path
@@ -334,8 +359,21 @@ async function uncertain(page, context, copy, locale) {
     let response
     try { response = await route.fetch({ timeout: 15000, maxRetries: 0, maxRedirects: 0 }) }
     catch (error) { await routeFetchFailureCensus(error, request, page, locale, path); throw error }
-    try { check(response.status() === 201 && noStore(response), 'ACTUAL_COMMITTED_ENTRY_REQUIRED'); actualReceipt = await response.json() }
-    finally { await response.dispose() }
+    let receiptPhase = 'not_checked', receiptFailure = 'none'
+    try {
+      check(response.status() === 201 && noStore(response), 'ACTUAL_COMMITTED_ENTRY_REQUIRED')
+      receiptPhase = 'status_checked'
+      actualReceipt = await response.json()
+      receiptPhase = 'json_parsed'
+    } catch (error) {
+      receiptFailure = error instanceof Failure && error.message === 'ACTUAL_COMMITTED_ENTRY_REQUIRED' ? 'commit_required'
+        : error?.name === 'SyntaxError' ? 'json_parse' : 'other'
+      await routeFetchFailureCensus(error, request, page, locale, path, 'receipt', response, receiptPhase, receiptFailure)
+      throw error
+    } finally {
+      try { await response.dispose() }
+      catch (error) { await routeFetchFailureCensus(error, request, page, locale, path, 'dispose', response, receiptPhase, receiptFailure); throw error }
+    }
     recordCommand('buyer', actualReceipt)
     await route.abort('failed')
   }
@@ -591,6 +629,11 @@ async function run() {
     console.log('INBOX_BROWSER_RESULT ' + JSON.stringify({ status: 'PASS', locales: ['en', 'es'], journeys: 24, geometry: 32,
       api_boundary_checks: 16, successful_commands: 32, denied_entry_posts: 4, control_transitions: 12, contexts: 16, actual_logins: 14,
       page_errors: pageErrors, unexpected_mutations: unexpectedMutations, external_writes: externalWrites, tracking_requests: trackingRequests, blocked_external_requests: blockedExternal }))
+  } catch (error) {
+    // Record the awaited cause before closing contexts can reject pending routes
+    // and race run().catch(fail) through the existing unhandled-rejection hook.
+    mainFlowFailure(error)
+    throw error
   } finally {
     clearTimeout(timer)
     for (const context of contexts.reverse()) await context.close()

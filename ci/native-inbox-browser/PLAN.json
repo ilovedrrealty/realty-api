@@ -1,8 +1,8 @@
 {
-  "schema": "native-inbox-browser-fetch-diagnostic-v7",
+  "schema": "native-inbox-browser-lifecycle-diagnostic-v8",
   "status": "FROZEN_PENDING_ROOT_FULL_AND_INDEPENDENT_COLD_REVIEW_NO_PUSH",
-  "operations_parent": "4ec5c56b099c74173ef6394f8dcb46dc19a5a46f",
-  "proposed_first_ref": "codex-ci-native-inbox-browser-fetch-diagnostic-v7-20261125",
+  "operations_parent": "9240ec3e0dea209d16795dc5993b9519d90af6d6",
+  "proposed_first_ref": "codex-ci-native-inbox-browser-lifecycle-diagnostic-v8-20261125",
   "frontend": "6015987e33375ed012996dddb27ca092532d793c",
   "frontend_tree": "dfc17c06f665e3088d56a0582013f5516ec6c106",
   "frontend_parent": "caa0e22f41f0d9d9d88e15fe7795dae776008408",
@@ -140,7 +140,7 @@
   "privacy": "Only bounded finite typed counts, approved source enums, source-owned line/column diagnostics; native failures, malformed/missing/duplicate receipts remain failures.",
   "cleanup": "Nonce label-checked containers/images/scratch; marker checked owned DB drop and absence; read-only source clean. No artifact upload; root independently verifies terminal/native/OOM/running/cleanup and actual artifacts[].",
   "release": "Root owns full source/ops plus independent review, first absent-ref push, actual hosted acceptance and later production changes. Preparation is not acceptance.",
-  "local_checks": "Actual Node syntax0/checkerPythonAST1; strict baseline success1, validdiagnostics2bothalwaysfailed,28negativecontrols PASS inclduplicates/unknown/privatefields/type/size/stage/cookieconsistency. No browser/native/build/SQL/provider execution; unchangedfixture and originalsuccess/predicate paths retained.",
+  "local_checks": "Actual Node syntax0/checkerPythonAST1; strictbaseline1PASS, validdiagnostics7allalwaysfailed (mainflow/lifecycle/combined),49negativecontrols PASS inclduplicatekeys/operations/unknownprivatefields/types/size/stage/status/cookieconsistency/frames. No browser/native/build/SQL/provider execution; unchangedfixture and successpredicates.",
   "backend_parents": [
     "79e9311874e3ea91e45b990629965534d41bb5fa",
     "07b2b7c762b129c5b6ea978299ba69e528e3189e"
@@ -222,5 +222,25 @@
       "https://raw.githubusercontent.com/microsoft/playwright/v1.64.1/packages/playwright-core/src/client/fetch.ts"
     ],
     "source_checked": "Pinned route.fetch supports all supplied options and delegates context.request._innerFetch; response.dispose only disposes that response. Exact179 require_json_mutation checks Origin/JSON plus normal cookie auth; frontend axios has no separate CSRFheader. No product defect or transport correction claimed."
+  },
+  "lifecycle_failure_diagnostic": {
+    "actual_failure": {
+      "run": 45603202147,
+      "job": 139167192865,
+      "operations": "9240ec3e0dea209d16795dc5993b9519d90af6d6",
+      "stage": "en_uncertain_committed_response",
+      "reason": "PROCESS_ERROR",
+      "source_line": 338,
+      "statement": "finally { await response.dispose() }",
+      "fetch_census_present": false,
+      "log_utf8_bytes": 104402,
+      "log_sha256": "ebfe144de8ae3d90777e3d765f150d46d5504e60a65b4234854933bfd76c529c",
+      "actual": "FreshVite0/Next0/4exports; same partialEnglish progress, failure/secondaryAPIledger/cleanup/artifacts[] preserved. No product or disposal rootcause proved."
+    },
+    "source_masking": "Exactrun() finally closes contexts before run().catch(fail). A main awaited exception can trigger cleanup, then a pending routefetch/dispose rejection can reach unhandledRejection fail first and mask the earlier cause. Receipt try/finally can also mask validation/JSONparse error with disposal failure. Pinned APIResponse.dispose is valid and removes per-response fetchUID only.",
+    "scope": "Synchronous finite main-flow error kind/ownedFailurecode/boundedsourceframes recorded BEFORE context cleanup, then originalthrow/finally preserved. Extend rejection-only route census with operation(fetch/receipt/dispose), status/noStore/hasDispose/receiptphase/finiteoriginalreceiptfailure, retaining original throws and all cleanup.",
+    "privacy": "No raw error/message/header/value/body/cookie/IDs/URL. Singlemain-flow marker<=1024B; <=3route markers with distinctsourceoperations each<=1024B, stricttyped/enum/duplicatekeys; everydiagnostic alwaysfails. Cookie observation<=2s locally, noHTTP.",
+    "preserved": "All source179/601success paths, originalglobalfail/uncaught hooks, 15s0retryroutefetch, actual201/noStore/receipt/abort/frozenUUID/resolver/noresend,60s/600scaps, all32commands70audit24journeys32geometry/fourdenials/provider0/privatepreservation/cleanup. Same523/95retained, freshViteNext/UI stillrequired.",
+    "primary_source": "https://raw.githubusercontent.com/microsoft/playwright/v1.64.1/packages/playwright-core/src/client/fetch.ts"
   }
 }
