@@ -6,7 +6,7 @@ die() { printf 'PLATFORM_BROWSER_REFUSED %s\n' "$1" >&2; exit 1; }
 bounded() { timeout --kill-after=8s "$@"; }
 [[ $# == 7 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 &&
-   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-manual-sharing-anonymous-v5-20261125 &&
+   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-manual-sharing-title-v6-20261125 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die HOSTED_EXACT_EVENT_REQUIRED
 ops="$1"; frontend="$2"; baseline="$3"; backend="$4"; migration="$5"; relay="$6"; previous="$7"
 [[ "$ops" == "$GITHUB_WORKSPACE/build-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-source" &&
@@ -20,22 +20,20 @@ done
 expected_operations=$(cat <<'EXACT_OPERATIONS'
 .github/workflows/manual-sharing-browser.yml
 ci/manual-sharing-browser/PLAN.json
-ci/manual-sharing-browser/check-result.py
-ci/manual-sharing-browser/run-browser.mjs
 ci/manual-sharing-browser/run-hosted.sh
 EXACT_OPERATIONS
 )
 [[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" &&
-   $(git -C "$ops" show -s --format=%P HEAD) == f77b01fbe1c30919fae795b287c93940b4e4869e &&
+   $(git -C "$ops" show -s --format=%P HEAD) == 6200c41d72de34e0263d247326f191e6c1c436c4 &&
    $(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) == "$expected_operations" ]] || die EXACT_OPERATIONS_REQUIRED
 backend_commit=17943ba1714673c51c43cdbb800106f91612f527
 backend_tree=ff940a7b6e983d4c669202746d9676b4b82e9a06
-frontend_commit=9c66bc959ac7330aaf9c22dc646a65830dbf4566
-frontend_tree=d6a07c211319ddf6ce270b483581a8b1013faadc
+frontend_commit=6ca7880c5b154a9c370ea47bffd00d4d89838c4f
+frontend_tree=afdd8907ac05275c72aa4efa87de847adf80a78c
 frontend_paths=616
 [[ $(git -C "$backend" rev-parse HEAD) == "$backend_commit" && $(git -C "$backend" rev-parse HEAD^{tree}) == "$backend_tree" &&
    $(git -C "$frontend" rev-parse HEAD) == "$frontend_commit" && $(git -C "$frontend" rev-parse HEAD^{tree}) == "$frontend_tree" &&
-   $(git -C "$frontend" rev-parse HEAD^) == dbad8aa8e55fccda3dfbfa0ca15bcc7d4cadbb30 &&
+   $(git -C "$frontend" rev-parse HEAD^) == 9c66bc959ac7330aaf9c22dc646a65830dbf4566 &&
    $(git -C "$baseline" rev-parse HEAD) == 01695530df670a94ac28f8b3bf36cc34b5b7a942 &&
    $(git -C "$baseline" rev-parse HEAD^{tree}) == e88ea0c57f9fac39545322532a5992d5a2927676 &&
    $(git -C "$migration" rev-parse HEAD) == c193a925ba57ea2d67ea48c44e5262817885c8a2 &&
@@ -98,7 +96,7 @@ assert set(git('diff','--name-only',base,'HEAD').decode().splitlines())==paths
 before,after=tree(base),tree('HEAD')
 assert len(before)==608 and len(after)==616 and len(set(after)-set(before))==8 and not set(before)-set(after)
 assert all(after[name]==entry for name,entry in before.items() if name not in paths)
-# Retained tests/standalone strict apply only after proving this exact two-file CSS-only child.
+# Retained tests/standalone strict apply only after proving this exact two-file CSS-only descendant.
 css_parent='dbad8aa8e55fccda3dfbfa0ca15bcc7d4cadbb30'
 css_paths={'apps/landing/src/app/globals.css','apps/landing/src/views/PropertyDetail.tsx'}
 assert set(git('diff','--name-only',css_parent,'HEAD').decode().splitlines())==css_paths
@@ -107,9 +105,12 @@ assert set(parent)==set(after) and all(after[name]==entry for name,entry in pare
 def blob(commit,path):return git('show',commit+':'+path)
 css='apps/landing/src/app/globals.css';tsx='apps/landing/src/views/PropertyDetail.tsx'
 assert blob('HEAD',css).replace(b'  overflow-wrap: anywhere;\n',b'',1)==blob(css_parent,css)
-assert blob('HEAD',tsx).replace(b'text-[18px] font-bold [overflow-wrap:anywhere] ${i === 0',b'text-[18px] font-bold ${i === 0',1)==blob(css_parent,tsx)
+css_only_tsx=blob('HEAD',tsx).replace(b'text-[18px] font-bold [overflow-wrap:anywhere] ${i === 0',b'text-[18px] font-bold ${i === 0',1)
+css_only_tsx=css_only_tsx.replace(b'leading-[1.07] tracking-tight [overflow-wrap:anywhere]',b'leading-[1.07] tracking-tight',1)
+css_only_tsx=css_only_tsx.replace(b'<span className="flex min-w-0 items-center gap-1.5 [overflow-wrap:anywhere]">',b'<span className="flex items-center gap-1.5">',1)
+assert css_only_tsx==blob(css_parent,tsx)
 PY_FRONTEND_COMPOSITION
-printf 'MANUAL_SHARE_BUILD_SCOPE frontend_source=9c66bc959ac7330aaf9c22dc646a65830dbf4566 backend_source=17943ba1714673c51c43cdbb800106f91612f527 expected_full_tests=531 current_tests=false current_strict=false retained_frontend_run=45605073716 native95=retained_45588133254_not_rerun\n'
+printf 'MANUAL_SHARE_BUILD_SCOPE frontend_source=6ca7880c5b154a9c370ea47bffd00d4d89838c4f backend_source=17943ba1714673c51c43cdbb800106f91612f527 expected_full_tests=531 current_tests=false current_strict=false retained_frontend_run=45605073716 native95=retained_45588133254_not_rerun\n'
 python3 -I -B - "$baseline/requirements.txt" "$backend/requirements.txt" <<'PY_REQUIREMENTS'
 from pathlib import Path
 import sys
@@ -223,8 +224,8 @@ assert sys.argv[2] == "0"
 PY
 verify_source || die INSTALLED_FRONTEND_MISMATCH
 
-# Exact guarded CSS-only child of dbad: full531/65 and standalone strict actually passed on dbad in c4c7 run45605073716.
-printf 'MANUAL_SHARE_RETAINED_FRONTEND_PROOF tested_frontend=dbad8aa8e55fccda3dfbfa0ca15bcc7d4cadbb30 current_frontend=9c66bc959ac7330aaf9c22dc646a65830dbf4566 css_only_child_verified=true run=45605073716 job=139173748169 tests=531 pass=531 fail=0 skipped=0 standalone_strict=pass current_tests=false current_strict=false\n'
+# Exact guarded CSS-only descendant of dbad: full531/65 and standalone strict actually passed on dbad in c4c7 run45605073716.
+printf 'MANUAL_SHARE_RETAINED_FRONTEND_PROOF tested_frontend=dbad8aa8e55fccda3dfbfa0ca15bcc7d4cadbb30 current_frontend=6ca7880c5b154a9c370ea47bffd00d4d89838c4f css_only_descendant_verified=true run=45605073716 job=139173748169 tests=531 pass=531 fail=0 skipped=0 standalone_strict=pass current_tests=false current_strict=false\n'
 verify_source || die RETAINED_PROOF_FRONTEND_SOURCE_MISMATCH
 
 native=0

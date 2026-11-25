@@ -1,7 +1,7 @@
-name: Isolated manual sharing anonymous held-response acceptance
+name: Isolated manual sharing rental text wrapping acceptance
 on:
   push:
-    branches: [codex-ci-manual-sharing-anonymous-v5-20261125]
+    branches: [codex-ci-manual-sharing-title-v6-20261125]
 permissions:
   contents: read
 concurrency:
@@ -30,9 +30,9 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: ilovedrrealty/iLoveDRRealty
-          ref: 9c66bc959ac7330aaf9c22dc646a65830dbf4566
+          ref: 6ca7880c5b154a9c370ea47bffd00d4d89838c4f
           path: frontend-source
-          fetch-depth: 12
+          fetch-depth: 13
           persist-credentials: false
       - name: Read exact reviewed unchanged API
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1

@@ -1,21 +1,21 @@
 {
-  "schema": "manual-sharing-anonymous-held-response-v5",
+  "schema": "manual-sharing-rental-wrap-v6",
   "status": "PREPARED_FOR_ROOT_FULL_AND_INDEPENDENT_COLD_REVIEW_NO_PUSH_OR_HOSTED_EXECUTION",
-  "operations_parent": "f77b01fbe1c30919fae795b287c93940b4e4869e",
-  "proposed_first_ref": "codex-ci-manual-sharing-anonymous-v5-20261125",
+  "operations_parent": "6200c41d72de34e0263d247326f191e6c1c436c4",
+  "proposed_first_ref": "codex-ci-manual-sharing-title-v6-20261125",
   "frontend": {
-    "commit": "9c66bc959ac7330aaf9c22dc646a65830dbf4566",
-    "tree": "d6a07c211319ddf6ce270b483581a8b1013faadc",
-    "parent": "dbad8aa8e55fccda3dfbfa0ca15bcc7d4cadbb30",
+    "commit": "6ca7880c5b154a9c370ea47bffd00d4d89838c4f",
+    "tree": "afdd8907ac05275c72aa4efa87de847adf80a78c",
+    "parent": "9c66bc959ac7330aaf9c22dc646a65830dbf4566",
     "source_blobs": 616,
-    "fetch_depth": 12,
+    "fetch_depth": 13,
     "full_contracts": 531,
     "test_files": 65,
-    "standalone_strict": "retained actual45605073716/job139173748169 on dbad parent; exact source guard proves only two wrapping CSS edits and every test/nonCSS logic unchanged",
+    "standalone_strict": "retained actual45605073716/job139173748169 ondbad; exactsourceguard proves whole CSS-only descendant and every test/nonCSSlogic unchanged",
     "dashboard_vite": "fresh_current_required",
     "landing_next": "fresh_current_required",
-    "composition": "Exactly16 reviewed paths from601:608base→616,8additions; existing dbad15 plus globals.css. Exact additional two-file CSS-only child reverses to dbad; all614 other mode/type/blobs identical, same616 paths.",
-    "full_contracts_proof": "retained actual531 PASS/0fail/0skip/0cancel/0todo on dbad in45605073716/job139173748169; this guarded CSS-only child is not claimed current-full-tested"
+    "composition": "Exactly16 reviewed paths from601:608base→616,8additions; all614 outside reviewed twoCSS files equaldbad. ExactwholeCSSchain reversal (prose,mortgage,title,location) restores dbad bytes; current1path child adds only2 CSSclass changes to9c66.",
+    "full_contracts_proof": "retained actual531 PASS/0fail/0skip/0cancel/0todo ondbad45605073716/job139173748169; current6caCSSdescendant is notclaimedcurrentfulltested"
   },
   "backend": {
     "commit": "17943ba1714673c51c43cdbb800106f91612f527",
@@ -75,8 +75,8 @@
     "api_failure": "MANUAL_SHARE_FIXTURE_FAILURE finite stage/error_type/reason only",
     "privacy": "No raw body, contact fields, credentials, fixture secret, privateID, arbitrary URL/stack or downloaded image bytes in logs; artifacts[]"
   },
-  "proof_scope": "Retain actual531/65 and standalone strict on dbad from45605073716/job139173748169 only after exact automated source guard proves two CSS-only additions reverse to dbad and all614 other blobs/tests remain unchanged. Never claim current full tests/standalone strict. Fresh DashboardVite/its actual typecheck and LandingNext required, then complete original20journeys44mobilegeometry/full106ledger/4views/8controls/PNG/clipboard/native/privacy. Native95 retained45588133254. No prior failure is treated as acceptance.",
-  "review_and_release": "Five-path ops successor off f77b needs rootFULL and independentcold before root firstpush. Backend179/frontend9c66, sourceguards/deps/runtime/fixture/all originalactions/counts/20journeys44mobilegeometry/PNG/APIprivacy remain; only heldGET anonymous replay +failure-only status/booleans parser changes. No priorfailure is acceptance.",
+  "proof_scope": "Retain actualdbad531/65 andstandalone strict45605073716 onlyafter native exactsourceguard reverses allfour CSS target edits (prose,mortgage,title,location) in twofiles and proves all614otherblobs/tests unchanged. FreshVite/itsactualtypecheck and LandingNext plus original20/44/full106/4view8control/PNG/clipboard/native/privacy required; native95 retained45588133254. Existing strictanonymousreplay remains exact6200; no earlierfailure is fullacceptance.",
+  "review_and_release": "Three-path ops successor off6200 and exact FE6ca sourcechild need rootFULL and independentcold before root firstpush. Driver/checker/nativefixture bytes identical6200, all20/44/full106/PNG/privateprovider gates preserved.",
   "written_finite_browser_contract": {
     "journeys": 20,
     "geometry": 44,
@@ -162,17 +162,12 @@
   ],
   "local_checks": {
     "python_ast_units": 11,
-    "browser_node_syntax_native": 0,
-    "strict_parser_positive_controls": 3,
-    "strict_parser_negative_controls": 23,
-    "valid_held_diagnostics_always_fail_controls": 2,
-    "driver_reversing_only_strict_anonymous_replay_and_failure_diagnostic_equals_parent": true,
-    "native_fixture_byte_unchanged": true,
-    "original_counts_actions_and_success_predicates_unchanged": true,
-    "receipt": "outputs/property-network-20261101/manual-sharing-anonymous-v5-static-controls-20261125.json",
-    "receipt_sha256": "069236cf589b57ed36d25a2b51b860b124c90291de5b24b3107233ff8f5ee0a1",
+    "actual_readonly_whole_css_chain_composition_guard_native": 0,
+    "driver_checker_fixture_byte_equal_parent": true,
+    "source_guard_reverses_prose_mortgage_title_location_to_tested_dbad": true,
+    "all_other614_blobs_and_tests_unchanged": true,
     "git_bash_runner_syntax_native": null,
-    "scope": "Pure AST/Node/parser/source-bytes only; no new product tests/build/application/browser/DB/install/provider/push or runtime acceptance. Hosted Bashsyntax stillrequired; no localBashproof."
+    "scope": "Pure AST/readonly Git sourceguard only; no new product tests/build/application/browser/DB/install/provider/push. Existing parsercases retained because checker unchanged. Hosted Bashsyntax required; no localBashproof."
   },
   "diagnostic_scope": "Failure-only on an unchanged viewport/control geometry predicate: at most one strict 12KiB census; scan at most2500 body elements, emit24 bounded rows with fixed tag/scope/source-known-class enums and integer width/left/right/client/scroll only plus known label/viewport totals. Never text, URL, ID, computed-style strings, attributes, source data or screenshot. The parser always marks a census asFAIL, rejects duplicate/unknown/wrong-mode/private/oversized/boolean-integer fields. Existing failure/ownframes remain binding. No extra click/read/write/route change, fixture byte-identical, original20/44/4views/8controls/PNG/provider/privacy predicates unchanged.",
   "prior_actual_failures": [
@@ -234,9 +229,21 @@
       "reason": "REAL_HELD_PUBLIC_RESPONSE_REQUIRED",
       "actual_status": "notlogged; do notclaimobserved500",
       "scope": "Actual sequence passed CORSfailure, selectedphoto storyPNG/nativefile/sourcechange/withdrawal/freshreadfailure+retry, thenheldGET returnednon200. FreshVite0/Next0,cleanup/artifacts[]; full20/44/APIledger stillunaccepted."
+    },
+    {
+      "operations": "6200c41d72de34e0263d247326f191e6c1c436c4",
+      "run": 45612220997,
+      "job": 139198406609,
+      "status": "FAIL",
+      "phase": "en_rent_geometry_320",
+      "reason": "VIEWPORT_OVERFLOW",
+      "actual_census": "RentH1 box288/scroll534; locationrow box288/scroll392; docclient320/scroll550; shareoffenders0.",
+      "scope": "Englishboth-property completegeometry/assets/transport/sourcechange/stale-close sequence passed; full20/44/ENES/APIunaccepted. FreshVite0/Next0, cleanup/artifacts[].",
+      "primary_bytes": 105992,
+      "primary_sha256": "d6a95d4ec5ad4fd5e65dd0ad70a9bbdd8e5c667162bfdfe46eaef183ac36cf43"
     }
   ],
-  "observed_source_correction": "Only existing listing-prose overflow-wrap:anywhere and exact mortgage result value class. Text wraps without clipping, formulas/data/rates/fetch/permissions/sharing behavior changes. Root authorized both numeric-DOM-proven defects; this successor tests them with original unmodified20journeys44geometry and every existing finite API/view/PNG/privacy check.",
+  "observed_source_correction": "Inherited source9c66 alreadyfixesprose/mortgagetext. Exact new6ca onefilechild wraps only measured H1 title(anywhere) and exact locationflexspan(min-w-0,anywhere) so anonymousflextext can shrink/wrap. Values/format/visibility/auth/fetch/formulas/sharepayload unchanged; no clipping/hiding/layoutredesign.",
   "fixture_cors_correction": {
     "primary_source": "https://github.com/microsoft/playwright/blob/v1.64.1/packages/playwright-core/src/server/network.ts",
     "function": "Route.fulfill/_maybeAddCorsHeaders atline440",
