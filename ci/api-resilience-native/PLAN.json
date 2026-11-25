@@ -1,0 +1,65 @@
+{
+  "schema": "api_resilience_owned_native_acceptance_v1",
+  "status": "PREPARED_PENDING_ROOT_FULL_AND_RELEASE_COLD_REVIEW_NO_PUSH",
+  "operations_parent": "236a1951e956d28ccb97dc5c8bb72f562383c444",
+  "first_ref": "codex-ci-api-resilience-native-20261125",
+  "backend": "07b2b7c762b129c5b6ea978299ba69e528e3189e",
+  "backend_tree": "e51495372b2fefd7223a3dd227af1e505b57fa7f",
+  "backend_parent": "80ce432c37e48a1d2c3f99e51274d079777fd6da",
+  "backend_base": "8957b18520d15dac503e0e4a5ce4b2455135d601",
+  "source_scope": "Only the exact reviewed four source paths differ from8957. No source file is edited or runtime-monkeypatched by this harness. Native3 and all53 lead-delivery cases are unchanged source tests; transport mocks in the original regression suite remain intentional and cannot send externally.",
+  "suites": [
+    {
+      "module": "test_database_connection_options",
+      "class": "DatabaseConnectionOptionsTests",
+      "cases": 4,
+      "kind": "unchanged pure constructor source tests"
+    },
+    {
+      "module": "test_database_pool_recovery",
+      "class": "DatabasePoolRecoveryTests",
+      "cases": 3,
+      "kind": "unchanged owned native PostgreSQL source tests: idle stale replacement, inflight rollback/no automatic replay, one worker heartbeat and shielded drain"
+    },
+    {
+      "module": "test_lead_delivery",
+      "class": "LeadDeliveryTests",
+      "cases": 53,
+      "kind": "entire existing source delivery regression suite, real disposable PostgreSQL schemas with existing MockTransport provider simulations"
+    },
+    {
+      "module": "test_customer_messages",
+      "class": "CustomerMessageTests",
+      "cases": 7,
+      "kind": "unchanged pure customer copy/privacy regression source tests"
+    }
+  ],
+  "source_cases": 67,
+  "operations_cases": 1,
+  "total_cases": 68,
+  "handshake": {
+    "case": "One separate child process opens an owned numericIPv4 loopback listening socket and silently holds one actual PostgreSQL startup packet. The exact production engine_options connect_timeout10 overrides URL connect_timeout0. Actual SQLAlchemy/libpq OperationalError must return after8\u201315s; no application query can run.",
+    "cleanup": "The non-daemon owned server thread closes socket and joins in finally; actual joined receipt required. Child invocation has25s subprocess timeout that kills/waits on failure, never abandons a worker thread. Whole native client900s gate remains.",
+    "limitations": "One target startup-handshake bound only. No claim of DNS/failover cumulative bound, in-flight transaction rescue, automatic replay, TCPkeepalive hard deadline or universal query deadline."
+  },
+  "preservation": {
+    "schema_tables": 99,
+    "models": 98,
+    "alembic_head": "c4e2a7319b60",
+    "baseline": "Actual current source bootstrap and Alembic head plus accepted immutable seed:4users3leads85contacts86sources/82owner/46privateprofiles/9acceptedjobs/worker1/CMS7/floorplans2.",
+    "check": "Exact old99 table names/catalog/full row snapshots/sequences before and after all tests, explicit unchanged c4 readback and pg_postmaster_start_time. Inherited snapshots exclude only Alembic version row values, checked separately. Native test schemas must all be removed. No provider/customer/production data copied.",
+    "isolation": "Each native source class uses its own unique schema in the one fresh nonce-marked database. Baseline accepted jobs in public schema are never polled or replayed."
+  },
+  "runtime": {
+    "recipe_commit": "c193a925ba57ea2d67ea48c44e5262817885c8a2",
+    "recipe_sha256": "e546d8c5668b87ef28e604107bbb330e6f4b3873cf0208b4d24ca378bd0851f9",
+    "python_digest": "sha256:673719e071ecf27434fd2635bbd8d00f49f4fdd81f243143438a42ced8bedf60",
+    "postgres_digest": "sha256:b86568d3e0fe1dfaeff52714f9da36f206a30e4c49131b82bf96982d78627409",
+    "source_baseline": "01695530df670a94ac28f8b3bf36cc34b5b7a942",
+    "dependencies": "Exact accepted baseline installed inventory plus three unchanged SHA-pinned openpyxl/defusedxml/et-xmlfile wheels; no dependency change. Pinned accepted native fixture/catalog/records helper byte checks.",
+    "namespace": "Network-none PostgreSQL17.6; native client shares only owned loopback namespace. Empty/disabled provider configuration, worker lifespan never started. Readonly source/ops mounts, no Docker socket/credentials. Actual HTTP/SMTP/Resend refusal counters stayzero; existing source MockTransport simulations are not live provider activity."
+  },
+  "failure_and_cleanup": "Exact four source AST inventories and executed4/3/53/7 counts, zero skips/expected failures/errors/provider attempts, one typed measured handshake receipt, native/client stoppedzero and notOOM. Marker-checked owned DB drop+absence, nonce-labeled containers/image and bounded owned scratch cleanup. No artifact upload. Root independently reads actual artifacts[].",
+  "local_validation": "Actual bounded PASS: three Python ASTs, one embedded Python AST, PLAN JSON, actual current source AST inventories4/3/53/7, one valid and16 invalid strict receipt controls (native/client/timeout shape/threads/types/privacy/missing/duplicate/failure). No actual67 source tests or handshake run locally. Bash-n remains hosted gate. No local native/DB/Docker/build/install/provider actions.",
+  "production": "No production query/config/restart/helper adoption; no source change/push. Root full review and Release full cold review before first push."
+}
