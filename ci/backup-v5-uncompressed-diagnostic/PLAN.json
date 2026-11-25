@@ -1,0 +1,74 @@
+{
+  "schema": "backup_v5_uncompressed_owned_diagnostic_v1",
+  "status": "PREPARED_PENDING_ROOT_FULL_AND_INDEPENDENT_COLD_NO_PUSH",
+  "operations_parent": "54fa2203c24ae675c8837b529c1b4a0bbe9bbb54",
+  "first_ref": "codex-ci-backup-v5-uncompressed-20261125",
+  "purpose": "Ask only whether compression is necessary for the actual V5 full-snapshot memory failure. Observe immutable V5 whole guarded query as text length/SHA under the same owned envelope; never a backup acceptance or internal root-cause claim.",
+  "cases": [
+    "full_snapshot_uncompressed"
+  ],
+  "source_binding": {
+    "v5_commit": "54fa2203c24ae675c8837b529c1b4a0bbe9bbb54",
+    "v5_generator_sha256": "cf3b4432bfcb76fc5362a441869f28b45e3c2a2a12e62f20be6af7e01fa10c64",
+    "v5_fixture_helper_sha256": "b2565a1b76eec78df9252f3ab08d4b30bc2ee308c40982a29002459761b1d500",
+    "pins": "All17 immutable V5 source-manifest pins checked in hosted source guard and native identity; no candidate/fixture/schema/requirements change. Import the exact54fa helper for its owned identity/99table fixture/seed/state/SQL and drop functions only. Its native main/downstream is never invoked.",
+    "wrapper_reference": "Reviewed0b3 full_snapshot_uncompressed wrapper and strict observer/process/cgroup/cleanup behavior, now bound only to exactV5."
+  },
+  "projection": "Keep entire generated V5 guarded SELECT unchanged inside one derived SELECT returning only octet_length(text) and SHA256. Exact final suffix must occur once; no cast back to JSONB, missing field, altered guard, encryption or compression. Both generated and derived SQL hashes reported; no raw values/query/payload returned.",
+  "retained_evidence": {
+    "v4_run": 45590492049,
+    "v4_job": 139123122398,
+    "v4_log_sha256": "6819f83ef0e78857f2028152ad7523a02689c6d529a99716f3139e1836232daa",
+    "version_scope": "Only V4 map19,056,582B and V4 storage351B completion are retained component observations. V4 map code is unchanged in V5; storage aggregation changed, so no standaloneV5 storage completion is claimed.",
+    "v5_run": 45593796861,
+    "v5_job": 139134480771,
+    "v5_log_sha256": "afeee68d36d532b853ffad03294ebd64bc56960cf880d5945099e63ae5e2f32d",
+    "v5_actual": "Compact/all4guards passed; full original transport reached transport_select then actualPG512MiB OOM, client1/noOOM/cleanup/artifacts[]. No full V5 resource acceptance.",
+    "not_rerun": [
+      "payload_map_only",
+      "storage_fingerprint_only",
+      "compact",
+      "guards",
+      "full compressed transport",
+      "receiver",
+      "finalizer",
+      "owner encryption",
+      "cloud"
+    ]
+  },
+  "fixture": {
+    "public_tables": 99,
+    "contacts": 5633,
+    "contact_row_bytes": 9317650,
+    "sources": 5640,
+    "source_row_bytes": 8743189,
+    "storage_objects": 34315,
+    "scope": "Exact same54fa synthetic UTF8/escape/bytea/sequence/catalog/storage seed before baseline, no production records. Independently count exact rowbytes before derived query; full99/catalog/mutable sequences/storage state after must equal before."
+  },
+  "limits": {
+    "postgres_memory_bytes": 536870912,
+    "postgres_memory_swap_bytes": 536870912,
+    "client_memory_bytes": 1073741824,
+    "sql_timeout_ms": 60000,
+    "phase_seconds": 480,
+    "diagnostic_kill_grace_max_seconds": 500,
+    "shared_buffers": "128MB",
+    "work_mem": "4MB",
+    "parallel_workers_per_gather": 0,
+    "jit": "off",
+    "no_relaxation": true
+  },
+  "isolation": "Exact accepted pinned PG17.6/Python3.11/dependency recipe, network-nonePG and only owned shared loopback client, readonly original/candidate/diagnostic mounts, no host credentials/private key/provider. One fresh nonce-markedDB/anonymousvolume; same fixed connect guards.",
+  "result": "status OBSERVED or FAIL only, backup_accepted alwaysfalse; finite counts/booleans/hashes/durations/source-stage/SQLSTATE. Native client/process/cgroup/start facts emitted before strict case result. OBSERVED requires zeroOOM/unchangedpostmaster/strictnative0 and >=18,060,839 selectedbytes <=64MiB; any failed observation fails job. No success-index/artifact/provider/site writes.",
+  "cleanup": "Exact label/nonce ownership, original helper marker-checkedDBdrop and absence when reachable; raw synthetic schema metadata removed in finally. Per-case containers/anonymousvolume removal and authoritative absence before final verified trap. OOM/unreachableDB still fails and only owned container/volume destruction follows.",
+  "local_checks": {
+    "parser_positive": 3,
+    "parser_negative": 22,
+    "projection_positive": 1,
+    "projection_negative": 3,
+    "python_ast": 2,
+    "inline_scope_ast": 1,
+    "native_sql_database_build_browser_install_provider": false
+  },
+  "release": "Root FULL and independent cold review before first absent-ref push. Native observation and any later generator/capture/recovery/adoption remain separate; no production query or candidate adoption by this source."
+}
