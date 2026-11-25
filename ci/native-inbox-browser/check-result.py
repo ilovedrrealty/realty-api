@@ -10,7 +10,7 @@ path = Path(filename)
 assert path.is_file() and not path.is_symlink() and path.stat().st_size <= 2 * 1024 * 1024
 lines = path.read_bytes().splitlines()
 failed = False
-presence, geometry, frames, sql_failures = [], [], [], []
+presence, geometry, frames, sql_failures, input_census = [], [], [], [], []
 labels = {f"{language}_{screen}" for language in ("en", "es") for screen in (
     "mine", "directory", "thread", "manual", "preferences", "blocks", "admin", "legacy")}
 for line in lines:
@@ -39,6 +39,32 @@ for line in lines:
             type(row[key]) is int and 0 < row[key] <= 100000 for key in row) for row in value["frames"])
         frames.append(value)
         print("INBOX_BROWSER_FRAMES " + json.dumps(value, sort_keys=True)); failed = True
+    if line.startswith(b"INBOX_BROWSER_INPUT_CENSUS "):
+        assert mode == "browser" and len(line) <= 1536 and not input_census
+        value = json.loads(line.split(b" ", 1)[1])
+        assert type(value) is dict and value.get("state") in {"observed", "unavailable"}
+        assert value.get("locale") in {"en", "es"} and value.get("stage") in {
+            locale+"_codepoint_"+action for locale in ("en", "es")
+            for action in ("ascii_fill", "ascii_disabled", "astral_fill", "astral_trial", "astral_enabled", "clear")}
+        assert value["stage"].startswith(value["locale"]+"_")
+        common = {"state", "stage", "locale"}
+        booleans = {"present", "visible", "disabled", "read_only", "fieldset_disabled", "focused", "post_disabled",
+            "checking", "stale", "access_lost", "read_error", "review_expired", "rate_limit"}
+        counts = {"panel_count", "textarea_count", "post_button_count"}
+        lengths = {"code_units", "code_points", "max_length"}
+        if value["state"] == "unavailable":
+            assert set(value) == common
+        else:
+            assert set(value) == common | booleans | counts | lengths
+            assert all(type(value[key]) is bool for key in booleans)
+            assert all(type(value[key]) is int and 0 <= value[key] <= 8 for key in counts)
+            assert all(type(value[key]) is int and -1 <= value[key] <= 4000 for key in lengths)
+            assert value["present"] == (value["textarea_count"] == 1)
+            if value["present"]:
+                assert 0 <= value["code_points"] <= value["code_units"] <= 4000
+            else:
+                assert all(value[key] == -1 for key in lengths)
+        print("INBOX_BROWSER_INPUT_CENSUS " + json.dumps(value, sort_keys=True)); input_census.append(value); failed = True
     if line.startswith(b"INBOX_FIXTURE_SQL_FAILURE "):
         assert mode == "api" and len(line) <= 512 and not sql_failures
         value = json.loads(line.split(b" ", 1)[1])

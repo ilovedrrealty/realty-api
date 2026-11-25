@@ -135,6 +135,42 @@ async function geometry(page, label) {
     geometries.push({ label, ...value }); console.log('INBOX_BROWSER_GEOMETRY ' + JSON.stringify({ label, ...value }))
   }
 }
+async function inputFailureCensus(page, copy, locale) {
+  const diagnosedStage = stage
+  let deadline, result = { state: 'unavailable', stage: diagnosedStage, locale }
+  try {
+    result = await Promise.race([
+      page.evaluate(({ labels, phase, language }) => {
+        const main = document.querySelector('main')
+        const panels = [...main?.querySelectorAll('section') ?? []].filter(section =>
+          [...section.children].some(child => child.tagName === 'H2' && child.textContent?.trim() === labels.thread))
+        const fields = panels.flatMap(section => [...section.querySelectorAll('textarea')])
+        const field = fields.length === 1 ? fields[0] : null
+        const posts = panels.flatMap(section => [...section.querySelectorAll('button')])
+          .filter(button => button.textContent?.trim() === labels.post_message)
+        const notices = [...main?.querySelectorAll('[role="status"],[role="alert"],[aria-live] > p') ?? []]
+        const flag = key => notices.some(node => node.textContent?.trim() === labels[key])
+        const box = field?.getBoundingClientRect(), style = field ? getComputedStyle(field) : null
+        // Only public control state and lengths of the known synthetic input.
+        // Never return its value, document text, account IDs or React internals.
+        return { state: 'observed', stage: phase, locale: language, panel_count: panels.length,
+          textarea_count: fields.length, present: field !== null,
+          visible: !!box && box.width > 0 && box.height > 0 && style.display !== 'none' && style.visibility !== 'hidden',
+          disabled: field?.matches(':disabled') ?? false, read_only: field?.readOnly ?? false,
+          fieldset_disabled: field?.closest('fieldset')?.disabled ?? false,
+          code_units: field ? field.value.length : -1, code_points: field ? [...field.value].length : -1,
+          max_length: field?.maxLength ?? -1, focused: field !== null && document.activeElement === field,
+          post_button_count: posts.length, post_disabled: posts.length === 1 && posts[0].matches(':disabled'),
+          checking: flag('checking'), stale: flag('stale'), access_lost: flag('access_lost'),
+          read_error: flag('read_error'), review_expired: flag('review_expired'), rate_limit: flag('rate_limit') }
+      }, { labels: Object.fromEntries(['thread', 'post_message', 'checking', 'stale', 'access_lost', 'read_error', 'review_expired', 'rate_limit'].map(key => [key, copy.inbox[key]])), phase: diagnosedStage, language: locale }),
+      new Promise((_, reject) => { deadline = setTimeout(() => reject(new Failure('CENSUS_DEADLINE')), 2000) }),
+    ])
+  } catch { /* Unavailable observation never changes the original failure. */ }
+  finally { clearTimeout(deadline) }
+  try { writeSync(1, 'INBOX_BROWSER_INPUT_CENSUS ' + JSON.stringify(result) + '\n') }
+  catch { /* The original error is still rethrown by the caller. */ }
+}
 const panel = (page, title) => page.getByRole('heading', { name: title, exact: true }).locator('..')
 async function inbox(page, copy, path = '/inbox') {
   await navigate(page, path)
@@ -338,12 +374,23 @@ async function runLocale(locale, copy) {
   await displayedThread(buyer, thread, await latestResponse.json(), copy)
   await geometry(buyer, locale + '_thread')
   const bodyLimit = thread.getByLabel(copy.inbox.message_body, { exact: true })
-  await bodyLimit.fill('x'.repeat(2001))
-  check(await button(thread, copy.inbox.post_message).isDisabled(), 'OVER_CODEPOINT_LIMIT_BLOCKS_SUBMIT')
-  await bodyLimit.fill('🏡'.repeat(2000))
-  await button(thread, copy.inbox.post_message).click({ trial: true })
-  check(await button(thread, copy.inbox.post_message).isEnabled() && [...await bodyLimit.inputValue()].length === 2000, 'CODEPOINT_BOUNDARY_ACCEPTS_2000_ASTRAL_CHARACTERS')
-  await bodyLimit.fill('')
+  try {
+    advance(locale + '_codepoint_ascii_fill')
+    await bodyLimit.fill('x'.repeat(2001))
+    advance(locale + '_codepoint_ascii_disabled')
+    check(await button(thread, copy.inbox.post_message).isDisabled(), 'OVER_CODEPOINT_LIMIT_BLOCKS_SUBMIT')
+    advance(locale + '_codepoint_astral_fill')
+    await bodyLimit.fill('🏡'.repeat(2000))
+    advance(locale + '_codepoint_astral_trial')
+    await button(thread, copy.inbox.post_message).click({ trial: true })
+    advance(locale + '_codepoint_astral_enabled')
+    check(await button(thread, copy.inbox.post_message).isEnabled() && [...await bodyLimit.inputValue()].length === 2000, 'CODEPOINT_BOUNDARY_ACCEPTS_2000_ASTRAL_CHARACTERS')
+    advance(locale + '_codepoint_clear')
+    await bodyLimit.fill('')
+  } catch (error) {
+    await inputFailureCensus(buyer, copy, locale)
+    throw error
+  }
   await write(buyer, copy, 'buyer', 'read_marked', () => button(thread, copy.inbox.mark_shown_read).click())
   check((await read(byActor.buyer, '/messaging/unread')).entries === 0, 'EXPLICIT_READ_COMMAND_REQUIRED')
   complete(locale, 'native_keyset_read_cursor')

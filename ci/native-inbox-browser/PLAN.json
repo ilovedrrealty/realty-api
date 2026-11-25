@@ -1,8 +1,8 @@
 {
-  "schema": "native-inbox-browser-acceptance-v2",
+  "schema": "native-inbox-browser-input-diagnostic-v4",
   "status": "FROZEN_PENDING_ROOT_FULL_AND_INDEPENDENT_COLD_REVIEW_NO_PUSH",
-  "operations_parent": "033a327bbb6a2c7b80a6c298263c5e8abd4ac9c1",
-  "proposed_first_ref": "codex-ci-native-inbox-browser-seed-v2-20261125",
+  "operations_parent": "e406c19039416b824129fc323960bd7ca8847c21",
+  "proposed_first_ref": "codex-ci-native-inbox-browser-input-diagnostic-v4-20261125",
   "frontend": "6015987e33375ed012996dddb27ca092532d793c",
   "frontend_tree": "dfc17c06f665e3088d56a0582013f5516ec6c106",
   "frontend_parent": "caa0e22f41f0d9d9d88e15fe7795dae776008408",
@@ -42,7 +42,7 @@
   "native": {
     "rerun": false,
     "source": "17943ba1714673c51c43cdbb800106f91612f527",
-    "scope": "Root independently accepted freshcombined95 for exact179 (8source/hostedsuites94+measuredownedhandshake1), genuine99→106/98→105 model projection, fullprivacy/old99/current106retention/emptydown-reupgrade/serverstart/schemaabsence, exits0/noOOM/markedDBremoval/cleanup/artifacts[]. This browser job does not rerun or claim currentexecution of thosecases.",
+    "scope": "Root independently accepted freshcombined95 for exact179 (8source/hostedsuites94+measuredownedhandshake1), genuine99\u2192106/98\u2192105 model projection, fullprivacy/old99/current106retention/emptydown-reupgrade/serverstart/schemaabsence, exits0/noOOM/markedDBremoval/cleanup/artifacts[]. This browser job does not rerun or claim currentexecution of thosecases.",
     "accepted_run": 45588133254,
     "accepted_job": 139114920757,
     "accepted_source": "17943ba1714673c51c43cdbb800106f91612f527",
@@ -80,7 +80,7 @@
       390
     ],
     "real_identity": "Real cookie sessions and active verified current database users; selected workspace cannot grant permission. Buyer directory current assigned eligible Realtor/Admin only; no historical lead or professional exception.",
-    "conversations": "ActualordinarybidirectionalAgent→Buyer normalmessage plusBuyermessages/manualrecords, nonbuyeropt-in andbilateralblocks. OpaquekeysetOlder/Newer/Latest beyond30rows withnewarrivals, tiedlegacytimestampordering andexplicitshown-sequencemonotonicreadcommands/unread.",
+    "conversations": "ActualordinarybidirectionalAgent\u2192Buyer normalmessage plusBuyermessages/manualrecords, nonbuyeropt-in andbilateralblocks. OpaquekeysetOlder/Newer/Latest beyond30rows withnewarrivals, tiedlegacytimestampordering andexplicitshown-sequencemonotonicreadcommands/unread.",
     "uncertainty": "Narrow owned POST response loss only after actual backend commit; real frozen UUID/body, explicit resolver then fresh authorized GET, one stored entry and no automatic duplicate resend.",
     "oversight": "Actual Admin opens purpose-labelled audit review and posts as own identity to current native pair; both legacy sources remain read-only and messages disclose audited oversight. Blocked-pair Admin intervention refusal is independently executed by the retained exact backend native27/currentcombined95 hosted safety test, not an extra browser denial claim.",
     "privacy": "Actualcurrentassignment/verification changes are narrowlycontrolled/restored; four real DOM write-denials (two403/two404) must hide mountedcachedbody/composer beforeanyheldpollingGETcanreturn.401/403/404componentrender/draftclearing is separately exercised by actualsourcehook+SSRregression in fresh523suite; anonymous401APIboundary is real butnot an additionalDOMwrite-denial claim.",
@@ -107,7 +107,7 @@
     "successful_commands": 32,
     "denied_entry_posts": 4,
     "control_transitions": 12,
-    "login_rate_limit": "Honorunchanged10logins/minute fromoneownedloopbackIP:14realcookie logins in two7actorlocales. BeforeES, wait only anyremainingtime until61s sincelastcompletedENlogin, in≤30s chunks withstagewatchdog rearmed. No spoof/reset/disable;600souterbrowserbound unchanged.",
+    "login_rate_limit": "Honorunchanged10logins/minute fromoneownedloopbackIP:14realcookie logins in two7actorlocales. BeforeES, wait only anyremainingtime until61s sincelastcompletedENlogin, in\u226430s chunks withstagewatchdog rearmed. No spoof/reset/disable;600souterbrowserbound unchanged.",
     "cursor_proofs": "Afterexplicit35/40read, parkBuyer onrealOlder; AgentUIreplyarrives, samecursor GETmustreturntotal+1 andunchangedolderIDs/order, thenrealNewer seesincoming. Adminreview movesOlder beforecontrolledexpiry; afterrenewal realnewreviewID mustserve exactretainedcursor/olderIDs/order. EarlierOlder/Newer/Latestcontrols also useactualGETs; no historypageceil introduced."
   },
   "fixture": {
@@ -140,10 +140,26 @@
   "privacy": "Only bounded finite typed counts, approved source enums, source-owned line/column diagnostics; native failures, malformed/missing/duplicate receipts remain failures.",
   "cleanup": "Nonce label-checked containers/images/scratch; marker checked owned DB drop and absence; read-only source clean. No artifact upload; root independently verifies terminal/native/OOM/running/cleanup and actual artifacts[].",
   "release": "Root owns full source/ops plus independent review, first absent-ref push, actual hosted acceptance and later production changes. Preparation is not acceptance.",
-  "local_checks": "Actual bounded controls: all8 remaining runner inline Python blocks and2 source Python files parse; original25 strict receipt parser controls PASS plus9 finite SQL-diagnostic sanitizer/parser controls PASS; driver exact unchanged Git blob47b7eace. No local app/native/browser/build/install/provider execution. Original exact-source523/fullstrict proof is retained only with run/job/ops/source/tree/log/root-receipt hashes.",
+  "local_checks": "Retain actuale879 boundedchecker baseline1PASS/twovalidalwaysfailedcensus/16negative/PythonAST2+embedded8 controls unchanged. Sibling only source-known statusparagraph selector +newref/metadata; fresh Node--check0 and diffcheck performed. No actualapp/native/browser/build/provider execution.",
   "backend_parents": [
     "79e9311874e3ea91e45b990629965534d41bb5fa",
     "07b2b7c762b129c5b6ea978299ba69e528e3189e"
   ],
-  "backend_composition": "Exacttwo-parent179 mergedtree independently reconstructed from8957+9reviewedInbox79e paths+4disjointreviewedresilience07paths,365 mode/type/blobs. Fetchdepth6 reachesallrefs. Requirements bytes unchanged; database.py exactlyreviewed07 isverifiedbywholeunion instead of incorrectlyrequiring unchanged8957constructor."
+  "backend_composition": "Exacttwo-parent179 mergedtree independently reconstructed from8957+9reviewedInbox79e paths+4disjointreviewedresilience07paths,365 mode/type/blobs. Fetchdepth6 reachesallrefs. Requirements bytes unchanged; database.py exactlyreviewed07 isverifiedbywholeunion instead of incorrectlyrequiring unchanged8957constructor.",
+  "input_failure_diagnostic": {
+    "actual_failure": {
+      "run": 45593425762,
+      "job": 139133208719,
+      "log_utf8_bytes": 104411,
+      "log_sha256": "54c3077f81212c91a15be365102ade103e47bef86faa0ba1ab813b8f069228d4",
+      "receipt": "native-inbox-browser-45593425762-release-failure.json",
+      "receipt_sha256": "5aaf11b9e65f9d4e85ed1638546f177c4cfa0a79cdd5e19c5c06a18e0507c7dc",
+      "precise_statement": "driver343 bodyLimit.fill2000astral after2001ASCII disabled-submit assertion; exceptionTIMEOUT. Prior en_thread_geometry_390stage stale; no overflow observed.",
+      "completed": "Actualseed/API started, Vite0 and firstNext0/4exports. Same601523/fullstrict retained. FullUI/ledger not accepted."
+    },
+    "scope": "Exact inputsequence only receives per-subactionlabels. On failure, bounded2s readonly publicDOM census then rethroworiginal error. No product/delay/action/assertion/success-count change and no same523 rerun.",
+    "census": "One failure-only <=1536B strict marker: source-owned stage/locale, thread/textarea/button counts, visibility/disabled/readonly/fieldset/focus, UTF16/codepointlength/maxLength and knowncopy status flags. Never rawvalue/body/documenttext/privateIDs/Reactinternals. Unavailable observations explicit, any marker alwaysfails.",
+    "preserved": "Exactfill2000emoji(4000UTF16), ASCII2001disabled check, trialclick/assertcodepoints2000, clear; all24journeys32geometry32commands70audit/genuineauth/legacy99/106/privacy/provider0/cleanup binding. FreshVite/Next still required; unchangedfixture/acceptedbackend179+FE601.",
+    "prepush_correction": "Originalunpublished e879 preserved: source601 InboxReadStatus stale label is plain <p> directly under aria-live, so role-only selector missed it. Siblingoffe406 includes [aria-live] > p alongside role status/alert. Only exactsource-ownedcopy equality booleans returned; no rawtext/value orproductchange."
+  }
 }
