@@ -1,0 +1,71 @@
+{
+  "schema": "backup_packaging_components_diagnostic_v1",
+  "status": "PREPARED_NATIVE_UNRUN_PENDING_FULL_REVIEW",
+  "operations_parent": "13ff2233072e842e7e2c2f228028a044b90d6a5c",
+  "first_ref": "codex-ci-backup-packaging-components-v1-20261125",
+  "purpose": "Distinguish once-materialized base64 from complete13ff JSON envelope construction/scalar observation under identical pressure. Source-exact diagnostics only, no specific allocation cause/fix/backup acceptance claim.",
+  "cases": {
+    "base64_once": "Preserve exact13ff snapshot/digest/cipher prefix, materialize its exact encode(cipher_payload,base64) expression once; select only base64 UTF8 bytes/SHA.",
+    "full_json_envelope": "Preserve the complete13ff producer including finalJSON envelope, wrapas MATERIALIZED, select only transport_result::text UTF8 bytecount/SHA. No JSONB cast/reparse."
+  },
+  "immutable_sources": {
+    "parent_source_tree": "All219parent mode/type/blobs unchanged, five new paths. Original20/V3/V4/V5/staged7d67/JSON13ff source immutable.17oldmanifest pins+b256+staged3+JSON3 explicitly checked.",
+    "v5_helper_sha256": "b2565a1b76eec78df9252f3ab08d4b30bc2ee308c40982a29002459761b1d500",
+    "staged_generator_sha256": "47691ecbf43a9ffecf5e9670573d2521281df386fa789d04dfba32de350bb7f5",
+    "read_only_mounts": [
+      "/tools",
+      "/v5-tools",
+      "/staged-tools",
+      "/json-tools",
+      "/new-tools"
+    ]
+  },
+  "native_fixture": "Exact frozenV5 identity(stress)/real99syntheticname fixture; fresh nonce PostgreSQL/client/container/volume for each case.5633contacts/5640sources/34315objects; native rowbytes9317650/8743189; all4bound conditions independently true before select. Full before/after rows/catalog/sequences/storage, source mirrors and serverstart compared.",
+  "limits": {
+    "postgres_bytes": 536870912,
+    "postgres_swap_bytes": 536870912,
+    "client_bytes": 1073741824,
+    "sql_timeout_ms": 60000,
+    "phase_timeout_ms": 480000,
+    "postgres_version_num": 170006,
+    "shared_buffers": "128MB",
+    "work_mem": "4MB",
+    "parallel_workers": 0,
+    "jit": "off",
+    "selected_observation_max_bytes": 67108864,
+    "interpretation": "Original plaintext/output64MiB/compressed32MiB/caps unchanged. Diagnostic base64/JSON text observation uses64MiB bound because base64 is larger than binarycipher; this is not a compressed-transport cap increase or backup acceptance."
+  },
+  "readonly": "Actual component transaction BEGIN READ ONLY and SHOW=on. Only two scalar text bytecount/SHA results leave PostgreSQL; no plaintext/base64/envelope/body values or queryplans/error text.",
+  "process_metrics": "Actual percase native/client/Postgres state/cgroup before/after/start equality, strict original6 counters plus optional sock_throttled, allOOMzero and caps for an OBSERVED result. Failure observations include explicit unavailable states. PeakkB includes fixture/cache, not isolatedSQLRSS.",
+  "failure_and_cleanup": "Observe both cases even if earlier OOM/fails, but require prior nonce-owned container and volume absence authoritatively before next. Marked DBdrop/absence on normal completion, raw3metadata absence in finally; full bounded owned cleanup on failure. Any failedcomponent makes final diagnosticjobfailure; every output backup_accepted=false.",
+  "excluded": "No receiver/finalizer/archive/sealer/encryption/ownerkeys/cloud/index, no cipher or uncompressed rerun, no producer/protocol/cap change, no production SQL/retry/provider/config/credentials. Exact0f05/272 observations retained separately.",
+  "runtime_provenance": {
+    "source": "Reviewed2727374 cipherdiagnostic fivefile runtime pattern preserved with exact13ff sourcebindings/two finitepackaging projections. Same c193 accepted recipe and limits.",
+    "original_diagnostic": "2727374b35b90c38e4a51accdfb18dd17d2f5404",
+    "staged_failure_run": 45601179171,
+    "staged_failure_log_sha256": "0de0b0e4f4d38213b613ca18a0ece82206e28ce7c97300555a5dd7d7851853f0"
+  },
+  "local_checks": "Actual bounded queryderivation2positive/9negative controls using real immutable13ff producer in publicfile-only mirror; typedparser2positive/31negative PASS; worker/checker/runnerembeddedAST3/JSON PASS. No SQL/native/container/build/browser/provider/push. Full diagnostic native observations remain unrun.",
+  "review": "Root full source/ops plus independent cold review before first exact newref push; no adoption based on diagnostic observations.",
+  "retained_uncompressed_observation": {
+    "run": 45596647946,
+    "job": 139144354899,
+    "receipt": "backup-v5-uncompressed-45596647946-root-observation.json",
+    "receipt_sha256": "b90a8ed0869fe8923f9299cadcbca86e3292e0735917f89f7a3fd5ef2f7128d7",
+    "log_utf8_bytes": 33809,
+    "log_sha256": "ee513468ea2bf63f49cb63a088dea5690d2b5224950cd423df3837ad15167d6d",
+    "selected_bytes": 19299376,
+    "component_sql_ms": 1120,
+    "selected_sha256": "2d226d597b71ef5b1a8d45e0f4345eb53318433afd572b60dab6dbc87073fd96",
+    "postgres_whole_phase_peak_bytes": 536870912,
+    "oom_events": 0,
+    "interpretation": "Diagnostic only; zeroOOM at exact512MiB peak is not headroom or backup acceptance. Same unchanged V5 source/fixture proof retained, not rerun."
+  },
+  "preceding_json_failure": {
+    "run": 45607148057,
+    "job": 139180866656,
+    "log_utf8_bytes": 37254,
+    "log_sha256": "0d8df0528efc316b40b243a2a89be94a0610155f243791559a080c8b763c3cf3",
+    "observed": "FreshcompactOID/decoder/receiver/finalizer+guardsPASS; fullstressjson_transport_selectPG512MiBOOM1/kill1. No adoption."
+  }
+}
