@@ -1,8 +1,8 @@
 {
   "schema": "contact-profile-sharing-browser-acceptance-v1",
   "status": "PREPARED_PENDING_ROOT_FULL_COLD_REVIEW_AND_FIRST_PUSH",
-  "operations_parent": "9a80dc30b79999b86160d23428c532b27cd0da74",
-  "proposed_first_ref": "codex-ci-profile-sharing-browser-20261125-v2",
+  "operations_parent": "f381005551433033cf54c515364d347839299cbe",
+  "proposed_first_ref": "codex-ci-profile-sharing-browser-20261125-v3",
   "frontend": "3b9434c008179a3f64893c4139c3d4a10bed6fc4",
   "frontend_tree": "083f63c952673c6ae58f0abe18b38913341b2815",
   "frontend_parent": "351d60f2c35ec25f1a62e1b8a6653602debf19d9",
@@ -12,15 +12,18 @@
   "backend_tree": "11ab69db36eb30881e4f3086578201f584c4092d",
   "backend_parent": "d90a68cbfa07f42a02a841f7730999d96f40dc60",
   "source_scope": "Reviewed source only. No schema, model, requirement, package manifest, lockfile, provider, role, visibility, recipient or billing change. No publication in this acceptance job.",
-  "v2_source_reason": "Actual first run45554365253 failed3 of498 contracts before strict/build/API/browser. All3 failed native UI adapter leaves reproduce import.meta SyntaxError loading actual new sharing component in the old CommonJS VM. The sole successor frontend change adds exact known unset Vite setting, actual URL constructor retaining blob spies, and actual namespaced translations to that test adapter. Every original test body and all production code remain byte-identical. This job reruns fresh498 plus first strict/Vite/Next/browser; it does not label the first run accepted.",
+  "v2_source_reason": "Actual first run45554365253 failed3 of498 contracts before strict/build/API/browser. The source adapter-only successor3b made those3 pass without changing product code or any original test body. V2 reran498/strict/Vite successfully before its runtime checksum refusal; API/Next/browser were not reached.",
+  "v3_source_reason": "Actual V2 run45555636090 passed498/498 contracts, strict and Vite on exact frontend3b, then correctly refused the runtime helper checksum before API/Next/browser. The old Landing-server pin was for a Windows CRLF working copy. This change pins its exact unchanged2820-byte Git LF blob f03f06da instead, retaining primary actual498/strict proof and regenerating fresh assets before first Next/browser. No helper/product/API/driver/checker content changed.",
   "contracts": {
     "expected_files": 62,
     "expected_tests": 498,
     "retained_urgent_tests": 492,
     "new_sharing_helper_cases": 6,
-    "fresh_full_run_required": true,
-    "strict": "Fresh exact Dashboard typecheck; no retained check substituted for the changed source.",
-    "builds": "Fresh exact Dashboard Vite build and actual Landing Next static export against the owned API, requiring login/signup/verify/team exports. Every one of the 592 tracked blobs is rehashed after each install, contract, strict, build and browser phase. Five source commits are checked out; review-base object and ancestry and both manifest/schema diff exits are required explicitly."
+    "fresh_full_run_required": false,
+    "retained_actual_run": 45555636090,
+    "retained_actual_job": 139006888899,
+    "strict": "Retain primary actual498/498 and strictnative0 on the exact unchanged frontend3b source. This job does not rerun them or describe retained proof as current execution.",
+    "builds": "Regenerate fresh exact Dashboard Vite assets and actual first Landing Next export against the owned API, requiring login/signup/verify/team exports. All592 source blobs are rehashed after every executed phase. Six source commits are checked out; review-base object and ancestry and both manifest/schema diff exits are required explicitly."
   },
   "native": {
     "rerun": false,
@@ -35,7 +38,7 @@
     "static_dashboard_recipe": "3007728fd67c5889a8373e41ff3ffa5cc50d839b",
     "accepted_group_fixture_sha256": "e0c5f0971c7c13ed47063907f01fa6ef01590b00fa2855eb1ecb16a38b99463e",
     "accepted_landing_server_path": "ci/buyer-phone/serve-landing.mjs",
-    "accepted_landing_server_sha256": "3ac6008fb5c6ce542436c03d728882c6ac10abaef699b612a31c1d1b5023bee6",
+    "accepted_landing_server_sha256": "f03f06dae7c31f3415dad15492ff581ff94f6c87a519449f84d64780c10e0cbd",
     "postgres": "Pinned17.6/170006, fresh nonce-marked DB, trust only inside the network-none loopback namespace.",
     "node": "Pinned24.22.1 digest, unchanged recipe and locked npm install; no host credentials passed into containers.",
     "browser": "Pinned Playwright image and SRI-verified playwright-core1.64.1, unchanged accepted setup.",
@@ -69,5 +72,5 @@
   "privacy": "No raw request bodies, contact/profile identifiers, URLs, credentials, notes, source data, clipboard/native payload or exception text in logs. Checker emits only strict source-enum failures, typed counts, locale/geometry and preservation booleans. Failed process exits remain binding.",
   "cleanup": "Accepted nonce-label container/image cleanup, read-only source mounts, guarded private scratch removal and owned DB drop checks. No broad killing/deletion and no uploaded artifact actions; root verifies artifacts[] on the actual run.",
   "release": "Root owns exact full/cold review, first absent-ref push, actual terminal result inspection and later production release. Preparing this job is not browser acceptance or publication.",
-  "local_checks": "V2 bounded static validation: original API/driver/checker bytes and full runner body from RUNNER_TEMP guard onward unchanged; same592/full498/20journeys24geometry18links22nativecaptures12pages. Updated source/parent/branch pins and depth6 retain explicit06d7 object/ancestor and successful-diff guards. Prior AST2+inline7/Node/JSON/parser2positive12negative checks retained; V2 new delta AST/JSON/diff checks required before freeze. No local installs/full builds/browser/DB/provider actions; workflow runs bash -n. Fresh V2 hosted acceptance remains unrun."
+  "local_checks": "V3: original driver/API/checker byte-identical f381; all runtime tool checksums verified from immutable Git blob bytes, not Windows working copies. Same592/20journeys24geometry18links22nativecaptures12pages. Pure actual Pydantic2.8 validated both exact fixture model calls with pool_service/cabarete/en/es/phone/email/consent, no database/config/SQLAlchemy/models imports. Retain actual V2 full498 and strict on unchanged3b, regenerate fresh Vite assets, first Next/browser still required. New bounded delta/static/JSON validation before freeze; no local installs/fullbuild/browser/DB/provider calls; workflow runs bash-n."
 }

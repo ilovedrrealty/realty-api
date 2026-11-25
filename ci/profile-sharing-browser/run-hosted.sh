@@ -6,7 +6,7 @@ die() { printf 'PLATFORM_BROWSER_REFUSED %s\n' "$1" >&2; exit 1; }
 bounded() { timeout --kill-after=8s "$@"; }
 [[ $# == 6 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 &&
-   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-profile-sharing-browser-20261125-v2 &&
+   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-profile-sharing-browser-20261125-v3 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die HOSTED_EXACT_EVENT_REQUIRED
 ops="$1"; frontend="$2"; baseline="$3"; backend="$4"; migration="$5"; relay="$6"
 [[ "$ops" == "$GITHUB_WORKSPACE/build-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-source" &&
@@ -24,7 +24,7 @@ ci/profile-sharing-browser/run-hosted.sh
 EXACT_OPERATIONS
 )
 [[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" &&
-   $(git -C "$ops" show -s --format=%P HEAD) == 9a80dc30b79999b86160d23428c532b27cd0da74 &&
+   $(git -C "$ops" show -s --format=%P HEAD) == f381005551433033cf54c515364d347839299cbe &&
    $(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) == "$expected_operations" ]] || die EXACT_OPERATIONS_REQUIRED
 backend_commit=8957b18520d15dac503e0e4a5ce4b2455135d601
 backend_tree=11ab69db36eb30881e4f3086578201f584c4092d
@@ -45,7 +45,7 @@ git -C "$frontend" merge-base --is-ancestor 06d7f74965896ae23d47e7701fc1dbfd9815
 backend_schema_delta=$(git -C "$backend" diff --name-only HEAD^ HEAD -- requirements.txt models alembic) || die BACKEND_SCHEMA_DIFF_REQUIRED
 frontend_manifest_delta=$(git -C "$frontend" diff --name-only 06d7f74965896ae23d47e7701fc1dbfd9815cc40 HEAD -- package.json package-lock.json apps/dashboard/package.json apps/landing/package.json) || die FRONTEND_MANIFEST_DIFF_REQUIRED
 [[ -z "$backend_schema_delta" && -z "$frontend_manifest_delta" ]] || die UNCHANGED_SCHEMA_AND_MANIFESTS_REQUIRED
-printf 'SHARING_BUILD_SCOPE frontend_source=3b9434c008179a3f64893c4139c3d4a10bed6fc4 backend_source=8957b18520d15dac503e0e4a5ce4b2455135d601 new_sharing_tests=6 expected_full_tests=498 current_strict=true landing_product=changed native10=retained_45551910844_not_rerun\n'
+printf 'SHARING_BUILD_SCOPE frontend_source=3b9434c008179a3f64893c4139c3d4a10bed6fc4 backend_source=8957b18520d15dac503e0e4a5ce4b2455135d601 retained_full_tests=498 current_tests=false current_strict=false landing_product=changed native10=retained_45551910844_not_rerun\n'
 [[ -d ${RUNNER_TEMP:-} && $(realpath "$RUNNER_TEMP") == "$RUNNER_TEMP" ]] || die HOST_SCRATCH_REQUIRED
 nonce=$(python3 -I -B -c 'from uuid import uuid4; print(uuid4().hex)')
 [[ "$nonce" =~ ^[a-f0-9]{32}$ ]] || die EXACT_NONCE_REQUIRED
@@ -149,40 +149,8 @@ assert sys.argv[2] == "0"
 PY
 verify_source || die INSTALLED_FRONTEND_MISMATCH
 
-native=0
-bounded 360s docker run "${prepare[@]}" --network none \
-  --mount "type=bind,src=$state/frontend-work,dst=/work" "$node_image" \
-  env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp CI=true NODE_OPTIONS=--max-old-space-size=1536 \
-  sh -c 'node --test --test-reporter=tap tests/*.test.cjs' >"$state/contracts.log" 2>&1 || native=$?
-python3 -I -B - "$state/contracts.log" "$native" <<'PY_CONTRACTS' || die ACTUAL_498_CONTRACTS_REQUIRED
-from pathlib import Path
-import re,sys
-raw=Path(sys.argv[1]).read_bytes()
-assert len(raw)<=4*1024*1024
-counts={key.decode():int(value) for key,value in re.findall(rb'(?m)^# (tests|pass|fail|cancelled|skipped|todo) ([0-9]+)\s*$',raw)}
-print('SHARING_FRONTEND_CONTRACTS native='+sys.argv[2]+' '+str(counts))
-if sys.argv[2]!='0':
-    for name,line,col in re.findall(rb"location: '/work/(tests/[A-Za-z0-9_.-]+\.cjs):([0-9]+):([0-9]+)'",raw)[:12]:
-        print('SHARING_CONTRACT_LOCATION '+name.decode()+':'+line.decode()+':'+col.decode())
-assert sys.argv[2]=='0' and counts=={'tests':498,'pass':498,'fail':0,'cancelled':0,'skipped':0,'todo':0}
-PY_CONTRACTS
-verify_source || die CONTRACTS_ALTERED_FRONTEND_SOURCE
-native=0
-bounded 360s docker run "${prepare[@]}" --network none \
-  --mount "type=bind,src=$state/frontend-work,dst=/work" "$node_image" \
-  env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp CI=true NODE_OPTIONS=--max-old-space-size=1536 \
-  sh -c 'npm run typecheck --workspace=dashboard' >"$state/strict.log" 2>&1 || native=$?
-python3 -I -B - "$state/strict.log" "$native" <<'PY_STRICT' || die ACTUAL_STRICT_DASHBOARD_REQUIRED
-from pathlib import Path
-import re,sys
-raw=Path(sys.argv[1]).read_bytes()
-assert len(raw)<=1048576
-for file,line,col,code in re.findall(rb'(?m)^((?:src|\.\./\.\./packages)/[A-Za-z0-9_./-]+\.(?:ts|tsx))\(([0-9]{1,5}),([0-9]{1,5})\): error (TS[0-9]{4}):',raw)[:12]:
-    print('SHARING_STRICT_DIAGNOSTIC '+file.decode()+':'+line.decode()+':'+col.decode()+' '+code.decode())
-print('SHARING_STRICT_DASHBOARD native='+sys.argv[2])
-assert sys.argv[2]=='0'
-PY_STRICT
-verify_source || die STRICT_ALTERED_FRONTEND_SOURCE
+printf 'SHARING_RETAINED_FRONTEND_PROOF run=45555636090 job=139006888899 operations=f381005551433033cf54c515364d347839299cbe frontend=3b9434c008179a3f64893c4139c3d4a10bed6fc4 tests=498 pass=498 failures=0 skipped=0 strict_native=0 vite_native=0 current_tests=false current_typecheck=false\n'
+verify_source || die RETAINED_FRONTEND_SOURCE_MISMATCH
 
 native=0
 bounded 360s docker run "${prepare[@]}" --network none \
@@ -210,7 +178,7 @@ if sys.argv[3] != "0":
     raise SystemExit(1)
 assert b"vite build" in data and index.is_file() and not index.is_symlink()
 assert b"127.0.0.1:8918" in b"".join(f.read_bytes() for f in index.parent.glob("assets/*.js") if f.is_file())
-print("INTEGRATED_DASHBOARD native=0 typecheck=current_pass build=success")
+print("INTEGRATED_DASHBOARD native=0 typecheck=retained45555636090 build=success")
 PY
 verify_source || die DASHBOARD_ALTERED_SOURCE
 
@@ -221,7 +189,7 @@ dashboard_server="$relay/ci/platform-browser/accepted/serve_dashboard_fixture.mj
 printf '%s  %s\n' \
   e546d8c5668b87ef28e604107bbb330e6f4b3873cf0208b4d24ca378bd0851f9 "$dockerfile" \
   29e0041be48ea60430b9166c65f00190cf726452a0e62979a6075156f9b81ff3 "$dashboard_server" \
-  3ac6008fb5c6ce542436c03d728882c6ac10abaef699b612a31c1d1b5023bee6 "$landing_server" | sha256sum --check --status || die ACCEPTED_RUNTIME_TOOLS_REQUIRED
+  f03f06dae7c31f3415dad15492ff581ff94f6c87a519449f84d64780c10e0cbd "$landing_server" | sha256sum --check --status || die ACCEPTED_RUNTIME_TOOLS_REQUIRED
 python_digest='sha256:673719e071ecf27434fd2635bbd8d00f49f4fdd81f243143438a42ced8bedf60'
 python_image="docker.io/library/python:3.11-slim@$python_digest"
 postgres_image='docker.io/library/postgres:17.6@sha256:b86568d3e0fe1dfaeff52714f9da36f206a30e4c49131b82bf96982d78627409'
@@ -398,5 +366,5 @@ PY_LANDING
   verify_source || die BROWSER_ALTERED_FRONTEND_SOURCE
   [[ -z $(git -C "$backend" status --porcelain=v1 --untracked-files=all) ]] || die BROWSER_ALTERED_BACKEND_SOURCE
 done
-printf 'SHARING_HOSTED_RESULT operations=%s frontend=%s backend=%s retained_native=10 frontend_tests=498 strict=current dashboard=current landing=current browser_journeys=20 browser_geometries=24 link_checks=18 native_capture_calls=22 unexpected_mutations=0 live_provider_calls=0 run=%s attempt=1\n' \
+printf 'SHARING_HOSTED_RESULT operations=%s frontend=%s backend=%s retained_native=10 retained_frontend_tests=498 retained_strict_run=45555636090 dashboard=current landing=current browser_journeys=20 browser_geometries=24 link_checks=18 native_capture_calls=22 unexpected_mutations=0 live_provider_calls=0 run=%s attempt=1\n' \
   "$GITHUB_SHA" "$frontend_commit" "$backend_commit" "$GITHUB_RUN_ID"

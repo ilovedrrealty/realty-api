@@ -1,7 +1,7 @@
 name: Isolated contact and profile sharing browser acceptance
 on:
   push:
-    branches: [codex-ci-profile-sharing-browser-20261125-v2]
+    branches: [codex-ci-profile-sharing-browser-20261125-v3]
 permissions:
   contents: read
 concurrency:
@@ -59,7 +59,7 @@ jobs:
           ref: 3007728fd67c5889a8373e41ff3ffa5cc50d839b
           path: browser-relay
           persist-credentials: false
-      - name: Run current 498 contracts, strict builds and real sharing journeys
+      - name: Retain exact 498 and strict, build fresh assets and run sharing journeys
         shell: bash
         run: |
           set -euo pipefail
