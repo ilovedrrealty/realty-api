@@ -1,5 +1,5 @@
 {
-  "schema": "backup_v4_native_sources_v1",
+  "schema": "backup_v5_native_sources_v1",
   "accepted_native_commit": "be0d5962292a7a473ea8db06271c7c79a57e3938",
   "accepted_actual_run": 44235565280,
   "accepted_harness_sha256": "6462912c23fa3b25589d1885b837f633d9d2df0f483c8bd162446da4dbddc908",
@@ -8,9 +8,11 @@
     "candidate/make-daily-full-public-query-v3.py": "15dfcfff1630e377fab399067efa249186f8c7aadb50ec1890b0213bd67e0768",
     "candidate/make-daily-full-public-query-v4.py": "831bf05fa10e7cb3ad387cfdf89991ea5fa64245560b68487a1370866b26f8b3",
     "candidate/test-query-v4.py": "9944fa2f97529ccb3c1218591993b0e5883df9feeae11cb0667e07cfc82418ae",
-    "fixture-table-names.json": "a703b97ad659b3f41c36c4b7ab470fd74751d79c02c2f2a72b63911620e16eb0"
+    "fixture-table-names.json": "a703b97ad659b3f41c36c4b7ab470fd74751d79c02c2f2a72b63911620e16eb0",
+    "candidate/make-daily-full-public-query-v5.py": "cf3b4432bfcb76fc5362a441869f28b45e3c2a2a12e62f20be6af7e01fa10c64",
+    "candidate/test-query-v5.py": "952da58d8e836467f1936f4b64a7da2ebb6d62bd178e8c1bd7c26e6fd81ed737"
   },
-  "source_scope": "Public reviewed code only. All inherited11 compatibility sources stay unchanged; immutableV3 is reference-only, V4 and test4 are new exact copies. No production captures/data/keys/credentials.",
+  "source_scope": "Public reviewed sources only. ExistingV3/V4/test4/fixture and original11GitLFcompatibility sources remain unchanged. SeparateV5 storage-inventory aggregate successor/test5; no production records/captures/settings/keys/credentials.",
   "inherited_files": {
     ".github/workflows/backup-query-compatibility.yml": "a7e8cca088ef2c1113b87a58b892891fd50bd9f7132523c9c101037944d67014",
     "ci/backup-query-compatibility/requirements.txt": "3412fd2f86d6ad95ca998cd69b3c58aae852b04801bb72d08042f01066d66bd9",

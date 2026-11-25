@@ -14,7 +14,7 @@ def metric_refused(source, reason, key="not_applicable"):
     assert source in {"preflight", "before", "after"}
     assert reason in {"header_shape", "byte_bounds", "line_shape", "duplicate_key", "unsupported_key", "missing_required_counter", "nonzero_or_missing_oom"}
     assert key in {"low", "high", "max", "oom", "oom_kill", "oom_group_kill", "sock_throttled", "unknown_not_whitelisted", "not_applicable"}
-    print("BACKUP_V4_NATIVE_METRIC_DIAGNOSTIC " + json.dumps({"status": "FAIL", "source": source,
+    print("BACKUP_V5_NATIVE_METRIC_DIAGNOSTIC " + json.dumps({"status": "FAIL", "source": source,
         "reason": reason, "key": key}, sort_keys=True, separators=(",", ":")), flush=True)
     raise AssertionError("actual_cgroup_metric_refused")
 
@@ -76,20 +76,20 @@ if len(sys.argv) == 10 and sys.argv[1] == "--observed-processes":
     pg_match = re.fullmatch(r"(created|running|paused|restarting|removing|exited|dead) ([0-9]{1,3}) (true|false) (true|false) ([0-9]{1,6})", postgres)
     assert client_match and int(client_match[1]) <= 255 and pg_match and int(pg_match[2]) <= 255
     assert start in {"unchanged", "changed", "unavailable"}
-    print("BACKUP_V4_NATIVE_PROCESS_OBSERVATION " + json.dumps({"phase": phase, "client_launch_exit": int(native),
+    print("BACKUP_V5_NATIVE_PROCESS_OBSERVATION " + json.dumps({"phase": phase, "client_launch_exit": int(native),
         "client_exit": int(client_match[1]), "client_running": client_match[2] == "true", "client_oom_killed": client_match[3] == "true",
         "postgres_status": pg_match[1], "postgres_exit": int(pg_match[2]), "postgres_running": pg_match[3] == "true",
         "postgres_oom_killed": pg_match[4] == "true", "postgres_restart_count": int(pg_match[5]),
         "server_start_state": start, "phase_elapsed_ms": int(elapsed)}, sort_keys=True, separators=(",", ":")), flush=True)
     for when, filename in (("before", before), ("after", after)):
-        print("BACKUP_V4_NATIVE_CGROUP_OBSERVATION " + json.dumps({"phase": phase, "when": when,
+        print("BACKUP_V5_NATIVE_CGROUP_OBSERVATION " + json.dumps({"phase": phase, "when": when,
             **memory_observation(filename)}, sort_keys=True, separators=(",", ":")), flush=True)
     raise SystemExit(0)
 
 
 if len(sys.argv) == 3 and sys.argv[1] == "--memory-preflight":
     _, _, events = memory(sys.argv[2], "preflight")
-    print("BACKUP_V4_NATIVE_MEMORY_PREFLIGHT " + json.dumps({"status": "PASS", "original_six_keys_present": True,
+    print("BACKUP_V5_NATIVE_MEMORY_PREFLIGHT " + json.dumps({"status": "PASS", "original_six_keys_present": True,
         "contains_sock_throttled": "sock_throttled" in events}, sort_keys=True, separators=(",", ":")), flush=True)
     raise SystemExit(0)
 
@@ -98,7 +98,7 @@ assert phase in {"compact", "guards", "stress"}
 assert re.fullmatch(r"[0-9]{1,3}", native) and re.fullmatch(r"[0-9]{1,6}", elapsed)
 assert 0 <= int(elapsed) <= 480000
 
-prefix = b"BACKUP_V4_NATIVE_RESULT "
+prefix = b"BACKUP_V5_NATIVE_RESULT "
 reports = []
 for line in bounded(filename, 131072).splitlines():
     if line.startswith(prefix):
@@ -129,9 +129,9 @@ if phase == "guards":
     assert report == expected and all(type(report[key]) is int for key in ("lazy_payload_ctes_per_case", "lazy_map_metadata_ctes_per_case"))
 else:
     timings = {"transport_sql_ms", "plaintext_bytes", "compressed_bytes", "receiver_and_validation_ms", "sealer_boundary_calls"}
-    extra = ({"parsed_equivalence_excluding_capture_time_only": True, "compact_bytea_roundtrips": 4, "pure_contracts": 4, "exact_payload_byte_hash_tables": 99}
+    extra = ({"parsed_equivalence_excluding_capture_time_only": True, "compact_bytea_roundtrips": 4, "pure_contracts": 4, "exact_payload_byte_hash_tables": 99, "storage_inventory_byte_hash_cases": 3, "storage_inventory_objects": 17}
         if phase == "compact" else {"contacts": 5633, "sources": 5640, "contact_row_bytes": 9317650,
-            "source_row_bytes": 8743189, "storage_objects": 34315})
+            "source_row_bytes": 8743189, "storage_objects": 34315, "storage_inventory_byte_hash_cases": 3, "storage_inventory_objects": 34315})
     assert set(report) == set(common) | timings | set(extra) | ({"storage_metadata_bytes"} if phase == "stress" else set())
     assert all(report[key] == value and type(report[key]) is type(value) for key, value in extra.items())
     assert all(type(report[key]) is int for key in timings)
@@ -147,7 +147,7 @@ after_current, after_peak, after_events = memory(after_file, "after")
 assert after_peak >= before_peak
 assert native == "0" and client_state == "0 false false" and pg_state == "true false 0"
 print(prefix.decode() + json.dumps(report, sort_keys=True, separators=(",", ":")))
-print("BACKUP_V4_NATIVE_MEMORY " + json.dumps({"phase": phase, "limit_bytes": 536870912,
+print("BACKUP_V5_NATIVE_MEMORY " + json.dumps({"phase": phase, "limit_bytes": 536870912,
     "before_current_bytes": before_current, "before_peak_bytes": before_peak,
     "after_current_bytes": after_current, "whole_phase_peak_bytes": after_peak,
     "oom_events": 0, "oom_kill_events": 0, "native": 0, "client_oom_killed": False,

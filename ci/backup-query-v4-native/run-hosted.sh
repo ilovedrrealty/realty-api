@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 umask 077
-die() { printf 'BACKUP_V4_NATIVE_REFUSED %s\n' "$1" >&2; exit 1; }
+die() { printf 'BACKUP_V5_NATIVE_REFUSED %s\n' "$1" >&2; exit 1; }
 bounded() { timeout --kill-after=8s "$@"; }
 [[ $# == 2 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
-   ${GITHUB_REF:-} == refs/heads/codex-ci-backup-query-v4-native-20261125 && ${GITHUB_RUN_ATTEMPT:-} == 1 &&
+   ${GITHUB_REF:-} == refs/heads/codex-ci-backup-query-v5-native-20261125 && ${GITHUB_RUN_ATTEMPT:-} == 1 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 ]] || die EXACT_HOSTED_EVENT_REQUIRED
 ops="$1"; recipe="$2"
@@ -14,18 +14,19 @@ for checkout in "$ops" "$recipe"; do
      ! -e "$checkout/.env" && ! -L "$checkout/.env" ]] || die CLEAN_SOURCE_REQUIRED
 done
 [[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" &&
-   $(git -C "$ops" show -s --format=%P HEAD) == e604c26509d3a7e948f9452e50d2675bc5c48b6d &&
+   $(git -C "$ops" show -s --format=%P HEAD) == e4757dec1c6f4f413c056741bcbdc2cf576f1c83 &&
    $(git -C "$recipe" rev-parse HEAD) == c193a925ba57ea2d67ea48c44e5262817885c8a2 ]] || die EXACT_PINS_REQUIRED
 python3 -I -B - "$ops" <<'PY_SCOPE'
 from pathlib import Path
 from hashlib import sha256
 import json,subprocess,sys
 root=Path(sys.argv[1]);base='ci/backup-query-v4-native/'
-expected={'.github/workflows/backup-query-v4-native.yml',*(base+name for name in (
-    'PLAN.json','run-hosted.sh','check-result.py','verify-native.py','source-manifest.json','fixture-table-names.json',
-    'candidate/make-daily-full-public-query-v3.py','candidate/make-daily-full-public-query-v4.py','candidate/test-query-v4.py'))}
+expected={
+    '.github/workflows/backup-query-v5-native.yml':'A',
+    **{base+name:'M' for name in ('PLAN.json','run-hosted.sh','check-result.py','verify-native.py','source-manifest.json')},
+    **{base+name:'A' for name in ('candidate/make-daily-full-public-query-v5.py','candidate/test-query-v5.py')}}
 changed=subprocess.check_output(['git','-C',str(root),'diff-tree','--no-commit-id','--name-status','-r','HEAD^','HEAD'],text=True).splitlines()
-assert len(expected)==10 and set(changed)=={'A\t'+name for name in expected}
+assert len(expected)==8 and set(changed)=={kind+'\t'+name for name,kind in expected.items()}
 assert not any(path.is_symlink() for path in (root/base).rglob('*'))
 manifest=json.loads((root/base/'source-manifest.json').read_text())
 assert len(manifest['inherited_files'])==11
@@ -41,10 +42,10 @@ printf '%s  %s\n' e546d8c5668b87ef28e604107bbb330e6f4b3873cf0208b4d24ca378bd0851
 [[ -d "$RUNNER_TEMP" && $(realpath "$RUNNER_TEMP") == "$RUNNER_TEMP" ]] || die OWNED_SCRATCH_REQUIRED
 nonce=$(python3 -I -B -c 'from uuid import uuid4; print(uuid4().hex)')
 [[ "$nonce" =~ ^[a-f0-9]{32}$ ]] || die NONCE_REQUIRED
-state=$(mktemp -d "$RUNNER_TEMP/ildr-backup-v4.XXXXXXXX")
+state=$(mktemp -d "$RUNNER_TEMP/ildr-backup-v5.XXXXXXXX")
 run_key="$GITHUB_RUN_ID-$nonce"
-label=org.ilovedrrealty.backup-query-v4
-image="ildr-backup-v4:$run_key"
+label=org.ilovedrrealty.backup-query-v5
+image="ildr-backup-v5:$run_key"
 python_digest=sha256:673719e071ecf27434fd2635bbd8d00f49f4fdd81f243143438a42ced8bedf60
 postgres='docker.io/library/postgres:17.6@sha256:b86568d3e0fe1dfaeff52714f9da36f206a30e4c49131b82bf96982d78627409'
 owned_volumes=()
@@ -86,12 +87,12 @@ cleanup() {
   ids=$(bounded 15s docker ps -aq --no-trunc --filter "label=$label=$run_key") || clean=0
   images=$(bounded 15s docker image ls -q --no-trunc --filter "label=$label=$run_key") || clean=0
   [[ -z "$ids" && -z "$images" ]] || clean=0
-  if [[ "$state" == "$RUNNER_TEMP"/ildr-backup-v4.* && -d "$state" && ! -L "$state" &&
+  if [[ "$state" == "$RUNNER_TEMP"/ildr-backup-v5.* && -d "$state" && ! -L "$state" &&
         $(realpath "$state") == "$state" && -O "$state" ]]; then
     bounded 40s rm --recursive --force --one-file-system -- "$state" || clean=0
   else clean=0; fi
   [[ "$clean" == 1 && ! -e "$state" ]] || die OWNED_CLEANUP_UNVERIFIED
-  printf 'BACKUP_V4_NATIVE_OWNED_CLEANUP commit=%s run=%s attempt=1\n' "$GITHUB_SHA" "$GITHUB_RUN_ID"
+  printf 'BACKUP_V5_NATIVE_OWNED_CLEANUP commit=%s run=%s attempt=1\n' "$GITHUB_SHA" "$GITHUB_RUN_ID"
   exit "$code"
 }
 trap cleanup EXIT
@@ -165,4 +166,4 @@ done
 for checkout in "$ops" "$recipe"; do
   [[ -z $(git -C "$checkout" status --porcelain=v1 --untracked-files=all) ]] || die SOURCE_CHANGED
 done
-printf 'BACKUP_V4_NATIVE_ACCEPTANCE commit=%s run=%s attempt=1 phases=compact,guards,stress fresh_all_phases=true pg_memory_bytes=536870912 receiver=original finalizer=validation_sealer_intercept\n' "$GITHUB_SHA" "$GITHUB_RUN_ID"
+printf 'BACKUP_V5_NATIVE_ACCEPTANCE commit=%s run=%s attempt=1 phases=compact,guards,stress fresh_all_phases=true pg_memory_bytes=536870912 receiver=original finalizer=validation_sealer_intercept\n' "$GITHUB_SHA" "$GITHUB_RUN_ID"

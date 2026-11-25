@@ -1,5 +1,6 @@
 """Owned PostgreSQL semantics/guard/volume proof; no production connection."""
 from contextlib import closing, redirect_stderr, redirect_stdout
+import ast
 from datetime import datetime, timedelta, timezone
 from hashlib import sha256
 import importlib.metadata
@@ -21,7 +22,7 @@ NEW = Path("/new-tools")
 OLD = Path("/tools")
 STATE = Path("/state")
 PHASES = {"compact", "guards", "stress"}
-V4_REL = Path("outputs/property-network-20261101/backup-query-memory-20261125")
+V5_REL = Path("outputs/property-network-20261101/backup-query-memory-20261125")
 FROZEN_REL = Path("outputs/website-growth-20261022/backups")
 stage = "isolation"
 first_sqlstate = "unavailable"
@@ -37,7 +38,7 @@ def require(value, reason):
 
 
 def connect(database):
-    require(database == "postgres" or re.fullmatch(r"ildr_v4_[a-z_]+_[a-f0-9]{32}", database), "owned_database_name_required")
+    require(database == "postgres" or re.fullmatch(r"ildr_v5_[a-z_]+_[a-f0-9]{32}", database), "owned_database_name_required")
     return psycopg2.connect(host="127.0.0.1", port=55449, user="postgres", password="",
                            dbname=database, connect_timeout=4,
                            options="-cstatement_timeout=60000 -clock_timeout=4000")
@@ -64,7 +65,7 @@ def identity(phase):
     require(phase in PHASES and NEW.resolve(strict=True) == NEW
             and os.statvfs(NEW).f_flag & os.ST_RDONLY, "readonly_new_tools_required")
     manifest = json.loads((NEW / "source-manifest.json").read_text())
-    require(manifest["schema"] == "backup_v4_native_sources_v1", "source_manifest_required")
+    require(manifest["schema"] == "backup_v5_native_sources_v1", "source_manifest_required")
     for name, digest in manifest["candidate_files"].items():
         path = NEW / name
         require(path.resolve().is_relative_to(NEW) and path.is_file() and not path.is_symlink()
@@ -76,9 +77,9 @@ def identity(phase):
     spec.loader.exec_module(old)
     nonce, workspace = old.identity()
     require(importlib.metadata.version("cryptography") == "50.0.2", "accepted_crypto_version_required")
-    candidate = workspace / V4_REL
+    candidate = workspace / V5_REL
     candidate.mkdir(parents=True, exist_ok=False)
-    for name in ("make-daily-full-public-query-v3.py", "make-daily-full-public-query-v4.py", "test-query-v4.py"):
+    for name in ("make-daily-full-public-query-v3.py", "make-daily-full-public-query-v4.py", "test-query-v4.py", "make-daily-full-public-query-v5.py", "test-query-v5.py"):
         source = NEW / "candidate" / name
         with (candidate / name).open("xb") as target:
             target.write(source.read_bytes())
@@ -90,8 +91,8 @@ def identity(phase):
 
 def create_fixture(nonce, label, names):
     require(label in {"compact", "stress", "row_bound", "byte_bound", "schema_bound", "tableset_bound"}, "finite_fixture_label_required")
-    database = "ildr_v4_" + label + "_" + nonce
-    marker = f"ildr-backup-v4:{nonce}:{label}"
+    database = "ildr_v5_" + label + "_" + nonce
+    marker = f"ildr-backup-v5:{nonce}:{label}"
     with closing(connect("postgres")) as db:
         db.autocommit = True
         with db.cursor() as cursor:
@@ -230,7 +231,7 @@ def prepare(old, workspace, database, names, index, catalog_override=None):
         "repositories": {label: {"repo": "/synthetic/" + label, "ref": "refs/heads/synthetic",
             "commit": str(number) * 40} for number, label in enumerate(("frontend", "backend"), 1)}}
     (job / "backup-plan.json").write_text(json.dumps(plan), encoding="utf8")
-    old.native(workspace / V4_REL / "make-daily-full-public-query-v4.py", "--catalog", job / "schema-catalog.json",
+    old.native(workspace / V5_REL / "make-daily-full-public-query-v5.py", "--catalog", job / "schema-catalog.json",
                "--output", job / "snapshot-read-only.sql")
     return job, stamp
 
@@ -246,7 +247,7 @@ def state(workspace, database, names):
     return result
 
 
-def downstream(old, workspace, database, names, job, stamp):
+def downstream(old, workspace, database, names, job, stamp, inventory_sha256):
     global stage
     stage = "transport_prepare"
     frozen = workspace / FROZEN_REL
@@ -264,10 +265,12 @@ def downstream(old, workspace, database, names, job, stamp):
     require(received["status"] == "PASS" and not received["private_key_accessed"] and not received["owner_passphrase_used"]
             and len(raw) == transport["plaintext_bytes"] and sha256(raw).hexdigest() == transport["plaintext_sha256"], "whole_receiver_bytes_sha_required")
     snapshot = json.loads(raw)
+    require(snapshot["storage_inventory_state"]["inventory_sha256"]==inventory_sha256,
+        "received_storage_inventory_matches_independent_reference_required")
     stage = "native_snapshot_validation"
     old.validate_snapshot(database, names, snapshot)
     (frozen / "storage-inventory-baseline.json").write_text(json.dumps({"storage_inventory_state": snapshot["storage_inventory_state"]}), encoding="utf8")
-    spec = importlib.util.spec_from_file_location("native_v4_unchanged_finalizer", frozen / "finalize-daily-full-public-backup.py")
+    spec = importlib.util.spec_from_file_location("native_v5_unchanged_finalizer", frozen / "finalize-daily-full-public-backup.py")
     finalizer = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(finalizer)
     calls = []
@@ -291,6 +294,49 @@ def downstream(old, workspace, database, names, job, stamp):
     require(all(not (job / name).exists() for name in ("schema-catalog.json", "recovery-snapshot.json", "transport-result.json")), "all_three_raw_files_removed_required")
     return {"transport_sql_ms": sql_ms, "plaintext_bytes": len(raw), "compressed_bytes": received["compressed_bytes"],
             "receiver_and_validation_ms": int((time.monotonic() - begin) * 1000), "sealer_boundary_calls": len(calls)}
+
+
+
+def storage_inventory_equivalence(workspace, database, objects):
+    # Source-owned expressions, separate native statements. This never retains
+    # the expanded old aggregate and successor state together in PostgreSQL.
+    def storage(name):
+        tree = ast.parse((workspace / V5_REL / name).read_text())
+        nodes = [node.value for node in tree.body if isinstance(node, ast.Assign)
+            and any(isinstance(target, ast.Name) and target.id=="storage" for target in node.targets)]
+        require(len(nodes)==1 and isinstance(nodes[0], ast.Constant) and isinstance(nodes[0].value, str),
+            "literal_storage_expression_required")
+        return nodes[0].value
+    previous = "coalesce(jsonb_agg(jsonb_build_object('bucket',bucket_id,'name',name,'metadata',metadata,'updated_at',updated_at) ORDER BY bucket_id,name),'[]'::jsonb)::text"
+    successor = "'[' || coalesce(string_agg(jsonb_build_object('bucket',bucket_id,'name',name,'metadata',metadata,'updated_at',updated_at)::text, ', ' ORDER BY bucket_id,name),'') || ']'"
+    old_source, new_source = storage("make-daily-full-public-query-v4.py"), storage("make-daily-full-public-query-v5.py")
+    require(old_source.count(previous)==1 and old_source.replace(previous,successor,1)==new_source,
+        "only_inventory_array_expression_changes_required")
+    def compare(source, parameters, count):
+        left = rows(database,"SELECT "+previous+source,parameters)[0][0]
+        right = rows(database,"SELECT "+successor+source,parameters)[0][0]
+        require(isinstance(left,str) and isinstance(right,str) and left.encode("utf-8")==right.encode("utf-8")
+            and sha256(left.encode("utf-8")).hexdigest()==sha256(right.encode("utf-8")).hexdigest()
+            and len(json.loads(left))==len(json.loads(right))==count,
+            "native_storage_array_bytes_hash_and_count_equal_required")
+        return sha256(left.encode("utf-8")).hexdigest(),json.loads(right)
+    digest,_=compare(" FROM storage.objects",(),objects)
+    compare(" FROM storage.objects WHERE false",(),0)
+    # No fixture mutation: canonical controls are inline parameterized rows.
+    # Reverse input order, tied timestamps, nested JSON, Unicode/quotes/escapes,
+    # SQL NULL metadata/date and JSON nulls must retain exact native bytes.
+    nested=json.dumps({"nested":{"null":None,"text":"José 🏡\n\"cita\"\\ruta"},"array":[None,True,3.25]},ensure_ascii=False)
+    values=("z-bucket","Ñandú \"quoted\"\\ruta",None,None,
+        "a-bucket","segunda",nested,"2001-02-03T00:00:00Z",
+        "a-bucket","primera",nested,"2001-02-03T00:00:00Z")
+    _,ordered=compare(" FROM (VALUES (%s::text,%s::text,%s::jsonb,%s::timestamptz),"
+        "(%s::text,%s::text,%s::jsonb,%s::timestamptz),(%s::text,%s::text,%s::jsonb,%s::timestamptz))"
+        " AS canonical_fixture(bucket_id,name,metadata,updated_at)",values,3)
+    require([(row["bucket"],row["name"]) for row in ordered]==[("a-bucket","primera"),("a-bucket","segunda"),(values[0],values[1])]
+        and ordered[-1]["metadata"] is None and ordered[-1]["updated_at"] is None,
+        "native_inventory_order_and_null_controls_required")
+    require(re.fullmatch(r"[a-f0-9]{64}",digest),"actual_inventory_reference_hash_required")
+    return digest
 
 
 def plan_nodes(value):
@@ -387,7 +433,7 @@ def run(phase):
     else:
         if phase == "compact":
             stage = "compact_pure_contracts"
-            old.native(workspace / V4_REL / "test-query-v4.py")
+            old.native(workspace / V5_REL / "test-query-v5.py")
         stage = phase + "_fixture"
         database, marker = create_fixture(nonce, phase, names)
         try:
@@ -401,23 +447,26 @@ def run(phase):
                 require(rows(database, "SELECT nextval('public.backup_fixture_sequence')")[0][0] == 10, "mutable_sequence_control_required")
                 before = state(workspace, database, names)
             job, stamp = prepare(old, workspace, database, names, 1)
+            stage = phase+"_inventory_equivalence"
+            inventory_hash = storage_inventory_equivalence(workspace,database,17 if phase=="compact" else 34315)
             if phase == "compact":
                 stage = "compact_exact_semantics"
                 v2 = parsed(rows(database, (old_job / "snapshot-read-only.sql").read_text())[0][0])
-                v4 = parsed(rows(database, (job / "snapshot-read-only.sql").read_text())[0][0])
+                v5 = parsed(rows(database, (job / "snapshot-read-only.sql").read_text())[0][0])
                 old.validate_snapshot(database, names, v2)
-                old.validate_snapshot(database, names, v4)
-                times = (v2.pop("captured_at_utc"), v4.pop("captured_at_utc"))
+                old.validate_snapshot(database, names, v5)
+                times = (v2.pop("captured_at_utc"), v5.pop("captured_at_utc"))
                 require(all(isinstance(value, str) and datetime.fromisoformat(value).tzinfo is not None for value in times)
-                        and v2 == v4, "parsed_equivalence_except_capture_time_required")
-                require(set(v2["public_table_payloads"]) == set(v4["public_table_payloads"]) == set(names)
-                        and all(v2["public_table_payloads"][name].encode("utf-8") == v4["public_table_payloads"][name].encode("utf-8")
-                            and v2["public_table_payload_sha256"][name] == v4["public_table_payload_sha256"][name]
-                            == sha256(v4["public_table_payloads"][name].encode("utf-8")).hexdigest() for name in names),
+                        and v2 == v5, "parsed_equivalence_except_capture_time_required")
+                require(set(v2["public_table_payloads"]) == set(v5["public_table_payloads"]) == set(names)
+                        and all(v2["public_table_payloads"][name].encode("utf-8") == v5["public_table_payloads"][name].encode("utf-8")
+                            and v2["public_table_payload_sha256"][name] == v5["public_table_payload_sha256"][name]
+                            == sha256(v5["public_table_payloads"][name].encode("utf-8")).hexdigest() for name in names),
                         "all99_payload_bytes_and_hashes_match_v2_required")
-                require(state(workspace, database, names) == before, "v2_v4_queries_leave_all_state_unchanged_required")
+                require(state(workspace, database, names) == before, "v2_v5_queries_leave_all_state_unchanged_required")
             stage = phase + "_whole_transport_receiver_finalizer"
-            details = downstream(old, workspace, database, names, job, stamp)
+            details = downstream(old, workspace, database, names, job, stamp, inventory_hash)
+            details.update(storage_inventory_byte_hash_cases=3, storage_inventory_objects=17 if phase=="compact" else 34315)
             stage = phase + "_post_state"
             require(state(workspace, database, names) == before, "all_99_rows_catalog_sequences_storage_unchanged_required")
             if phase == "stress":
@@ -434,8 +483,8 @@ def run(phase):
     source_manifest = json.loads((OLD / "source-manifest.json").read_text())
     for name, digest in source_manifest["files"].items():
         require(sha256((workspace / name).read_bytes()).hexdigest() == digest, "unchanged_frozen_mirror_required")
-    for name in ("make-daily-full-public-query-v3.py", "make-daily-full-public-query-v4.py", "test-query-v4.py"):
-        require((workspace / V4_REL / name).read_bytes() == (NEW / "candidate" / name).read_bytes(), "unchanged_candidate_mirror_required")
+    for name in ("make-daily-full-public-query-v3.py", "make-daily-full-public-query-v4.py", "test-query-v4.py", "make-daily-full-public-query-v5.py", "test-query-v5.py"):
+        require((workspace / V5_REL / name).read_bytes() == (NEW / "candidate" / name).read_bytes(), "unchanged_candidate_mirror_required")
     client_end, client_peak = client_memory()
     require(client_peak >= initial_peak, "monotonic_client_peak_required")
     return {"status": "PASS", "phase": phase, "postgres_version_num": 170006, "public_tables": 99,
@@ -455,5 +504,5 @@ if __name__ == "__main__":
         result = {"status": "FAIL", "phase": phase if phase in PHASES else "invalid", "stage": stage, "sqlstate": first_sqlstate,
             "error_type": kind if re.fullmatch(r"[A-Za-z][A-Za-z0-9_]{0,62}", kind) else "UnhandledError",
             "reason": str(error) if isinstance(error, Refused) and re.fullmatch(r"[a-z_0-9]{1,90}", str(error)) else "unexpected_failure"}
-    print("BACKUP_V4_NATIVE_RESULT " + json.dumps(result, sort_keys=True, separators=(",", ":")), flush=True)
+    print("BACKUP_V5_NATIVE_RESULT " + json.dumps(result, sort_keys=True, separators=(",", ":")), flush=True)
     raise SystemExit(0 if result["status"] == "PASS" else 1)

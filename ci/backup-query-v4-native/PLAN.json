@@ -1,12 +1,12 @@
 {
-  "schema": "backup_query_v4_native_acceptance_v1",
+  "schema": "backup_query_v5_native_acceptance_v1",
   "status": "PREPARED_PENDING_FULL_COLD_REVIEW_FREEZE_ROOT_FIRST_PUSH",
-  "operations_parent": "e604c26509d3a7e948f9452e50d2675bc5c48b6d",
-  "first_ref": "codex-ci-backup-query-v4-native-20261125",
-  "source_candidate_sha256": "831bf05fa10e7cb3ad387cfdf89991ea5fa64245560b68487a1370866b26f8b3",
-  "candidate_tests_sha256": "9944fa2f97529ccb3c1218591993b0e5883df9feeae11cb0667e07cfc82418ae",
+  "operations_parent": "e4757dec1c6f4f413c056741bcbdc2cf576f1c83",
+  "first_ref": "codex-ci-backup-query-v5-native-20261125",
+  "source_candidate_sha256": "cf3b4432bfcb76fc5362a441869f28b45e3c2a2a12e62f20be6af7e01fa10c64",
+  "candidate_tests_sha256": "952da58d8e836467f1936f4b64a7da2ebb6d62bd178e8c1bd7c26e6fd81ed737",
   "reference_v2_sha256": "b2dd42e123ffe718a0759dd9b9000e6e2e197b50c6ba6135801903ec28a05658",
-  "frozen_sources": "All inherited11 accepted compatibility files unchanged and independently Git-blob SHA-pinned in source manifest. Original20 recovery helpers and approvedv2 outside this checkout untouched. Separate V3 reference/V4 generator/test4 copied to owned runtime workspace and checked before/after. Never adopts V4 into production.",
+  "frozen_sources": "ExistingV3/V4/test4/fixture and original11 compatibility source Git blobs untouched; source manifest17pins = inherited11+existingV3/V4/test4/fixture4+newV5/test5. Frozen20helpers/approvedV2 outside checkout unchanged. Runtimecandidate5files mirrorcheckedbefore/after. Historicalci/backup-query-v4-native folder reused for smallreviewdelta; allmarkers/newworkflow/ref/sourcecandidate clearlyV5.",
   "runtime": {
     "recipe_commit": "c193a925ba57ea2d67ea48c44e5262817885c8a2",
     "dockerfile_sha256": "e546d8c5668b87ef28e604107bbb330e6f4b3873cf0208b4d24ca378bd0851f9",
@@ -34,7 +34,8 @@
       "bytea": "Original accepted binary and PNG rows round-trip through native jsonb_populate_record; four compact direct comparison row checks, and downstream validation too.",
       "pure_generator_contracts": 4,
       "downstream": "Complete original PGP wrapper, exact frozen receiver, exact SHA/length, all original finalizer validation and finally cleanup, one checked intercepted sealer dispatch.",
-      "v2_v4_comparison": "Parsed complete snapshots equal after removing ONLY top-level captured_at_utc. Every payload string/count/hash/full schema/storage field must match; timestamp types checked. Explicit per-table UTF8 payload byte equality and SHA256 equality verified for all99 names. All proof fresh for V4."
+      "v2_v5_comparison": "Parsed complete snapshots equal after removing ONLY top-level captured_at_utc. Every payload string/count/hash/full schema/storage field must match; timestamp types checked. Explicit per-table UTF8 payload byte equality and SHA256 equality verified for all99 names. All proof fresh for V5.",
+      "storage_inventory_reference": "Three actual native oldV4/newV5 byte/hash/count comparisons in separate statements: real17-object fixture, emptydataset, inlineparameterized3canonicalrecords with nestedJSON/Unicode/quotes/backslashes/JSONnull/SQLnullmetadata/date/reversedinput and tiedtimestamps. No fixture row mutation."
     },
     "guards": {
       "cases": [
@@ -56,7 +57,7 @@
       "source_row_bytes": 8743189,
       "storage_objects": 34315,
       "notes": "Exact native SUM(octet_length(to_jsonb(row)::text)) totals, calibrated with <=1000-character deterministic varied MD5-chunk padding inside synthetic source notes. Unicode, quotes, backslashes and control escapes retained. Storage metadata has realistic nested/string/numeric values; its measured bytes are reported rather than invented from production.",
-      "execution": "Only V4 plus original PGP wrapper under pressure; never full oldv2 or V3 stress. Independent native per-table hashes/counts, bytea and original receiver/finalizer unchanged. All proof fresh for V4.",
+      "execution": "FreshV5 full original PGP wrapper/receiver/finalizer under same exact pressure. Beforecapture require three oldV4/newV5 storage array byte/hash/count comparisons including actual34315objects, empty and3canonicalrecords. Oldexpandedaggregate runs separately from successor; no oldfulltransport or V2stress rerun. IndependentreferenceinventorySHA must match receivedfullsnapshot metadata.",
       "state": "All99 rows/payload hashes/full catalog/mutable sequences/storage hashes unchanged after baseline. This does not access or copy any production record."
     }
   },
@@ -73,20 +74,34 @@
   "failure_controls": "Strict exact result key/type/count checks, native exits plus client/Postgres process/oom facts binding. Missing metrics, unexpected fields, changed source bytes, guard misclassification or missing lazy plan nodes fail closed. No raw payload, IDs, URLs, exception text or query plans printed.",
   "cleanup": "Nonce-labelled owned containers/image/scratch only; exact marked test databases dropped/absence checked; owned anonymous volumes removed/absence queried authoritatively. No artifact uploads; root independently inspects actual artifacts[].",
   "production_freeze": "No production SQL/captures/configuration/helper adoption before root accepted native results. Checkpoint20261125T063100Z remains the last verified checkpoint until a later actual complete encrypted capture is separately verified. No automatic retry of failed production jobs.",
-  "review": "Root full source/ops review and independent Google full cold before root first new-ref push. No paid service/account/billing change.",
-  "local_checks": "Actual bounded checker7positive/31negative controls PASS: all3 result phases/all3 diagnostic phases/preflight; wrong counts/types/native exits/running/OOM/limits/unknown/missing/duplicate counters/SQLSTATE privacy fail closed. All4 Python ASTs plus embedded runner scope and PLAN/manifest JSON parse. Root reported actual4pure V4 generator contracts PASS1.783s separately; reviewer did not rerun them. No native/DB/Docker/build/install/provider actions; V4 native proof UNRUN.",
+  "review": "Root full source/ops review plus independentGroups fullcold before root firstnewrefpush. No sourceadoption without fullnativeandrecoveryproof.",
+  "local_checks": "Actual boundedV5pure4 generator/file contracts PASS in owned publiccode mirror (2.9s wholecontrolcall); actual generatedV5SQL byteequalV4SQL after exactlyone storage-array-expression replacement. StrictV5checker7positive/34negative PASS including3mandatorynativeinventoryproofcases/objectcounts and alloriginallimits/failure gates. All7PythonASTs/embeddedsourceguard/PLAN/manifest parse. Nativeold/newarray and fullSQL/PGproof UNRUN; no localSQL/nativeDB/build/browser/provider/push.",
   "primary_docs": [
     "https://www.postgresql.org/docs/17/using-explain.html",
     "https://www.postgresql.org/docs/17/queries-with.html",
     "https://docs.kernel.org/admin-guide/cgroup-v2.html",
     "https://docs.docker.com/engine/containers/resource_constraints/"
   ],
-  "run_scope": "Fresh compact AND all4guards AND stress in three fresh owned PG/client phases; no retained V3 compact/guard proof claimed for V4. Same99 synthetic names/schema/bytea/sequence/trade/storage fixture and 5633/5640/34315/native byte totals; original budgets and complete recovery boundary.",
+  "run_scope": "Freshcompact/fullV2comparison+directstoragearrayproof, all4guards/lazyEXPLAIN, and freshfullV5stresscompleteoriginaltransport/receiver/finalizer. No priorV4compact/guard acceptance substitutes for changedV5proof. Identical99/5633/5640/34315/nativebytes and unchangedcaps.",
   "failure_observation": "Before strict result gate, always emit finite actual Docker native/client/PG status, elapsed, native pg_postmaster_start comparison and available finite cgroup current/peak/OOM counters. Unavailable/malformed diagnostic states cannot satisfy original success gates. Original strict6+optionalSock format/OOMzero/512MiB/1GiB/native/process gates unchanged. Native failures add only first actual bounded5character SQLSTATE or unavailable and finer constant transport/receiver/validation stages; never exception text/query/body/SQLplan.",
   "immutable_v3_reference_sha256": "15dfcfff1630e377fab399067efa249186f8c7aadb50ec1890b0213bd67e0768",
-  "candidate_change": "V4 preserves native to_jsonb(row)::text and ORDER BY row_text. Assemble each array as bracket/string_agg(row_text, comma-space)/bracket to avoid jsonb_agg expanded whole-table transition state. This source rationale is not equivalence/memory proof; require fresh native byte/hash/full snapshots and strict actual memory/process acceptance.",
+  "candidate_change": "SeparateV5 changes ONLY the storage.objects inventory array expanded jsonb_agg to exactnativejsonb_build_object(... )::text comma-space string_agg with same bucket/name ordering. NewimmutableV4refhash and truthfulqueryversion are interface metadata only. Buckets/otherstoragefields/metadata/maps/guards/limits/original PGP remain identical. Memory benefit is an unproven reduction hypothesis, not a proven cause/adoption.",
   "prior_v3_failure": {
     "commit": "e604c26509d3a7e948f9452e50d2675bc5c48b6d",
     "actual_terminal_result": "Owned PG OOM at transport_select independently read by root; peak536870912,oom1,oom_kill1,postgres_oom_killedtrue; native/client1, no clientOOM, cleanup/artifacts[]. V3/originals immutable; no production adoption."
+  },
+  "immutable_v4_reference_sha256": "831bf05fa10e7cb3ad387cfdf89991ea5fa64245560b68487a1370866b26f8b3",
+  "source_candidate_change": "SeparateV5 changes ONLY the storage.objects inventory array expanded jsonb_agg to exactnativejsonb_build_object(... )::text comma-space string_agg with same bucket/name ordering. NewimmutableV4refhash and truthfulqueryversion are interface metadata only. Buckets/otherstoragefields/metadata/maps/guards/limits/original PGP remain identical. Memory benefit is an unproven reduction hypothesis, not a proven cause/adoption.",
+  "primary_stage_evidence": {
+    "run": 45590492049,
+    "job": 139123122398,
+    "commit": "0b3fa573f62b146899197317a9ff768e1b02fa57",
+    "log_utf8_bytes": 37957,
+    "log_sha256": "6819f83ef0e78857f2028152ad7523a02689c6d529a99716f3139e1836232daa",
+    "root_receipt": "backup-v4-stage-45590492049-root-failure.json",
+    "root_receipt_sha256": "9450a383f01865321e1a3c8d0c1524557543ccc96c5a6cd3a892732fcda6d33d",
+    "independent_receipt": "backup-v4-stage-45590492049-release-primary-failure.json",
+    "independent_receipt_sha256": "600ab23a69e2138a5cf78ff7c977874b20fc7cbb1728cd126ae1b1b4865acdf1",
+    "observed": "Map19,056,582B completed/noOOM; storage351B completed/noOOM; fulluncompressed snapshot actualPG512MiB OOM beforecompression. Peaks wholephase including fixture/cache: map536870912withOOM0,storage410374144,full536870912oom1/oomkill1. Compression not required forfailure; specific internalcause not proven. All3cleanup/finalcleanup/artifacts[]."
   }
 }
