@@ -1,8 +1,8 @@
 {
-  "schema": "native-inbox-browser-acceptance-v1",
-  "status": "PREPARED_PENDING_MUTUAL_COLD_AND_ROOT_FULL_REVIEW_FIRST_PUSH",
-  "operations_parent": "93a99190d71b9a2b116755747156d98ad95f8da1",
-  "proposed_first_ref": "codex-ci-native-inbox-browser-20261125",
+  "schema": "native-inbox-browser-acceptance-v2",
+  "status": "FROZEN_PENDING_ROOT_FULL_AND_INDEPENDENT_COLD_REVIEW_NO_PUSH",
+  "operations_parent": "033a327bbb6a2c7b80a6c298263c5e8abd4ac9c1",
+  "proposed_first_ref": "codex-ci-native-inbox-browser-seed-v2-20261125",
   "frontend": "6015987e33375ed012996dddb27ca092532d793c",
   "frontend_tree": "dfc17c06f665e3088d56a0582013f5516ec6c106",
   "frontend_parent": "caa0e22f41f0d9d9d88e15fe7795dae776008408",
@@ -14,9 +14,30 @@
   "contracts": {
     "expected_files": 64,
     "expected_tests": 523,
-    "fresh_full_run_required": true,
-    "strict": "Complete current523 contract cases across64 actual files, zero failure/skip/cancel/todo, then actual Dashboard full strict. Exact native exit and retained immutable source hashes are binding.",
-    "builds": "FreshactualDashboardVite thenLandingNext export againstownedAPI; every608frontendtrackedblob rehashed aftereachphase. Exactsource/tree/parent andten-commitfrontendancestryguard, six-commitbackendmerge/full365blobunion, successfulrequirement/manifestdiffexits andunchangedlockfilepins."
+    "fresh_full_run_required": false,
+    "strict": "Retain actual same-source601 full523/64 cases and standalone full Dashboard strict, both native0, from original033a job139122998797/run45590455258. Original overall run failed during fixture setup; it is not browser acceptance. Source/tree/dependency/inventory bindings remain exact. This successor freshly rebuilds Vite and first Next and performs all UI/API/privacy gates.",
+    "builds": "FreshactualDashboardVite thenLandingNext export againstownedAPI; every608frontendtrackedblob rehashed aftereachphase. Exactsource/tree/parent andten-commitfrontendancestryguard, six-commitbackendmerge/full365blobunion, successfulrequirement/manifestdiffexits andunchangedlockfilepins.",
+    "retained_proof": {
+      "run": 45590455258,
+      "job": 139122998797,
+      "operations": "033a327bbb6a2c7b80a6c298263c5e8abd4ac9c1",
+      "frontend": "6015987e33375ed012996dddb27ca092532d793c",
+      "frontend_tree": "dfc17c06f665e3088d56a0582013f5516ec6c106",
+      "backend": "17943ba1714673c51c43cdbb800106f91612f527",
+      "log_sha256": "255854b17f98174c8f2f3d95cf55314b13f2f7f97bb99feeb0a5547e3d027d1f",
+      "tests": 523,
+      "pass": 523,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "native": 0,
+      "standalone_strict_native": 0,
+      "overall_original_run": "failure_fixture_setup",
+      "current_rerun": false,
+      "root_receipt": "native-inbox-browser-45590455258-root-failure.json",
+      "root_receipt_sha256": "88200f57841c5a5a8273abe0cdf635723e0bf88de401ec924105f47e0be6cb3d"
+    }
   },
   "native": {
     "rerun": false,
@@ -112,12 +133,14 @@
       "review_opened": 8
     },
     "seed_commands": 38,
-    "controlled_state": "Exactly12 reversible owned controls: assignment4,verification4,clock4; old99 state restored exact. Preference owner finalmembers/version4; buyer shown-read sequence40; buyer-agent last_sequence45 and unchanged owner-member last_sequence1; the additional empty BuyerAdmin thread is browser-created."
+    "controlled_state": "Exactly12 reversible owned controls: assignment4,verification4,clock4; old99 state restored exact. Preference owner finalmembers/version4; buyer shown-read sequence40; buyer-agent last_sequence45 and unchanged owner-member last_sequence1; the additional empty BuyerAdmin thread is browser-created.",
+    "legacy_context": "Actual old99 c6/e4 INSERT guards stay installed. Before preservation baseline, the synthetic Agent opts into pool_service/house_villa; both requests record source_listing_type villa, awarded recipient is awarded and project has active professional membership. Historical35+35 inserts must satisfy those guards without disabling them. This adds only valid owned fixture context; all32 UI commands/70 audits and99 preservation gates stay binding.",
+    "failure_diagnostics": "Finite source-owned seed stages plus whitelisted SQLSTATE-kind/constraint-kind labels, never raw SQL/values/exception messages. SQL diagnostics always remain failure; unknown/malformed marker shapes refuse."
   },
   "privacy": "Only bounded finite typed counts, approved source enums, source-owned line/column diagnostics; native failures, malformed/missing/duplicate receipts remain failures.",
   "cleanup": "Nonce label-checked containers/images/scratch; marker checked owned DB drop and absence; read-only source clean. No artifact upload; root independently verifies terminal/native/OOM/running/cleanup and actual artifacts[].",
   "release": "Root owns full source/ops plus independent review, first absent-ref push, actual hosted acceptance and later production changes. Preparation is not acceptance.",
-  "local_checks": "All10 runner inline Python blocks AST-valid;25 strict parser controls passed (2valid/23refusals), including nativeexit/type/nestedledger/audit/provider/geometry/presence/failureprivacy. No local fullapp test/build/browser/DB/provider calls. Immutable nativehelper388f/groupfixturee0c5/Landingf03 Git LF bytes pinned; accepted Dashboardserver/Dockerfile retained. Groups actual12staticledgercontrols passed with peractor Agent2/Buyer10/Admin10/Owner8/Member2, seq36..45, reads35/40, blocktrue/false, preferenceversions0..3 and4/2/2reviewsourcebinding; actualNode syntax/PythonAST exited0. No application/SQL/browser executed locally.",
+  "local_checks": "Actual bounded controls: all8 remaining runner inline Python blocks and2 source Python files parse; original25 strict receipt parser controls PASS plus9 finite SQL-diagnostic sanitizer/parser controls PASS; driver exact unchanged Git blob47b7eace. No local app/native/browser/build/install/provider execution. Original exact-source523/fullstrict proof is retained only with run/job/ops/source/tree/log/root-receipt hashes.",
   "backend_parents": [
     "79e9311874e3ea91e45b990629965534d41bb5fa",
     "07b2b7c762b129c5b6ea978299ba69e528e3189e"

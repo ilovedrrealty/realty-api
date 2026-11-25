@@ -6,7 +6,7 @@ die() { printf 'PLATFORM_BROWSER_REFUSED %s\n' "$1" >&2; exit 1; }
 bounded() { timeout --kill-after=8s "$@"; }
 [[ $# == 7 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 &&
-   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-native-inbox-browser-20261125 &&
+   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-native-inbox-browser-seed-v2-20261125 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die HOSTED_EXACT_EVENT_REQUIRED
 ops="$1"; frontend="$2"; baseline="$3"; backend="$4"; migration="$5"; relay="$6"; previous="$7"
 [[ "$ops" == "$GITHUB_WORKSPACE/build-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-source" &&
@@ -21,13 +21,12 @@ expected_operations=$(cat <<'EXACT_OPERATIONS'
 .github/workflows/native-inbox-browser.yml
 ci/native-inbox-browser/PLAN.json
 ci/native-inbox-browser/check-result.py
-ci/native-inbox-browser/run-browser.mjs
 ci/native-inbox-browser/run-hosted.sh
 ci/native-inbox-browser/serve_fixture.py
 EXACT_OPERATIONS
 )
 [[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" &&
-   $(git -C "$ops" show -s --format=%P HEAD) == 93a99190d71b9a2b116755747156d98ad95f8da1 &&
+   $(git -C "$ops" show -s --format=%P HEAD) == 033a327bbb6a2c7b80a6c298263c5e8abd4ac9c1 &&
    $(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) == "$expected_operations" ]] || die EXACT_OPERATIONS_REQUIRED
 backend_commit=17943ba1714673c51c43cdbb800106f91612f527
 backend_tree=ff940a7b6e983d4c669202746d9676b4b82e9a06
@@ -78,7 +77,7 @@ for path in left:expected[path]=a[path]
 for path in right:expected[path]=b[path]
 assert len(expected)==365 and tree('HEAD')==expected
 PY_BACKEND_COMPOSITION
-printf 'INBOX_BUILD_SCOPE frontend_source=6015987e33375ed012996dddb27ca092532d793c backend_source=17943ba1714673c51c43cdbb800106f91612f527 full_tests=523 current_tests=true current_strict=true landing_product=unchanged native95=retained_45588133254_not_rerun\n'
+printf 'INBOX_BUILD_SCOPE frontend_source=6015987e33375ed012996dddb27ca092532d793c backend_source=17943ba1714673c51c43cdbb800106f91612f527 full_tests=523 current_tests=false current_strict=false retained_frontend_proof_run=45590455258 landing_product=unchanged native95=retained_45588133254_not_rerun\n'
 python3 -I -B - "$baseline/requirements.txt" "$backend/requirements.txt" <<'PY_REQUIREMENTS'
 from pathlib import Path
 import sys
@@ -192,41 +191,13 @@ assert sys.argv[2] == "0"
 PY
 verify_source || die INSTALLED_FRONTEND_MISMATCH
 
-native=0
-bounded 360s docker run "${prepare[@]}" --network none \
-  --mount "type=bind,src=$state/frontend-work,dst=/work" "$node_image" \
-  env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp CI=true NODE_OPTIONS=--max-old-space-size=1536 \
-  sh -c 'node --test --test-reporter=tap tests/*.test.cjs' >"$state/contracts.log" 2>&1 || native=$?
-python3 -I -B - "$state/contracts.log" "$native" <<'PY_CONTRACTS' || die ACTUAL_523_CONTRACTS_REQUIRED
-from pathlib import Path
-import re,sys
-raw=Path(sys.argv[1]).read_bytes()
-assert len(raw)<=4*1024*1024
-counts={key.decode():int(value) for key,value in re.findall(rb'(?m)^# (tests|pass|fail|cancelled|skipped|todo) ([0-9]+)\s*$',raw)}
-print('INBOX_FRONTEND_CONTRACTS native='+sys.argv[2]+' '+str(counts))
-if sys.argv[2]!='0':
-    for name,line,col in re.findall(rb"location: '/work/(tests/[A-Za-z0-9_.-]+\.cjs):([0-9]+):([0-9]+)'",raw)[:12]:
-        print('INBOX_CONTRACT_LOCATION '+name.decode()+':'+line.decode()+':'+col.decode())
-assert sys.argv[2]=='0' and counts=={'tests':523,'pass':523,'fail':0,'cancelled':0,'skipped':0,'todo':0}
-PY_CONTRACTS
-verify_source || die CONTRACTS_ALTERED_FRONTEND_SOURCE
-native=0
-bounded 360s docker run "${prepare[@]}" --network none \
-  --mount "type=bind,src=$state/frontend-work,dst=/work" "$node_image" \
-  env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp CI=true NODE_OPTIONS=--max-old-space-size=1536 \
-  sh -c 'npm run typecheck --workspace=dashboard' >"$state/strict.log" 2>&1 || native=$?
-python3 -I -B - "$state/strict.log" "$native" <<'PY_STRICT' || die ACTUAL_STRICT_DASHBOARD_REQUIRED
-from pathlib import Path
-import re,sys
-raw=Path(sys.argv[1]).read_bytes()
-assert len(raw)<=1048576
-for file,line,col,code in re.findall(rb'(?m)^((?:src|\.\./\.\./packages)/[A-Za-z0-9_./-]+\.(?:ts|tsx))\(([0-9]{1,5}),([0-9]{1,5})\): error (TS[0-9]{4}):',raw)[:12]:
-    print('INBOX_STRICT_DIAGNOSTIC '+file.decode()+':'+line.decode()+':'+col.decode()+' '+code.decode())
-print('INBOX_STRICT_DASHBOARD native='+sys.argv[2])
-assert sys.argv[2]=='0'
-PY_STRICT
-verify_source || die STRICT_ALTERED_FRONTEND_SOURCE
-
+# These exact same-source subphases completed successfully before the V1 fixture failed.
+# Preserve their actual primary receipt; this successor does not manufacture a current rerun.
+[[ "$frontend_commit" == 6015987e33375ed012996dddb27ca092532d793c &&
+   "$frontend_tree" == dfc17c06f665e3088d56a0582013f5516ec6c106 &&
+   "$backend_commit" == 17943ba1714673c51c43cdbb800106f91612f527 ]] || die EXACT_RETAINED_FRONTEND_SOURCE_REQUIRED
+printf 'INBOX_FRONTEND_PROOF_RETAINED run=45590455258 job=139122998797 operations=033a327bbb6a2c7b80a6c298263c5e8abd4ac9c1 log_sha256=255854b17f98174c8f2f3d95cf55314b13f2f7f97bb99feeb0a5547e3d027d1f source=6015987e33375ed012996dddb27ca092532d793c tests=523 pass=523 fail=0 skipped=0 cancelled=0 todo=0 native=0 standalone_full_strict_native=0 current_execution=false original_overall_run=failure_fixture_setup\n'
+verify_source || die RETAINED_PROOF_SOURCE_MISMATCH
 
 native=0
 bounded 360s docker run "${prepare[@]}" --network none \
@@ -446,5 +417,5 @@ PY_LANDING
   verify_source || die BROWSER_ALTERED_FRONTEND_SOURCE
   [[ -z $(git -C "$backend" status --porcelain=v1 --untracked-files=all) ]] || die BROWSER_ALTERED_BACKEND_SOURCE
 done
-printf 'INBOX_HOSTED_RESULT operations=%s frontend=%s backend=%s retained_native95_run=45588133254 frontend_tests=523 strict=current dashboard=current landing=current browser=exact_checker_pass authoritative_fixture=exact_checker_pass unexpected_mutations=0 live_provider_calls=0 run=%s attempt=1\n' \
+printf 'INBOX_HOSTED_RESULT operations=%s frontend=%s backend=%s retained_native95_run=45588133254 frontend_tests=523_retained_45590455258 standalone_strict=retained_45590455258 dashboard=current landing=current browser=exact_checker_pass authoritative_fixture=exact_checker_pass unexpected_mutations=0 live_provider_calls=0 run=%s attempt=1\n' \
   "$GITHUB_SHA" "$frontend_commit" "$backend_commit" "$GITHUB_RUN_ID"

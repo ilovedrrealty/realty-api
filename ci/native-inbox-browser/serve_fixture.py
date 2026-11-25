@@ -127,9 +127,9 @@ def seed(native, base, catalog, retained, database, url):
     native.privacy(catalog, database)
     from database import SessionLocal
     from models.user import User
-    from models.property_network import SocialNetworkProfile, NetworkProject
+    from models.property_network import SocialNetworkProfile, NetworkProject, NetworkProjectMember
     from models.listing import Listing
-    from models.service_workflow import NetworkServiceRequest, NetworkServiceRecipient
+    from models.service_workflow import NetworkServiceRequest, NetworkServiceRecipient, NetworkServicePreference
     from models.service_conversation import NetworkServiceConversationMessage
     from models.service_negotiation import NetworkServiceNegotiationMessage
     from utils.security import hash_password
@@ -143,6 +143,7 @@ def seed(native, base, catalog, retained, database, url):
         "names": {actor: "Synthetic Inbox " + actor.replace("_", " ") for actor in ROLES},
         "messages": messages(), "privateMarker": "NEVER_RENDER_PRIVATE_INBOX_PROFILE_OR_CONTACT",
         "initialNativeEntries": 35, "initialUnread": 18, "initialOwnerEntries": 1, "legacyEntries": 35}
+    STAGE = "seed_users"
     with SessionLocal.begin() as db:
         for actor, role in ROLES.items():
             user = db.get(User, identities[actor])
@@ -157,6 +158,7 @@ def seed(native, base, catalog, retained, database, url):
             user.password_hash = hash_password(accounts[actor]["password"])
         db.flush()
         db.get(User, identities["buyer"]).assigned_realtor_id = identities["agent"]
+        STAGE = "seed_profiles"
         for actor in ("owner", "agent", "new_agent", "member", "private_member"):
             db.add(SocialNetworkProfile(user_id=identities[actor], display_name=facts["names"][actor],
                 visibility="private" if actor == "private_member" else "members", wall_policy="own_only",
@@ -165,37 +167,56 @@ def seed(native, base, catalog, retained, database, url):
         codes = {actor: db.get(User, identity).user_code for actor, identity in identities.items()}
         facts["codes"] = codes
         listing, project, awarded, negotiation, recipient = (uuid4() for _ in range(5))
+        STAGE = "seed_legacy_listing"
         db.add(Listing(id=listing, title="Private Inbox legacy listing", type="villa", transaction="sale", price=1,
             location=facts["privateMarker"], owner_id=identities["owner"], submitted_by=identities["owner"], status="active"))
         db.flush()
+        STAGE = "seed_legacy_project"
         db.add(NetworkProject(id=project, listing_id=listing, owner_id=identities["owner"], title="Private legacy project",
             summary=facts["privateMarker"], property_class="house_villa", service_category_ids=["pool_service"], status="open", version=1))
         db.flush()
+        STAGE = "seed_legacy_context"
+        db.add(NetworkServicePreference(user_id=identities["agent"], service_opt_in=True, member_alias="Synthetic provider",
+            category_ids=["pool_service"], property_class_ids=["house_villa"], version=1))
+        db.add(NetworkProjectMember(project_id=project, user_id=identities["agent"], role="professional", active=True))
+        db.flush()
         for identifier, status, project_id in ((awarded, "awarded", project), (negotiation, "open", None)):
             db.add(NetworkServiceRequest(id=identifier, listing_id=listing, custodian_id=identities["owner"],
-                requester_id=identities["owner"], category_id="pool_service", property_class="house_villa",
+                requester_id=identities["owner"], source_listing_type="villa", category_id="pool_service", property_class="house_villa",
                 title="Private legacy service", brief=facts["privateMarker"], area_label="Private area", requester_alias="Owner alias",
                 recipient_user_codes=[codes["agent"]], scope_sha256="a" * 64, status=status, version=1, project_id=project_id))
         db.flush()
+        STAGE = "seed_legacy_recipients"
+        db.add(NetworkServiceRecipient(request_id=awarded, provider_id=identities["agent"], user_code=codes["agent"],
+            member_alias="Synthetic awarded provider", status="awarded", version=1))
         db.add(NetworkServiceRecipient(id=recipient, request_id=negotiation, provider_id=identities["agent"],
             user_code=codes["agent"], member_alias="Provider alias", status="accepted", version=1))
         db.flush()
         stamp = datetime(2025, 1, 1, tzinfo=timezone.utc)
+        STAGE = "seed_legacy_award_history"
         for index in range(35):
             db.add(NetworkServiceConversationMessage(id=UUID(int=71000 + index), request_id=awarded,
                 sender_id=identities["owner"], submission_id=uuid4(), sender_role="owner",
                 body=f"Synthetic awarded history {index:02d}", created_at=stamp))
+        db.flush()
+        STAGE = "seed_legacy_negotiation_history"
+        for index in range(35):
             db.add(NetworkServiceNegotiationMessage(id=UUID(int=72000 + index), request_id=negotiation, recipient_id=recipient,
                 sender_id=identities["agent"], submission_id=uuid4(), sender_role="provider",
                 body=f"Synthetic negotiation history {index:02d}", created_at=stamp))
+        db.flush()
+        STAGE = "seed_legacy_commit"
     facts["legacy"] = {"service_award": service._source("service_award", awarded),
         "service_negotiation": service._source("service_negotiation", negotiation, recipient)}
     with SessionLocal() as db:
         buyer, owner, agent = (db.get(User, identities[actor]) for actor in ("buyer", "owner", "agent"))
+        STAGE = "seed_native_open"
         result = service.open_conversation(db, buyer, ConversationCreate(submission_id=uuid4(), recipient_id=identities["agent"]))
         facts["buyerThread"] = result["target_id"]
+        STAGE = "seed_native_buyer_history"
         for index in range(35):
             service.post_entry(db, agent if index % 2 == 0 else buyer, UUID(facts["buyerThread"]), EntryWrite(submission_id=uuid4(), kind="message", body=f"Synthetic native history {index:02d}"))
+        STAGE = "seed_native_member_history"
         result = service.open_conversation(db, owner, ConversationCreate(submission_id=uuid4(), recipient_id=identities["member"]))
         facts["ownerThread"] = result["target_id"]
         service.post_entry(db, owner, UUID(facts["ownerThread"]), EntryWrite(submission_id=uuid4(), kind="message", body="Synthetic retained member conversation"))
@@ -467,6 +488,19 @@ if __name__ == "__main__":
         run()
     except Exception as error:
         name = type(error).__name__
+        original = getattr(error, "orig", None)
+        if original is not None and getattr(original, "pgcode", None) is not None:
+            states = {"23502": "not_null", "23503": "foreign_key", "23505": "unique", "23514": "check_or_trigger",
+                "23000": "integrity", "55000": "retention", "25P02": "aborted_transaction"}
+            constraints = {"users_email_key": "user_email", "users_pkey": "user_identity", "uq_users_user_code": "user_code",
+                "ck_network_profile_visibility": "profile_visibility", "ck_network_wall_policy": "profile_wall",
+                "ck_network_project_one_property": "project_property", "ck_network_project_submission": "project_submission",
+                "ck_service_request_source": "request_source", "ck_service_request_project": "request_project",
+                "ck_service_request_recipients": "request_recipients", "ck_service_recipient_bounds": "recipient_bounds"}
+            constraint = getattr(getattr(original, "diag", None), "constraint_name", None)
+            print("INBOX_FIXTURE_SQL_FAILURE " + canonical({"stage": STAGE,
+                "sqlstate_kind": states.get(original.pgcode, "other"),
+                "constraint_kind": "none" if constraint is None else constraints.get(constraint, "other")}), flush=True)
         print("INBOX_FIXTURE_FAILURE " + canonical({"stage": STAGE,
             "error_type": name if re.fullmatch(r"[A-Za-z][A-Za-z0-9_]{0,62}", name) else "UnhandledError",
             "reason": error.args[0] if isinstance(error, Failure) else "external_failure"}), flush=True)

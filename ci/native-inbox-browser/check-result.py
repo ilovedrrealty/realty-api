@@ -10,7 +10,7 @@ path = Path(filename)
 assert path.is_file() and not path.is_symlink() and path.stat().st_size <= 2 * 1024 * 1024
 lines = path.read_bytes().splitlines()
 failed = False
-presence, geometry, frames = [], [], []
+presence, geometry, frames, sql_failures = [], [], [], []
 labels = {f"{language}_{screen}" for language in ("en", "es") for screen in (
     "mine", "directory", "thread", "manual", "preferences", "blocks", "admin", "legacy")}
 for line in lines:
@@ -39,6 +39,19 @@ for line in lines:
             type(row[key]) is int and 0 < row[key] <= 100000 for key in row) for row in value["frames"])
         frames.append(value)
         print("INBOX_BROWSER_FRAMES " + json.dumps(value, sort_keys=True)); failed = True
+    if line.startswith(b"INBOX_FIXTURE_SQL_FAILURE "):
+        assert mode == "api" and len(line) <= 512 and not sql_failures
+        value = json.loads(line.split(b" ", 1)[1])
+        stages = {"source", "previous99", "upgrade106", "seed_users", "seed_profiles", "seed_legacy_listing",
+            "seed_legacy_project", "seed_legacy_context", "seed_legacy_recipients", "seed_legacy_award_history",
+            "seed_legacy_negotiation_history", "seed_legacy_commit", "seed_native_open", "seed_native_buyer_history",
+            "seed_native_member_history", "browser", "authoritative_ledger"}
+        assert type(value) is dict and set(value) == {"stage", "sqlstate_kind", "constraint_kind"}
+        assert value["stage"] in stages and value["sqlstate_kind"] in {
+            "not_null", "foreign_key", "unique", "check_or_trigger", "integrity", "retention", "aborted_transaction", "other"}
+        assert value["constraint_kind"] in {"none", "other", "user_email", "user_identity", "user_code", "profile_visibility",
+            "profile_wall", "project_property", "project_submission", "request_source", "request_project", "request_recipients", "recipient_bounds"}
+        print("INBOX_FIXTURE_SQL_FAILURE " + json.dumps(value, sort_keys=True)); sql_failures.append(value); failed = True
     if line.startswith(b"INBOX_FIXTURE_FAILURE "):
         assert mode == "api" and len(line) <= 512
         value = json.loads(line.split(b" ", 1)[1])
