@@ -1,0 +1,110 @@
+{
+  "schema": "group_selected_author_native_plan_v2",
+  "status": "PREPARED_SOURCE_ONLY_ROOT_AND_COLD_REVIEW_REQUIRED",
+  "scope": "Fresh exact original134 using immutable original adapter, plus corrected separate current-schema GroupInput4 and SocialGroups24. Only explicit current trade-contact model registration is added to the Group worker; all105/set/schema/28/preservation assertions remain strict.",
+  "operations_parent": "b8ec055969eb7a2a75538451c2a47f6d3ec99d60",
+  "new_paths": 4,
+  "source": {
+    "SOURCE": "6ef69b249c573eedaea962dad530eaed0a612b24",
+    "TREE": "f1ef617e51e0d8a900d9f4bfc15a559bf676276f"
+  },
+  "source_parent": "a75f9c26f3bceb14afcb6e1150e1b2a3d50fbada",
+  "source_tree": "f1ef617e51e0d8a900d9f4bfc15a559bf676276f",
+  "source_delta_paths": [
+    "routes/social_groups.py",
+    "services/social_groups.py",
+    "tests/test_social_groups.py"
+  ],
+  "source_blobs": 367,
+  "contract_sha256": "e37f33435f558b034e6fcda5739eec0864d812b2d2aa19625fbad47d007f0077",
+  "fresh_required": {
+    "original_profile_cases": 134,
+    "group_input_cases": 4,
+    "social_group_cases": 24,
+    "total": 162,
+    "original133_source_cases_plus_actual_handshake": true,
+    "profile_checker_exact_unchanged": true
+  },
+  "accepted_reference_only": {
+    "previous134_run": 45630574556,
+    "previous_source": "a75f9c26f3bceb14afcb6e1150e1b2a3d50fbada",
+    "previous134_not_substituted_for_current134": true
+  },
+  "adapter": {
+    "profile": "Execute the exact unchanged b8ec ci/group-author-native/verify-profile.py adapter and exact c303 worker/checker. Fresh134 runs on the same6ef source to recreate and prove the canonical106 baseline; no previous result substitution.",
+    "groups": "Separate client container/fresh Python process; DATABASE_URL and SOCIAL_GROUPS_FIXTURE=yes set before importing database/main/test_social_groups. Real bootstrap8957/c4\u2192179/d8\u21926ef/e8,106 catalog/105 modeled tables and exact current schema parity. All4+24 source tests and zero skips/providers required. Before the unchanged model105/set guard, explicitly import current models.trade_contact: models/__init__ omits its two classes while the real application registers them via routes. No seed writes or product/schema changes are added.",
+    "canonical_preservation": "Snapshot existing canonical profile106 rows/catalog/all sequence values+definitions/function security/server start before separate group bootstrap; exact equality after committed group tests. Native Inbox empty; canonical protections remain original134 proof.",
+    "disposal": "Group setUp commits users and actions; tearDown rollback/close is not row cleanup. Whole third nonce-marked DB removed only after stopped child and exact marker/absence checks. Canonical and legacy marked DBs also removed; labeled containers/image/scratch cleaned by inherited lifecycle."
+  },
+  "runtime": {
+    "unchanged_dependencies": true,
+    "same_accepted_Python_Postgres_recipe": true,
+    "loopback_only": true,
+    "per_client_memory_MiB": 1536,
+    "postgres_memory_MiB": 768,
+    "no_artifacts": true,
+    "provider_transports_fail_closed": true
+  },
+  "truth_limits": [
+    "Not a browser/full547/frontend test lane.",
+    "No production migrations/data/security/provider/billing changes.",
+    "No delivery or private file bytes claim from metadata-only Group avatar source cases.",
+    "Any process error,skip,wrong inventory,provider attempt,diagnostic marker,partial result or cleanup failure prevents acceptance."
+  ],
+  "local_checks": {
+    "status": "PASS_BOUNDED_SOURCE_PARSER_ONLY",
+    "AST_units": [
+      "verify-groups.py",
+      "PY_COMPOSITION",
+      "PY_REQUIREMENTS"
+    ],
+    "readonly_current367_composition_guard_exit": 0,
+    "new_worker_import_only_delta_exact": true,
+    "immutable_old_adapter_checker_GitLF_hashes_exact": true,
+    "parser_positive": 1,
+    "parser_negative": 8,
+    "negative_cases": [
+      "model_tables",
+      "head",
+      "tests",
+      "canonical106_rows_catalog_sequences_unchanged",
+      "missing_result",
+      "process_failure",
+      "skip",
+      "diagnostic_always_failure"
+    ],
+    "parser_fixtures_synthetic_not_runtime_proof": true,
+    "retained_unchanged_old_parser_controls": {
+      "positive": 1,
+      "negative": 42,
+      "receipt": "group-author-native162-bounded-controls-20261125.json"
+    },
+    "native_application_model_DB_build_install_provider_execution": false,
+    "Bash_unavailable_locally_hosted_bash_n_required": true,
+    "push": false,
+    "receipt": "group-author-native162-v2-bounded-controls-20261125.json",
+    "receipt_SHA256": "63428be3e80096beacaf36b1db246cc7d7bc85e018281ba655a4725e69c371b3"
+  },
+  "all395_inherited_tuples_immutable": true,
+  "source_failure": {
+    "run": 45646917352,
+    "job": 139320261688,
+    "stage": "current106",
+    "reason": "real_group_current106_model105_required",
+    "fresh_original134_passed_but_not_reused": true,
+    "actual_catalog_or_model_counts_unprinted": true,
+    "source_AST_only_package_model_declarations": 103,
+    "source_AST_only_all_model_declarations": 105,
+    "missing_package_registration": [
+      "trade_contacts",
+      "trade_contact_sources"
+    ],
+    "source_diagnosis_receipt": "group-author-native162-registration-source-diagnosis-20261125.json",
+    "diagnosis_receipt_SHA256": "798670cbde58bd8a26735e939d0320a5ff92c27db2eab2fcded1104063411989"
+  },
+  "immutable_reuse": {
+    "ci/group-author-native/verify-profile.py": "8482feb54257a7a2c6116c07a86cc1492d03184657de79ccff15a91f0016c5fd",
+    "ci/group-author-native/check.py": "0a000de50e8fbd1d6c3193ff387d061746cb66bae5c9d8d2502a0651741d3e48"
+  },
+  "worker_delta_contract": "Removing exactly the two-line explanatory comment/import from the new Group worker yields the immutable b8ec Group worker byte-for-byte. No other worker action/predicate changes."
+}
