@@ -1,7 +1,7 @@
-name: Isolated manual sharing explicit CORS refusal acceptance
+name: Isolated manual sharing anonymous held-response acceptance
 on:
   push:
-    branches: [codex-ci-manual-sharing-cors-v4-20261125]
+    branches: [codex-ci-manual-sharing-anonymous-v5-20261125]
 permissions:
   contents: read
 concurrency:

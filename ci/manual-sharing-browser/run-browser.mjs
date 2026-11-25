@@ -369,8 +369,16 @@ async function propertyJourney(locale, copy, context, page) {
   const captured = new Promise(resolve => { held = resolve }), gate = new Promise(resolve => { release = resolve })
   const done = new Promise(resolve => { finished = resolve })
   const hold = async route => {
-    check(route.request().method() === 'GET' && route.request().headers().accept === 'application/json', 'ONLY_EXACT_FRESH_GET_HOLD_REQUIRED')
-    const response = await route.fetch({ maxRetries: 0, timeout: 15000 })
+    const request = route.request(), headers = await request.allHeaders()
+    const cookiePresent = Object.hasOwn(headers, 'cookie'), authorizationPresent = Object.hasOwn(headers, 'authorization')
+    check(request.method() === 'GET' && headers.accept === 'application/json' && headers.origin === LANDING
+      && !cookiePresent && !authorizationPresent, 'ONLY_EXACT_ANONYMOUS_FRESH_GET_HOLD_REQUIRED')
+    // APIRequestContext otherwise adds the signed browser jar to this genuinely anonymous browser request.
+    const replayHeaders = { ...headers, cookie: '' }
+    const response = await route.fetch({ headers: replayHeaders, maxRetries: 0, timeout: 15000 })
+    if (response.status() !== 200) writeSync(1, 'MANUAL_SHARE_HELD_RESPONSE ' + JSON.stringify({ phase: locale + '_stale_close', status: response.status(),
+      cookie_present: cookiePresent, authorization_present: authorizationPresent, origin_expected: headers.origin === LANDING,
+      accept_expected: headers.accept === 'application/json', replay_cookie_empty: replayHeaders.cookie === '' }) + '\n')
     check(response.status() === 200, 'REAL_HELD_PUBLIC_RESPONSE_REQUIRED'); held()
     await gate; await route.abort('failed'); await response.dispose(); finished()
   }

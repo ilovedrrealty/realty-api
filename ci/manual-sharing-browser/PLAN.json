@@ -1,8 +1,8 @@
 {
-  "schema": "manual-sharing-explicit-cors-v4",
+  "schema": "manual-sharing-anonymous-held-response-v5",
   "status": "PREPARED_FOR_ROOT_FULL_AND_INDEPENDENT_COLD_REVIEW_NO_PUSH_OR_HOSTED_EXECUTION",
-  "operations_parent": "1e78cac0ca8b1e11bf1ffd17f007475f576f04b8",
-  "proposed_first_ref": "codex-ci-manual-sharing-cors-v4-20261125",
+  "operations_parent": "f77b01fbe1c30919fae795b287c93940b4e4869e",
+  "proposed_first_ref": "codex-ci-manual-sharing-anonymous-v5-20261125",
   "frontend": {
     "commit": "9c66bc959ac7330aaf9c22dc646a65830dbf4566",
     "tree": "d6a07c211319ddf6ce270b483581a8b1013faadc",
@@ -76,7 +76,7 @@
     "privacy": "No raw body, contact fields, credentials, fixture secret, privateID, arbitrary URL/stack or downloaded image bytes in logs; artifacts[]"
   },
   "proof_scope": "Retain actual531/65 and standalone strict on dbad from45605073716/job139173748169 only after exact automated source guard proves two CSS-only additions reverse to dbad and all614 other blobs/tests remain unchanged. Never claim current full tests/standalone strict. Fresh DashboardVite/its actual typecheck and LandingNext required, then complete original20journeys44mobilegeometry/full106ledger/4views/8controls/PNG/clipboard/native/privacy. Native95 retained45588133254. No prior failure is treated as acceptance.",
-  "review_and_release": "Four-path ops successor off1e78 requires rootFULL and independentcold before root firstpush. Only one intentional failure response header changes; source9c66, checker/native fixture/driver actions/predicates/final20/44/full106/PNG/privacy gates otherwise exact unchanged. Full tests/standalone strict honestly retained as previous CSS-only guard; freshVite/Next and completebrowserAPIrequired.",
+  "review_and_release": "Five-path ops successor off f77b needs rootFULL and independentcold before root firstpush. Backend179/frontend9c66, sourceguards/deps/runtime/fixture/all originalactions/counts/20journeys44mobilegeometry/PNG/APIprivacy remain; only heldGET anonymous replay +failure-only status/booleans parser changes. No priorfailure is acceptance.",
   "written_finite_browser_contract": {
     "journeys": 20,
     "geometry": 44,
@@ -163,11 +163,16 @@
   "local_checks": {
     "python_ast_units": 11,
     "browser_node_syntax_native": 0,
-    "driver_reversing_only_one_cors_failure_header_branch_equals_parent": true,
-    "checker_and_native_fixture_byte_identical": true,
-    "original_journeys_geometry_ledger_png_privacy_metrics_unchanged": true,
+    "strict_parser_positive_controls": 3,
+    "strict_parser_negative_controls": 23,
+    "valid_held_diagnostics_always_fail_controls": 2,
+    "driver_reversing_only_strict_anonymous_replay_and_failure_diagnostic_equals_parent": true,
+    "native_fixture_byte_unchanged": true,
+    "original_counts_actions_and_success_predicates_unchanged": true,
+    "receipt": "outputs/property-network-20261101/manual-sharing-anonymous-v5-static-controls-20261125.json",
+    "receipt_sha256": "069236cf589b57ed36d25a2b51b860b124c90291de5b24b3107233ff8f5ee0a1",
     "git_bash_runner_syntax_native": null,
-    "scope": "Pure AST/Node/sourcebytes only; no new tests/build/application/browser/DB/install/provider/push. Hosted Bash syntax remains required; no local Bash proof."
+    "scope": "Pure AST/Node/parser/source-bytes only; no new product tests/build/application/browser/DB/install/provider/push or runtime acceptance. Hosted Bashsyntax stillrequired; no localBashproof."
   },
   "diagnostic_scope": "Failure-only on an unchanged viewport/control geometry predicate: at most one strict 12KiB census; scan at most2500 body elements, emit24 bounded rows with fixed tag/scope/source-known-class enums and integer width/left/right/client/scroll only plus known label/viewport totals. Never text, URL, ID, computed-style strings, attributes, source data or screenshot. The parser always marks a census asFAIL, rejects duplicate/unknown/wrong-mode/private/oversized/boolean-integer fields. Existing failure/ownframes remain binding. No extra click/read/write/route change, fixture byte-identical, original20/44/4views/8controls/PNG/provider/privacy predicates unchanged.",
   "prior_actual_failures": [
@@ -219,6 +224,16 @@
       "phase": "en_guarded_photo_failure",
       "reason": "TIMEOUT",
       "scope": "Actual sequence reached guardedphoto failure after first property/preparedasset mobile geometry and no-photo PNG+caption. FreshVite0/Next0/sixexports; incomplete APIledger properlyfailed; cleanup/artifacts[]. No full20/44/ledger acceptance."
+    },
+    {
+      "operations": "f77b01fbe1c30919fae795b287c93940b4e4869e",
+      "run": 45610151354,
+      "job": 139191260420,
+      "status": "FAIL",
+      "phase": "en_stale_close",
+      "reason": "REAL_HELD_PUBLIC_RESPONSE_REQUIRED",
+      "actual_status": "notlogged; do notclaimobserved500",
+      "scope": "Actual sequence passed CORSfailure, selectedphoto storyPNG/nativefile/sourcechange/withdrawal/freshreadfailure+retry, thenheldGET returnednon200. FreshVite0/Next0,cleanup/artifacts[]; full20/44/APIledger stillunaccepted."
     }
   ],
   "observed_source_correction": "Only existing listing-prose overflow-wrap:anywhere and exact mortgage result value class. Text wraps without clipping, formulas/data/rates/fetch/permissions/sharing behavior changes. Root authorized both numeric-DOM-proven defects; this successor tests them with original unmodified20journeys44geometry and every existing finite API/view/PNG/privacy check.",
@@ -228,5 +243,15 @@
     "proven_cause": "Pinned Playwright adds matching ACAO automatically if omitted on cross-origin fulfilled responses; the previous absent-header failurefixture became a valid response. The product correctly had no imageFailed result.",
     "exact_change": "One else branch adds fixed mismatching ACAO https://cors-denied.example.invalid only in existing cors_failure mode. Valid * header, exact PNG/status/body/allcounters/actions/assertions remain unchanged. No actual destination request; response header only.",
     "scope": "Harness-only correction; no productchange, delay, extra action, retry or failure suppression."
+  },
+  "anonymous_replay_correction": {
+    "primary_source": [
+      "https://github.com/microsoft/playwright/blob/v1.64.1/packages/playwright-core/src/client/network.ts",
+      "https://github.com/microsoft/playwright/blob/v1.64.1/packages/playwright-core/src/client/fetch.ts",
+      "https://github.com/microsoft/playwright/blob/v1.64.1/packages/playwright-core/src/server/fetch.ts"
+    ],
+    "source_proven_transport": "Route.fetch uses BrowserContextAPIRequestContext. _innerFetch copies original headers, then server _updateRequestCookieHeader injects context jar cookies when Cookie header is absent. This signed Admin browser deliberately has such a cookie while app freshfetch usescredentialsomit. Native fixture rightly refuses authenticated freshpublicreads.",
+    "exact_fix": "Require original paused GET allHeaders contain noCookie/noAuthorization and exactLandingOrigin/JSONAccept before any replay. Replay identical headers plus explicit emptyCookie to prevent APIRequest jar injection. Keep actualresponse200/native noStore/anonymousguard and original20/44/full106/PNG/privacy gates. No extra GET/retry/action/productchange.",
+    "failure_diagnostic": "Only if actualheldresponse is non200, log one <=512B exact phase/status(integer100..599 excluding200) plus5header-presence/expected-value booleans. No header values, token, URL, body or IDs. Strict parser alwaysfails any diagnostic, rejects wrongmode/duplicateJSONkeys/unknownfields/types/status. Originalfailureassertion stillbinding."
   }
 }

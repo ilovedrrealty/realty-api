@@ -41,7 +41,7 @@ def check(mode, filename, native):
     require(mode in {"browser", "api"} and re.fullmatch(r"[0-9]{1,3}", native) and int(native) <= 255, "exact_arguments_required")
     path = Path(filename)
     require(path.is_file() and not path.is_symlink() and 0 < path.stat().st_size <= 2 * 1024 * 1024, "bounded_log_required")
-    rows, geometry, presence, frames, overflow = [], [], [], [], []
+    rows, geometry, presence, frames, overflow, held = [], [], [], [], [], []
     failed = False
     labels = {language + "_" + screen for language in ("en", "es") for screen in (
         "property", "assets", "rent", "public_resource", "calculator", "dashboard_resource", "area",
@@ -106,6 +106,17 @@ def check(mode, filename, native):
                     and all(item[key] >= 0 for key in ("width", "client", "scroll")), "integer_only_overflow_row_required")
             overflow.append(value)
             print("MANUAL_SHARE_OVERFLOW_CENSUS " + json.dumps(value, sort_keys=True), flush=True)
+            failed = True
+        elif line.startswith(b"MANUAL_SHARE_HELD_RESPONSE "):
+            require(mode == "browser" and not held, "single_browser_held_response_required")
+            value = record(line, b"MANUAL_SHARE_HELD_RESPONSE ", 512)
+            flags = {"cookie_present", "authorization_present", "origin_expected", "accept_expected", "replay_cookie_empty"}
+            require(type(value) is dict and set(value) == {"phase", "status", *flags}
+                and type(value["phase"]) is str and value["phase"] in {"en_stale_close", "es_stale_close"}
+                and type(value["status"]) is int and 100 <= value["status"] <= 599 and value["status"] != 200
+                and all(type(value[key]) is bool for key in flags), "finite_held_response_status_and_flags_required")
+            held.append(value)
+            print("MANUAL_SHARE_HELD_RESPONSE " + json.dumps(value, sort_keys=True), flush=True)
             failed = True
         elif line.startswith(b"MANUAL_SHARE_FIXTURE_FAILURE "):
             require(mode == "api", "api_failure_mode_required")
