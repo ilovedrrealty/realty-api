@@ -1,8 +1,8 @@
 {
-  "schema": "manual-sharing-browser-preparation-v1",
+  "schema": "manual-sharing-overflow-diagnostic-v2",
   "status": "PREPARED_FOR_ROOT_FULL_AND_INDEPENDENT_COLD_REVIEW_NO_PUSH_OR_HOSTED_EXECUTION",
-  "operations_parent": "b2f6da3b0c69ac4f7f349a58e1c88cd2cb4fcfbd",
-  "proposed_first_ref": "codex-ci-manual-sharing-browser-20261125",
+  "operations_parent": "c4c7158181d3b585073008accb68b3a3a5aed19b",
+  "proposed_first_ref": "codex-ci-manual-sharing-overflow-v2-20261125",
   "frontend": {
     "commit": "dbad8aa8e55fccda3dfbfa0ca15bcc7d4cadbb30",
     "tree": "f15d1962e27ae7e54c92bfbcf4633906dae14c3c",
@@ -11,10 +11,11 @@
     "fetch_depth": 11,
     "full_contracts": 531,
     "test_files": 65,
-    "standalone_strict": "fresh_current_required",
+    "standalone_strict": "retained actual45605073716/job139173748169 on exact unchanged dbad",
     "dashboard_vite": "fresh_current_required",
     "landing_next": "fresh_current_required",
-    "composition": "Exactly15 reviewed paths from601;608base→616,8additions,all other mode/type/blob tuples identical; archive verified before/after every phase"
+    "composition": "Exactly15 reviewed paths from601;608base→616,8additions,all other mode/type/blob tuples identical; archive verified before/after every phase",
+    "full_contracts_proof": "retained actual531 PASS/0fail/0skip/0cancel/0todo in45605073716/job139173748169 on exact unchanged dbad"
   },
   "backend": {
     "commit": "17943ba1714673c51c43cdbb800106f91612f527",
@@ -74,8 +75,8 @@
     "api_failure": "MANUAL_SHARE_FIXTURE_FAILURE finite stage/error_type/reason only",
     "privacy": "No raw body, contact fields, credentials, fixture secret, privateID, arbitrary URL/stack or downloaded image bytes in logs; artifacts[]"
   },
-  "proof_scope": "Retain unchanged Inbox/contact/profile/phone/catalog acceptance only through exact composed source ancestry/blobs and original receipts; this lane separately requires full current531/strict/builds and focused sharing UI. No duplicate backend95 or unrelated communication/provider tests.",
-  "review_and_release": "Final six-file package requires full mutual source review, root FULL+independent cold and exact first-push authorization. Draft source preparation is not hosted acceptance and does not change production.",
+  "proof_scope": "Exact unchanged dbad full531/65 and standalone strict are retained from actual45605073716/job139173748169, not rerun or claimed current. Fresh Dashboard build (its actual typecheck) and fresh Landing Next build remain required for usable static assets; this one added numeric census diagnoses the existing failed mobile assertion. Native95 retained45588133254. This is diagnostic preparation only; no acceptance or product correction is inferred.",
+  "review_and_release": "Five-path operations-only successor off c4c7 requires root FULL and independent cold review before root first push; no product source changes or unchanged retry. All original browser/API success predicates remain binding; diagnostic output always fails.",
   "written_finite_browser_contract": {
     "journeys": 20,
     "geometry": 44,
@@ -160,15 +161,48 @@
     "es_research"
   ],
   "local_checks": {
-    "python_ast_units": 13,
+    "python_ast_units": 11,
     "browser_node_syntax_native": 0,
-    "manual_copy_inline_node_syntax_native": 0,
     "git_bash_runner_syntax_native": null,
     "strict_parser_positive_controls": 3,
-    "strict_parser_negative_controls": 38,
-    "parser_control_receipt": "outputs/property-network-20261101/manual-sharing-browser-parser-controls-20261125.json",
-    "parser_control_receipt_sha256": "c6545157e186237ac0ef8bcba49a1b33ac68bcf6b6f93a9dda66044684489740",
-    "scope": "Pure syntax/parser/source ledger controls only. No actual native DB, application/browser, dependency install, build, provider or push execution locally.",
-    "runner_bash_syntax": "Git Bash unavailable locally; no local Bash syntax proof is claimed. Workflow requires native hosted bash -n before executing the runner."
-  }
+    "strict_parser_negative_controls": 29,
+    "valid_census_always_failure_controls": 3,
+    "driver_without_only_census_equals_parent": true,
+    "fixture_byte_unchanged": true,
+    "receipt": "outputs/property-network-20261101/manual-sharing-overflow-v2-static-controls-20261125.json",
+    "receipt_sha256": "80867f21d88f9b9ca725ca79fb17512a6d0adefe7f7c4f0a6706fe43b7bc3f50",
+    "scope": "Pure parser/AST/source/Node syntax only; Git Bash unavailable locally and hosted bash-n remains required. No browser/application/DB/build/install/provider/push or acceptance."
+  },
+  "prior_actual_failure": {
+    "operations": "c4c7158181d3b585073008accb68b3a3a5aed19b",
+    "run": 45605073716,
+    "job": 139173748169,
+    "status": "FAIL",
+    "phase": "en_property_geometry_320",
+    "reason": "VIEWPORT_OVERFLOW",
+    "own_frames": [
+      {
+        "line": 16,
+        "column": 54
+      },
+      {
+        "line": 175,
+        "column": 5
+      },
+      {
+        "line": 300,
+        "column": 3
+      },
+      {
+        "line": 387,
+        "column": 3
+      },
+      {
+        "line": 451,
+        "column": 3
+      }
+    ],
+    "proof": "Actual current531/65 allPASS, standalone full strict0, freshVite0 and Next0/six exports; browser failed on first320 geometry before complete20/44/ledger. Final API ledger properly failed incomplete actions. Cleanup marker and actualartifacts[] read by root. No sharing acceptance."
+  },
+  "diagnostic_scope": "Failure-only on an unchanged viewport/control geometry predicate: at most one strict 12KiB census; scan at most2500 body elements, emit24 bounded rows with fixed tag/scope/source-known-class enums and integer width/left/right/client/scroll only plus known label/viewport totals. Never text, URL, ID, computed-style strings, attributes, source data or screenshot. The parser always marks a census asFAIL, rejects duplicate/unknown/wrong-mode/private/oversized/boolean-integer fields. Existing failure/ownframes remain binding. No extra click/read/write/route change, fixture byte-identical, original20/44/4views/8controls/PNG/provider/privacy predicates unchanged."
 }

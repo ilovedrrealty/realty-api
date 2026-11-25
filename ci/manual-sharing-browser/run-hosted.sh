@@ -6,7 +6,7 @@ die() { printf 'PLATFORM_BROWSER_REFUSED %s\n' "$1" >&2; exit 1; }
 bounded() { timeout --kill-after=8s "$@"; }
 [[ $# == 7 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 &&
-   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-manual-sharing-browser-20261125 &&
+   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-manual-sharing-overflow-v2-20261125 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die HOSTED_EXACT_EVENT_REQUIRED
 ops="$1"; frontend="$2"; baseline="$3"; backend="$4"; migration="$5"; relay="$6"; previous="$7"
 [[ "$ops" == "$GITHUB_WORKSPACE/build-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-source" &&
@@ -23,11 +23,10 @@ ci/manual-sharing-browser/PLAN.json
 ci/manual-sharing-browser/check-result.py
 ci/manual-sharing-browser/run-browser.mjs
 ci/manual-sharing-browser/run-hosted.sh
-ci/manual-sharing-browser/serve_fixture.py
 EXACT_OPERATIONS
 )
 [[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" &&
-   $(git -C "$ops" show -s --format=%P HEAD) == b2f6da3b0c69ac4f7f349a58e1c88cd2cb4fcfbd &&
+   $(git -C "$ops" show -s --format=%P HEAD) == c4c7158181d3b585073008accb68b3a3a5aed19b &&
    $(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) == "$expected_operations" ]] || die EXACT_OPERATIONS_REQUIRED
 backend_commit=17943ba1714673c51c43cdbb800106f91612f527
 backend_tree=ff940a7b6e983d4c669202746d9676b4b82e9a06
@@ -100,7 +99,7 @@ before,after=tree(base),tree('HEAD')
 assert len(before)==608 and len(after)==616 and len(set(after)-set(before))==8 and not set(before)-set(after)
 assert all(after[name]==entry for name,entry in before.items() if name not in paths)
 PY_FRONTEND_COMPOSITION
-printf 'MANUAL_SHARE_BUILD_SCOPE frontend_source=dbad8aa8e55fccda3dfbfa0ca15bcc7d4cadbb30 backend_source=17943ba1714673c51c43cdbb800106f91612f527 expected_full_tests=531 current_tests=required current_strict=required native95=retained_45588133254_not_rerun\n'
+printf 'MANUAL_SHARE_BUILD_SCOPE frontend_source=dbad8aa8e55fccda3dfbfa0ca15bcc7d4cadbb30 backend_source=17943ba1714673c51c43cdbb800106f91612f527 expected_full_tests=531 current_tests=false current_strict=false retained_frontend_run=45605073716 native95=retained_45588133254_not_rerun\n'
 python3 -I -B - "$baseline/requirements.txt" "$backend/requirements.txt" <<'PY_REQUIREMENTS'
 from pathlib import Path
 import sys
@@ -214,41 +213,9 @@ assert sys.argv[2] == "0"
 PY
 verify_source || die INSTALLED_FRONTEND_MISMATCH
 
-native=0
-bounded 360s docker run "${prepare[@]}" --network none \
-  --mount "type=bind,src=$state/frontend-work,dst=/work" "$node_image" \
-  env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp CI=true NODE_OPTIONS=--max-old-space-size=1536 \
-  sh -c 'node --test --test-reporter=tap tests/*.test.cjs' >"$state/contracts.log" 2>&1 || native=$?
-python3 -I -B - "$state/contracts.log" "$native" <<'PY_CONTRACTS' || die ACTUAL_531_CONTRACTS_REQUIRED
-from pathlib import Path
-import re,sys
-raw=Path(sys.argv[1]).read_bytes()
-assert len(raw)<=4*1024*1024
-counts={key.decode():int(value) for key,value in re.findall(rb'(?m)^# (tests|pass|fail|cancelled|skipped|todo) ([0-9]+)\s*$',raw)}
-print('MANUAL_SHARE_FRONTEND_CONTRACTS native='+sys.argv[2]+' '+str(counts))
-if sys.argv[2]!='0':
-    for name,line,col in re.findall(rb"location: '/work/(tests/[A-Za-z0-9_.-]+\.cjs):([0-9]+):([0-9]+)'",raw)[:12]:
-        print('MANUAL_SHARE_CONTRACT_LOCATION '+name.decode()+':'+line.decode()+':'+col.decode())
-assert sys.argv[2]=='0' and counts=={'tests':531,'pass':531,'fail':0,'cancelled':0,'skipped':0,'todo':0}
-PY_CONTRACTS
-verify_source || die CONTRACTS_ALTERED_FRONTEND_SOURCE
-native=0
-bounded 360s docker run "${prepare[@]}" --network none \
-  --mount "type=bind,src=$state/frontend-work,dst=/work" "$node_image" \
-  env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp CI=true NODE_OPTIONS=--max-old-space-size=1536 \
-  sh -c 'npm run typecheck --workspace=dashboard' >"$state/strict.log" 2>&1 || native=$?
-python3 -I -B - "$state/strict.log" "$native" <<'PY_STRICT' || die ACTUAL_STRICT_DASHBOARD_REQUIRED
-from pathlib import Path
-import re,sys
-raw=Path(sys.argv[1]).read_bytes()
-assert len(raw)<=1048576
-for file,line,col,code in re.findall(rb'(?m)^((?:src|\.\./\.\./packages)/[A-Za-z0-9_./-]+\.(?:ts|tsx))\(([0-9]{1,5}),([0-9]{1,5})\): error (TS[0-9]{4}):',raw)[:12]:
-    print('MANUAL_SHARE_STRICT_DIAGNOSTIC '+file.decode()+':'+line.decode()+':'+col.decode()+' '+code.decode())
-print('MANUAL_SHARE_STRICT_DASHBOARD native='+sys.argv[2])
-assert sys.argv[2]=='0'
-PY_STRICT
-verify_source || die STRICT_ALTERED_FRONTEND_SOURCE
-
+# Exact unchanged dbad source: full531/65 and standalone strict actually passed in c4c7 run45605073716.
+printf 'MANUAL_SHARE_RETAINED_FRONTEND_PROOF frontend=dbad8aa8e55fccda3dfbfa0ca15bcc7d4cadbb30 run=45605073716 job=139173748169 tests=531 pass=531 fail=0 skipped=0 standalone_strict=pass current_tests=false current_strict=false\n'
+verify_source || die RETAINED_PROOF_FRONTEND_SOURCE_MISMATCH
 
 native=0
 bounded 360s docker run "${prepare[@]}" --network none \
@@ -490,5 +457,5 @@ PY_LANDING
   verify_source || die BROWSER_ALTERED_FRONTEND_SOURCE
   [[ -z $(git -C "$backend" status --porcelain=v1 --untracked-files=all) ]] || die BROWSER_ALTERED_BACKEND_SOURCE
 done
-printf 'MANUAL_SHARE_HOSTED_RESULT operations=%s frontend=%s backend=%s retained_native95_run=45588133254 frontend_tests=531_current standalone_strict=current dashboard=current landing=current browser=exact_checker_pass authoritative_fixture=exact_checker_pass live_provider_calls=0 run=%s attempt=1\n' \
+printf 'MANUAL_SHARE_HOSTED_RESULT operations=%s frontend=%s backend=%s retained_native95_run=45588133254 frontend_tests=531_retained retained_frontend_run=45605073716 standalone_strict=retained_45605073716 dashboard=current landing=current browser=exact_checker_pass authoritative_fixture=exact_checker_pass live_provider_calls=0 run=%s attempt=1\n' \
   "$GITHUB_SHA" "$frontend_commit" "$backend_commit" "$GITHUB_RUN_ID"

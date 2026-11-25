@@ -166,16 +166,40 @@ async function navigate(page, origin, path, optional = false) {
   check([DASH, LANDING].includes(origin) && path.startsWith('/') && !path.startsWith('//'), 'FIXED_OWNED_NAVIGATION_REQUIRED')
   await page.goto(origin + path, { waitUntil: 'domcontentloaded' }); await foreground(page, optional)
 }
+async function overflowCensus(page, panel, label, width) {
+  // Failure-only, numeric DOM facts and fixed source-owned class tokens; no text/URLs/IDs/styles.
+  const value = await panel.evaluate((share, { label, width }) => {
+    const integer = value => Math.max(-100000, Math.min(100000, Math.round(Number.isFinite(value) ? value : 0)))
+    const allowedTags = new Set(['MAIN', 'DIV', 'SECTION', 'ARTICLE', 'DETAILS', 'SUMMARY', 'FORM', 'INPUT', 'TEXTAREA', 'SELECT', 'BUTTON', 'A', 'PRE', 'IMG', 'IFRAME', 'H1', 'H2', 'H3', 'P', 'SPAN', 'LABEL', 'SVG'])
+    const allowedClasses = ['min-w-0', 'max-w-full', 'w-full', 'max-w-310', 'grid', 'grid-cols-1', 'grid-cols-2', 'sm:grid-cols-4', 'lg:grid-cols-[1fr_360px]',
+      'gap-3', 'gap-10', 'p-4', 'p-5.5', 'px-6', 'flex', 'inline-flex', 'flex-wrap', 'shrink-0', 'whitespace-pre-wrap', 'break-words',
+      '[overflow-wrap:anywhere]', 'overflow-hidden', 'overflow-x-auto', 'rounded-xl', 'rounded-2xl', 'text-[18px]', 'font-sans', 'listing-prose']
+    const nodes = [...document.body.querySelectorAll('*')].slice(0, 2500), rows = []
+    for (const node of nodes) {
+      const box = node.getBoundingClientRect()
+      if (box.width <= 0 || box.height <= 0 || !(box.right > innerWidth + 1 || box.left < -1 || node.scrollWidth > node.clientWidth + 1)) continue
+      rows.push({ tag: allowedTags.has(node.tagName) ? node.tagName : 'OTHER', scope: node === share || share.contains(node) ? 'share' : node.contains(share) ? 'ancestor' : 'page',
+        classes: allowedClasses.filter(token => node.classList.contains(token)).slice(0, 8), width: integer(box.width), left: integer(box.left), right: integer(box.right),
+        client: integer(node.clientWidth), scroll: integer(node.scrollWidth) })
+    }
+    rows.sort((a, b) => b.right - a.right || b.scroll - b.client - (a.scroll - a.client) || a.width - b.width)
+    return { label, width, inner: integer(innerWidth), client: integer(document.documentElement.clientWidth), scroll: integer(document.documentElement.scrollWidth),
+      scanned: nodes.length, matches: rows.length, rows: rows.slice(0, 24) }
+  }, { label, width })
+  writeSync(1, 'MANUAL_SHARE_OVERFLOW_CENSUS ' + JSON.stringify(value) + '\n')
+}
 async function geometry(page, panel, label, optional = false) {
   const values = []
   for (const width of [320, 390]) {
     advance(label + '_geometry_' + width)
     await page.setViewportSize({ width, height: 844 }); await foreground(page, optional)
     const value = await page.evaluate(() => ({ width: innerWidth, document: document.documentElement.scrollWidth }))
+    if (!(value.width === width && value.document <= width + 1)) await overflowCensus(page, panel, label, width).catch(() => {})
     check(value.width === width && value.document <= width + 1, 'VIEWPORT_OVERFLOW')
     for (const item of await panel.locator('input,textarea,select,button,a,summary').all()) {
       if (!await item.isVisible()) continue
       const box = await item.boundingBox()
+      if (!(box && box.x >= -1 && box.x + box.width <= width + 1)) await overflowCensus(page, panel, label, width).catch(() => {})
       check(box && box.x >= -1 && box.x + box.width <= width + 1, 'CONTROL_OVERFLOW')
     }
     if (!optional) { geometries.push({ label, ...value }); console.log('MANUAL_SHARE_BROWSER_GEOMETRY ' + JSON.stringify({ label, ...value })) }

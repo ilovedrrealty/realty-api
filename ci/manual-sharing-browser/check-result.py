@@ -41,7 +41,7 @@ def check(mode, filename, native):
     require(mode in {"browser", "api"} and re.fullmatch(r"[0-9]{1,3}", native) and int(native) <= 255, "exact_arguments_required")
     path = Path(filename)
     require(path.is_file() and not path.is_symlink() and 0 < path.stat().st_size <= 2 * 1024 * 1024, "bounded_log_required")
-    rows, geometry, presence, frames = [], [], [], []
+    rows, geometry, presence, frames, overflow = [], [], [], [], []
     failed = False
     labels = {language + "_" + screen for language in ("en", "es") for screen in (
         "property", "assets", "rent", "public_resource", "calculator", "dashboard_resource", "area",
@@ -83,6 +83,29 @@ def check(mode, filename, native):
             require(len({(item["line"], item["column"]) for item in value["frames"]}) == len(value["frames"]), "unique_own_frames_required")
             frames.append(value)
             print("MANUAL_SHARE_BROWSER_FRAMES " + json.dumps(value, sort_keys=True), flush=True)
+            failed = True
+        elif line.startswith(b"MANUAL_SHARE_OVERFLOW_CENSUS "):
+            require(mode == "browser" and not overflow, "single_browser_overflow_census_required")
+            value = record(line, b"MANUAL_SHARE_OVERFLOW_CENSUS ", 12288)
+            require(type(value) is dict and set(value) == {"label", "width", "inner", "client", "scroll", "scanned", "matches", "rows"}, "exact_overflow_census_keys_required")
+            require(type(value["label"]) is str and value["label"] in labels | {"webkit_calculator"}
+                and type(value["width"]) is int and value["width"] in {320, 390}, "known_geometry_census_required")
+            require(all(type(value[key]) is int and 0 <= value[key] <= 100000 for key in ("inner", "client", "scroll", "scanned", "matches"))
+                and 0 <= value["matches"] <= value["scanned"] <= 2500 and 0 < value["inner"] <= 100000, "bounded_overflow_dimensions_required")
+            require(type(value["rows"]) is list and len(value["rows"]) == min(value["matches"], 24), "bounded_overflow_rows_required")
+            tags = {"MAIN", "DIV", "SECTION", "ARTICLE", "DETAILS", "SUMMARY", "FORM", "INPUT", "TEXTAREA", "SELECT", "BUTTON", "A", "PRE", "IMG", "IFRAME", "H1", "H2", "H3", "P", "SPAN", "LABEL", "SVG", "OTHER"}
+            classes = {'min-w-0', 'max-w-full', 'w-full', 'max-w-310', 'grid', 'grid-cols-1', 'grid-cols-2', 'sm:grid-cols-4', 'lg:grid-cols-[1fr_360px]',
+                'gap-3', 'gap-10', 'p-4', 'p-5.5', 'px-6', 'flex', 'inline-flex', 'flex-wrap', 'shrink-0', 'whitespace-pre-wrap', 'break-words',
+                '[overflow-wrap:anywhere]', 'overflow-hidden', 'overflow-x-auto', 'rounded-xl', 'rounded-2xl', 'text-[18px]', 'font-sans', 'listing-prose'}
+            for item in value["rows"]:
+                require(type(item) is dict and set(item) == {"tag", "scope", "classes", "width", "left", "right", "client", "scroll"}
+                    and type(item["tag"]) is str and item["tag"] in tags and type(item["scope"]) is str and item["scope"] in {"share", "ancestor", "page"}, "exact_overflow_row_shape_required")
+                require(type(item["classes"]) is list and len(item["classes"]) <= 8 and all(type(part) is str and part in classes for part in item["classes"])
+                    and len(set(item["classes"])) == len(item["classes"]), "source_known_overflow_classes_required")
+                require(all(type(item[key]) is int and -100000 <= item[key] <= 100000 for key in ("width", "left", "right", "client", "scroll"))
+                    and all(item[key] >= 0 for key in ("width", "client", "scroll")), "integer_only_overflow_row_required")
+            overflow.append(value)
+            print("MANUAL_SHARE_OVERFLOW_CENSUS " + json.dumps(value, sort_keys=True), flush=True)
             failed = True
         elif line.startswith(b"MANUAL_SHARE_FIXTURE_FAILURE "):
             require(mode == "api", "api_failure_mode_required")
