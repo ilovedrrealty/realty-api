@@ -669,17 +669,17 @@ def assign_realtor_to_owner(user_id: str, body: AssignRealtorBody, admin=Depends
     target = db.query(User).filter(User.id == UUID(user_id)).first()
     if not target:
         raise HTTPException(status_code=404, detail="User not found")
-    if target.role not in ("owner", "admin"):
-        raise HTTPException(status_code=400, detail="Can only assign an agent to an owner or admin account")
+    if target.role not in ("buyer", "owner", "admin"):
+        raise HTTPException(status_code=400, detail="Can only assign an agent to a buyer, owner or admin account")
     if body.realtor_id:
         realtor = find_eligible_agent(db, body.realtor_id)
         if not realtor:
             raise HTTPException(status_code=404, detail="Active verified agent not found")
         target.assigned_realtor_id = realtor.id
-        _log(db, "realtor_assigned", f"Realtor {realtor.display_name or realtor.email} assigned to owner {target.display_name or target.email}", actor_id=admin.id)
+        _log(db, "realtor_assigned", f"Realtor {realtor.display_name or realtor.email} assigned to account {target.display_name or target.email}", actor_id=admin.id)
     else:
         target.assigned_realtor_id = None
-        _log(db, "realtor_unassigned", f"Realtor unassigned from owner {target.display_name or target.email}", actor_id=admin.id)
+        _log(db, "realtor_unassigned", f"Realtor unassigned from account {target.display_name or target.email}", actor_id=admin.id)
     db.commit()
 
 

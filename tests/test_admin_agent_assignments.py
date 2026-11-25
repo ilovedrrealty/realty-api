@@ -22,6 +22,7 @@ from sqlalchemy.orm import Session
 
 from config import settings
 from database import Base, get_db
+from models.activity_log import ActivityLog
 from models.lead import Lead
 from models.listing import Listing
 from models.user import User
@@ -97,6 +98,7 @@ class AdminAgentAssignmentTests(unittest.TestCase):
     def assign(self, kind, agent_name, actor="admin_a", expected=204):
         paths = {
             "listing": f"/admin/listings/{self.property.id}/assign",
+            "buyer": f"/admin/users/{self.users['buyer'].id}/assign-realtor",
             "owner": f"/admin/users/{self.users['owner'].id}/assign-realtor",
             "lead": f"/admin/leads/{self.owner_lead.id}/assign",
         }
@@ -142,8 +144,34 @@ class AdminAgentAssignmentTests(unittest.TestCase):
         my_agent = self.client.get("/auth/me/agent", headers=self.headers["admin_a"]).json()
         self.assertEqual(my_agent["realtor_id"], str(self.users["admin_b"].id))
         self.assertEqual(self.users["admin_a"].role, "admin")
-        invalid_target = self.client.put(f"/admin/users/{self.users['buyer'].id}/assign-realtor", headers=self.headers["admin_a"], json={"realtor_id": str(self.users["admin_a"].id)})
+        invalid_target = self.client.put(f"/admin/users/{self.users['realtor'].id}/assign-realtor", headers=self.headers["admin_a"], json={"realtor_id": str(self.users["admin_a"].id)})
         self.assertEqual(invalid_target.status_code, 400)
+
+    def test_buyer_account_agent_assignment_readback_and_clear_preserve_roles_and_audit(self):
+        buyer = self.users["buyer"]
+        before_logs = {row.id for row in self.db.query(ActivityLog).all()}
+        path = f"/admin/users/{buyer.id}/assign-realtor"
+        for agent_name in ("realtor", "admin_b"):
+            with self.subTest(agent=agent_name):
+                self.assign("buyer", agent_name)
+                self.db.refresh(buyer)
+                self.assertEqual(buyer.role, "buyer")
+                self.assertEqual(buyer.assigned_realtor_id, self.users[agent_name].id)
+                assigned = self.client.get("/auth/me/agent", headers=self.headers["buyer"])
+                self.assertEqual(assigned.status_code, 200, assigned.text)
+                self.assertEqual(assigned.json()["realtor_id"], str(self.users[agent_name].id))
+                self.assertEqual(assigned.json()["realtor_email"], self.users[agent_name].email)
+                self.assertIsNone(self.client.get("/auth/me/agent", headers=self.headers["owner"]).json()["realtor_id"])
+                cleared = self.client.put(path, headers=self.headers["admin_a"], json={"realtor_id": None})
+                self.assertEqual(cleared.status_code, 204, cleared.text)
+                self.db.refresh(buyer)
+                self.assertEqual(buyer.role, "buyer")
+                self.assertIsNone(buyer.assigned_realtor_id)
+                self.assertIsNone(self.client.get("/auth/me/agent", headers=self.headers["buyer"]).json()["realtor_id"])
+        new_logs = [row for row in self.db.query(ActivityLog).all() if row.id not in before_logs]
+        self.assertEqual(sorted(row.event_type for row in new_logs), ["realtor_assigned", "realtor_assigned", "realtor_unassigned", "realtor_unassigned"])
+        self.assertTrue(all(row.actor_id == self.users["admin_a"].id and buyer.display_name in row.description for row in new_logs))
+        self.assertEqual(self.client.get("/auth/me/agent").status_code, 401)
 
     def test_admin_submitted_lead_mirrors_agent_but_never_downgrades_admin(self):
         response = self.client.put(f"/admin/leads/{self.admin_lead.id}/assign", headers=self.headers["admin_b"], json={"realtor_id": str(self.users["admin_b"].id)})
@@ -154,7 +182,7 @@ class AdminAgentAssignmentTests(unittest.TestCase):
 
     def test_ineligible_or_inactive_agents_cannot_be_selected(self):
         for candidate in ("buyer", "owner", "suspended", "unverified", "inactive_realtor"):
-            for kind in ("listing", "owner", "lead"):
+            for kind in ("listing", "buyer", "owner", "lead"):
                 with self.subTest(candidate=candidate, kind=kind):
                     self.assign(kind, candidate, expected=404)
         self.assertIsNone(self.db.get(Listing, self.property.id).assigned_realtor_id)
@@ -163,7 +191,7 @@ class AdminAgentAssignmentTests(unittest.TestCase):
     def test_non_admin_cannot_list_or_assign_and_anonymous_is_denied(self):
         for actor in ("buyer", "owner", "realtor", "suspended", "unverified"):
             self.assertEqual(self.client.get("/admin/agents", headers=self.headers[actor]).status_code, 403)
-            for kind in ("listing", "owner", "lead"):
+            for kind in ("listing", "buyer", "owner", "lead"):
                 self.assign(kind, "admin_a", actor=actor, expected=403)
         self.assertEqual(self.client.get("/admin/agents").status_code, 401)
         response = self.client.put(f"/admin/leads/{self.owner_lead.id}/assign", json={"realtor_id": str(self.users["admin_a"].id)})
@@ -171,11 +199,12 @@ class AdminAgentAssignmentTests(unittest.TestCase):
 
     def test_bad_agent_ids_are_validation_errors_and_supported_unassignments_still_work(self):
         self.assign("listing", "admin_a")
+        self.assign("buyer", "admin_a")
         self.assign("owner", "admin_a")
-        for path in (f"/admin/listings/{self.property.id}/assign", f"/admin/users/{self.users['owner'].id}/assign-realtor"):
+        for path in (f"/admin/listings/{self.property.id}/assign", f"/admin/users/{self.users['buyer'].id}/assign-realtor", f"/admin/users/{self.users['owner'].id}/assign-realtor"):
             response = self.client.put(path, headers=self.headers["admin_a"], json={"realtor_id": None})
             self.assertEqual(response.status_code, 204, response.text)
-        for kind in ("listing", "owner", "lead"):
-            path = {"listing": f"/admin/listings/{self.property.id}/assign", "owner": f"/admin/users/{self.users['owner'].id}/assign-realtor", "lead": f"/admin/leads/{self.owner_lead.id}/assign"}[kind]
+        for kind in ("listing", "buyer", "owner", "lead"):
+            path = {"listing": f"/admin/listings/{self.property.id}/assign", "buyer": f"/admin/users/{self.users['buyer'].id}/assign-realtor", "owner": f"/admin/users/{self.users['owner'].id}/assign-realtor", "lead": f"/admin/leads/{self.owner_lead.id}/assign"}[kind]
             response = self.client.put(path, headers=self.headers["admin_a"], json={"realtor_id": "not-a-uuid"})
             self.assertEqual(response.status_code, 422, response.text)
