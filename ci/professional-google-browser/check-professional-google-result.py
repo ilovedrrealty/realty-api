@@ -9,8 +9,18 @@ assert mode in {"browser", "api"} and re.fullmatch(r"[0-9]{1,3}", native)
 path = Path(filename)
 assert path.is_file() and path.stat().st_size <= 2 * 1024 * 1024
 lines = path.read_bytes().splitlines()
-failed, loopback, diagnostics = False, [], []
+failed, loopback, diagnostics, driver_failures = False, [], [], []
 for line in lines:
+    if line.startswith(b"PROFESSIONAL_GOOGLE_DRIVER_FAILURE "):
+        assert mode == "browser" and len(line) <= 2048 and not driver_failures
+        value = json.loads(line.split(b" ", 1)[1])
+        assert set(value) == {"phase", "reason", "own_frames"}
+        assert all(isinstance(value[key], str) and re.fullmatch(r"[A-Za-z][A-Za-z0-9_]{0,79}", value[key]) for key in ("phase", "reason"))
+        assert isinstance(value["own_frames"], list) and len(value["own_frames"]) <= 8
+        for frame in value["own_frames"]:
+            assert set(frame) == {"line", "column"} and all(type(number) is int and 1 <= number <= 10000 for number in frame.values())
+        driver_failures.append(value)
+        failed = True
     if line.startswith(b"PROFESSIONAL_GOOGLE_ADMIN_ENTRY_CENSUS "):
         assert mode == "browser" and len(line) <= 1024 and not diagnostics
         value = json.loads(line.split(b" ", 1)[1])
@@ -43,6 +53,8 @@ for row in loopback:
     print("PROFESSIONAL_GOOGLE_LOOPBACK_STATE " + json.dumps(row, sort_keys=True))
 for value in diagnostics:
     print("PROFESSIONAL_GOOGLE_ADMIN_ENTRY_CENSUS " + json.dumps(value, sort_keys=True))
+for value in driver_failures:
+    print("PROFESSIONAL_GOOGLE_DRIVER_FAILURE " + json.dumps(value, sort_keys=True))
 assert native == "0" and not failed
 prefix = b"PROFESSIONAL_GOOGLE_BROWSER_RESULT " if mode == "browser" else b"PROFESSIONAL_GOOGLE_FIXTURE_RESULT "
 rows = [json.loads(line[len(prefix):]) for line in lines if line.startswith(prefix)]

@@ -377,6 +377,17 @@ try {
     else if (cause?.name === 'TimeoutError') reason = 'LOCATOR_OR_EVENT_DEADLINE'
     else if (typeof cause?.message === 'string' && cause.message.includes('strict mode violation')) reason = 'STRICT_LOCATOR'
   } catch { /* Only finite classifications are emitted, never arbitrary error values. */ }
+  const ownFrames = [], seenFrames = new Set()
+  try {
+    const stack = typeof cause?.stack === 'string' ? cause.stack : ''
+    for (const match of stack.matchAll(/\/browser-run\/run-professional-google-browser\.mjs:([0-9]{1,6}):([0-9]{1,5})/g)) {
+      const line = Number(match[1]), column = Number(match[2]), key = line + ':' + column
+      if (line < 1 || line > 10000 || column < 1 || column > 10000 || seenFrames.has(key)) continue
+      ownFrames.push({ line, column }); seenFrames.add(key)
+      if (ownFrames.length === 8) break
+    }
+  } catch { /* Expose only own-driver numeric coordinates, never error text or paths. */ }
+  console.log('PROFESSIONAL_GOOGLE_DRIVER_FAILURE ' + JSON.stringify({ phase: stage, reason, own_frames: ownFrames }))
   if (stage === 'entry_admin_ready') await adminEntryCensus()
   console.log('PROFESSIONAL_GOOGLE_BROWSER_FAILURE ' + stage + ' ' + reason)
   process.exitCode = 1
