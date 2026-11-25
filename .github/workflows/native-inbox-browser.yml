@@ -1,7 +1,7 @@
 name: Isolated native Inbox frontend and browser acceptance
 on:
   push:
-    branches: [codex-ci-native-inbox-browser-input-diagnostic-v4-20261125]
+    branches: [codex-ci-native-inbox-browser-control-locator-v5-20261125]
 permissions:
   contents: read
 concurrency:

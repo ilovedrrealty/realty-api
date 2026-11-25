@@ -172,6 +172,24 @@ async function inputFailureCensus(page, copy, locale) {
   catch { /* The original error is still rethrown by the caller. */ }
 }
 const panel = (page, title) => page.getByRole('heading', { name: title, exact: true }).locator('..')
+// React18 controlled textarea.defaultValue becomes descendant text, and select
+// options are also descendant text. Playwright1.64 strict getByLabel includes it.
+// Keep real public label association/copy checks, then use a stable scoped control.
+async function labelledControl(scope, selector, expected) {
+  check(['textarea', 'select'].includes(selector), 'FINITE_LABELLED_CONTROL_REQUIRED')
+  const control = scope.locator('label').filter({ hasText: expected }).locator(':scope > ' + selector)
+  await control.waitFor({ state: 'visible' })
+  check(await control.count() === 1, 'UNIQUE_SCOPED_LABELLED_CONTROL_REQUIRED')
+  check(await control.evaluate((field, labelText) => {
+    const labels = [...field.labels ?? []], label = field.closest('label')
+    if (labels.length !== 1 || labels[0] !== label || field.parentElement !== label) return false
+    const copy = label.cloneNode(true)
+    for (const child of copy.querySelectorAll('input,textarea,select')) child.remove()
+    const normalize = text => text.replace(/\s+/g, ' ').trim()
+    return normalize(copy.textContent ?? '') === normalize(labelText)
+  }, expected), 'ACTUAL_ASSOCIATED_LABEL_COPY_REQUIRED')
+  return control
+}
 async function inbox(page, copy, path = '/inbox') {
   await navigate(page, path)
   await page.locator('main').getByText(copy.inbox.channels_notice, { exact: true }).waitFor()
@@ -213,8 +231,8 @@ async function write(page, copy, actor, action, invoke) {
 }
 async function post(page, copy, actor, content) {
   const thread = panel(page, copy.inbox.thread)
-  await thread.getByLabel(copy.inbox.entry_kind, { exact: true }).selectOption('message')
-  await thread.getByLabel(copy.inbox.message_body, { exact: true }).fill(content)
+  await (await labelledControl(thread, 'select', copy.inbox.entry_kind)).selectOption('message')
+  await (await labelledControl(thread, 'textarea', copy.inbox.message_body)).fill(content)
   await write(page, copy, actor, 'entry_created', () => button(thread, copy.inbox.post_message).click())
   await thread.getByText(content, { exact: true }).waitFor()
   check(await thread.locator('img').count() === 0, 'PLAIN_TEXT_NOT_HTML_REQUIRED')
@@ -250,15 +268,15 @@ async function chooseRecipient(page, copy, actor, target) {
 }
 async function manual(page, copy, actor, kind, body, locale) {
   const thread = panel(page, copy.inbox.thread)
-  await thread.getByLabel(copy.inbox.entry_kind, { exact: true }).selectOption(kind)
-  await thread.getByLabel(copy.inbox.manual_body, { exact: true }).fill(body)
+  await (await labelledControl(thread, 'select', copy.inbox.entry_kind)).selectOption(kind)
+  await (await labelledControl(thread, 'textarea', copy.inbox.manual_body)).fill(body)
   const at = await page.evaluate(() => {
     const d = new Date(Date.now() - 60000), pad = value => String(value).padStart(2, '0')
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
   })
   await thread.getByLabel(copy.inbox.occurred_local, { exact: true }).fill(at)
-  await thread.getByLabel(copy.inbox.reported_direction, { exact: true }).selectOption('outgoing')
-  if (kind === 'manual_call') await thread.getByLabel(copy.inbox.reported_outcome, { exact: true }).selectOption('no_answer')
+  await (await labelledControl(thread, 'select', copy.inbox.reported_direction)).selectOption('outgoing')
+  if (kind === 'manual_call') await (await labelledControl(thread, 'select', copy.inbox.reported_outcome)).selectOption('no_answer')
   check(await button(thread, copy.inbox.save_manual).isDisabled(), 'MANUAL_CONFIRMATION_REQUIRED')
   await thread.getByLabel(copy.inbox.manual_confirm, { exact: true }).check()
   if (kind === 'manual_call') await geometry(page, locale + '_manual')
@@ -270,8 +288,8 @@ async function manual(page, copy, actor, kind, body, locale) {
 async function uncertain(page, context, copy, locale) {
   advance(locale + '_uncertain_committed_response')
   const thread = panel(page, copy.inbox.thread), path = API + '/messaging/conversations/' + facts.buyerThread + '/entries'
-  await thread.getByLabel(copy.inbox.entry_kind, { exact: true }).selectOption('message')
-  await thread.getByLabel(copy.inbox.message_body, { exact: true }).fill(facts.messages[locale].uncertain)
+  await (await labelledControl(thread, 'select', copy.inbox.entry_kind)).selectOption('message')
+  await (await labelledControl(thread, 'textarea', copy.inbox.message_body)).fill(facts.messages[locale].uncertain)
   let held = false, actualReceipt
   const handler = async route => {
     const request = route.request()
@@ -289,13 +307,13 @@ async function uncertain(page, context, copy, locale) {
   try {
     await button(thread, copy.inbox.post_message).click()
     await button(thread, copy.inbox.check_result).waitFor()
-    check(held && actualReceipt?.action === 'entry_created' && await thread.getByLabel(copy.inbox.message_body, { exact: true }).inputValue() === facts.messages[locale].uncertain,
+    check(held && actualReceipt?.action === 'entry_created' && await (await labelledControl(thread, 'textarea', copy.inbox.message_body)).inputValue() === facts.messages[locale].uncertain,
       'FROZEN_ORIGINAL_ATTEMPT_REQUIRED')
     check(await button(thread, copy.inbox.post_message).isDisabled(), 'PENDING_ATTEMPT_LOCKS_SEND')
     const [response] = await Promise.all([page.waitForResponse(r => messagingResponse(r, '/commands/' + actualReceipt.submission_id)), button(thread, copy.inbox.check_result).click()])
     check(response.status() === 200 && (await response.json()).target_id === actualReceipt.target_id, 'REAL_RECEIPT_RESOLUTION_REQUIRED')
     await thread.getByText(facts.messages[locale].uncertain, { exact: true }).waitFor()
-    await thread.getByLabel(copy.inbox.message_body, { exact: true }).waitFor()
+    await (await labelledControl(thread, 'textarea', copy.inbox.message_body)).waitFor()
     await page.waitForFunction(() => document.querySelector('main textarea')?.value === '')
     check(methods.get(context).filter(x => x.path.endsWith('/entries')).length === before + 1, 'NO_AUTOMATIC_OR_CHECK_RESEND_REQUIRED')
   } finally { await page.unroute(path, handler) }
@@ -303,8 +321,8 @@ async function uncertain(page, context, copy, locale) {
 async function denial(page, context, admin, byActor, copy, locale, action, restore, expected) {
   advance(locale + '_' + action)
   const thread = await threadAt(page, copy, facts.buyerThread)
-  await thread.getByLabel(copy.inbox.entry_kind, { exact: true }).selectOption('message')
-  await thread.getByLabel(copy.inbox.message_body, { exact: true }).fill(facts.messages[locale].denied)
+  await (await labelledControl(thread, 'select', copy.inbox.entry_kind)).selectOption('message')
+  await (await labelledControl(thread, 'textarea', copy.inbox.message_body)).fill(facts.messages[locale].denied)
   await button(thread, copy.inbox.post_message).waitFor({ state: 'visible' })
   await page.waitForLoadState('networkidle')
   check(await button(thread, copy.inbox.post_message).isEnabled(), 'CURRENT_AFFORDANCE_BEFORE_ACCESS_CHANGE_REQUIRED')
@@ -373,7 +391,7 @@ async function runLocale(locale, copy) {
   const [latestResponse] = await Promise.all([buyer.waitForResponse(r => messagingResponse(r, '/conversations/' + facts.buyerThread + '/entries') && !new URL(r.url()).searchParams.has('cursor')), button(thread, copy.inbox.latest).click()])
   await displayedThread(buyer, thread, await latestResponse.json(), copy)
   await geometry(buyer, locale + '_thread')
-  const bodyLimit = thread.getByLabel(copy.inbox.message_body, { exact: true })
+  const bodyLimit = await labelledControl(thread, 'textarea', copy.inbox.message_body)
   try {
     advance(locale + '_codepoint_ascii_fill')
     await bodyLimit.fill('x'.repeat(2001))

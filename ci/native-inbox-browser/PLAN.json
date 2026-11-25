@@ -1,8 +1,8 @@
 {
-  "schema": "native-inbox-browser-input-diagnostic-v4",
+  "schema": "native-inbox-browser-control-locator-v5",
   "status": "FROZEN_PENDING_ROOT_FULL_AND_INDEPENDENT_COLD_REVIEW_NO_PUSH",
-  "operations_parent": "e406c19039416b824129fc323960bd7ca8847c21",
-  "proposed_first_ref": "codex-ci-native-inbox-browser-input-diagnostic-v4-20261125",
+  "operations_parent": "bde31d9af95e480b2232e7bddcc234b5833c335b",
+  "proposed_first_ref": "codex-ci-native-inbox-browser-control-locator-v5-20261125",
   "frontend": "6015987e33375ed012996dddb27ca092532d793c",
   "frontend_tree": "dfc17c06f665e3088d56a0582013f5516ec6c106",
   "frontend_parent": "caa0e22f41f0d9d9d88e15fe7795dae776008408",
@@ -140,7 +140,7 @@
   "privacy": "Only bounded finite typed counts, approved source enums, source-owned line/column diagnostics; native failures, malformed/missing/duplicate receipts remain failures.",
   "cleanup": "Nonce label-checked containers/images/scratch; marker checked owned DB drop and absence; read-only source clean. No artifact upload; root independently verifies terminal/native/OOM/running/cleanup and actual artifacts[].",
   "release": "Root owns full source/ops plus independent review, first absent-ref push, actual hosted acceptance and later production changes. Preparation is not acceptance.",
-  "local_checks": "Retain actuale879 boundedchecker baseline1PASS/twovalidalwaysfailedcensus/16negative/PythonAST2+embedded8 controls unchanged. Sibling only source-known statusparagraph selector +newref/metadata; fresh Node--check0 and diffcheck performed. No actualapp/native/browser/build/provider execution.",
+  "local_checks": "Fresh Node syntax, Python/embedded AST, unchanged checker controls and exact driver source audit only; no app, browser, native DB, provider or build run.",
   "backend_parents": [
     "79e9311874e3ea91e45b990629965534d41bb5fa",
     "07b2b7c762b129c5b6ea978299ba69e528e3189e"
@@ -161,5 +161,27 @@
     "census": "One failure-only <=1536B strict marker: source-owned stage/locale, thread/textarea/button counts, visibility/disabled/readonly/fieldset/focus, UTF16/codepointlength/maxLength and knowncopy status flags. Never rawvalue/body/documenttext/privateIDs/Reactinternals. Unavailable observations explicit, any marker alwaysfails.",
     "preserved": "Exactfill2000emoji(4000UTF16), ASCII2001disabled check, trialclick/assertcodepoints2000, clear; all24journeys32geometry32commands70audit/genuineauth/legacy99/106/privacy/provider0/cleanup binding. FreshVite/Next still required; unchangedfixture/acceptedbackend179+FE601.",
     "prepush_correction": "Originalunpublished e879 preserved: source601 InboxReadStatus stale label is plain <p> directly under aria-live, so role-only selector missed it. Siblingoffe406 includes [aria-live] > p alongside role status/alert. Only exactsource-ownedcopy equality booleans returned; no rawtext/value orproductchange."
+  },
+  "control_locator_correction": {
+    "actual_failure": {
+      "run": 45596360722,
+      "job": 139143360509,
+      "operations": "bde31d9af95e480b2232e7bddcc234b5833c335b",
+      "log_utf8_bytes": 104922,
+      "log_sha256": "0a51eb3a3f8e9008bc6679ac7908f7fb78d06f73c4cbab4fb83214579ae7cf09",
+      "receipt": "native-inbox-browser-45596360722-release-failure.json",
+      "receipt_sha256": "8dfc99f51b12e2574ba970cb31940dd2c9b7f1fc6e2513fc8cef74047a4306e1",
+      "stage": "en_codepoint_astral_fill",
+      "observation": "One visible focused enabled writable textarea; fieldset enabled, no checking/stale/access/read/rate/expiry flag; maxlength4000 and unchanged2001ASCII while reused exact-label fill timed out."
+    },
+    "primary_source": [
+      "https://raw.githubusercontent.com/microsoft/playwright/v1.64.1/packages/injected/src/selectorUtils.ts",
+      "https://raw.githubusercontent.com/microsoft/playwright/v1.64.1/packages/injected/src/injectedScript.ts",
+      "https://raw.githubusercontent.com/facebook/react/v18.3.1/packages/react-dom/src/client/ReactDOMTextarea.js"
+    ],
+    "source_mechanism": "Pinned Playwright1.64.1 internal-label engine passes recursive label elementText to exact normalized matcher. It includes textarea child text and select option descendants. Exact locked React18.3.1 controlled textarea updates defaultValue to current value, changing that descendant text after first fill. Actual601 wraps these controls in their real labels.",
+    "scope": "Driver-only labelledControl for every thread message/manual textarea and actual entry_kind/reported_direction/reported_outcome select callsite. Audit review_reason has no selection call in unchanged driver, so no new action. Unique scoped direct control, real HTML labels association, exact normalized remaining label copy after control subtree removed from detached clone; no DOM/input changes.",
+    "audit": "Existing denial/expired/legacy/invalid-link composer absence assertions already use CSS textarea/form counts and remain byte-unchanged. Frozen uncertain draft is read via stable scoped textarea; post-resolution wait and boundary clear use same helper. Actual dirty-navigation-cancel case edits checkbox, unchanged. All ordinary inputs/checkboxes unchanged.",
+    "preserved": "All original fills/selects/values/2001ASCII disabled and2000astral4000UTF16 actionability/count/clear assertions; four denial DOM absence checks;32commands/70audits/24journeys/32geometry/provider0/99and106preservation/cleanup; same523/strict retained, freshVite/Next/UI required. No product change, force, sleep, private framework state, input DOM writes, extra command or message."
   }
 }
