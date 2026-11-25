@@ -1,0 +1,72 @@
+{
+  "schema": "contact-profile-sharing-browser-acceptance-v1",
+  "status": "PREPARED_PENDING_ROOT_FULL_COLD_REVIEW_AND_FIRST_PUSH",
+  "operations_parent": "236a1951e956d28ccb97dc5c8bb72f562383c444",
+  "proposed_first_ref": "codex-ci-profile-sharing-browser-20261125",
+  "frontend": "351d60f2c35ec25f1a62e1b8a6653602debf19d9",
+  "frontend_tree": "2f2ed141f02ced926ab2f48356995d21add4cce0",
+  "frontend_parent": "96425b7cecb65293ae6c96c89a6f6a28e70da443",
+  "frontend_review_base": "06d7f74965896ae23d47e7701fc1dbfd9815cc40",
+  "frontend_tracked_blobs": 592,
+  "backend": "8957b18520d15dac503e0e4a5ce4b2455135d601",
+  "backend_tree": "11ab69db36eb30881e4f3086578201f584c4092d",
+  "backend_parent": "d90a68cbfa07f42a02a841f7730999d96f40dc60",
+  "source_scope": "Reviewed source only. No schema, model, requirement, package manifest, lockfile, provider, role, visibility, recipient or billing change. No publication in this acceptance job.",
+  "contracts": {
+    "expected_files": 62,
+    "expected_tests": 498,
+    "retained_urgent_tests": 492,
+    "new_sharing_helper_cases": 6,
+    "fresh_full_run_required": true,
+    "strict": "Fresh exact Dashboard typecheck; no retained check substituted for the changed source.",
+    "builds": "Fresh exact Dashboard Vite build and actual Landing Next static export against the owned API, requiring login/signup/verify/team exports. Every one of the 592 tracked blobs is rehashed after each install, contract, strict, build and browser phase. Five source commits are checked out; review-base object and ancestry and both manifest/schema diff exits are required explicitly."
+  },
+  "native": {
+    "rerun": false,
+    "retained_exact_backend": "8957b18520d15dac503e0e4a5ce4b2455135d601",
+    "accepted_run": 45551910844,
+    "accepted_cases": 10,
+    "scope": "Root already accepted the actual ten native Admin-only contact/list/detail/authorization cases plus owned database cleanup and artifacts[]. This job does not rerun them or claim they ran here."
+  },
+  "runtime": {
+    "dependency_baseline": "01695530df670a94ac28f8b3bf36cc34b5b7a942",
+    "python_recipe": "c193a925ba57ea2d67ea48c44e5262817885c8a2",
+    "static_dashboard_recipe": "3007728fd67c5889a8373e41ff3ffa5cc50d839b",
+    "accepted_group_fixture_sha256": "e0c5f0971c7c13ed47063907f01fa6ef01590b00fa2855eb1ecb16a38b99463e",
+    "accepted_landing_server_path": "ci/buyer-phone/serve-landing.mjs",
+    "accepted_landing_server_sha256": "3ac6008fb5c6ce542436c03d728882c6ac10abaef699b612a31c1d1b5023bee6",
+    "postgres": "Pinned17.6/170006, fresh nonce-marked DB, trust only inside the network-none loopback namespace.",
+    "node": "Pinned24.22.1 digest, unchanged recipe and locked npm install; no host credentials passed into containers.",
+    "browser": "Pinned Playwright image and SRI-verified playwright-core1.64.1, unchanged accepted setup.",
+    "ports": {"api": 8918, "dashboard": 4175, "landing": 8917, "postgres": 55449}
+  },
+  "browser": {
+    "journeys": 20,
+    "journeys_per_locale": ["private_contact", "contact_preview", "admin_user_contact", "member_realtor_directory", "own_member", "approved_professionals", "public_team", "auth_member", "auth_professional", "auth_contact"],
+    "locales": ["en", "es"],
+    "geometry": 24,
+    "geometry_labels_per_locale": ["private_contact", "contact_review", "admin_user_contact", "member_profile", "professional_profile", "public_team"],
+    "widths": [320, 390],
+    "presence_receipts": 12,
+    "link_checks": 18,
+    "native_capture_calls": 22,
+    "native_share_mode": "instrumented_no_os_delivery",
+    "clipboard": "Actual browser clipboard API readback. Native sharing is deliberately instrumented to capture exact selected preview/generic link payload and exercise AbortError; no operating-system sheet, sending or delivery is claimed.",
+    "canonical_link_boundary": "Validate actual clipboard/native/email/WhatsApp payloads against canonical HTTPS app.ilovedrrealty.com or ilovedrrealty.com origins. Exercise only each validated fixed pathname/query/hash on owned localhost mirrors. No production navigation or rewritten provider response.",
+    "authentication": "Actual exported Login/Signup navigation preserves only the typed member/professional/private-contact intent; real synthetic logins return to the owned Dashboard target. NEXT_PUBLIC_DASHBOARD_URL is explicitly the owned loopback Dashboard for this check. Shared URLs remain canonical production URLs.",
+    "private_contact": "Real Admin-only UUID detail, selected field/permission/preview gate, exact manual composer URLs and native payload, fresh name-only reset, private source notes excluded. Shared link grants no access; ordinary member is denied by the real API.",
+    "profile_boundaries": "Actual opted-in member/realtor and published managed/owned professional reads succeed. Private member, bilateral blocked member and hidden professional reads remain refused. Own professional sharing uses published snapshot only; draft metadata stays absent.",
+    "external_requests": "Abort every non-owned browser request. No composer is sent. Blocked pre-existing script/asset attempts are counted separately; page errors, tracking requests, external writes and unexpected mutations must be zero.",
+    "presence": "Real foreground/visibility checks. Only if native navigator.onLine is false, use the previously accepted owned-loopback online model; never override visibility."
+  },
+  "fixture": {
+    "baseline": "All synthetic: retained82 owner contacts/85contacts86sources/46privateprofiles/99catalog plus one owner-source sharing contact (86contacts87sources), two approved published professionals and exact five users. Seeds are complete before the preservation baseline.",
+    "after": "All99 table catalog, complete row snapshots and sequences byte-unchanged; exact86contacts87sources/82protected owner/46privateprofiles/2publishedprofessionals/5users/9acceptedjobs/CMS7/2floorplans retained. Eight real API access-boundary tuples required.",
+    "writes": "Only bounded exact synthetic login requests are accepted. No assignment/profile/contact/group/signup/import/publication mutation. No external transport or provider call.",
+    "credentials": "Random per-fixture synthetic secrets remain inside one owned0600 facts inode and memory; never printed, uploaded or used with real accounts. Exact inode deleted in finally on pass or failure."
+  },
+  "privacy": "No raw request bodies, contact/profile identifiers, URLs, credentials, notes, source data, clipboard/native payload or exception text in logs. Checker emits only strict source-enum failures, typed counts, locale/geometry and preservation booleans. Failed process exits remain binding.",
+  "cleanup": "Accepted nonce-label container/image cleanup, read-only source mounts, guarded private scratch removal and owned DB drop checks. No broad killing/deletion and no uploaded artifact actions; root verifies artifacts[] on the actual run.",
+  "release": "Root owns exact full/cold review, first absent-ref push, actual terminal result inspection and later production release. Preparing this job is not browser acceptance or publication.",
+  "local_checks": "PASS: both Python AST files, seven inline Python AST blocks, PLAN JSON, Node browser syntax, review-base object/ancestry/depth and explicit diff-exit guard checks, two finite-parser positive and twelve negative cases (native failures, Boolean-as-count, altered preservation, duplicate/missing results, unknown fields, hostile diagnostics and geometry); no private text emitted. No local dependency installs, app builds, browser, native DB or provider calls. Workflow runs bash -n before the runner; no local Bash is assumed. Actual hosted contracts/builds/browser remain unrun."
+}
