@@ -1,0 +1,255 @@
+{
+  "schema": "profile_customization_browser_v4_plan_v1",
+  "status": "PREPARED_FOR_ROOT_AND_GROUPS_FULL_COLD_FRESH545_BROWSER_UNRUN",
+  "operations_parent": "b596e3f76aee8ffd234dcfdfa330b9e568fd9e43",
+  "proposed_first_ref": "codex-ci-profile-customization-browser-v4-20261125",
+  "new_paths": [
+    ".github/workflows/profile-customization-browser-v4.yml",
+    "ci/profile-customization-browser-v4/PLAN.json",
+    "ci/profile-customization-browser-v4/run-hosted.sh"
+  ],
+  "all408_inherited_mode_type_blob_tuples_immutable": true,
+  "frontend": {
+    "commit": "bb79bcefb016309f77deea7695bdf65d3bcf1c8b",
+    "tree": "c96f86d323b1a16f205ebe4a2afce13a90313981",
+    "parent": "3b7d8190951fcdca574d7af98bb1bbf62c97e764",
+    "source_blobs": 620,
+    "original_merge": "5ecb7c6e16268f1e8edd1b54d70f11e605e57a02",
+    "strict_chain": [
+      "5ecb7c6e16268f1e8edd1b54d70f11e605e57a02",
+      "09bfd9f54ec8bca8a1d0488a571d8dbac0df2743",
+      "3b7d8190951fcdca574d7af98bb1bbf62c97e764",
+      "bb79bcefb016309f77deea7695bdf65d3bcf1c8b"
+    ],
+    "testrepair_LF_pins": {
+      "tests/realtor-sale-catalog.test.cjs": "b2a45690dd716d6ba0bb6b1126ca4e20ff32a48a73938d52bbf4db262d3d33d7",
+      "tests/service-operations.test.cjs": "4a42d9a0a5d84b2d59c0802d7891b72e2c71b58d76d45fa5864cbad41cd1aa0f"
+    },
+    "productfix_LF_pins": {
+      "apps/dashboard/src/components/network/MemberCommunity.tsx": "42827187beaa5019539a6a2426bf4abbb9b84971350ebb53d345b283ac7dd77c",
+      "tests/property-network-ui.test.cjs": "62dc5a256533675f503eebf85a66a4fbe22a5d82431fa75c40b1ad4810074a49"
+    },
+    "fetch_depth": 19,
+    "fresh_full_tests": 545,
+    "test_files": 65,
+    "fresh_separate_Dashboard_typecheck": true,
+    "fresh_Vite_Next": true,
+    "previous544_tsc_must_not_substitute_on_changed_application": true,
+    "source_proposal": "profile-sibling-identities-source-proposal-20261125.json",
+    "source_proposal_SHA256": "97e5e1933dd993e6308c7385ee22f62f88da052b51e0b8c2d54fee225cd02d6c",
+    "source_acceptance_and_firstpush": {
+      "root_FULL": {
+        "path": "C:\\Users\\hotel\\Documents\\Codex\\2026-10-13\\i-3\\outputs\\property-network-20261101\\profile-sibling-identities-bb79-root-full-source-review-20261125.json",
+        "bytes": 2861,
+        "sha256": "64e42974d9f51dfc0e55c9c8398c7ab10211023da5a8c8b750f4fc5760ecba1d"
+      },
+      "independent_FULL": {
+        "path": "C:\\Users\\hotel\\Documents\\Codex\\2026-10-13\\i-3\\outputs\\property-network-20261101\\profile-sibling-identities-bb79-groups-full-cold-review-20261125.json",
+        "bytes": 4583,
+        "sha256": "acf18e33e8dce21656f42ac397bf658b24051ae8dff137b591abe62b9dfdbcf7"
+      },
+      "first_review_ref_push": "Root confirmed actual native exit0/exact remote readback after FULL+cold acceptance on2026-11-25; no push by this author."
+    }
+  },
+  "backend": {
+    "commit": "a75f9c26f3bceb14afcb6e1150e1b2a3d50fbada",
+    "tree": "12bbe32d4a6578bc58741c3f10f55bfccbf07e39",
+    "application_source": "2ff311999d41b7719f64b61dc9d7fc04c3465cd4",
+    "contract": "profile-customization-contract-v4-20261125.json",
+    "contract_sha256": "573002892d45a8df38674956db7c97e621e2ecd15cf6e6b9bd1a0d76d6cde6dc",
+    "native_gate": "ACTUAL root and independent Release accepted run45630574556/job139262326424 on exacta75; retained without rerun.",
+    "migration": "Genuine owned106 bootstrap from accepted179, then actual e8b5a3d1f907. Table count stays106; exact four nullable column additions, checks/index/trigger/function/revoked execute must be validated. Original rows compared on original-column projection; original catalog changes limited to reviewed additive DDL."
+  },
+  "reused_readonly_assets": {
+    "ci/profile-customization-browser/serve_fixture.py": "91a79810c6d8b395721a6ff936d6d6c195be5920e48b33efb1f675619a015284",
+    "ci/profile-customization-save-diagnostic-v3/run-browser.mjs": "dfa2abe744969a68c1fba4489dc93b08885cc8f40f5040a609810ce0f37054e2",
+    "ci/profile-customization-save-diagnostic-v3/check-result.py": "5fd649fa09b9c7159569d87ff435ac3e15cfc060819c3b515e2640fc06ceddba"
+  },
+  "same_written_contract": {
+    "journeys": 24,
+    "geometry": 32,
+    "contexts": 14,
+    "presence": 12,
+    "actual_logins": 12,
+    "ui_mutation_requests": 20,
+    "upload_successes": 6,
+    "profile_saves": 8,
+    "stale_refusals": 2,
+    "auth_refusals": 4,
+    "uncertain_commits": 2,
+    "api_boundary_checks": 16,
+    "control_transitions": 28,
+    "denial_projection_checks": 8,
+    "stale_context_checks": 2,
+    "page_errors": 0,
+    "unexpected_mutations": 0,
+    "external_writes": 0,
+    "tracking_requests": 0
+  },
+  "same_ordered_ui_requests_per_locale": [
+    {
+      "method": "POST",
+      "path": "/property-network/me/profile/media",
+      "kind": "avatar",
+      "status": 201
+    },
+    {
+      "method": "POST",
+      "path": "/property-network/me/profile/media",
+      "kind": "cover",
+      "status": 201
+    },
+    {
+      "method": "PUT",
+      "path": "/property-network/me/profile",
+      "expected_version": 1,
+      "selection": "A/C",
+      "status": 200,
+      "result_version": 2
+    },
+    {
+      "method": "POST",
+      "path": "/property-network/me/profile/media",
+      "kind": "avatar_replacement",
+      "status": 201
+    },
+    {
+      "method": "PUT",
+      "path": "/property-network/me/profile",
+      "expected_version": 2,
+      "selection": "B/null",
+      "status": 200,
+      "result_version": 3
+    },
+    {
+      "method": "PUT",
+      "path": "/property-network/me/profile",
+      "expected_version": 3,
+      "selection": "B/null",
+      "body": "staleBio",
+      "status": 409
+    },
+    {
+      "method": "PUT",
+      "path": "/property-network/me/profile",
+      "expected_version": 4,
+      "selection": "B/null",
+      "body": "uncertainBio",
+      "status": 200,
+      "result_version": 5,
+      "browser_response": "aborted_after_real_commit"
+    },
+    {
+      "method": "PUT",
+      "path": "/property-network/me/profile",
+      "expected_version": 5,
+      "selection": "null/null",
+      "body": "uncertainBio",
+      "status": 200,
+      "result_version": 6
+    },
+    {
+      "method": "POST",
+      "path": "/property-network/me/profile/media",
+      "kind": "avatar",
+      "status": 403
+    },
+    {
+      "method": "PUT",
+      "path": "/property-network/me/profile",
+      "expected_version": 6,
+      "selection": "null/null",
+      "body": "deniedBio",
+      "status": 403
+    }
+  ],
+  "same_ordered_controls": {
+    "en": [
+      "advance_target_version",
+      "author_private",
+      "author_members",
+      "peer_members",
+      "revoke_peer_assignment",
+      "restore_peer_assignment",
+      "peer_private",
+      "target_private",
+      "target_members",
+      "target_avatar_none",
+      "target_avatar_restore",
+      "target_unverified_upload",
+      "target_verified_upload",
+      "target_unverified_save",
+      "target_verified_save"
+    ],
+    "es": [
+      "advance_target_version",
+      "author_private",
+      "author_members",
+      "revoke_peer_assignment",
+      "restore_peer_assignment",
+      "target_private",
+      "target_members",
+      "target_avatar_none",
+      "target_avatar_restore",
+      "target_unverified_upload",
+      "target_verified_upload",
+      "target_unverified_save",
+      "target_verified_save"
+    ]
+  },
+  "failure_only_diagnostic_contract": {
+    "scope": "Only when the original exact saved-notice wait fails after realPUT200, read bounded public DOM counts and raw receipt/request predicates; preserve the original exception and all existing success assertions.",
+    "marker": "PROFILE_BROWSER_SAVE_CENSUS",
+    "max_record_bytes": 1024,
+    "collection_deadline_ms": 2000,
+    "counts": "14 source-owned DOM counts capped at20, with explicit counts_capped boolean. No raw DOM text or attributes.",
+    "request_receipt": "Only request-valid/can_edit-valid booleans, finite actualPUT200/versions and selectedID equality booleans; no IDs/names/content/body/cookies/URLs/errors emitted.",
+    "side_effects": "No extra HTTP, mutations, clicks, sleeps, React state, or data writes.",
+    "parser": "Single strict typed <=1KiB record; duplicate/extra/wrong-type/unknown stage rejected; any valid diagnostic always fails acceptance even with laterPASS."
+  },
+  "runtime": {
+    "source_and_assets": "Exact original5ec full merge union then3b two test repairs thenbb79 exact2 paths/full620 tuples. New3 operations paths only; all408 inherited immutable.",
+    "retained_native134_run": 45630574556,
+    "native95_134_162_not_rerun": true,
+    "private_database": "Same genuine8957/c4\u2192179/d8\u2192a75/e8 and originalfull106 exact actor/body/version/media/audit/private-file ledger.",
+    "same_provider_refusals_caps_nonce_markers_process_drop_absence_owned_cleanup": true,
+    "no_Group6ef_0bc_in_this_lane": true,
+    "sharing20_44": "separate gate, not rerun"
+  },
+  "unit_strict_restore": "Whole original7454 actualunit+standalone-tsc blocks restored, changing only expected count544\u2192545. No retained544/strict shortcut; oldNode cap1536MiB and360s bounds retained.",
+  "not_performed": [
+    "full545",
+    "standalone_typecheck",
+    "build",
+    "application/models/browser/native/DB",
+    "install",
+    "provider or production change",
+    "push"
+  ],
+  "local_checks": {
+    "status": "PASS_BOUNDED_AST_AND_READONLY_SOURCE_ONLY",
+    "inline_python_AST_units": [
+      "PY_OPERATIONS_REUSE",
+      "PY_BACKEND_COMPOSITION",
+      "PY_FRONTEND_COMPOSITION",
+      "PY_REQUIREMENTS",
+      "PY",
+      "PY_TEST_FILES",
+      "PY",
+      "PY_CONTRACTS",
+      "PY_STRICT",
+      "PY",
+      "PY_BROWSER",
+      "PY_LANDING"
+    ],
+    "unchanged_checker_AST": 1,
+    "total_AST_units": 13,
+    "actual_readonly_FE620_and_BE367_composition_guards": 2,
+    "original7454_unit_and_standalone_strict_blocks_restored_exact_except_count545": true,
+    "old408_tracked_files_unchanged": true,
+    "original_diagnostic_driver_checker_and_fixture_hashes_exact": true,
+    "no_retained544_or_tsc_shortcut": true,
+    "native_DB_browser_app_tests_build_install_provider_push": false,
+    "local_Bash": "UNAVAILABLE_WORKFLOW_HOSTED_BASH_N_REQUIRED"
+  }
+}
