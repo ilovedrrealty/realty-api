@@ -4,7 +4,7 @@ import { chromium } from 'playwright-core'
 
 const API = 'http://127.0.0.1:8918', DASH = 'http://127.0.0.1:4175', LANDING = 'http://127.0.0.1:8917'
 const contexts = [], geometryChecks = [], presencePages = new WeakSet()
-let browser, timer, signupDiagnosticPage, signupDiagnosticLocale, stage = 'fixture', pageErrors = 0, assignmentWrites = 0, signupRequests = 0
+let browser, timer, signupDiagnosticPage, signupDiagnosticLocale, stage = 'fixture', pageErrors = 0, assignmentWrites = 0, signupRequests = 0, clipboardPastes = 0
 let externalWrites = 0, blockedExternal = 0, processFailed = false
 class Failure extends Error {}
 const check = (value, reason) => { if (!value) throw new Failure(reason) }
@@ -52,6 +52,12 @@ async function contextFor(locale, account, role) {
     if (!native) Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => true })
     Object.defineProperty(window, '__ildrUrgentOnline', { value: { before: native, modeled: !native } })
     if (location.origin !== landing || !/^\/signup\/?$/.test(location.pathname)) return
+    window.__ildrUrgentPasteEvidence = { input_type: 'none', trusted: false, events: 0 }
+    document.addEventListener('input', event => {
+      if (event.isTrusted && event.inputType === 'insertFromPaste' && event.target instanceof HTMLInputElement && event.target.type === 'tel') {
+        window.__ildrUrgentPasteEvidence = { input_type: event.inputType, trusted: event.isTrusted, events: window.__ildrUrgentPasteEvidence.events + 1 }
+      }
+    }, { capture: true, passive: true })
     // Passive observations are installed before load, without a pre-entry round trip.
     const rows = [], allowedTypes = ['insertText', 'insertReplacementText', 'insertFromPaste', 'deleteContentBackward']
     const capture = (phase, event) => {
@@ -168,10 +174,24 @@ async function selectPhoneCountry(page, form, country, label) {
     return selector?.getAttribute('data-country') === expected.country && phone?.value.replace(/\D/g, '') === expected.dial
   }, { country, dial: { ar: '54', do: '1' }[country] })
 }
+async function pastePhone(page, phone, value, label) {
+  const before = await page.evaluate(() => window.__ildrUrgentPasteEvidence.events)
+  check(Number.isInteger(before) && before >= 0 && before < 5, 'OWNED_CLIPBOARD_SCOPE_REQUIRED')
+  advance(label + '_clipboard_write')
+  await page.evaluate(value => navigator.clipboard.writeText(value), value)
+  advance(label + '_focus'); await phone.click()
+  advance(label + '_select_all'); await phone.press('ControlOrMeta+A')
+  advance(label + '_paste'); await phone.press('ControlOrMeta+V')
+  advance(label + '_paste_event')
+  await page.waitForFunction(previous => window.__ildrUrgentPasteEvidence.events === previous + 1
+    && window.__ildrUrgentPasteEvidence.input_type === 'insertFromPaste' && window.__ildrUrgentPasteEvidence.trusted, before)
+  clipboardPastes++
+}
 async function phoneJourney(copy, locale) {
   advance('signup_' + locale + '_document')
   const context = await contextFor(locale), page = await context.newPage()
   signupDiagnosticPage = page; signupDiagnosticLocale = locale
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: LANDING })
   await page.goto(LANDING + '/signup/', { waitUntil: 'domcontentloaded' }); await foreground(page)
   const form = page.getByRole('heading', { name: copy.auth.signup.form.heading, exact: true }).locator('..')
   await form.getByRole('button', { name: copy.auth.signup.form.submit, exact: true }).waitFor()
@@ -188,13 +208,13 @@ async function phoneJourney(copy, locale) {
   advance('signup_' + locale + '_paste_from_do')
   await selectPhoneCountry(page, form, 'do', 'signup_' + locale + '_paste_do')
   advance('signup_' + locale + '_paste_fill')
-  await phone.fill(full)
+  await pastePhone(page, phone, full, 'signup_' + locale + '_ar')
   advance('signup_' + locale + '_paste_ar')
   await form.locator('button[aria-label="Country selector"][data-country="ar"]').waitFor()
   advance('signup_' + locale + '_paste_digits')
   check((await phone.inputValue()).replace(/\D/g, '') === full.slice(1), 'ARGENTINA_PASTE_REQUIRED')
   for (const number of ['+18095551234', '+12125551234']) {
-    await phone.fill(number)
+    await pastePhone(page, phone, number, 'signup_' + locale + (number.startsWith('+1809') ? '_dr' : '_us'))
     check((await phone.inputValue()).replace(/\D/g, '') === number.slice(1), 'DR_US_COMPLETE_PHONE_REQUIRED')
   }
   advance('signup_' + locale + '_invalid')
@@ -203,12 +223,15 @@ async function phoneJourney(copy, locale) {
   const passwords = form.locator('input[type=password]')
   await passwords.nth(0).fill('Synthetic-Only!234A'); await passwords.nth(1).fill('Synthetic-Only!234A')
   await form.locator('input[type=checkbox]').check()
-  await phone.fill('+5491')
+  await pastePhone(page, phone, '+5491', 'signup_' + locale + '_invalid')
   await button(form, copy.auth.signup.form.submit).click()
   await form.getByText(copy.auth.signup.validation.phone_invalid, { exact: true }).waitFor()
   check(signupRequests === 0, 'INVALID_PHONE_NO_SIGNUP_REQUEST_REQUIRED')
-  await phone.fill(full)
+  await pastePhone(page, phone, full, 'signup_' + locale + '_restore')
   await form.getByText(copy.auth.signup.validation.phone_invalid, { exact: true }).waitFor({ state: 'hidden' })
+  const pasteEvidence = await page.evaluate(() => window.__ildrUrgentPasteEvidence)
+  check(pasteEvidence.events === 5 && pasteEvidence.input_type === 'insertFromPaste' && pasteEvidence.trusted === true, 'ACTUAL_TRUSTED_PASTE_REQUIRED')
+  console.log('URGENT_CLIPBOARD_PASTE_RESULT ' + JSON.stringify({ locale, ...pasteEvidence }))
   await geometry(page, form, locale + '_signup')
 }
 
@@ -246,10 +269,10 @@ try {
   await geometry(spanish.page, cleared.section, 'es_buyer_assignment')
   await phoneJourney(en, 'en'); await phoneJourney(es, 'es')
   check(geometryChecks.length === 8 && new Set(geometryChecks).size === 8 && pageErrors === 0
-    && assignmentWrites === 2 && signupRequests === 0 && externalWrites === 0, 'EXACT_BROWSER_SCOPE_REQUIRED')
+    && assignmentWrites === 2 && signupRequests === 0 && externalWrites === 0 && clipboardPastes === 10, 'EXACT_BROWSER_SCOPE_REQUIRED')
   clearTimeout(timer)
   console.log('URGENT_BROWSER_RESULT ' + JSON.stringify({ status: 'PASS', geometry: 8, locales: ['en', 'es'],
-    assignment_writes: 2, signup_requests: 0, page_errors: 0, external_writes: 0, blocked_external_requests: blockedExternal }))
+    assignment_writes: 2, signup_requests: 0, page_errors: 0, external_writes: 0, clipboard_pastes: 10, blocked_external_requests: blockedExternal }))
 } catch (cause) {
   let reason = 'OTHER_DRIVER_ERROR'
   try {

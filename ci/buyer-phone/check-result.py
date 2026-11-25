@@ -9,9 +9,17 @@ assert mode in {'browser', 'api'} and re.fullmatch(r'[0-9]{1,3}', native)
 path = Path(filename)
 assert path.is_file() and path.stat().st_size <= 2 * 1024 * 1024
 failed = False
-presence, geometry, native_results, phone_traces, signup_census = [], [], [], [], []
+presence, geometry, native_results, phone_traces, signup_census, clipboard_locales = [], [], [], [], [], []
 lines = path.read_bytes().splitlines()
 for line in lines:
+    if line.startswith(b'URGENT_CLIPBOARD_PASTE_RESULT '):
+        assert mode == 'browser' and len(line) <= 256 and len(clipboard_locales) < 2
+        paste = json.loads(line.split(b' ', 1)[1])
+        assert set(paste) == {'locale', 'input_type', 'trusted', 'events'} and paste['locale'] in {'en', 'es'}
+        assert paste['locale'] not in clipboard_locales and paste['input_type'] == 'insertFromPaste'
+        assert type(paste['trusted']) is bool and paste['trusted'] and type(paste['events']) is int and paste['events'] == 5
+        clipboard_locales.append(paste['locale'])
+        print('URGENT_CLIPBOARD_PASTE_RESULT ' + json.dumps(paste, sort_keys=True))
     if line.startswith(b'URGENT_SIGNUP_FAILURE_CENSUS '):
         assert mode == 'browser' and len(line) <= 1024 and not signup_census
         census = json.loads(line.split(b' ', 1)[1])
@@ -79,12 +87,13 @@ rows = [json.loads(line[len(prefix):]) for line in lines if line.startswith(pref
 assert native == '0' and not failed and len(rows) == 1
 value = rows[0]
 if mode == 'browser':
-    assert set(value) == {'status', 'geometry', 'locales', 'assignment_writes', 'signup_requests', 'page_errors', 'external_writes', 'blocked_external_requests'}
+    assert set(value) == {'status', 'geometry', 'locales', 'assignment_writes', 'signup_requests', 'page_errors', 'external_writes', 'clipboard_pastes', 'blocked_external_requests'}
     assert value == {**value, 'status': 'PASS', 'geometry': 8, 'locales': ['en', 'es'], 'assignment_writes': 2,
-        'signup_requests': 0, 'page_errors': 0, 'external_writes': 0}
+        'signup_requests': 0, 'page_errors': 0, 'external_writes': 0, 'clipboard_pastes': 10}
     assert type(value['blocked_external_requests']) is int and 0 <= value['blocked_external_requests'] <= 999
     assert all(type(value[key]) is int for key in set(value) - {'status', 'locales'})
     assert phone_traces == ['en', 'es']
+    assert clipboard_locales == ['en', 'es']
     assert len(presence) == 4 and len(geometry) == 8 and {(row['label'], row['width']) for row in geometry} == {
         (label, width) for label in ('en_buyer_assignment', 'es_buyer_assignment', 'en_signup', 'es_signup') for width in (320, 390)}
     for row in presence:
