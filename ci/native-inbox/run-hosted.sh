@@ -4,7 +4,7 @@ umask 077
 die() { printf 'INBOX_NATIVE_REFUSED %s\n' "$1" >&2; exit 1; }
 bounded() { timeout --kill-after=8s "$@"; }
 [[ $# == 5 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
-   ${GITHUB_REF:-} == refs/heads/codex-ci-native-inbox-20261125 && ${GITHUB_RUN_ATTEMPT:-} == 1 &&
+   ${GITHUB_REF:-} == refs/heads/codex-ci-native-inbox-v2-20261125 && ${GITHUB_RUN_ATTEMPT:-} == 1 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 ]] || die EXACT_HOSTED_EVENT_REQUIRED
 ops="$1"; application="$2"; baseline="$3"; recipe="$4"; previous="$5"
@@ -17,13 +17,12 @@ done
 expected_operations=$(cat <<'EXACT_OPERATIONS'
 .github/workflows/native-inbox.yml
 ci/native-inbox/PLAN.json
-ci/native-inbox/check.py
 ci/native-inbox/run-hosted.sh
 ci/native-inbox/verify.py
 EXACT_OPERATIONS
 )
 [[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" &&
-   $(git -C "$ops" show -s --format=%P HEAD) == 236a1951e956d28ccb97dc5c8bb72f562383c444 &&
+   $(git -C "$ops" show -s --format=%P HEAD) == 0a8ed8868350b8a8f0b89f4f41c3217c5423c0d3 &&
    $(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) == "$expected_operations" &&
    $(git -C "$application" rev-parse HEAD) == 2c8b085f9a583ca757cece9ea4ea46c169aab638 &&
    $(git -C "$application" rev-parse 'HEAD^{tree}') == 8475f663f1628fe2b733507fdfe9f98f2b45adbe &&
@@ -34,7 +33,10 @@ EXACT_OPERATIONS
    $(git -C "$recipe" rev-parse HEAD) == c193a925ba57ea2d67ea48c44e5262817885c8a2 &&
    $(git -C "$previous" rev-parse HEAD) == 8957b18520d15dac503e0e4a5ce4b2455135d601 &&
    $(git -C "$previous" rev-parse 'HEAD^{tree}') == 11ab69db36eb30881e4f3086578201f584c4092d ]] || die EXACT_PINS_REQUIRED
-[[ -z $(git -C "$application" diff --name-only 8957b18520d15dac503e0e4a5ce4b2455135d601 HEAD -- requirements.txt database.py) ]] || die UNCHANGED_DEPENDENCY_AND_CONNECTION_SOURCE_REQUIRED
+git -C "$application" cat-file -e '8957b18520d15dac503e0e4a5ce4b2455135d601^{commit}' || die SOURCE_BASE_COMMIT_REQUIRED
+git -C "$application" merge-base --is-ancestor 8957b18520d15dac503e0e4a5ce4b2455135d601 HEAD || die SOURCE_BASE_ANCESTOR_REQUIRED
+source_delta=$(git -C "$application" diff --name-only 8957b18520d15dac503e0e4a5ce4b2455135d601 HEAD -- requirements.txt database.py) || die SOURCE_DIFF_REQUIRED
+[[ -z "$source_delta" ]] || die UNCHANGED_DEPENDENCY_AND_CONNECTION_SOURCE_REQUIRED
 dockerfile="$recipe/ci/migration/services163.Dockerfile"
 printf '%s  %s\n' e546d8c5668b87ef28e604107bbb330e6f4b3873cf0208b4d24ca378bd0851f9 "$dockerfile" |
   sha256sum --check --status || die ACCEPTED_RECIPE_REQUIRED

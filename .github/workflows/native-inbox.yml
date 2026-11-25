@@ -1,7 +1,7 @@
 name: Isolated native Inbox migration and authorization acceptance
 on:
   push:
-    branches: [codex-ci-native-inbox-20261125]
+    branches: [codex-ci-native-inbox-v2-20261125]
 permissions:
   contents: read
 concurrency:

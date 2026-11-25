@@ -317,7 +317,8 @@ def run():
             methods = suite_inventory(application, filename, classname, count)
             run_suite(getattr(module, classname), count, label, methods)
         STAGE = "preservation"
-        require(catalog.table_names(database)==tuple(sorted(legacy+INBOX)), "all106_tables_retained_required")
+        require(catalog.table_names(database)==tuple(sorted(legacy+INBOX)) and catalog.query(database,
+            "SELECT version_num FROM alembic_version")==[(HEAD,)], "all106_tables_and_head_retained_required")
         old_preserved(catalog, database, legacy, before, schema)
         require(all(catalog.query(database, "SELECT count(*) FROM public."+name)==[(0,)] for name in INBOX),
             "canonical_private_inbox_rows_unmodified_required")

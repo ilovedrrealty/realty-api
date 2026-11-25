@@ -1,8 +1,8 @@
 {
   "schema": "native-inbox-owned-native-acceptance-v1",
   "status": "PREPARED_PENDING_ROOT_FULL_AND_COLD_REVIEW_NO_PUSH",
-  "operations_parent": "236a1951e956d28ccb97dc5c8bb72f562383c444",
-  "proposed_first_ref": "codex-ci-native-inbox-20261125",
+  "operations_parent": "0a8ed8868350b8a8f0b89f4f41c3217c5423c0d3",
+  "proposed_first_ref": "codex-ci-native-inbox-v2-20261125",
   "backend": "2c8b085f9a583ca757cece9ea4ea46c169aab638",
   "backend_tree": "8475f663f1628fe2b733507fdfe9f98f2b45adbe",
   "backend_parent": "057dd1b79874a297202f9c5ec6f8300b8e3bd684",
@@ -21,7 +21,8 @@
     "forward": "Exact current2c8 Alembic upgrade head; accepted retained-record seed has82 protected owner contacts/46 private drafts/9 accepted outbox jobs/CMS7/2 floorplans. All99 old table definitions/ACL/triggers/enums/functions/data/sequences unchanged except alembic head and the one additive native guard function.",
     "new_model_parity": "Independent model materialization in a unique owned schema with checkfirst=False creates105 actual model tables. Compare new7 PostgreSQL-native column order/type/nullability/default/identity/generated fields, checks/PK/unique/FK definitions including deferral and indexes including validity/readiness; normalize only owned-schema/public qualification. Native Boolean deparser positive/negative controls retained. Legacy99 exact accepted catalog remains baseline, not a claim that old migration-only definitions equal raw model metadata.",
     "privacy": "Broad default client grants applied only in owned fixture before new migration; actual7 RLS=true/no policies/no PUBLIC/anon/authenticated/service_role privileges; seven active retention triggers; guard SECURITY INVOKER with no client execute rights.",
-    "empty_rollback": "With canonical new Inbox tables empty, actual Alembic downgrade c4 retains exact old99 catalog/rows/sequences; actual reupgrade d8 restores identical full106 catalog."
+    "empty_rollback": "With canonical new Inbox tables empty, actual Alembic downgrade c4 retains exact old99 catalog/rows/sequences; actual reupgrade d8 restores identical full106 catalog.",
+    "row_snapshot_bookkeeping": "Inherited snapshots intentionally exclude alembic_version row values; c4 and d8 heads are checked separately after each transition, including final post-test d8 readback. Catalog includes this table."
   },
   "suites": [
     {
@@ -64,5 +65,7 @@
   },
   "cleanup": "Native process exit/running/OOM checked; both exact nonce-marked DBs dropped and absent; only current-run labeled containers/image and checked owned scratch deleted; read-only source clean. No production queries/providers/sends/accounts/role/settings/billing changes.",
   "failure_gate": "27 exact executed cases, zero errors/failures/skips/provider attempts, four exact suite counts and all preservation flags. Native/client nonzero/timeout/OOM/running/missing/duplicate/wrong-type markers cannot pass. Only finite counts/known method/failure enum diagnostics, no raw exception SQL/private bodies/tokens/credentials.",
-  "local_validation": "Actual PASS checker1positive/11negative controls, Python/inline AST, PLAN JSON and git whitespace. No local native/DB/build/provider actions. Bash syntax is checked by workflow before execution; not claimed locally."
+  "local_validation": "Actual PASS checker1positive/11negative controls, Python/inline AST, PLAN JSON and git whitespace. No local native/DB/build/provider actions. Bash syntax is checked by workflow before execution; not claimed locally.",
+  "original_operations_base": "236a1951e956d28ccb97dc5c8bb72f562383c444",
+  "source_guard_correction": "8957 base commit existence and ancestry explicitly checked. Source diff exit bound before empty-output comparison; missing/corrupt base cannot pass as an empty change set."
 }
