@@ -56,6 +56,58 @@ class TradeContactsTest(unittest.TestCase):
                 ORDER BY relname""")).all()
         self.assertEqual(rows, [("trade_contact_sources", True, False), ("trade_contacts", True, False)])
 
+    def test_contact_deep_link_is_admin_only_and_preserves_owner_records(self):
+        self.role("admin")
+        owner_entry = {**self.entry, "verification_status": "owner_source", "source_details": {
+            "private_note": "Owner-provided context stays inside the private Admin directory"}}
+        imported = self.client.post("/admin/trade-contacts/import", headers=self.origin,
+                                    json={"dry_run": False, "entries": [owner_entry]})
+        self.assertEqual(imported.status_code, 200)
+        secondary = {**owner_entry, "source_authority": "Second synthetic source",
+                     "source_url": "https://example.org/office"}
+        self.assertEqual(self.client.post("/admin/trade-contacts/import", headers=self.origin,
+                                         json={"dry_run": False, "entries": [secondary]}).status_code, 200)
+        listed = self.client.get("/admin/trade-contacts", params={"q": self.name}).json()["items"]
+        self.assertEqual(len(listed), 1)
+        expected = listed[0]
+        path = "/admin/trade-contacts/" + expected["id"]
+
+        def snapshot():
+            with SessionLocal() as db:
+                return db.execute(text("""SELECT to_jsonb(contact)::text,
+                    (SELECT jsonb_agg(to_jsonb(source) ORDER BY source.id)::text
+                     FROM trade_contact_sources source WHERE source.contact_id=contact.id)
+                    FROM trade_contacts contact WHERE id=CAST(:identity AS uuid)"""),
+                    {"identity": expected["id"]}).all()
+
+        before = snapshot()
+        app.dependency_overrides.pop(get_current_user, None)
+        anonymous = self.client.get(path)
+        self.assertIn(anonymous.status_code, (401, 403))
+        self.assertEqual(anonymous.headers.get("cache-control"), "no-store")
+        for role in ("buyer", "owner", "realtor", "renter", "professional", "seller"):
+            self.role(role)
+            denied = self.client.get(path)
+            self.assertEqual(denied.status_code, 403)
+            self.assertEqual(denied.headers.get("cache-control"), "no-store")
+            self.assertNotIn(self.name, denied.text)
+            self.assertNotIn("private_note", denied.text)
+        self.role("admin")
+        detail = self.client.get(path)
+        self.assertEqual(detail.status_code, 200)
+        self.assertEqual(detail.headers.get("cache-control"), "no-store")
+        self.assertEqual(detail.headers.get("pragma"), "no-cache")
+        self.assertEqual(detail.json(), expected)
+        self.assertEqual(detail.json()["source_count"], 2)
+        self.assertEqual(detail.json()["verification_status"], "owner_source")
+        self.assertEqual(detail.json()["source_details"], owner_entry["source_details"])
+        for suffix, status in ((str(uuid4()), 404), ("not-a-uuid", 422)):
+            response = self.client.get("/admin/trade-contacts/" + suffix)
+            self.assertEqual(response.status_code, status)
+            self.assertEqual(response.headers.get("cache-control"), "no-store")
+            self.assertNotIn(self.name, response.text)
+        self.assertEqual(snapshot(), before)
+
     def test_import_preview_replay_update_and_search(self):
         self.role("admin")
         path = "/admin/trade-contacts/import"

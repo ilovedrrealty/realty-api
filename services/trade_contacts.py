@@ -201,6 +201,18 @@ def search(db, *, q, category, province, limit, offset, locality="", verificatio
                                       for identifier, details, count in entries]}
 
 
+def contact_detail(db, contact_id):
+    # The private Admin detail uses the same projection as a directory list row.
+    source_count = (select(func.count()).select_from(TradeContactSource)
+                    .where(TradeContactSource.contact_id == TradeContact.id).scalar_subquery())
+    row = db.execute(select(TradeContact.id, TradeContact.details, source_count)
+                     .where(TradeContact.id == contact_id)).first()
+    if row is None:
+        return None
+    identifier, details, count = row
+    return dict(details, id=identifier, source_count=count)
+
+
 def directory_map(db, **values):
     filters, reference = contact_filters(**values)
     # One aggregate statement covers the entire filtered set, before pagination.

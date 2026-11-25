@@ -1,6 +1,7 @@
 """Admin-only directory of publicly sourced Dominican business contacts."""
 
 from typing import Annotated, Literal
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
@@ -13,7 +14,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from config import settings
 from database import get_db
 from models.user import User
-from schemas.trade_contacts import TradeContactImport, TradeContactImportResult, TradeContactList
+from schemas.trade_contacts import TradeContactImport, TradeContactImportResult, TradeContactList, TradeContactRow
 from schemas.trade_contact_files import ContactFileMapping, ContactFileTable, ContactFilterOptions, ContactMappingPreview
 from schemas.directory_maps import DirectoryMapSummary, LocationStatus
 from utils.directory_geo import AREA_KEYS
@@ -115,6 +116,14 @@ def contact_map(
         locality=locality.strip(), subtype=subtype.strip(), service_area=service_area.strip(),
         verification_status=verification_status, contact_channel=contact_channel,
         location_status=location_status, map_area=map_area)
+
+
+@router.get("/{contact_id}", response_model=TradeContactRow)
+def contact_detail(contact_id: UUID, admin: Admin, db: Database):
+    contact = directory.contact_detail(db, contact_id)
+    if contact is None:
+        raise HTTPException(404, "Contact not found")
+    return contact
 
 
 @router.post("/preview-file", response_model=ContactFileTable)
