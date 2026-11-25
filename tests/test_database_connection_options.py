@@ -12,17 +12,19 @@ class DatabaseConnectionOptionsTests(unittest.TestCase):
             "connect_timeout": 10, "keepalives": 1, "keepalives_idle": 30,
             "keepalives_interval": 10, "keepalives_count": 3, "tcp_user_timeout": 60000}}
         for url in ("postgresql://synthetic:encoded%40password@localhost/owned",
+                    "postgresql://synthetic:p[ass@localhost/owned",
                     "postgresql+psycopg2://localhost/owned", "postgresql:///owned?host=/tmp"):
             self.assertEqual(engine_options(url), expected)
 
     def test_sqlite_and_other_drivers_never_receive_libpq_arguments(self):
         for url in ("sqlite+pysqlite:///:memory:", "sqlite:///postgresql.db", "sqlite:///postgresql://nested",
                     "postgresql+asyncpg://localhost/owned", "postgresql+psycopg://localhost/owned",
+                    "postgresql+asyncpg://synthetic:p[ass@localhost/owned",
                     "mysql+pymysql://localhost/owned"):
             self.assertEqual(engine_options(url), {"pool_pre_ping": True})
 
     def test_tls_auth_and_url_are_passed_verbatim_and_timeout_values_are_bounded(self):
-        url = "postgresql+psycopg2://synthetic:p%40ss%3Aword@[::1]:55449/owned?sslmode=verify-full&sslrootcert=%2Fsynthetic%2Fca.pem&connect_timeout=0"
+        url = "postgresql+psycopg2://synthetic:p[ass@[::1]:55449/owned?sslmode=verify-full&sslrootcert=%2Fsynthetic%2Fca.pem&connect_timeout=0"
         options = engine_options(url)
         self.assertEqual(options["connect_args"]["connect_timeout"], 10)
         self.assertFalse({"sslmode", "sslrootcert", "user", "password", "host", "port", "dbname"}&set(options["connect_args"]))
@@ -40,6 +42,11 @@ class DatabaseConnectionOptionsTests(unittest.TestCase):
             {"create_engine": create_engine, "settings": settings, "engine_options": engine_options})
         self.assertEqual(result, "synthetic-engine")
         self.assertEqual(captured, [((url,), options)])
+        unsupported = "postgresql+asyncpg://synthetic:p[ass@localhost/owned"
+        settings.database_url = unsupported
+        eval(compile(ast.Expression(constructor), "<owned-constructor-contract>", "eval"),
+            {"create_engine": create_engine, "settings": settings, "engine_options": engine_options})
+        self.assertEqual(captured[-1], ((unsupported,), {"pool_pre_ping": True}))
 
     def test_each_constructor_gets_a_fresh_option_dictionary(self):
         first = engine_options("postgresql://localhost/owned")
