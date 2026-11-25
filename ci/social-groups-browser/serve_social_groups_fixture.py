@@ -237,14 +237,19 @@ def confined(app, accounts, identities, codes, photo, observations):
         if method in {"GET", "HEAD", "OPTIONS"}:
             return await app(scope, receive, read_capture)
 
-        async def reject():
+        async def reject(reason):
             observations["refused"].append(True)
+            endpoint_kind = "media" if re.fullmatch(rf"/property-network/groups/({uuid_pattern})/media", path) else (
+                "invite" if path in {"/property-network/group-invites/resolve", "/property-network/group-invites/accept"} else (
+                    "group" if path.startswith("/property-network/") else "auth" if path in {"/auth/login", "/auth/logout"} else "other"))
+            method_kind = method if method in {"POST", "PUT", "PATCH", "DELETE"} else "other"
+            print("SOCIAL_GROUPS_FIXTURE_REFUSAL " + json.dumps({"stage": reason, "method": method_kind, "kind": endpoint_kind}, sort_keys=True), flush=True)
             return await JSONResponse({"detail": "Synthetic group scope refused"}, 405,
                 headers={"Cache-Control": "no-store"})(scope, receive, send)
 
         raw = await request.body()
         if len(raw) > 6 * 1024 * 1024:
-            return await reject()
+            return await reject("body_size")
         content_type = request.headers.get("content-type", "").split(";", 1)[0].strip().lower()
         if path == "/auth/logout" and method == "POST" and raw in (b"", b"{}"):
             return await app(scope, replay_body(raw, receive), send)
@@ -256,46 +261,50 @@ def confined(app, accounts, identities, codes, photo, observations):
             return await app(scope, replay_body(raw, receive), send)
         action = route(path, method)
         if action is None:
-            return await reject()
+            return await reject("path_or_method")
         operation, kind, _parents = action
         if operation == "media_upload":
             if content_type != "multipart/form-data":
-                return await reject()
+                return await reject("content_type")
             form = await Request(scope, replay_body(raw, receive)).form()
             try:
                 upload = form.get("file")
-                if (set(form) != {"submission_id", "kind", "file"} or upload is None or not hasattr(upload, "read")
-                        or upload.filename != "groups-photo.png" or await upload.read() != photo
-                        or form.get("kind") not in {"group_image", "post"}):
-                    return await reject()
+                if set(form) != {"submission_id", "kind", "file"} or upload is None or not hasattr(upload, "read"):
+                    return await reject("form_keys")
+                if upload.filename != "groups-photo.png":
+                    return await reject("filename")
+                if await upload.read() != photo:
+                    return await reject("bytes")
+                if form.get("kind") not in {"group_image", "post"}:
+                    return await reject("kind")
                 submission_hint = str(UUID(str(form["submission_id"])))
             finally:
                 await form.close()
         else:
             if not isinstance(body, dict) or len(raw) > 32768:
-                return await reject()
+                return await reject("json_body")
             for field in ("name", "description", "area_label", "owner_alias", "member_alias", "body", "reason"):
                 if field in body and body[field] not in allowed_strings:
-                    return await reject()
+                    return await reject("field_allowlist")
             replay_key = (str(identities.get(actor)), str(body.get("submission_id")))
             if operation == "group_create" and (body.get("name") != FACTS["groupName"]
                     or created["group"] and replay_key not in observations["receipts"]):
-                return await reject()
+                return await reject("create_scope")
             if any(str(value) not in created["media"] for value in body.get("media_ids", [])):
-                return await reject()
+                return await reject("media_ids")
             for field in ("image_media_id", "media_id"):
                 if body.get(field) is not None and str(body[field]) not in created["media"]:
-                    return await reject()
+                    return await reject("media_reference")
             if operation in {"link_create", "link_resolve", "link_accept"}:
                 token = body.get("token")
                 if not isinstance(token, str) or not re.fullmatch(r"[A-Za-z0-9_-]{43}", token):
-                    return await reject()
+                    return await reject("token_format")
                 if operation != "link_create" and token not in tokens:
-                    return await reject()
+                    return await reject("token_scope")
             submission_hint = str(UUID(str(body["submission_id"]))) if operation != "link_resolve" else None
         if operation != "link_resolve" and len(observations["receipts"]) >= 64 \
                 and (str(identities.get(actor)), submission_hint) not in observations["receipts"]:
-            return await reject()
+            return await reject("receipt_budget")
         captured, size = [], 0
         async def capture(message):
             nonlocal size

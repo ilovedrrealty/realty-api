@@ -1,7 +1,7 @@
 name: Isolated social groups frontend and browser acceptance
 on:
   push:
-    branches: [codex-ci-social-groups-browser-20261125-v10]
+    branches: [codex-ci-social-groups-browser-20261125-v11]
 permissions:
   contents: read
 concurrency:

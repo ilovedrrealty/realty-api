@@ -14,7 +14,16 @@ diagnostics = []
 loopback = []
 process_failures = []
 held_responses = []
+fixture_refusals = []
 for line in lines:
+    if line.startswith(b"SOCIAL_GROUPS_FIXTURE_REFUSAL "):
+        assert mode == "api" and len(line) <= 256 and len(fixture_refusals) < 16
+        value = json.loads(line.split(b" ", 1)[1])
+        assert set(value) == {"stage", "method", "kind"}
+        assert value["stage"] in {"body_size", "path_or_method", "content_type", "form_keys", "filename", "bytes", "kind", "json_body", "field_allowlist", "create_scope", "media_ids", "media_reference", "token_format", "token_scope", "receipt_budget"}
+        assert value["method"] in {"POST", "PUT", "PATCH", "DELETE", "other"} and value["kind"] in {"media", "invite", "group", "auth", "other"}
+        fixture_refusals.append(value)
+        failed = True
     if line.startswith(b"SOCIAL_GROUPS_HELD_RESPONSE "):
         assert mode == "browser" and len(line) <= 512 and len(held_responses) < 8
         value = json.loads(line.split(b" ", 1)[1])
@@ -100,6 +109,8 @@ if diagnostics:
     print("SOCIAL_GROUPS_ENTRY_DIAGNOSTIC " + json.dumps(diagnostics[0], sort_keys=True))
 for value in loopback:
     print("SOCIAL_GROUPS_LOOPBACK_STATE " + json.dumps(value, sort_keys=True))
+for value in fixture_refusals:
+    print("SOCIAL_GROUPS_FIXTURE_REFUSAL " + json.dumps(value, sort_keys=True))
 for value in held_responses:
     print("SOCIAL_GROUPS_HELD_RESPONSE " + json.dumps(value, sort_keys=True))
 for value in process_failures:
