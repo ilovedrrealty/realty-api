@@ -1,7 +1,7 @@
-name: Isolated manual sharing bounded visible overflow diagnosis
+name: Isolated manual sharing responsive chart acceptance
 on:
   push:
-    branches: [codex-ci-manual-sharing-clip-v9-20261125]
+    branches: [codex-ci-manual-sharing-responsive-v10-20261125]
 permissions:
   contents: read
 concurrency:
@@ -30,9 +30,9 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: ilovedrrealty/iLoveDRRealty
-          ref: 6ca7880c5b154a9c370ea47bffd00d4d89838c4f
+          ref: f1bd8c6a6d5aaee9e825aebb8211cf0581f334bb
           path: frontend-source
-          fetch-depth: 13
+          fetch-depth: 14
           persist-credentials: false
       - name: Read exact reviewed unchanged API
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1

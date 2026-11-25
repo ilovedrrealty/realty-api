@@ -1,21 +1,21 @@
 {
-  "schema": "manual-sharing-clipping-diagnostic-v9",
+  "schema": "manual-sharing-responsive-chart-v10",
   "status": "PREPARED_FOR_ROOT_FULL_AND_INDEPENDENT_COLD_REVIEW_NO_PUSH_OR_HOSTED_EXECUTION",
-  "operations_parent": "5842f0fb4ec037e55acb3df841e1f7a2c44b3e01",
-  "proposed_first_ref": "codex-ci-manual-sharing-clip-v9-20261125",
+  "operations_parent": "4769d9697bb3dc9dead39f0a1de5dcfe1ec6b8bc",
+  "proposed_first_ref": "codex-ci-manual-sharing-responsive-v10-20261125",
   "frontend": {
-    "commit": "6ca7880c5b154a9c370ea47bffd00d4d89838c4f",
-    "tree": "afdd8907ac05275c72aa4efa87de847adf80a78c",
-    "parent": "9c66bc959ac7330aaf9c22dc646a65830dbf4566",
+    "commit": "f1bd8c6a6d5aaee9e825aebb8211cf0581f334bb",
+    "tree": "ef532fc4923a903f8a739686e70618bdd652f2e8",
+    "parent": "6ca7880c5b154a9c370ea47bffd00d4d89838c4f",
     "source_blobs": 616,
-    "fetch_depth": 13,
+    "fetch_depth": 14,
     "full_contracts": 531,
     "test_files": 65,
-    "standalone_strict": "retained actual45605073716/job139173748169 ondbad; exactsourceguard proves whole CSS-only descendant and every test/nonCSSlogic unchanged",
+    "standalone_strict": "Retained actual45605073716/job139173748169 on testeddbad; exact three-file CSS-chain reversal plus all613 other mode/type/blobs proves every test and nonCSS logic unchanged. Current standalone strict is not claimed.",
     "dashboard_vite": "fresh_current_required",
     "landing_next": "fresh_current_required",
-    "composition": "Exactly16 reviewed paths from601:608base→616,8additions; all614 outside reviewed twoCSS files equaldbad. ExactwholeCSSchain reversal (prose,mortgage,title,location) restores dbad bytes; current1path child adds only2 CSSclass changes to9c66.",
-    "full_contracts_proof": "retained actual531 PASS/0fail/0skip/0cancel/0todo ondbad45605073716/job139173748169; current6caCSSdescendant is notclaimedcurrentfulltested"
+    "composition": "Exactly16 reviewed paths from601:608 base to616,8 additions. Five targeted wrapping/shrinkability corrections across three CSS-bearing files reverse byte-for-byte to testeddbad: prior prose/mortgage/title/location and new chart target(two class literals). All613 other mode/type/blobs and tests identical.",
+    "full_contracts_proof": "Retained actual531 PASS/0fail/0skip/0cancel/0todo on dbad in45605073716/job139173748169; current f1bd CSS descendant is not claimed current-full-tested."
   },
   "backend": {
     "commit": "17943ba1714673c51c43cdbb800106f91612f527",
@@ -75,8 +75,8 @@
     "api_failure": "MANUAL_SHARE_FIXTURE_FAILURE finite stage/error_type/reason only",
     "privacy": "No raw body, contact fields, credentials, fixture secret, privateID, arbitrary URL/stack or downloaded image bytes in logs; artifacts[]"
   },
-  "proof_scope": "Retain actualdbad531/65 andstandalone strict45605073716 onlyafter native exactsourceguard reverses allfour CSS target edits (prose,mortgage,title,location) in twofiles and proves all614otherblobs/tests unchanged. FreshVite/itsactualtypecheck and LandingNext plus original20/44/full106/4view8control/PNG/clipboard/native/privacy required; native95 retained45588133254. Existing strictanonymousreplay remains exact6200; no earlierfailure is fullacceptance.",
-  "review_and_release": "Five-path diagnostic-only successor off5842 needs rootFULL and Releasecold beforefirstpush. No source/productfix/pinchange/request/retry/delay/action/viewportpredicate change. Originalchecker successconditions/fullledger remainbinding; censusalwaysfails.",
+  "proof_scope": "Retain actualdbad531/65 and standalone strict45605073716 only after exact three-file whole-CSS-chain reversal(including new two-literal chart target) and all613 other tuples/tests unchanged. Fresh Vite/current build typecheck and Next plus original20/44/full106/four views/eight controls/PNG/clipboard/native/privacy required; native95 retained45588133254. Existing driver/checker/fixture remain exact4769. No prior failure is acceptance.",
+  "review_and_release": "Three-path ops retarget off4769 and independently cold-reviewed FEf1bd require root FULL and Google independent cold before root first push. No driver/checker/fixture/request/action/retry/timer/predicate change; runtime gates remain intact.",
   "written_finite_browser_contract": {
     "journeys": 20,
     "geometry": 44,
@@ -162,26 +162,11 @@
   ],
   "local_checks": {
     "python_ast_units": 11,
-    "browser_node_syntax_native": 0,
-    "strict_parser_positive_controls": 3,
-    "strict_parser_negative_controls": 32,
-    "valid_censuses_always_fail_controls": 3,
-    "maximal_allowed_numeric_row_record_utf8_bytes": 10320,
-    "driver_outside_only_failure_census_equals_parent": true,
-    "native_fixture_byte_unchanged": true,
-    "synthetic_numeric_dom_controls": [
-      "client320_not_expanded359",
-      "scroll_table_deprioritized",
-      "absolute_fixed_conservative",
-      "scan2500",
-      "rows24",
-      "line12KiB",
-      "no_private_text_output"
-    ],
-    "receipt": "outputs/property-network-20261101/manual-sharing-clip-v9-static-controls-20261125.json",
-    "receipt_sha256": "f0b5ca6b85df1720e59f807e1018037ee61e28eee49e2f81dbe14e5505c93bed",
+    "actual_readonly_three_file_css_chain_guard_native": 0,
+    "driver_checker_fixture_byte_identical4769": true,
+    "all613_other_frontend_tuples_and_tests_unchanged": true,
     "git_bash_runner_syntax_native": null,
-    "scope": "Pure parser/AST/actual-helper-on-inert-numeric-DOM/sourcebytes only; no realbrowser/UI/paint proof, producttests/build/application/DB/install/provider/push. HostedBashsyntax required, no localBashproof."
+    "scope": "Only bounded AST/read-only Git composition and byte checks. No tests/build/browser/DB/install/provider/push; fresh hosted Bash syntax/build/UI/API acceptance required."
   },
   "diagnostic_scope": "Failure-only on an unchanged viewport/control geometry predicate: at most one strict 12KiB census; scan at most2500 body elements, emit24 bounded rows with fixed tag/scope/source-known-class enums and integer width/left/right/client/scroll only plus known label/viewport totals. Never text, URL, ID, computed-style strings, attributes, source data or screenshot. The parser always marks a census asFAIL, rejects duplicate/unknown/wrong-mode/private/oversized/boolean-integer fields. Existing failure/ownframes remain binding. No extra click/read/write/route change, fixture byte-identical, original20/44/4views/8controls/PNG/provider/privacy predicates unchanged.",
   "prior_actual_failures": [
@@ -289,9 +274,20 @@
       "primary_bytes": 108458,
       "primary_sha256": "035c3acda4a6afc0c75cb5519f779600dac4f589bd753892794b07fd98bc2216",
       "scope": "Resource readiness andcalculator selector passed. Census26matches/24emitted showed contained420pxtable and400pxhero decoration, docclient320/scroll359. Actualuncontainedleaf notyetproven; noCSSfix. FreshVite0/Next0,cleanup/artifacts[]; full20/44/APIledger unaccepted."
+    },
+    {
+      "operations": "4769d9697bb3dc9dead39f0a1de5dcfe1ec6b8bc",
+      "run": 45619627187,
+      "job": 139223989989,
+      "status": "FAIL",
+      "phase": "en_calculator_geometry_320",
+      "reason": "VIEWPORT_OVERFLOW",
+      "primary_bytes": 111931,
+      "primary_sha256": "97091a93bba4b31b318c567a2f9b2443e89d4de82fe6a7c07df30fab4ed443e9",
+      "scope": "Diagnostic32matches/24rows proves chart row left37/client246/scroll322/right359 and final60px year/bar group299..359 unclipped. Comparison table is clipped. At least one source-proven chart offender; no sole-offender or full sharing/API acceptance claim. Fresh Vite0/Next0, cleanup/artifacts[]."
     }
   ],
-  "observed_source_correction": "Inherited source9c66 alreadyfixesprose/mortgagetext. Exact new6ca onefilechild wraps only measured H1 title(anywhere) and exact locationflexspan(min-w-0,anywhere) so anonymousflextext can shrink/wrap. Values/format/visibility/auth/fetch/formulas/sharepayload unchanged; no clipping/hiding/layoutredesign.",
+  "observed_source_correction": "Currentf1bd preserves inherited prose/mortgage/title/location wrapping from9c66/6ca and adds only source-proven responsive chart shrinkability. Three CSS-bearing files reverse exactly to testeddbad; values/formulas/heights/colors/labels/fetch/privacy/sharing unchanged. No clipping/hiding or broader layout redesign.",
   "fixture_cors_correction": {
     "primary_source": "https://github.com/microsoft/playwright/blob/v1.64.1/packages/playwright-core/src/server/network.ts",
     "function": "Route.fulfill/_maybeAddCorsHeaders atline440",
@@ -325,6 +321,43 @@
     "finite_fields": "Controlled position enum static/relative/absolute/fixed/sticky/other; integer clip_count0..32 and visible_left/right; booleanclipping_applied/outside_client. Existing tag/scope/classes/integerboxfields remain. No text/IDs/URLs/rawcomputedstyle/attributes/image output.",
     "heuristic_limit": "Only a conservative sorting aid, notfullbrowserpaint/occlusionproof. Computed overflowX is reduced to a boolean; ordinary-flow clipping intervals are intersected throughatmost32ancestors. Absolute/fixed/unknown positioned escapecontexts stopadditionalclipping assumptions; these may remain prioritized evenwhen actuallyclipped. Transforms/clip-path/contain/complexcontainingblocks are not fullymodeled. Existingglobalviewportcheckneveruses the heuristic and stillfails unchanged.",
     "priority_and_bound": "Prioritize outside_client from approximate visibleextent, then visible_right beforecontainedtable cells. Runtime checks encodedUTF8line<=12288 beforeprinting; ifoversized diagnostic is omitted and originalviewportfailure remains binding. Parserstrictsinglekeys/types/bounds/negativecontrols andalwaysFAIL behavior remains.",
-    "proof_scope": "Diagnostic-only source6ca/BE179 unchanged. No actualoffenderfix orsharingacceptance inferred; completeoriginal20/44/full106/4views/PNG/privacy stillrequired."
-  }
+    "proof_scope": "Existing failure-only diagnostic behavior is retained byte-for-byte from4769. Current sourcef1bd/BE179 still requires complete original20/44/full106/four views/PNG/privacy acceptance; no heuristic/root-cause statement substitutes for it."
+  },
+  "chart_responsive_source_correction": {
+    "source_commit": "f1bd8c6a6d5aaee9e825aebb8211cf0581f334bb",
+    "source_parent": "6ca7880c5b154a9c370ea47bffd00d4d89838c4f",
+    "source_patch_sha256": "3fe42b16c0b3cd9af5fd6488d5169424729b92ea017b42f36ea9279077766efe",
+    "exact_change": "Only year-column min-w-0 and inner row w-full/max-w-[60px]/justify-center. Existing bar flex-shrink fits each allocated column;60px desktop cap retained. Values/formulas/heights/colors/labels/tooltips/zero branch/table/hero/privacy unchanged; no clipping/hiding.",
+    "source_cold_receipt": "outputs/property-network-20261101/manual-sharing-calculator-responsive-f1bd-release-cold-review-20261125.json",
+    "source_cold_sha256": "79ec4263312d7be8128ae786f382b97c661753a1fa7744a0aced09e3ba87236c",
+    "acceptance": "Fresh complete original viewport/sharing/API proof still required; other remaining offenders are not excluded by source review."
+  },
+  "retained_diagnostic_controls": {
+    "operations": "4769d9697bb3dc9dead39f0a1de5dcfe1ec6b8bc",
+    "static_controls": {
+      "python_ast_units": 11,
+      "browser_node_syntax_native": 0,
+      "strict_parser_positive_controls": 3,
+      "strict_parser_negative_controls": 32,
+      "valid_censuses_always_fail_controls": 3,
+      "maximal_allowed_numeric_row_record_utf8_bytes": 10320,
+      "driver_outside_only_failure_census_equals_parent": true,
+      "native_fixture_byte_unchanged": true,
+      "synthetic_numeric_dom_controls": [
+        "client320_not_expanded359",
+        "scroll_table_deprioritized",
+        "absolute_fixed_conservative",
+        "scan2500",
+        "rows24",
+        "line12KiB",
+        "no_private_text_output"
+      ],
+      "receipt": "outputs/property-network-20261101/manual-sharing-clip-v9-static-controls-20261125.json",
+      "receipt_sha256": "f0b5ca6b85df1720e59f807e1018037ee61e28eee49e2f81dbe14e5505c93bed",
+      "git_bash_runner_syntax_native": null,
+      "scope": "Pure parser/AST/actual-helper-on-inert-numeric-DOM/sourcebytes only; no realbrowser/UI/paint proof, producttests/build/application/DB/install/provider/push. HostedBashsyntax required, no localBashproof."
+    },
+    "scope": "Driver and checker bytes unchanged; these are retained author controls, not newly executed."
+  },
+  "publication": "Root owns exact source/ops first pushes and actual hosted/production acceptance after independent review. This changes source pins and exact CSS byte guards only; no new request/action/retry/delay/viewport weakening/provider/security/data change."
 }
