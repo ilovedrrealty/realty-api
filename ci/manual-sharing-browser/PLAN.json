@@ -1,21 +1,21 @@
 {
-  "schema": "manual-sharing-overflow-diagnostic-v2",
+  "schema": "manual-sharing-mobile-wrapping-v3",
   "status": "PREPARED_FOR_ROOT_FULL_AND_INDEPENDENT_COLD_REVIEW_NO_PUSH_OR_HOSTED_EXECUTION",
-  "operations_parent": "c4c7158181d3b585073008accb68b3a3a5aed19b",
-  "proposed_first_ref": "codex-ci-manual-sharing-overflow-v2-20261125",
+  "operations_parent": "ade0c7446809c8c4f1f40e3d3ffafb4e3487b926",
+  "proposed_first_ref": "codex-ci-manual-sharing-mobile-v3-20261125",
   "frontend": {
-    "commit": "dbad8aa8e55fccda3dfbfa0ca15bcc7d4cadbb30",
-    "tree": "f15d1962e27ae7e54c92bfbcf4633906dae14c3c",
-    "parent": "6015987e33375ed012996dddb27ca092532d793c",
+    "commit": "9c66bc959ac7330aaf9c22dc646a65830dbf4566",
+    "tree": "d6a07c211319ddf6ce270b483581a8b1013faadc",
+    "parent": "dbad8aa8e55fccda3dfbfa0ca15bcc7d4cadbb30",
     "source_blobs": 616,
-    "fetch_depth": 11,
+    "fetch_depth": 12,
     "full_contracts": 531,
     "test_files": 65,
-    "standalone_strict": "retained actual45605073716/job139173748169 on exact unchanged dbad",
+    "standalone_strict": "retained actual45605073716/job139173748169 on dbad parent; exact source guard proves only two wrapping CSS edits and every test/nonCSS logic unchanged",
     "dashboard_vite": "fresh_current_required",
     "landing_next": "fresh_current_required",
-    "composition": "Exactly15 reviewed paths from601;608base→616,8additions,all other mode/type/blob tuples identical; archive verified before/after every phase",
-    "full_contracts_proof": "retained actual531 PASS/0fail/0skip/0cancel/0todo in45605073716/job139173748169 on exact unchanged dbad"
+    "composition": "Exactly16 reviewed paths from601:608base→616,8additions; existing dbad15 plus globals.css. Exact additional two-file CSS-only child reverses to dbad; all614 other mode/type/blobs identical, same616 paths.",
+    "full_contracts_proof": "retained actual531 PASS/0fail/0skip/0cancel/0todo on dbad in45605073716/job139173748169; this guarded CSS-only child is not claimed current-full-tested"
   },
   "backend": {
     "commit": "17943ba1714673c51c43cdbb800106f91612f527",
@@ -75,8 +75,8 @@
     "api_failure": "MANUAL_SHARE_FIXTURE_FAILURE finite stage/error_type/reason only",
     "privacy": "No raw body, contact fields, credentials, fixture secret, privateID, arbitrary URL/stack or downloaded image bytes in logs; artifacts[]"
   },
-  "proof_scope": "Exact unchanged dbad full531/65 and standalone strict are retained from actual45605073716/job139173748169, not rerun or claimed current. Fresh Dashboard build (its actual typecheck) and fresh Landing Next build remain required for usable static assets; this one added numeric census diagnoses the existing failed mobile assertion. Native95 retained45588133254. This is diagnostic preparation only; no acceptance or product correction is inferred.",
-  "review_and_release": "Five-path operations-only successor off c4c7 requires root FULL and independent cold review before root first push; no product source changes or unchanged retry. All original browser/API success predicates remain binding; diagnostic output always fails.",
+  "proof_scope": "Retain actual531/65 and standalone strict on dbad from45605073716/job139173748169 only after exact automated source guard proves two CSS-only additions reverse to dbad and all614 other blobs/tests remain unchanged. Never claim current full tests/standalone strict. Fresh DashboardVite/its actual typecheck and LandingNext required, then complete original20journeys44mobilegeometry/full106ledger/4views/8controls/PNG/clipboard/native/privacy. Native95 retained45588133254. No prior failure is treated as acceptance.",
+  "review_and_release": "Three-path ops successor off ade0c7 needs root FULL and independent cold plus exact source9c66 review/push before root first ops push. Original checker/driver/fixture byte-identical ade0c7; the failure-only numeric census remains binding, never success.",
   "written_finite_browser_contract": {
     "journeys": 20,
     "geometry": 44,
@@ -162,47 +162,55 @@
   ],
   "local_checks": {
     "python_ast_units": 11,
-    "browser_node_syntax_native": 0,
+    "actual_readonly_frontend_composition_guard_native": 0,
+    "checker_driver_fixture_bytes_equal_parent": true,
+    "fresh_builds_required": true,
+    "original_browser_metrics_and_api_ledger_unchanged": true,
     "git_bash_runner_syntax_native": null,
-    "strict_parser_positive_controls": 3,
-    "strict_parser_negative_controls": 29,
-    "valid_census_always_failure_controls": 3,
-    "driver_without_only_census_equals_parent": true,
-    "fixture_byte_unchanged": true,
-    "receipt": "outputs/property-network-20261101/manual-sharing-overflow-v2-static-controls-20261125.json",
-    "receipt_sha256": "80867f21d88f9b9ca725ca79fb17512a6d0adefe7f7c4f0a6706fe43b7bc3f50",
-    "scope": "Pure parser/AST/source/Node syntax only; Git Bash unavailable locally and hosted bash-n remains required. No browser/application/DB/build/install/provider/push or acceptance."
+    "scope": "Pure AST/read-only Git sourceguard only; no application/browser/DB/native/build/install/provider/push. Existing parser controls retained because checker unchanged. Hosted bash-n required; no local Bash proof."
   },
-  "prior_actual_failure": {
-    "operations": "c4c7158181d3b585073008accb68b3a3a5aed19b",
-    "run": 45605073716,
-    "job": 139173748169,
-    "status": "FAIL",
-    "phase": "en_property_geometry_320",
-    "reason": "VIEWPORT_OVERFLOW",
-    "own_frames": [
-      {
-        "line": 16,
-        "column": 54
-      },
-      {
-        "line": 175,
-        "column": 5
-      },
-      {
-        "line": 300,
-        "column": 3
-      },
-      {
-        "line": 387,
-        "column": 3
-      },
-      {
-        "line": 451,
-        "column": 3
-      }
-    ],
-    "proof": "Actual current531/65 allPASS, standalone full strict0, freshVite0 and Next0/six exports; browser failed on first320 geometry before complete20/44/ledger. Final API ledger properly failed incomplete actions. Cleanup marker and actualartifacts[] read by root. No sharing acceptance."
-  },
-  "diagnostic_scope": "Failure-only on an unchanged viewport/control geometry predicate: at most one strict 12KiB census; scan at most2500 body elements, emit24 bounded rows with fixed tag/scope/source-known-class enums and integer width/left/right/client/scroll only plus known label/viewport totals. Never text, URL, ID, computed-style strings, attributes, source data or screenshot. The parser always marks a census asFAIL, rejects duplicate/unknown/wrong-mode/private/oversized/boolean-integer fields. Existing failure/ownframes remain binding. No extra click/read/write/route change, fixture byte-identical, original20/44/4views/8controls/PNG/provider/privacy predicates unchanged."
+  "diagnostic_scope": "Failure-only on an unchanged viewport/control geometry predicate: at most one strict 12KiB census; scan at most2500 body elements, emit24 bounded rows with fixed tag/scope/source-known-class enums and integer width/left/right/client/scroll only plus known label/viewport totals. Never text, URL, ID, computed-style strings, attributes, source data or screenshot. The parser always marks a census asFAIL, rejects duplicate/unknown/wrong-mode/private/oversized/boolean-integer fields. Existing failure/ownframes remain binding. No extra click/read/write/route change, fixture byte-identical, original20/44/4views/8controls/PNG/provider/privacy predicates unchanged.",
+  "prior_actual_failures": [
+    {
+      "operations": "c4c7158181d3b585073008accb68b3a3a5aed19b",
+      "run": 45605073716,
+      "job": 139173748169,
+      "status": "FAIL",
+      "phase": "en_property_geometry_320",
+      "reason": "VIEWPORT_OVERFLOW",
+      "own_frames": [
+        {
+          "line": 16,
+          "column": 54
+        },
+        {
+          "line": 175,
+          "column": 5
+        },
+        {
+          "line": 300,
+          "column": 3
+        },
+        {
+          "line": 387,
+          "column": 3
+        },
+        {
+          "line": 451,
+          "column": 3
+        }
+      ],
+      "proof": "Actual current531/65 allPASS, standalone full strict0, freshVite0 and Next0/six exports; browser failed on first320 geometry before complete20/44/ledger. Final API ledger properly failed incomplete actions. Cleanup marker and actualartifacts[] read by root. No sharing acceptance."
+    },
+    {
+      "operations": "ade0c7446809c8c4f1f40e3d3ffafb4e3487b926",
+      "run": 45607295300,
+      "job": 139181372920,
+      "status": "FAIL",
+      "phase": "en_property_geometry_320",
+      "reason": "VIEWPORT_OVERFLOW",
+      "actual_census": "Existing listing-prose288px/client has451px scroll, expanding document320→467; share-scope offenders0. Mortgage value79px boxes have104–131px scroll inside clippedcard. FreshVite0/Next0,cleanup/artifacts[]; fulljourney/ledger correctlynotaccepted."
+    }
+  ],
+  "observed_source_correction": "Only existing listing-prose overflow-wrap:anywhere and exact mortgage result value class. Text wraps without clipping, formulas/data/rates/fetch/permissions/sharing behavior changes. Root authorized both numeric-DOM-proven defects; this successor tests them with original unmodified20journeys44geometry and every existing finite API/view/PNG/privacy check."
 }

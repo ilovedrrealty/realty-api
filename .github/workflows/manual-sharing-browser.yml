@@ -1,7 +1,7 @@
-name: Isolated manual sharing mobile overflow diagnosis
+name: Isolated manual sharing mobile wrapping acceptance
 on:
   push:
-    branches: [codex-ci-manual-sharing-overflow-v2-20261125]
+    branches: [codex-ci-manual-sharing-mobile-v3-20261125]
 permissions:
   contents: read
 concurrency:
@@ -30,9 +30,9 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: ilovedrrealty/iLoveDRRealty
-          ref: dbad8aa8e55fccda3dfbfa0ca15bcc7d4cadbb30
+          ref: 9c66bc959ac7330aaf9c22dc646a65830dbf4566
           path: frontend-source
-          fetch-depth: 11
+          fetch-depth: 12
           persist-credentials: false
       - name: Read exact reviewed unchanged API
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -65,7 +65,7 @@ jobs:
           ref: 3007728fd67c5889a8373e41ff3ffa5cc50d839b
           path: browser-relay
           persist-credentials: false
-      - name: Retain actual531 and strict proof, build fresh and diagnose mobile sharing
+      - name: Verify CSS-only wrapping, retain actual531 and build fresh mobile sharing
         shell: bash
         run: |
           set -euo pipefail
