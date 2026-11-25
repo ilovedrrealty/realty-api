@@ -1,0 +1,126 @@
+{
+  "schema": "native-inbox-browser-acceptance-v1",
+  "status": "PREPARED_PENDING_MUTUAL_COLD_AND_ROOT_FULL_REVIEW_FIRST_PUSH",
+  "operations_parent": "93a99190d71b9a2b116755747156d98ad95f8da1",
+  "proposed_first_ref": "codex-ci-native-inbox-browser-20261125",
+  "frontend": "6015987e33375ed012996dddb27ca092532d793c",
+  "frontend_tree": "dfc17c06f665e3088d56a0582013f5516ec6c106",
+  "frontend_parent": "caa0e22f41f0d9d9d88e15fe7795dae776008408",
+  "frontend_review_base": "06d7f74965896ae23d47e7701fc1dbfd9815cc40",
+  "frontend_tracked_blobs": 608,
+  "backend": "17943ba1714673c51c43cdbb800106f91612f527",
+  "backend_tree": "ff940a7b6e983d4c669202746d9676b4b82e9a06",
+  "previous_backend": "8957b18520d15dac503e0e4a5ce4b2455135d601",
+  "contracts": {
+    "expected_files": 64,
+    "expected_tests": 523,
+    "fresh_full_run_required": true,
+    "strict": "Complete current523 contract cases across64 actual files, zero failure/skip/cancel/todo, then actual Dashboard full strict. Exact native exit and retained immutable source hashes are binding.",
+    "builds": "FreshactualDashboardVite thenLandingNext export againstownedAPI; every608frontendtrackedblob rehashed aftereachphase. Exactsource/tree/parent andten-commitfrontendancestryguard, six-commitbackendmerge/full365blobunion, successfulrequirement/manifestdiffexits andunchangedlockfilepins."
+  },
+  "native": {
+    "rerun": false,
+    "source": "17943ba1714673c51c43cdbb800106f91612f527",
+    "scope": "Root independently accepted freshcombined95 for exact179 (8source/hostedsuites94+measuredownedhandshake1), genuine99→106/98→105 model projection, fullprivacy/old99/current106retention/emptydown-reupgrade/serverstart/schemaabsence, exits0/noOOM/markedDBremoval/cleanup/artifacts[]. This browser job does not rerun or claim currentexecution of thosecases.",
+    "accepted_run": 45588133254,
+    "accepted_job": 139114920757,
+    "accepted_source": "17943ba1714673c51c43cdbb800106f91612f527",
+    "accepted_cases": 95,
+    "root_receipt": "native-inbox-resilience-45588133254-root-acceptance.json",
+    "actual_log_sha256": "f737e63beabf7574e43ceddec8fc596b8d529a29ca8671bfccf72e985d21ad54"
+  },
+  "runtime": {
+    "baseline": "01695530df670a94ac28f8b3bf36cc34b5b7a942",
+    "recipe": "c193a925ba57ea2d67ea48c44e5262817885c8a2",
+    "static_dashboard": "3007728fd67c5889a8373e41ff3ffa5cc50d839b",
+    "native_helper_git_sha256": "388fcae33bf63234df9739ac7405c1a2d49b4914af2a32d56e9023fdb7ed144e",
+    "accepted_group_fixture_git_sha256": "e0c5f0971c7c13ed47063907f01fa6ef01590b00fa2855eb1ecb16a38b99463e",
+    "landing_server_git_sha256": "f03f06dae7c31f3415dad15492ff581ff94f6c87a519449f84d64780c10e0cbd",
+    "postgres": "17.6 exact digest/170006; network-none loopback namespace with marker-owned nonce DB.",
+    "python": "3.11-slim exact accepted digest/recipe; existing inventory plus the same three hash-pinned binary readers only; no product dependencies added.",
+    "node": "24.22.1 exact digest and lockfile npm ci inside owned hosted builder.",
+    "browser": "Exact accepted Playwright image and SRI-verified playwright-core1.64.1.",
+    "ports": {
+      "api": 8918,
+      "dashboard": 4175,
+      "landing": 8917,
+      "postgres": 55449
+    },
+    "source_mounts": "Readonly exact application/previous/ops; no host credentials, env -i, empty provider keys, workers disabled, HTTP/SMTP/Resend counters. Output private facts stay nonce-owned0600 and are never artifacts."
+  },
+  "browser": {
+    "contract_status": "IMPLEMENTED_FINITE_CONTRACT_PENDING_HOSTED_EXECUTION",
+    "locales": [
+      "en",
+      "es"
+    ],
+    "widths": [
+      320,
+      390
+    ],
+    "real_identity": "Real cookie sessions and active verified current database users; selected workspace cannot grant permission. Buyer directory current assigned eligible Realtor/Admin only; no historical lead or professional exception.",
+    "conversations": "ActualordinarybidirectionalAgent→Buyer normalmessage plusBuyermessages/manualrecords, nonbuyeropt-in andbilateralblocks. OpaquekeysetOlder/Newer/Latest beyond30rows withnewarrivals, tiedlegacytimestampordering andexplicitshown-sequencemonotonicreadcommands/unread.",
+    "uncertainty": "Narrow owned POST response loss only after actual backend commit; real frozen UUID/body, explicit resolver then fresh authorized GET, one stored entry and no automatic duplicate resend.",
+    "oversight": "Actual Admin opens purpose-labelled audit review and posts as own identity to current native pair; both legacy sources remain read-only and messages disclose audited oversight. Blocked-pair Admin intervention refusal is independently executed by the retained exact backend native27/currentcombined95 hosted safety test, not an extra browser denial claim.",
+    "privacy": "Actualcurrentassignment/verification changes are narrowlycontrolled/restored; four real DOM write-denials (two403/two404) must hide mountedcachedbody/composer beforeanyheldpollingGETcanreturn.401/403/404componentrender/draftclearing is separately exercised by actualsourcehook+SSRregression in fresh523suite; anonymous401APIboundary is real butnot an additionalDOMwrite-denial claim.",
+    "manual": "ManualWhatsApp/callnotes visiblyreportedtime/direction/outcome andno delivery/call/provideraction; actualbrowserplaintextescapesmarkup. DOM2001ASCII disablesposting;2000astralemoji enablesan actionabilitytrialwithoutsubmitting, thenfieldcleared. Fresh523sourcecontracts separatelyproveAPI2000codepoint/unsafe-control normalization.",
+    "clock": "If controlled clock/review transition is used, label it controlled owned time and restore it; do not claim ten real minutes elapsed.",
+    "drafts": "Actual unsaved draft confirmation cancellation plus resource-bound access loss; frozen pending attempt remains non-retrying. No browser persistent storage for message drafts.",
+    "external": "Every non-owned request blocked, zero provider or external mutation, no real account/customer/contact messages.",
+    "journeys": 24,
+    "geometry": 32,
+    "geometry_labels_per_locale": [
+      "mine",
+      "directory",
+      "thread",
+      "manual",
+      "preferences",
+      "blocks",
+      "admin",
+      "legacy"
+    ],
+    "presence_receipts": 10,
+    "contexts": 16,
+    "actual_logins": 14,
+    "api_boundary_checks": 16,
+    "successful_commands": 32,
+    "denied_entry_posts": 4,
+    "control_transitions": 12,
+    "login_rate_limit": "Honorunchanged10logins/minute fromoneownedloopbackIP:14realcookie logins in two7actorlocales. BeforeES, wait only anyremainingtime until61s sincelastcompletedENlogin, in≤30s chunks withstagewatchdog rearmed. No spoof/reset/disable;600souterbrowserbound unchanged.",
+    "cursor_proofs": "Afterexplicit35/40read, parkBuyer onrealOlder; AgentUIreplyarrives, samecursor GETmustreturntotal+1 andunchangedolderIDs/order, thenrealNewer seesincoming. Adminreview movesOlder beforecontrolledexpiry; afterrenewal realnewreviewID mustserve exactretainedcursor/olderIDs/order. EarlierOlder/Newer/Latestcontrols also useactualGETs; no historypageceil introduced."
+  },
+  "fixture": {
+    "schema": "Real previous8957 bootstrap/Alembic99 in clean child before importing current models, then exact current d8 upgrade to106 with7 private Inbox tables.",
+    "preservation": "All old99 catalog/rows/sequences exact after browser including82 owner contacts/46 private drafts/9 accepted jobs/CMS7/2floorplans. Seeded synthetic users/legacy/native fixtures established before baseline. Any old99 assignment transition must be narrow, explicit and exactly restored.",
+    "new7_writes": "Only a finite actor/action/submission/sequence allowlist of expected synthetic commands/entries/reads/preferences/blocks/review audits. Independently reconcile actual DB final state/attempt ledger; no broad mutation exemption or output-only success counter.",
+    "facts": "Synthetic secrets/facts only in exact0600 facts inode, removed in finally on success and failure. No raw request/response data, identifiers, bodies, URLs or error messages logged.",
+    "expected_new7_rows": {
+      "preferences": 1,
+      "blocks": 0,
+      "conversations": 3,
+      "entries": 46,
+      "read_states": 1,
+      "commands": 70,
+      "audit": 70
+    },
+    "expected_browser_actions": {
+      "conversation_opened": 4,
+      "entry_created": 10,
+      "read_marked": 2,
+      "visibility_saved": 4,
+      "block_saved": 4,
+      "review_opened": 8
+    },
+    "seed_commands": 38,
+    "controlled_state": "Exactly12 reversible owned controls: assignment4,verification4,clock4; old99 state restored exact. Preference owner finalmembers/version4; buyer shown-read sequence40; buyer-agent last_sequence45 and unchanged owner-member last_sequence1; the additional empty BuyerAdmin thread is browser-created."
+  },
+  "privacy": "Only bounded finite typed counts, approved source enums, source-owned line/column diagnostics; native failures, malformed/missing/duplicate receipts remain failures.",
+  "cleanup": "Nonce label-checked containers/images/scratch; marker checked owned DB drop and absence; read-only source clean. No artifact upload; root independently verifies terminal/native/OOM/running/cleanup and actual artifacts[].",
+  "release": "Root owns full source/ops plus independent review, first absent-ref push, actual hosted acceptance and later production changes. Preparation is not acceptance.",
+  "local_checks": "All10 runner inline Python blocks AST-valid;25 strict parser controls passed (2valid/23refusals), including nativeexit/type/nestedledger/audit/provider/geometry/presence/failureprivacy. No local fullapp test/build/browser/DB/provider calls. Immutable nativehelper388f/groupfixturee0c5/Landingf03 Git LF bytes pinned; accepted Dashboardserver/Dockerfile retained. Groups actual12staticledgercontrols passed with peractor Agent2/Buyer10/Admin10/Owner8/Member2, seq36..45, reads35/40, blocktrue/false, preferenceversions0..3 and4/2/2reviewsourcebinding; actualNode syntax/PythonAST exited0. No application/SQL/browser executed locally.",
+  "backend_parents": [
+    "79e9311874e3ea91e45b990629965534d41bb5fa",
+    "07b2b7c762b129c5b6ea978299ba69e528e3189e"
+  ],
+  "backend_composition": "Exacttwo-parent179 mergedtree independently reconstructed from8957+9reviewedInbox79e paths+4disjointreviewedresilience07paths,365 mode/type/blobs. Fetchdepth6 reachesallrefs. Requirements bytes unchanged; database.py exactlyreviewed07 isverifiedbywholeunion instead of incorrectlyrequiring unchanged8957constructor."
+}
