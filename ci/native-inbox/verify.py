@@ -127,6 +127,31 @@ def compare_models(catalog, database):
             "actual105_model_tables_required")
         connection.execute(text("SET LOCAL search_path TO pg_catalog"))
         actual, expected = model_projection(connection, "public"), model_projection(connection, schema)
+        if actual!=expected:
+            # Source-owned schema metadata only, never values/SQL/exception text.
+            # Keep the strict equality assertion after this failure-only census.
+            defaults = {None: "none", "0": "zero_bare", "'0'::bigint": "zero_bigint_quoted", "now()": "now"}
+            census = {"columns": 0, "constraints": 0, "indexes": 0, "samples": []}
+            for section in ("columns", "constraints", "indexes"):
+                left = {(row[0], row[2] if section=="columns" else row[1]): row for row in actual[section]}
+                right = {(row[0], row[2] if section=="columns" else row[1]): row for row in expected[section]}
+                for key in sorted(set(left)|set(right)):
+                    a, b = left.get(key), right.get(key)
+                    if a==b:
+                        continue
+                    census[section] += 1
+                    if len(census["samples"])>=3:
+                        continue
+                    table, field = key
+                    require(table in INBOX and re.fullmatch(r"[a-z_][a-z0-9_]{0,100}", field), "source_owned_parity_identifier_required")
+                    positions = [index for index in range(max(len(a or []), len(b or [])))
+                        if a is None or b is None or a[index]!=b[index]]
+                    census["samples"].append({"section": section, "table": table, "field": field,
+                        "actual_present": a is not None, "expected_present": b is not None,
+                        "different_positions": positions,
+                        "actual_default_kind": defaults.get(a[5], "other") if section=="columns" and a else "not_applicable",
+                        "expected_default_kind": defaults.get(b[5], "other") if section=="columns" and b else "not_applicable"})
+            print("INBOX_NATIVE_PARITY_CENSUS "+canonical(census), flush=True)
         require(actual==expected, "new7_native_model_ddl_projection_required")
         connection.execute(text('DROP SCHEMA "'+schema+'" CASCADE'))
 

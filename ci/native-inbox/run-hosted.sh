@@ -4,7 +4,7 @@ umask 077
 die() { printf 'INBOX_NATIVE_REFUSED %s\n' "$1" >&2; exit 1; }
 bounded() { timeout --kill-after=8s "$@"; }
 [[ $# == 5 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
-   ${GITHUB_REF:-} == refs/heads/codex-ci-native-inbox-v2-20261125 && ${GITHUB_RUN_ATTEMPT:-} == 1 &&
+   ${GITHUB_REF:-} == refs/heads/codex-ci-native-inbox-parity-v3-20261125 && ${GITHUB_RUN_ATTEMPT:-} == 1 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 ]] || die EXACT_HOSTED_EVENT_REQUIRED
 ops="$1"; application="$2"; baseline="$3"; recipe="$4"; previous="$5"
@@ -17,12 +17,13 @@ done
 expected_operations=$(cat <<'EXACT_OPERATIONS'
 .github/workflows/native-inbox.yml
 ci/native-inbox/PLAN.json
+ci/native-inbox/check.py
 ci/native-inbox/run-hosted.sh
 ci/native-inbox/verify.py
 EXACT_OPERATIONS
 )
 [[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" &&
-   $(git -C "$ops" show -s --format=%P HEAD) == 0a8ed8868350b8a8f0b89f4f41c3217c5423c0d3 &&
+   $(git -C "$ops" show -s --format=%P HEAD) == 22b5254d55710d128aae3b47f31278dc38e835bc &&
    $(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) == "$expected_operations" &&
    $(git -C "$application" rev-parse HEAD) == 2c8b085f9a583ca757cece9ea4ea46c169aab638 &&
    $(git -C "$application" rev-parse 'HEAD^{tree}') == 8475f663f1628fe2b733507fdfe9f98f2b45adbe &&

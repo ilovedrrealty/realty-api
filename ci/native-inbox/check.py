@@ -10,8 +10,29 @@ assert running in {"true", "false"} and oom in {"true", "false"}
 path = Path(filename)
 assert path.is_file() and not path.is_symlink() and path.stat().st_size<=2*1024*1024
 counts, results, failed = [], [], False
+census_seen = False
 for line in path.read_bytes().splitlines():
-    if line.startswith(b"INBOX_NATIVE_COUNTS "):
+    if line.startswith(b"INBOX_NATIVE_PARITY_CENSUS "):
+        assert len(line)<=1536 and not census_seen
+        value = json.loads(line.split(b" ", 1)[1])
+        assert set(value)=={"columns", "constraints", "indexes", "samples"}
+        assert all(type(value[key]) is int and 0<=value[key]<=999 for key in ("columns", "constraints", "indexes"))
+        assert sum(value[key] for key in ("columns", "constraints", "indexes"))>0
+        assert type(value["samples"]) is list and 1<=len(value["samples"])<=3
+        for sample in value["samples"]:
+            assert set(sample)=={"section", "table", "field", "actual_present", "expected_present", "different_positions", "actual_default_kind", "expected_default_kind"}
+            assert sample["section"] in {"columns", "constraints", "indexes"}
+            assert sample["table"] in {"inbox_preferences", "inbox_blocks", "inbox_conversations", "inbox_commands", "inbox_entries", "inbox_read_states", "inbox_audit"}
+            assert type(sample["field"]) is str and re.fullmatch(r"[a-z_][a-z0-9_]{0,100}", sample["field"])
+            assert type(sample["actual_present"]) is type(sample["expected_present"]) is bool
+            assert sample["actual_present"] or sample["expected_present"]
+            assert type(sample["different_positions"]) is list and 1<=len(sample["different_positions"])<=8
+            assert all(type(number) is int and 0<=number<=7 for number in sample["different_positions"])
+            assert sample["different_positions"]==sorted(set(sample["different_positions"]))
+            assert all(sample[key] in {"none", "zero_bare", "zero_bigint_quoted", "now", "other", "not_applicable"} for key in ("actual_default_kind", "expected_default_kind"))
+        print("INBOX_NATIVE_PARITY_CENSUS "+json.dumps(value, sort_keys=True))
+        census_seen = True; failed = True
+    elif line.startswith(b"INBOX_NATIVE_COUNTS "):
         assert len(line)<=512
         value = json.loads(line.split(b" ", 1)[1])
         assert set(value)=={"suite", "tests", "failures", "errors", "skipped", "provider_attempts"}
