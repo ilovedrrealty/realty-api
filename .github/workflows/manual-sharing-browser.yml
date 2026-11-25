@@ -1,7 +1,7 @@
-name: Isolated manual sharing mobile wrapping acceptance
+name: Isolated manual sharing explicit CORS refusal acceptance
 on:
   push:
-    branches: [codex-ci-manual-sharing-mobile-v3-20261125]
+    branches: [codex-ci-manual-sharing-cors-v4-20261125]
 permissions:
   contents: read
 concurrency:

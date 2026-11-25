@@ -1,8 +1,8 @@
 {
-  "schema": "manual-sharing-mobile-wrapping-v3",
+  "schema": "manual-sharing-explicit-cors-v4",
   "status": "PREPARED_FOR_ROOT_FULL_AND_INDEPENDENT_COLD_REVIEW_NO_PUSH_OR_HOSTED_EXECUTION",
-  "operations_parent": "ade0c7446809c8c4f1f40e3d3ffafb4e3487b926",
-  "proposed_first_ref": "codex-ci-manual-sharing-mobile-v3-20261125",
+  "operations_parent": "1e78cac0ca8b1e11bf1ffd17f007475f576f04b8",
+  "proposed_first_ref": "codex-ci-manual-sharing-cors-v4-20261125",
   "frontend": {
     "commit": "9c66bc959ac7330aaf9c22dc646a65830dbf4566",
     "tree": "d6a07c211319ddf6ce270b483581a8b1013faadc",
@@ -76,7 +76,7 @@
     "privacy": "No raw body, contact fields, credentials, fixture secret, privateID, arbitrary URL/stack or downloaded image bytes in logs; artifacts[]"
   },
   "proof_scope": "Retain actual531/65 and standalone strict on dbad from45605073716/job139173748169 only after exact automated source guard proves two CSS-only additions reverse to dbad and all614 other blobs/tests remain unchanged. Never claim current full tests/standalone strict. Fresh DashboardVite/its actual typecheck and LandingNext required, then complete original20journeys44mobilegeometry/full106ledger/4views/8controls/PNG/clipboard/native/privacy. Native95 retained45588133254. No prior failure is treated as acceptance.",
-  "review_and_release": "Three-path ops successor off ade0c7 needs root FULL and independent cold plus exact source9c66 review/push before root first ops push. Original checker/driver/fixture byte-identical ade0c7; the failure-only numeric census remains binding, never success.",
+  "review_and_release": "Four-path ops successor off1e78 requires rootFULL and independentcold before root firstpush. Only one intentional failure response header changes; source9c66, checker/native fixture/driver actions/predicates/final20/44/full106/PNG/privacy gates otherwise exact unchanged. Full tests/standalone strict honestly retained as previous CSS-only guard; freshVite/Next and completebrowserAPIrequired.",
   "written_finite_browser_contract": {
     "journeys": 20,
     "geometry": 44,
@@ -162,12 +162,12 @@
   ],
   "local_checks": {
     "python_ast_units": 11,
-    "actual_readonly_frontend_composition_guard_native": 0,
-    "checker_driver_fixture_bytes_equal_parent": true,
-    "fresh_builds_required": true,
-    "original_browser_metrics_and_api_ledger_unchanged": true,
+    "browser_node_syntax_native": 0,
+    "driver_reversing_only_one_cors_failure_header_branch_equals_parent": true,
+    "checker_and_native_fixture_byte_identical": true,
+    "original_journeys_geometry_ledger_png_privacy_metrics_unchanged": true,
     "git_bash_runner_syntax_native": null,
-    "scope": "Pure AST/read-only Git sourceguard only; no application/browser/DB/native/build/install/provider/push. Existing parser controls retained because checker unchanged. Hosted bash-n required; no local Bash proof."
+    "scope": "Pure AST/Node/sourcebytes only; no new tests/build/application/browser/DB/install/provider/push. Hosted Bash syntax remains required; no local Bash proof."
   },
   "diagnostic_scope": "Failure-only on an unchanged viewport/control geometry predicate: at most one strict 12KiB census; scan at most2500 body elements, emit24 bounded rows with fixed tag/scope/source-known-class enums and integer width/left/right/client/scroll only plus known label/viewport totals. Never text, URL, ID, computed-style strings, attributes, source data or screenshot. The parser always marks a census asFAIL, rejects duplicate/unknown/wrong-mode/private/oversized/boolean-integer fields. Existing failure/ownframes remain binding. No extra click/read/write/route change, fixture byte-identical, original20/44/4views/8controls/PNG/provider/privacy predicates unchanged.",
   "prior_actual_failures": [
@@ -210,7 +210,23 @@
       "phase": "en_property_geometry_320",
       "reason": "VIEWPORT_OVERFLOW",
       "actual_census": "Existing listing-prose288px/client has451px scroll, expanding document320→467; share-scope offenders0. Mortgage value79px boxes have104–131px scroll inside clippedcard. FreshVite0/Next0,cleanup/artifacts[]; fulljourney/ledger correctlynotaccepted."
+    },
+    {
+      "operations": "1e78cac0ca8b1e11bf1ffd17f007475f576f04b8",
+      "run": 45608825711,
+      "job": 139186676254,
+      "status": "FAIL",
+      "phase": "en_guarded_photo_failure",
+      "reason": "TIMEOUT",
+      "scope": "Actual sequence reached guardedphoto failure after first property/preparedasset mobile geometry and no-photo PNG+caption. FreshVite0/Next0/sixexports; incomplete APIledger properlyfailed; cleanup/artifacts[]. No full20/44/ledger acceptance."
     }
   ],
-  "observed_source_correction": "Only existing listing-prose overflow-wrap:anywhere and exact mortgage result value class. Text wraps without clipping, formulas/data/rates/fetch/permissions/sharing behavior changes. Root authorized both numeric-DOM-proven defects; this successor tests them with original unmodified20journeys44geometry and every existing finite API/view/PNG/privacy check."
+  "observed_source_correction": "Only existing listing-prose overflow-wrap:anywhere and exact mortgage result value class. Text wraps without clipping, formulas/data/rates/fetch/permissions/sharing behavior changes. Root authorized both numeric-DOM-proven defects; this successor tests them with original unmodified20journeys44geometry and every existing finite API/view/PNG/privacy check.",
+  "fixture_cors_correction": {
+    "primary_source": "https://github.com/microsoft/playwright/blob/v1.64.1/packages/playwright-core/src/server/network.ts",
+    "function": "Route.fulfill/_maybeAddCorsHeaders atline440",
+    "proven_cause": "Pinned Playwright adds matching ACAO automatically if omitted on cross-origin fulfilled responses; the previous absent-header failurefixture became a valid response. The product correctly had no imageFailed result.",
+    "exact_change": "One else branch adds fixed mismatching ACAO https://cors-denied.example.invalid only in existing cors_failure mode. Valid * header, exact PNG/status/body/allcounters/actions/assertions remain unchanged. No actual destination request; response header only.",
+    "scope": "Harness-only correction; no productchange, delay, extra action, retry or failure suppression."
+  }
 }

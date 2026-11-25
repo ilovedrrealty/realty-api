@@ -94,6 +94,7 @@ async function contextFor(locale, actor = null, engine = browser, optional = fal
       }
       const headers = { 'content-type': 'image/png', 'content-length': String(PHOTO.length), 'cache-control': 'no-store' }
       if (imageModes.get(context) === 'valid') headers['access-control-allow-origin'] = '*'
+      else if (imageModes.get(context) === 'cors_failure') headers['access-control-allow-origin'] = 'https://cors-denied.example.invalid'
       return route.fulfill({ status: 200, headers, body: PHOTO })
     }
     if (![API, DASH, LANDING].includes(url.origin)) {
