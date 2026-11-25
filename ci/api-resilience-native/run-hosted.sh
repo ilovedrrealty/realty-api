@@ -4,7 +4,7 @@ umask 077
 die() { printf 'RESILIENCE_NATIVE_REFUSED %s\n' "$1" >&2; exit 1; }
 bounded() { timeout --kill-after=8s "$@"; }
 [[ $# == 4 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
-   ${GITHUB_REF:-} == refs/heads/codex-ci-api-resilience-native-20261125 && ${GITHUB_RUN_ATTEMPT:-} == 1 &&
+   ${GITHUB_REF:-} == refs/heads/codex-ci-api-resilience-native-v2-20261125 && ${GITHUB_RUN_ATTEMPT:-} == 1 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 ]] || die EXACT_HOSTED_EVENT_REQUIRED
 ops="$1"; application="$2"; baseline="$3"; recipe="$4"
@@ -17,14 +17,12 @@ done
 expected_operations=$(cat <<'EXACT_OPERATIONS'
 .github/workflows/api-resilience-native.yml
 ci/api-resilience-native/PLAN.json
-ci/api-resilience-native/blackhole-connect.py
-ci/api-resilience-native/check.py
 ci/api-resilience-native/run-hosted.sh
 ci/api-resilience-native/verify.py
 EXACT_OPERATIONS
 )
 [[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" &&
-   $(git -C "$ops" show -s --format=%P HEAD) == 236a1951e956d28ccb97dc5c8bb72f562383c444 &&
+   $(git -C "$ops" show -s --format=%P HEAD) == 2751d6023a303996d64b1b0bd638b201acee2485 &&
    $(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) == "$expected_operations" &&
    $(git -C "$application" rev-parse HEAD) == 07b2b7c762b129c5b6ea978299ba69e528e3189e &&
    $(git -C "$application" rev-parse 'HEAD^{tree}') == e51495372b2fefd7223a3dd227af1e505b57fa7f &&

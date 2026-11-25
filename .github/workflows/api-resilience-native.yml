@@ -1,7 +1,7 @@
 name: Isolated API connection resilience native acceptance
 on:
   push:
-    branches: [codex-ci-api-resilience-native-20261125]
+    branches: [codex-ci-api-resilience-native-v2-20261125]
 permissions:
   contents: read
 concurrency:

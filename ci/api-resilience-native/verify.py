@@ -161,8 +161,9 @@ def run():
         require(catalog.table_names(database) == tables and catalog.catalog(database, tables) == schema
             and catalog.snapshot(database, tables) == before and catalog.query(database,
             "SELECT version_num FROM alembic_version") == [(HEAD,)], "all_99_rows_catalog_sequences_unchanged_required")
-        require(catalog.query(database, "SELECT nspname FROM pg_namespace WHERE nspname LIKE 'pool_recovery_test_%'"
-            " OR nspname LIKE 'lead_delivery_test_%'") == [], "all_owned_test_schemas_removed_required")
+        require(catalog.query(database, "SELECT nspname FROM pg_namespace WHERE nspname LIKE %s"
+            " OR nspname LIKE %s", ("pool_recovery_test_%", "lead_delivery_test_%")) == [],
+            "all_owned_test_schemas_removed_required")
         require(catalog.query(database, "SELECT pg_postmaster_start_time()") == server_start,
             "unchanged_postmaster_start_required")
         require(not ATTEMPTS and len(captured.getvalue().encode()) <= 2 * 1024 * 1024, "zero_provider_bounded_capture_required")

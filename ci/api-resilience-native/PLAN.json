@@ -1,8 +1,8 @@
 {
   "schema": "api_resilience_owned_native_acceptance_v1",
   "status": "PREPARED_PENDING_ROOT_FULL_AND_RELEASE_COLD_REVIEW_NO_PUSH",
-  "operations_parent": "236a1951e956d28ccb97dc5c8bb72f562383c444",
-  "first_ref": "codex-ci-api-resilience-native-20261125",
+  "operations_parent": "2751d6023a303996d64b1b0bd638b201acee2485",
+  "first_ref": "codex-ci-api-resilience-native-v2-20261125",
   "backend": "07b2b7c762b129c5b6ea978299ba69e528e3189e",
   "backend_tree": "e51495372b2fefd7223a3dd227af1e505b57fa7f",
   "backend_parent": "80ce432c37e48a1d2c3f99e51274d079777fd6da",
@@ -38,7 +38,7 @@
   "operations_cases": 1,
   "total_cases": 68,
   "handshake": {
-    "case": "One separate child process opens an owned numericIPv4 loopback listening socket and silently holds one actual PostgreSQL startup packet. The exact production engine_options connect_timeout10 overrides URL connect_timeout0. Actual SQLAlchemy/libpq OperationalError must return after8\u201315s; no application query can run.",
+    "case": "One separate child process opens an owned numericIPv4 loopback listening socket and silently holds one actual PostgreSQL startup packet. The exact production engine_options connect_timeout10 overrides URL connect_timeout0. Actual SQLAlchemy/libpq OperationalError must return after8–15s; no application query can run.",
     "cleanup": "The non-daemon owned server thread closes socket and joins in finally; actual joined receipt required. Child invocation has25s subprocess timeout that kills/waits on failure, never abandons a worker thread. Whole native client900s gate remains.",
     "limitations": "One target startup-handshake bound only. No claim of DNS/failover cumulative bound, in-flight transaction rescue, automatic replay, TCPkeepalive hard deadline or universal query deadline."
   },
@@ -61,5 +61,22 @@
   },
   "failure_and_cleanup": "Exact four source AST inventories and executed4/3/53/7 counts, zero skips/expected failures/errors/provider attempts, one typed measured handshake receipt, native/client stoppedzero and notOOM. Marker-checked owned DB drop+absence, nonce-labeled containers/image and bounded owned scratch cleanup. No artifact upload. Root independently reads actual artifacts[].",
   "local_validation": "Actual bounded PASS: three Python ASTs, one embedded Python AST, PLAN JSON, actual current source AST inventories4/3/53/7, one valid and16 invalid strict receipt controls (native/client/timeout shape/threads/types/privacy/missing/duplicate/failure). No actual67 source tests or handshake run locally. Bash-n remains hosted gate. No local native/DB/Docker/build/install/provider actions.",
-  "production": "No production query/config/restart/helper adoption; no source change/push. Root full review and Release full cold review before first push."
+  "production": "No production query/config/restart/helper adoption; no source change/push. Root full review and Release full cold review before first push.",
+  "original_operations_parent": "236a1951e956d28ccb97dc5c8bb72f562383c444",
+  "previous_native_evidence": {
+    "run": 45582975778,
+    "job": 139097365253,
+    "status": "FAILED_NOT_ACCEPTED",
+    "all67_source_cases": "PASS",
+    "final_stage": "preservation",
+    "error_type": "IndexError",
+    "native_exit": 1,
+    "client_exit": 1,
+    "running": false,
+    "oom": false,
+    "database_removed": true,
+    "owned_cleanup": true,
+    "artifacts": []
+  },
+  "correction": "Inherited catalog.query always calls cursor.execute(statement, params), even an empty tuple. Pass both LIKE patterns as bound parameters instead of percent-containing SQL literals. This retains the exact original two-pattern schema absence predicate, all native/handshake/privacy/preservation/cleanup gates and product source unchanged. Full native68 is required again."
 }
