@@ -1,8 +1,8 @@
 {
   "schema": "backup_query_v3_native_acceptance_v1",
   "status": "PREPARED_PENDING_FULL_COLD_REVIEW_FREEZE_ROOT_FIRST_PUSH",
-  "operations_parent": "be0d5962292a7a473ea8db06271c7c79a57e3938",
-  "first_ref": "codex-ci-backup-query-v3-native-20261125",
+  "operations_parent": "ff02265b5e83af439ffebfbd24314fc625f59d8c",
+  "first_ref": "codex-ci-backup-query-v3-native-v2-20261125",
   "source_candidate_sha256": "15dfcfff1630e377fab399067efa249186f8c7aadb50ec1890b0213bd67e0768",
   "candidate_tests_sha256": "584eb158cb0a967a0010e1e7f8e4c0308e645b1a8bbbd40b542290994fc98dd4",
   "reference_v2_sha256": "b2dd42e123ffe718a0759dd9b9000e6e2e197b50c6ba6135801903ec28a05658",
@@ -80,5 +80,7 @@
     "https://www.postgresql.org/docs/17/queries-with.html",
     "https://docs.kernel.org/admin-guide/cgroup-v2.html",
     "https://docs.docker.com/engine/containers/resource_constraints/"
-  ]
+  ],
+  "original_operations_parent": "be0d5962292a7a473ea8db06271c7c79a57e3938",
+  "git_blob_hash_correction": "All eleven candidate/reference manifest pins independently recomputed from immutable Git LF blobs. Only table-name JSON pin differed from Windows CRLF; now a703b97ad659b3f41c36c4b7ab470fd74751d79c02c2f2a72b63911620e16eb0. Fixture itself, worker/checker/candidate/runtime/tests unchanged."
 }

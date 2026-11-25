@@ -7,7 +7,7 @@
   "candidate_files": {
     "candidate/make-daily-full-public-query-v3.py": "15dfcfff1630e377fab399067efa249186f8c7aadb50ec1890b0213bd67e0768",
     "candidate/test-query-v3.py": "584eb158cb0a967a0010e1e7f8e4c0308e645b1a8bbbd40b542290994fc98dd4",
-    "fixture-table-names.json": "896a9bccd9dd1d11f6a1b9f229ebc7d2d71fea5ad1a6551187b741d614be1079"
+    "fixture-table-names.json": "a703b97ad659b3f41c36c4b7ab470fd74751d79c02c2f2a72b63911620e16eb0"
   },
   "source_scope": "Public reviewed code only; no production records, captures, settings, keys or credentials. Inherited six frozen source copies stay unchanged."
 }

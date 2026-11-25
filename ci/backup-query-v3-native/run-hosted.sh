@@ -4,7 +4,7 @@ umask 077
 die() { printf 'BACKUP_V3_NATIVE_REFUSED %s\n' "$1" >&2; exit 1; }
 bounded() { timeout --kill-after=8s "$@"; }
 [[ $# == 2 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
-   ${GITHUB_REF:-} == refs/heads/codex-ci-backup-query-v3-native-20261125 && ${GITHUB_RUN_ATTEMPT:-} == 1 &&
+   ${GITHUB_REF:-} == refs/heads/codex-ci-backup-query-v3-native-v2-20261125 && ${GITHUB_RUN_ATTEMPT:-} == 1 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 ]] || die EXACT_HOSTED_EVENT_REQUIRED
 ops="$1"; recipe="$2"
@@ -14,17 +14,16 @@ for checkout in "$ops" "$recipe"; do
      ! -e "$checkout/.env" && ! -L "$checkout/.env" ]] || die CLEAN_SOURCE_REQUIRED
 done
 [[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" &&
-   $(git -C "$ops" show -s --format=%P HEAD) == be0d5962292a7a473ea8db06271c7c79a57e3938 &&
+   $(git -C "$ops" show -s --format=%P HEAD) == ff02265b5e83af439ffebfbd24314fc625f59d8c &&
    $(git -C "$recipe" rev-parse HEAD) == c193a925ba57ea2d67ea48c44e5262817885c8a2 ]] || die EXACT_PINS_REQUIRED
 python3 -I -B - "$ops" <<'PY_SCOPE'
 from pathlib import Path
 import subprocess,sys
 root=Path(sys.argv[1]);base='ci/backup-query-v3-native/'
 expected={'.github/workflows/backup-query-v3-native.yml',*(base+name for name in (
-    'PLAN.json','run-hosted.sh','verify-native.py','check-result.py','source-manifest.json','fixture-table-names.json',
-    'candidate/make-daily-full-public-query-v3.py','candidate/test-query-v3.py'))}
+    'PLAN.json','run-hosted.sh','source-manifest.json'))}
 changed=subprocess.check_output(['git','-C',str(root),'diff-tree','--no-commit-id','--name-status','-r','HEAD^','HEAD'],text=True).splitlines()
-assert len(expected)==9 and set(changed)=={'A\t'+name for name in expected}
+assert len(expected)==4 and set(changed)=={'M\t'+name for name in expected}
 assert not any(path.is_symlink() for path in (root/base).rglob('*'))
 PY_SCOPE
 tools="$ops/ci/backup-query-v3-native"
