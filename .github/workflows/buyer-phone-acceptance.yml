@@ -1,0 +1,70 @@
+name: Isolated buyer assignment and international Signup acceptance
+on:
+  push:
+    branches: [codex-ci-buyer-phone-acceptance-20261125]
+permissions:
+  contents: read
+concurrency:
+  group: buyer-phone-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  browser:
+    if: >-
+      github.repository == 'ilovedrrealty/realty-api' &&
+      github.event.repository.private == false &&
+      github.event.created == true && github.event.deleted == false &&
+      github.event.forced == false &&
+      github.event.before == '0000000000000000000000000000000000000000' &&
+      github.run_attempt == 1 && github.event.after == github.sha && github.workflow_sha == github.sha
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Read exact operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          path: build-ops
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Read exact reviewed frontend
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: ilovedrrealty/iLoveDRRealty
+          ref: a17197f2db143491950d33c5d0788b1f0c206b90
+          path: frontend-source
+          fetch-depth: 3
+          persist-credentials: false
+      - name: Read exact reviewed backend
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: d90a68cbfa07f42a02a841f7730999d96f40dc60
+          path: browser-backend
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Read unchanged dependency baseline
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 01695530df670a94ac28f8b3bf36cc34b5b7a942
+          path: current-platform
+          persist-credentials: false
+      - name: Read accepted Python dependency recipe
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: c193a925ba57ea2d67ea48c44e5262817885c8a2
+          path: migration-relay
+          persist-credentials: false
+      - name: Read accepted static Dashboard server
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 3007728fd67c5889a8373e41ff3ffa5cc50d839b
+          path: browser-relay
+          persist-credentials: false
+      - name: Run 492 contracts, strict builds, native 8 and real buyer Signup journeys
+        shell: bash
+        run: |
+          set -euo pipefail
+          runner="$GITHUB_WORKSPACE/build-ops/ci/buyer-phone/run-hosted.sh"
+          bash --noprofile --norc -n "$runner"
+          exec bash --noprofile --norc "$runner" "$GITHUB_WORKSPACE/build-ops" "$GITHUB_WORKSPACE/frontend-source" \
+            "$GITHUB_WORKSPACE/current-platform" "$GITHUB_WORKSPACE/browser-backend" "$GITHUB_WORKSPACE/migration-relay" \
+            "$GITHUB_WORKSPACE/browser-relay"

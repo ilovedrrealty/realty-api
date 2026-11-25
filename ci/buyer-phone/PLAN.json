@@ -1,0 +1,92 @@
+{
+  "schema": "urgent-buyer-phone-hosted-acceptance-v1",
+  "status": "SOURCE_PREPARED_PENDING_ROOT_FULL_AND_COLD_REVIEW_NO_PUSH",
+  "operations_parent": "354bb32b32358bc46a5c4c03c802bbd876ded086",
+  "proposed_first_ref": "codex-ci-buyer-phone-acceptance-20261125",
+  "backend": "d90a68cbfa07f42a02a841f7730999d96f40dc60",
+  "backend_tree": "df717faf477930d2a8a892be72b99d056553599a",
+  "backend_parent": "d9cfc94a1ebc45b8f3c391a69cbb8d0d8b25d26b",
+  "frontend": "a17197f2db143491950d33c5d0788b1f0c206b90",
+  "frontend_tree": "c0e5bdf25121799f25f062cbe19e81e5bb623643",
+  "frontend_parent": "25a6e00e1c7c58355a494a6124181c46dfe9e35f",
+  "frontend_review_base": "06d7f74965896ae23d47e7701fc1dbfd9815cc40",
+  "frontend_tracked_blobs": 588,
+  "source_scope": {
+    "backend_paths": [
+      "routes/admin.py",
+      "routes/auth.py",
+      "tests/test_admin_agent_assignments.py"
+    ],
+    "frontend_paths": [
+      "apps/dashboard/src/components/admin/UserDetailPanel.tsx",
+      "apps/landing/src/views/Signup.tsx",
+      "tests/signup-international-phone.test.cjs"
+    ],
+    "schema_models_requirements_manifests": "unchanged",
+    "published": false
+  },
+  "contracts": {
+    "expected_files": 61,
+    "expected_tests": 492,
+    "prior_accepted_base_tests": 489,
+    "new_phone_library_cases": 3,
+    "actual_current_full_acceptance": false,
+    "strict": "fresh actual Dashboard typecheck required",
+    "builds": "fresh exact Dashboard Vite plus actual Landing Next static export against owned API; read-only source identity checks after every phase"
+  },
+  "native": {
+    "module": "tests.test_admin_agent_assignments",
+    "expected_methods": 8,
+    "run": "Disposable child process, loopback PG17.6 only. Existing suite creates and drops its own admin_agent_test_UUID schema; fake-only settings, real JWT/TestClient/API/DB flows and provider transport refusal. Require all8PASS/0skip/errors/failures/provider attempts; public99 catalog/rows/sequences byte-unchanged and no remaining test schema.",
+    "coverage": "Buyer assign to eligible realtor/admin, authenticated own-agent readback, clear and unchanged buyer role/audit. Extended nonAdmin/ineligible/inactive/unverified/malformed ID and unsupported realtor target cases.",
+    "retained_38": "Exact predecessor Google38 proof retained; not rerun for unchanged professional paths."
+  },
+  "runtime": {
+    "baseline": "01695530df670a94ac28f8b3bf36cc34b5b7a942",
+    "python_dependency_recipe": "c193a925ba57ea2d67ea48c44e5262817885c8a2",
+    "static_dashboard_recipe": "3007728fd67c5889a8373e41ff3ffa5cc50d839b",
+    "accepted_group_fixture_sha256": "e0c5f0971c7c13ed47063907f01fa6ef01590b00fa2855eb1ecb16a38b99463e",
+    "postgres": "17.6/170006 pinned image; fresh nonce-marked DB, loopback-only trust auth inside network-none namespace",
+    "node": "24.22.1 image digest retained",
+    "browser": "pinned Playwright image + SRI-verified playwright-core1.64.1",
+    "api": 8918,
+    "dashboard": 4175,
+    "landing": 8917,
+    "pg": 55449
+  },
+  "browser": {
+    "normal_journeys": [
+      "Admin English normal Users menu selects new buyer, assigns active verified realtor, reloads and confirms actual saved selection; buyer reads own assigned agent and unchanged role",
+      "Admin Spanish normal Users menu sees assignment, explicitly clears it, reloads and confirms persisted blank; buyer readback null and role remains buyer",
+      "Actual exported Signup English types and pastes complete Argentina mobile including final digit, preserves DR/US input, rejects incomplete phone before any register request",
+      "Same actual Signup behavior in Spanish"
+    ],
+    "geometry_labels": [
+      "en_buyer_assignment",
+      "es_buyer_assignment",
+      "en_signup",
+      "es_signup"
+    ],
+    "widths": [
+      320,
+      390
+    ],
+    "expected_geometry": 8,
+    "successful_assignment_writes": 2,
+    "signup_requests": 0,
+    "external_writes": 0,
+    "page_errors": 0,
+    "all_non_owned_browser_requests": "aborted; pre-existing external asset/script attempts counted separately, no fetched provider content",
+    "presence": "Actual foreground/visible checks. Conditional owned-loopback navigator.onLine model only when nativefalse, matching accepted recipe; no visibility override.",
+    "signup_limits": "No valid signup submitted, no real account, verification email or customer record. Invalid submission exercises actual client validation and API confinement refuses every register request. Source and UI fields remain original, no fake signup form."
+  },
+  "fixture": {
+    "retained": "Original4 users/3leads/82owner contacts/85contacts/86sources/46private unowned profiles/CMS7/9accepted jobs/2bytea floorplans remain; original history not rewritten. Add one new synthetic unassigned buyer before baseline (5users total) because retained buyer has intentional historical lead fallback.",
+    "after": "All99 catalog/rows/sequences unchanged except exactly2 new actor-attributed assignment audit rows. All5 user rows return exactly to baseline after clear; no group/professional/publication changes.",
+    "credentials": "Generated per fixture, private0600 facts JSON at owned inode, never printed or uploaded; removed finally on success or failure.",
+    "confinement": "Only exact synthetic account logins and exactly2 sequenced Admin PUTs for the one synthetic buyer are accepted; every other mutation refused. Main app auth/roles/API remain real; no permissions mocked."
+  },
+  "cleanup": "Same nonce-label and exact-owned container/image cleanup as accepted recipe, read-only source mounts, private scratch ownership/path guards, raw facts inode cleanup, artifacts[]. No broad process killing or cleanup outside this job.",
+  "release": "Root owns source full/cold review and review refs first. Ops first absent-ref push only after approval of exact prepared source; never production push. Current Groups/Google d9/06d7 release remains first. Actual hosted result/canonical/live recovery required before marking these new fixes live.",
+  "local_checks": "PASS: Python fixture/checker/native-child AST, seven inline Python AST blocks, PLAN JSON, both Node syntax checks, finite parser positive/native-failure/bool/unknown-field refusal checks. No local Bash or bashlex is installed; the workflow runs bash -n before any runner execution. No local installs/full builds/browser/native DB; actual3phone leaf tests previouslyPASS. Native8/full492/browser8 remain unrun."
+}
