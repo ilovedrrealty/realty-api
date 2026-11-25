@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 umask 077
-die() { printf 'INBOX_NATIVE_REFUSED %s\n' "$1" >&2; exit 1; }
+die() { printf 'INBOX_RESILIENCE_NATIVE_REFUSED %s\n' "$1" >&2; exit 1; }
 bounded() { timeout --kill-after=8s "$@"; }
 [[ $# == 5 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
-   ${GITHUB_REF:-} == refs/heads/codex-ci-native-inbox-fixture-v5-20261125 && ${GITHUB_RUN_ATTEMPT:-} == 1 &&
+   ${GITHUB_REF:-} == refs/heads/codex-ci-inbox-resilience-native-20261125 && ${GITHUB_RUN_ATTEMPT:-} == 1 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 ]] || die EXACT_HOSTED_EVENT_REQUIRED
 ops="$1"; application="$2"; baseline="$3"; recipe="$4"; previous="$5"
@@ -17,17 +17,18 @@ done
 expected_operations=$(cat <<'EXACT_OPERATIONS'
 .github/workflows/native-inbox.yml
 ci/native-inbox/PLAN.json
+ci/native-inbox/blackhole-connect.py
+ci/native-inbox/check.py
 ci/native-inbox/run-hosted.sh
 ci/native-inbox/verify.py
 EXACT_OPERATIONS
 )
 [[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" &&
-   $(git -C "$ops" show -s --format=%P HEAD) == 93a99190d71b9a2b116755747156d98ad95f8da1 &&
+   $(git -C "$ops" show -s --format=%P HEAD) == c0b93c7dbf14e8aabee2bd17428b5c46e6eed4a9 &&
    $(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) == "$expected_operations" &&
-   $(git -C "$application" rev-parse HEAD) == 79e9311874e3ea91e45b990629965534d41bb5fa &&
-   $(git -C "$application" rev-parse 'HEAD^{tree}') == 657ee2a606d932953a18c63d8d0962dc4b03af27 &&
-   $(git -C "$application" rev-parse HEAD^) == b0ae4518c8ef5e9733fb87109a5370e287af2670 &&
-   $(git -C "$application" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) == tests/test_native_inbox.py &&
+   $(git -C "$application" rev-parse HEAD) == 17943ba1714673c51c43cdbb800106f91612f527 &&
+   $(git -C "$application" rev-parse 'HEAD^{tree}') == ff940a7b6e983d4c669202746d9676b4b82e9a06 &&
+   $(git -C "$application" show -s --format=%P HEAD) == "79e9311874e3ea91e45b990629965534d41bb5fa 07b2b7c762b129c5b6ea978299ba69e528e3189e" &&
    $(git -C "$baseline" rev-parse HEAD) == 01695530df670a94ac28f8b3bf36cc34b5b7a942 &&
    $(git -C "$baseline" rev-parse 'HEAD^{tree}') == e88ea0c57f9fac39545322532a5992d5a2927676 &&
    $(git -C "$recipe" rev-parse HEAD) == c193a925ba57ea2d67ea48c44e5262817885c8a2 &&
@@ -35,8 +36,37 @@ EXACT_OPERATIONS
    $(git -C "$previous" rev-parse 'HEAD^{tree}') == 11ab69db36eb30881e4f3086578201f584c4092d ]] || die EXACT_PINS_REQUIRED
 git -C "$application" cat-file -e '8957b18520d15dac503e0e4a5ce4b2455135d601^{commit}' || die SOURCE_BASE_COMMIT_REQUIRED
 git -C "$application" merge-base --is-ancestor 8957b18520d15dac503e0e4a5ce4b2455135d601 HEAD || die SOURCE_BASE_ANCESTOR_REQUIRED
-source_delta=$(git -C "$application" diff --name-only 8957b18520d15dac503e0e4a5ce4b2455135d601 HEAD -- requirements.txt database.py) || die SOURCE_DIFF_REQUIRED
-[[ -z "$source_delta" ]] || die UNCHANGED_DEPENDENCY_AND_CONNECTION_SOURCE_REQUIRED
+source_delta=$(git -C "$application" diff --name-only 8957b18520d15dac503e0e4a5ce4b2455135d601 HEAD -- requirements.txt) || die SOURCE_DIFF_REQUIRED
+[[ -z "$source_delta" ]] || die UNCHANGED_DEPENDENCY_SOURCE_REQUIRED
+python3 -I -B - "$application" "$ops" <<'PY_COMPOSITION'
+from hashlib import sha256
+from pathlib import Path
+import subprocess,sys
+application,ops=map(Path,sys.argv[1:])
+base='8957b18520d15dac503e0e4a5ce4b2455135d601'
+inbox='79e9311874e3ea91e45b990629965534d41bb5fa'
+resilience='07b2b7c762b129c5b6ea978299ba69e528e3189e'
+def git(*args):return subprocess.check_output(['git','-C',str(application),*args])
+def changed(commit):return set(git('diff','--name-only',base,commit).decode().splitlines())
+def tree(commit):
+    result={}
+    for line in git('ls-tree','-rz',commit).split(b'\0'):
+        if line:
+            value,name=line.split(b'\t',1);result[name.decode()]=value
+    return result
+expected_paths={'alembic/versions/d8f4c2a91e67_private_native_inbox.py','database.py','docs/NATIVE-INBOX-CONTRACT.md',
+    'main.py','models/__init__.py','models/native_inbox.py','routes/native_inbox.py','schemas/native_inbox.py',
+    'services/native_inbox.py','tests/test_database_connection_options.py','tests/test_database_pool_recovery.py',
+    'tests/test_native_inbox.py','utils/database_connection.py'}
+left,right=changed(inbox),changed(resilience)
+assert len(left)==9 and len(right)==4 and not left&right and left|right==expected_paths==changed('HEAD')
+expected=tree(base);a,b=tree(inbox),tree(resilience)
+for path in left:expected[path]=a[path]
+for path in right:expected[path]=b[path]
+assert len(expected)==365 and tree('HEAD')==expected
+blackhole=ops/'ci/native-inbox/blackhole-connect.py'
+assert blackhole.is_file() and not blackhole.is_symlink() and sha256(blackhole.read_bytes()).hexdigest()=='ac58eb70c25035379974859710d4c56e9d0226f98479dd192384943a372196ea'
+PY_COMPOSITION
 dockerfile="$recipe/ci/migration/services163.Dockerfile"
 printf '%s  %s\n' e546d8c5668b87ef28e604107bbb330e6f4b3873cf0208b4d24ca378bd0851f9 "$dockerfile" |
   sha256sum --check --status || die ACCEPTED_RECIPE_REQUIRED
@@ -78,7 +108,7 @@ cleanup() {
     bounded 40s rm --recursive --force --one-file-system -- "$state" || clean=0
   else clean=0; fi
   [[ "$clean" == 1 && ! -e "$state" ]] || die OWNED_CLEANUP_UNVERIFIED
-  printf 'INBOX_NATIVE_OWNED_CLEANUP operations=%s run=%s attempt=1\n' "$GITHUB_SHA" "$GITHUB_RUN_ID"
+  printf 'INBOX_RESILIENCE_NATIVE_OWNED_CLEANUP operations=%s run=%s attempt=1\n' "$GITHUB_SHA" "$GITHUB_RUN_ID"
   exit "$code"
 }
 trap cleanup EXIT
@@ -136,7 +166,7 @@ owned "$native" || die OWNED_NATIVE_CONTAINER_REQUIRED
 client_exit=0
 bounded 900s docker start --attach "$native" >"$state/native.log" 2>&1 || client_exit=$?
 read -r native_exit running oom <<<"$(bounded 15s docker inspect --format '{{.State.ExitCode}} {{.State.Running}} {{.State.OOMKilled}}' "$native")"
-printf 'INBOX_NATIVE_PROCESS client=%s native=%s running=%s oom=%s\n' "$client_exit" "$native_exit" "$running" "$oom"
+printf 'INBOX_RESILIENCE_NATIVE_PROCESS client=%s native=%s running=%s oom=%s\n' "$client_exit" "$native_exit" "$running" "$oom"
 checked=0
 python3 -I -B "$ops/ci/native-inbox/check.py" "$state/native.log" "$client_exit" "$native_exit" "$running" "$oom" || checked=$?
 # A failed native process is stopped before checking the exact owned DB marker.
@@ -154,6 +184,6 @@ bounded 10s docker exec "$pg" psql -X -h 127.0.0.1 -p 55449 -U postgres -d postg
   -c "DROP DATABASE $legacy_db" >/dev/null || die OWNED_LEGACY_DATABASE_DROP_REQUIRED
 [[ $(bounded 6s docker exec "$pg" psql -XAt -h 127.0.0.1 -p 55449 -U postgres -d postgres \
   -v ON_ERROR_STOP=1 -c "SELECT count(*) FROM pg_database WHERE datname='$legacy_db'") == 0 ]] || die OWNED_LEGACY_DATABASE_ABSENCE_REQUIRED
-printf 'INBOX_NATIVE_DATABASE_REMOVED canonical=true legacy=true\n'
+printf 'INBOX_RESILIENCE_NATIVE_DATABASE_REMOVED canonical=true legacy=true\n'
 [[ "$checked" == 0 && -z $(git -C "$application" status --porcelain=v1 --untracked-files=all) ]] || die EXACT_NATIVE_ACCEPTANCE_REQUIRED
-printf 'INBOX_NATIVE_HOSTED_RESULT operations=%s backend=79e9311874e3ea91e45b990629965534d41bb5fa tests=27 schema_tables=106 legacy_tables=99 new_private_tables=7 live_provider_calls=0 run=%s attempt=1\n' "$GITHUB_SHA" "$GITHUB_RUN_ID"
+printf 'INBOX_RESILIENCE_NATIVE_HOSTED_RESULT operations=%s backend=17943ba1714673c51c43cdbb800106f91612f527 tests=95 schema_tables=106 legacy_tables=99 new_private_tables=7 live_provider_calls=0 run=%s attempt=1\n' "$GITHUB_SHA" "$GITHUB_RUN_ID"

@@ -16,8 +16,8 @@ from urllib import request as urllib_request
 from unittest.mock import patch
 import unittest
 
-COMMIT = "79e9311874e3ea91e45b990629965534d41bb5fa"
-TREE = "657ee2a606d932953a18c63d8d0962dc4b03af27"
+COMMIT = "17943ba1714673c51c43cdbb800106f91612f527"
+TREE = "ff940a7b6e983d4c669202746d9676b4b82e9a06"
 PREVIOUS_COMMIT = "8957b18520d15dac503e0e4a5ce4b2455135d601"
 PREVIOUS_TREE = "11ab69db36eb30881e4f3086578201f584c4092d"
 OLD_HEAD, HEAD = "c4e2a7319b60", "d8f4c2a91e67"
@@ -29,7 +29,10 @@ GROUPS = ("network_groups", "network_group_memberships", "network_group_invite_l
           "network_group_comments", "network_group_media", "network_group_actions")
 EXPECTED_SEED = {"users": 4, "leads": 3, "owner_contacts": 82, "contacts": 85, "sources": 86,
                  "hidden_profiles": 46, "accepted_jobs": 9, "worker_rows": 1, "cms_version": 7, "floorplan_rows": 2}
-EXPECTED = {"status": "PASS", "tests": 27, "inbox_tests": 15, "legacy_award_tests": 5,
+EXPECTED = {"status": "PASS", "tests": 95, "resilience_source_tests": 67, "pure_options_tests": 4,
+    "owned_recovery_tests": 3, "delivery_regression_tests": 53, "customer_copy_tests": 7, "owned_handshake_cases": 1,
+    "full106_rows_sequences_catalog_unchanged": True, "all_owned_schemas_removed": True, "server_start_unchanged": True,
+    "tcp_query_deadline_claimed": False, "inbox_tests": 15, "legacy_award_tests": 5,
     "legacy_negotiation_tests": 5, "hosted_safety_tests": 2, "old_tables": 99, "schema_tables": 106,
     "model_tables": 105, "new_private_tables": 7, "owner_contacts_unchanged": 82,
     "private_profiles_unchanged": 46, "accepted_jobs_unchanged": 9, "cms_version_unchanged": 7,
@@ -151,7 +154,7 @@ def compare_models(catalog, database):
                         "different_positions": positions,
                         "actual_default_kind": defaults.get(a[5], "other") if section=="columns" and a else "not_applicable",
                         "expected_default_kind": defaults.get(b[5], "other") if section=="columns" and b else "not_applicable"})
-            print("INBOX_NATIVE_PARITY_CENSUS "+canonical(census), flush=True)
+            print("INBOX_RESILIENCE_NATIVE_PARITY_CENSUS "+canonical(census), flush=True)
         require(actual==expected, "new7_native_model_ddl_projection_required")
         connection.execute(text('DROP SCHEMA "'+schema+'" CASCADE'))
 
@@ -196,12 +199,12 @@ def run_suite(testcase, count, label, methods):
         unittest.defaultTestLoader.loadTestsFromTestCase(testcase).run(result)
     counts = {"suite": label, "tests": result.testsRun, "failures": len(result.failures), "errors": len(result.errors),
         "skipped": len(result.skipped), "provider_attempts": len(ATTEMPTS)}
-    print("INBOX_NATIVE_COUNTS "+canonical(counts), flush=True)
+    print("INBOX_RESILIENCE_NATIVE_COUNTS "+canonical(counts), flush=True)
     for case, _ in result.failures+result.errors:
         method = getattr(case, "_testMethodName", "fixture_setup_or_cleanup")
         if method not in methods:
             method = "fixture_setup_or_cleanup"
-        print("INBOX_NATIVE_FAILED_METHOD "+label+" "+method, flush=True)
+        print("INBOX_RESILIENCE_NATIVE_FAILED_METHOD "+label+" "+method, flush=True)
     require(len(captured.getvalue().encode())<=2*1024*1024, "bounded_native_output_required")
     require(result.testsRun==count and result.wasSuccessful() and not result.skipped
         and not result.expectedFailures and not result.unexpectedSuccesses and not ATTEMPTS,
@@ -262,6 +265,23 @@ def safety_case(inbox):
     return HostedSafetyTests
 
 
+def handshake():
+    result = subprocess.run(["/usr/local/bin/python", "-I", "-B", str(Path(__file__).with_name("blackhole-connect.py"))],
+        env=dict(os.environ), stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=25)
+    require(result.returncode == 0 and len(result.stdout) <= 2048 and not result.stderr,
+        "bounded_handshake_child_required")
+    lines = result.stdout.splitlines()
+    require(len(lines) == 1 and lines[0].startswith(b"RESILIENCE_BLACKHOLE_RESULT "), "one_handshake_receipt_required")
+    report = json.loads(lines[0].split(b" ", 1)[1])
+    expected = {"status": "PASS", "case": "owned_startup_handshake_timeout", "connect_timeout_seconds": 10,
+        "accepted_connections": 1, "startup_seen": True, "server_thread_joined": True,
+        "application_queries": 0, "external_provider_attempts": 0}
+    require(set(report) == set(expected) | {"elapsed_ms"} and type(report["elapsed_ms"]) is int
+        and 8000 <= report["elapsed_ms"] <= 15000 and all(report.get(k) == v and type(report.get(k)) is type(v)
+        for k, v in expected.items()), "actual_handshake_timeout_and_thread_cleanup_required")
+    print("RESILIENCE_BLACKHOLE_RESULT " + canonical(report), flush=True)
+
+
 def run():
     global STAGE
     logging.disable(logging.CRITICAL)
@@ -319,6 +339,9 @@ def run():
         require(catalog.table_names(database)==tuple(sorted(legacy+INBOX)) and catalog.query(database,
             "SELECT version_num FROM alembic_version")==[(HEAD,)] and catalog.catalog(database, tuple(sorted(legacy+INBOX)))==upgraded,
             "empty_reupgrade_full106_catalog_equal_required")
+        full_tables = tuple(sorted(legacy+INBOX))
+        full_before = catalog.snapshot(database, full_tables)
+        server_start = catalog.query(database, "SELECT pg_postmaster_start_time()")
         STAGE = "inbox15"
         os.environ["SEARCH_FILTER_TEST_DATABASE_URL"] = url
         sys.path.insert(0, str(application/"tests"))
@@ -328,6 +351,17 @@ def run():
         STAGE = "safety2"
         safety = safety_case(inbox)
         run_suite(safety, 2, "safety", {name for name in safety.__dict__ if name.startswith("test_")})
+        STAGE = "resilience67"
+        for module_name, classname, count, label in (
+            ("test_database_connection_options", "DatabaseConnectionOptionsTests", 4, "options"),
+            ("test_database_pool_recovery", "DatabasePoolRecoveryTests", 3, "recovery"),
+            ("test_lead_delivery", "LeadDeliveryTests", 53, "delivery"),
+            ("test_customer_messages", "CustomerMessageTests", 7, "customer_copy")):
+            methods = suite_inventory(application, module_name+".py", classname, count)
+            __import__(module_name)
+            run_suite(getattr(sys.modules[module_name], classname), count, label, methods)
+        STAGE = "owned_handshake"
+        handshake()
         STAGE = "legacy10"
         nonce = os.environ["ILDR_BROWSER_CI_NONCE"]
         legacy_db = "ildr_platform_test_20261025"
@@ -347,12 +381,18 @@ def run():
         old_preserved(catalog, database, legacy, before, schema)
         require(all(catalog.query(database, "SELECT count(*) FROM public."+name)==[(0,)] for name in INBOX),
             "canonical_private_inbox_rows_unmodified_required")
-        require(catalog.query(database, "SELECT nspname FROM pg_namespace WHERE nspname LIKE %s OR nspname LIKE %s",
-            ("native_inbox_test_%", "inbox_model_%"))==[],
+        require(catalog.query(database, "SELECT nspname FROM pg_namespace WHERE nspname LIKE %s OR nspname LIKE %s OR nspname LIKE %s OR nspname LIKE %s",
+            ("native_inbox_test_%", "inbox_model_%", "pool_recovery_test_%", "lead_delivery_test_%"))==[],
             "owned_unit_schemas_removed_required")
         privacy(catalog, database)
+        require(catalog.query(legacy_db, "SELECT nspname FROM pg_namespace WHERE nspname LIKE %s", ("service_test_%",))==[],
+            "legacy_owned_schemas_removed_required")
+        require(catalog.catalog(database, full_tables)==upgraded and catalog.snapshot(database, full_tables)==full_before,
+            "all106_rows_sequences_catalog_unchanged_required")
+        require(catalog.query(database, "SELECT pg_postmaster_start_time()")==server_start,
+            "unchanged_postmaster_start_required")
         require(not ATTEMPTS and len(captured.getvalue().encode())<=2*1024*1024, "zero_provider_bounded_capture_required")
-    print("INBOX_NATIVE_RESULT "+canonical(EXPECTED), flush=True)
+    print("INBOX_RESILIENCE_NATIVE_RESULT "+canonical(EXPECTED), flush=True)
 
 
 if __name__ == "__main__":
@@ -360,7 +400,7 @@ if __name__ == "__main__":
         run()
     except Exception as error:
         name = type(error).__name__
-        print("INBOX_NATIVE_FAILURE "+canonical({"stage": STAGE,
+        print("INBOX_RESILIENCE_NATIVE_FAILURE "+canonical({"stage": STAGE,
             "error_type": name if re.fullmatch(r"[A-Za-z][A-Za-z0-9_]{0,62}", name) else "UnhandledError",
             "reason": error.args[0] if isinstance(error, Failure) else "external_failure"}), flush=True)
         raise SystemExit(1) from None

@@ -1,14 +1,13 @@
 {
-  "schema": "native-inbox-owned-native-acceptance-v1",
+  "schema": "combined_inbox_resilience_owned_native_acceptance_v1",
   "status": "PREPARED_PENDING_ROOT_FULL_AND_COLD_REVIEW_NO_PUSH",
-  "operations_parent": "93a99190d71b9a2b116755747156d98ad95f8da1",
-  "proposed_first_ref": "codex-ci-native-inbox-fixture-v5-20261125",
-  "backend": "79e9311874e3ea91e45b990629965534d41bb5fa",
-  "backend_tree": "657ee2a606d932953a18c63d8d0962dc4b03af27",
-  "backend_parent": "b0ae4518c8ef5e9733fb87109a5370e287af2670",
+  "operations_parent": "c0b93c7dbf14e8aabee2bd17428b5c46e6eed4a9",
+  "proposed_first_ref": "codex-ci-inbox-resilience-native-20261125",
+  "backend": "17943ba1714673c51c43cdbb800106f91612f527",
+  "backend_tree": "ff940a7b6e983d4c669202746d9676b4b82e9a06",
   "previous_backend": "8957b18520d15dac503e0e4a5ce4b2455135d601",
   "previous_tree": "11ab69db36eb30881e4f3086578201f584c4092d",
-  "scope": "Backend native acceptance only. No frontend/browser or resilience-source acceptance claim.",
+  "scope": "Fresh combined native integration only: unchanged Inbox27 plus resilience67 source cases and one exact accepted owned handshake =95. No FE browser acceptance claim and no product/policy/source edit.",
   "migration": {
     "previous_head": "c4e2a7319b60",
     "head": "d8f4c2a91e67",
@@ -18,7 +17,7 @@
     "final_catalog_tables": 106,
     "final_modeled_tables": 105,
     "previous_start": "Actual previous8957 bootstrap+Alembic head in an isolated child process before any current-model import; exact source and current c4 head verified. No Inbox table can be precreated by current bootstrap.",
-    "forward": "Exact current79e931 Alembic upgrade head; accepted retained-record seed has82 protected owner contacts/46 private drafts/9 accepted outbox jobs/CMS7/2 floorplans. All99 old table definitions/ACL/triggers/enums/functions/data/sequences unchanged except alembic head and the one additive native guard function.",
+    "forward": "Exact combined17943ba Alembic upgrade head; accepted retained-record seed has82 protected owner contacts/46 private drafts/9 accepted outbox jobs/CMS7/2 floorplans. All99 old table definitions/ACL/triggers/enums/functions/data/sequences unchanged except alembic head and the one additive native guard function.",
     "new_model_parity": "Independent model materialization in a unique owned schema with checkfirst=False creates105 actual model tables. Compare new7 PostgreSQL-native column order/type/nullability/default/identity/generated fields, checks/PK/unique/FK definitions including deferral and indexes including validity/readiness; normalize only owned-schema/public qualification. Native Boolean deparser positive/negative controls retained. Legacy99 exact accepted catalog remains baseline, not a claim that old migration-only definitions equal raw model metadata.",
     "privacy": "Broad default client grants applied only in owned fixture before new migration; actual7 RLS=true/no policies/no PUBLIC/anon/authenticated/service_role privileges; seven active retention triggers; guard SECURITY INVOKER with no client execute rights.",
     "empty_rollback": "With canonical new Inbox tables empty, actual Alembic downgrade c4 retains exact old99 catalog/rows/sequences; actual reupgrade d8 restores identical full106 catalog.",
@@ -39,6 +38,35 @@
       "scope": "Borrow unchanged source fixture helpers only, explicit blocked-pair Admin intervention refusal and no extra entry/command/audit; actual64KiB/origin/rate-limit safety. Distinct from source15."
     },
     {
+      "label": "options",
+      "module": "test_database_connection_options",
+      "class": "DatabaseConnectionOptionsTests",
+      "actual_source_cases": 4
+    },
+    {
+      "label": "recovery",
+      "module": "test_database_pool_recovery",
+      "class": "DatabasePoolRecoveryTests",
+      "actual_source_cases": 3
+    },
+    {
+      "label": "delivery",
+      "module": "test_lead_delivery",
+      "class": "LeadDeliveryTests",
+      "actual_source_cases": 53
+    },
+    {
+      "label": "customer_copy",
+      "module": "test_customer_messages",
+      "class": "CustomerMessageTests",
+      "actual_source_cases": 7
+    },
+    {
+      "label": "handshake",
+      "operations_cases": 1,
+      "scope": "Exact accepted owned numericIPv4 loopback startup stall child; 10s options override unboundedURL, actual8\u201315s exception, one startup packet/noquery; finally joined non-daemon serverthread; child25s kills/waits on failure."
+    },
+    {
       "label": "legacy_award",
       "module": "test_service_conversation",
       "class": "PrivateAwardedServiceConversation",
@@ -51,7 +79,7 @@
       "actual_source_cases": 5
     }
   ],
-  "total_cases": 27,
+  "total_cases": 95,
   "legacy_fixture_database": "Existing source fixtures demand ildr_platform_test_20261025. A SECOND fresh DB with exactly that name is created in this nonce-owned network-none PG container, bound to a unique nonce comment; source guard is not replaced or patched. Canonical retained DB is separately nonce-named. Both DBs marker-checked/dropped and absence rechecked even on native failure.",
   "runtime": {
     "baseline": "01695530df670a94ac28f8b3bf36cc34b5b7a942",
@@ -64,53 +92,39 @@
     "isolation": "No network except private loopback namespace with PG17.6; env -i/empty provider keys/workers disabled, read-only source/ops mounts, bounded resources, HTTP/SMTP/Resend refusal counters. No host credentials or artifacts."
   },
   "cleanup": "Native process exit/running/OOM checked; both exact nonce-marked DBs dropped and absent; only current-run labeled containers/image and checked owned scratch deleted; read-only source clean. No production queries/providers/sends/accounts/role/settings/billing changes.",
-  "failure_gate": "27 exact executed cases, zero errors/failures/skips/provider attempts, four exact suite counts and all preservation flags. Native/client nonzero/timeout/OOM/running/missing/duplicate/wrong-type markers cannot pass. Only finite counts/known method/failure enum diagnostics, no raw exception SQL/private bodies/tokens/credentials.",
-  "local_validation": "Changed verifier AST and PLAN JSON valid; whitespace clean. Checker unchanged from5a125 and its actual1positive/17negative controls retained. New exact27 native cases UNRUN; no local heavy/DB/provider actions.",
+  "failure_gate": "Eight exact suite counts15/2/4/3/53/7/5/5 plus one strict typed measuredhandshake; sum95. Zero skips/errors/failures/providers, native/clientzero stopped/noOOM, all106/99preservation/parity/privacy/rollback. Missing/extra/duplicate markers, wrongtypes/threads/timeout/partialresults fail closed. Only bounded sourceowned method/enum diagnostics; no rawexception/SQL/privatevalues. Existing failure-only parity census stays alwaysfailed.",
+  "local_validation": "Actual strict checker1positive/35negative controls PASS; all7 unchanged source AST inventories92cases and2hostedsafety+1handshake total95 verified. Three Python ASTs/embedded requirements+compositionAST/PLAN checked. Actual extracted composition guard revalidated365Git mode/type/blobunion/exact13paths and acceptedhandshakeSHA with readonly Git only. Resultline909B below unchanged1536B bound. No95native/DB/Docker/build/browser/provider/push.",
   "original_operations_base": "236a1951e956d28ccb97dc5c8bb72f562383c444",
-  "source_guard_correction": "8957 base commit existence and ancestry explicitly checked. Source diff exit bound before empty-output comparison; missing/corrupt base cannot pass as an empty change set.",
-  "known_previous_failure": {
-    "run": 45576986188,
-    "job": 139077230517,
-    "commit": "22b5254d55710d128aae3b47f31278dc38e835bc",
-    "stage": "model_parity",
-    "reason": "new7_native_model_ddl_projection_required",
-    "native_cases_executed": 0,
-    "both_marked_databases_removed": true,
-    "owned_cleanup_verified": true,
-    "artifacts": []
+  "source_guard_correction": "8957 existence/ancestry and git diff status bound; requirements unchanged; database.py must exactly equal reviewed07b2 blob through full tree union. No source file/URL/environment setting is read from host credentials.",
+  "backend_parents": [
+    "79e9311874e3ea91e45b990629965534d41bb5fa",
+    "07b2b7c762b129c5b6ea978299ba69e528e3189e"
+  ],
+  "source_cases": 92,
+  "operations_cases": 3,
+  "composition_guard": "Exact two-parent merge17943ba plus source fetchdepth6. Independently rebuild all365Git mode/type/blob entries from8957 plus9reviewedInbox paths from79e and4reviewedresilience paths from07b2. Disjoint exact13pathinventory required; no unexpected source/dependency edit. Previous8957 checkout/source child bootstrap remains independently pinned.",
+  "handshake_provenance": {
+    "reviewed_ops": "ccf91697e4fa41468320c1db1ca81358c5bd3c20",
+    "path": "ci/api-resilience-native/blackhole-connect.py",
+    "copied_to": "ci/native-inbox/blackhole-connect.py",
+    "sha256": "ac58eb70c25035379974859710d4c56e9d0226f98479dd192384943a372196ea",
+    "bytes_unchanged": true,
+    "accepted_run": 45583875542,
+    "accepted_job": 139100395358,
+    "limitations": "Startup handshake for one numericIPv4 target only. No DNS/failover cumulative bound, universal query deadline, automatic application replay or abandonment of active workerthread claimed."
   },
-  "diagnostic_scope": "Previous diagnostic evidence remains immutable. Existing failure-only typed bounded census and strict projection equality are unchanged; no semantic default normalization or assertion exception is introduced.",
-  "confirmed_parity_evidence": {
-    "run": 45580165101,
-    "job": 139087912435,
-    "census": {
-      "columns": 1,
-      "constraints": 0,
-      "indexes": 0,
-      "table": "inbox_conversations",
-      "field": "last_sequence",
-      "different_positions": [
-        5
-      ],
-      "actual_default_kind": "zero_bare",
-      "expected_default_kind": "zero_bigint_quoted"
+  "combined_preservation": "Before all95cases capture full106catalog/rows/sequences and native serverstart after real emptyrollback/reupgrade. After all95 require exact106catalog/fullsnapshot/head d8 unchanged, original99baseline independently unchanged plus82owner46private9accepted/CMS7/floorplans2, canonical7Inbox rows still empty/private. NativeownedInbox/model/recovery/delivery schemas absent; legacy service schemas absent in secondownedDB; bothDBs markerchecked dropped/absence verified.",
+  "separate_accepted_proof": {
+    "inbox27": {
+      "source": "79e9311874e3ea91e45b990629965534d41bb5fa",
+      "run": 45585420421,
+      "job": 139105645606
     },
-    "result": "Failure/no source cases executed; bothDBs removed/noOOM/artifacts[]/cleanup independently checked by root.",
-    "source_correction": "Only models/native_inbox.py adds SQLAlchemytext import and explicittext(0) default to match unchanged bareDEFAULT0 migration. No equality/normalization/API/policy/test-count changes.",
-    "fetch_depth": 4
-  },
-  "confirmed_fixture_evidence": {
-    "run": 45582934680,
-    "job": 139097225755,
-    "actual_model_parity": "PASS",
-    "actual_source_inbox_cases": 15,
-    "errors": 1,
-    "failures": 0,
-    "skipped": 0,
-    "sole_error_method": "test_database_private_rls_model_parity_audit_atomicity_and_retention",
-    "source_defect": "Existing pg_policy count query requires :schema but db.execute omitted the mapping. Add only schema:self.schema; exact SQL predicate/assertion/test count unchanged.",
-    "final_preservation_correction": "Parameterize exactly the two existing LIKE patterns because inherited catalog.query executes with a params tuple; literal percent patterns otherwise cause the same proven IndexError as resilience. Schema absence predicate unchanged.",
-    "source_fetch_depth": 5,
-    "result": "Failure retained honestly; bothDBs removed/noOOM/artifacts[]/cleanup independently checked by root. No new acceptance claim."
+    "resilience68": {
+      "source": "07b2b7c762b129c5b6ea978299ba69e528e3189e",
+      "run": 45583875542,
+      "job": 139100395358
+    },
+    "claim": "Both separately accepted by root; newcombined95 must freshly pass, no native composition acceptance inferred."
   }
 }

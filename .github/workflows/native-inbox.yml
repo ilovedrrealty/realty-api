@@ -1,7 +1,7 @@
-name: Isolated native Inbox migration and authorization acceptance
+name: Isolated combined Inbox and connection native acceptance
 on:
   push:
-    branches: [codex-ci-native-inbox-fixture-v5-20261125]
+    branches: [codex-ci-inbox-resilience-native-20261125]
 permissions:
   contents: read
 concurrency:
@@ -29,9 +29,9 @@ jobs:
       - name: Read exact reviewed private Inbox API
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 79e9311874e3ea91e45b990629965534d41bb5fa
+          ref: 17943ba1714673c51c43cdbb800106f91612f527
           path: inbox-app
-          fetch-depth: 5
+          fetch-depth: 6
           persist-credentials: false
       - name: Read exact previous99-table source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -52,7 +52,7 @@ jobs:
           ref: c193a925ba57ea2d67ea48c44e5262817885c8a2
           path: inbox-recipe
           persist-credentials: false
-      - name: Run 27 native cases and verify full 99 to 106 migration
+      - name: Run 95 native cases and verify full 99 to 106 migration
         shell: bash
         run: |
           set -euo pipefail
