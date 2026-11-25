@@ -1,7 +1,7 @@
 name: Isolated buyer assignment and international Signup acceptance
 on:
   push:
-    branches: [codex-ci-buyer-phone-acceptance-20261125-v4]
+    branches: [codex-ci-buyer-phone-acceptance-20261125-v5]
 permissions:
   contents: read
 concurrency:
@@ -59,7 +59,7 @@ jobs:
           ref: 3007728fd67c5889a8373e41ff3ffa5cc50d839b
           path: browser-relay
           persist-credentials: false
-      - name: Retain 492 and strict, observe phone entry with unchanged acceptance
+      - name: Retain 492 and strict, enter phone after normal country selection
         shell: bash
         run: |
           set -euo pipefail

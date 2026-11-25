@@ -155,6 +155,11 @@ async function ownAgent(context, expected) {
   const me = await context.request.get(API + '/auth/me', { timeout: 15000 })
   check(me.status() === 200 && (await me.json()).role === 'buyer', 'BUYER_ROLE_PRESERVED_REQUIRED'); await me.dispose()
 }
+async function selectPhoneCountry(form, country) {
+  await form.getByRole('combobox', { name: 'Country selector', exact: true }).click()
+  await form.locator(`li[role="option"][data-country="${country}"]`).click()
+  await form.locator(`button[aria-label="Country selector"][data-country="${country}"]`).waitFor()
+}
 async function phoneJourney(copy, locale) {
   advance('signup_' + locale + '_document')
   const context = await contextFor(locale), page = await context.newPage()
@@ -162,6 +167,8 @@ async function phoneJourney(copy, locale) {
   const form = page.getByRole('heading', { name: copy.auth.signup.form.heading, exact: true }).locator('..')
   await form.getByRole('button', { name: copy.auth.signup.form.submit, exact: true }).waitFor()
   const phone = form.locator('input[type=tel]'), full = '+5491123456789'
+  advance('signup_' + locale + '_country')
+  await selectPhoneCountry(form, 'ar')
   advance('signup_' + locale + '_typing')
   await phone.fill('+54'); await phone.press('End'); await phone.pressSequentially('91123456789')
   const trace = await page.evaluate(() => {
@@ -169,7 +176,10 @@ async function phoneJourney(copy, locale) {
   })
   console.log('URGENT_SYNTHETIC_PHONE_TRACE ' + JSON.stringify({ locale, rows: trace }))
   check((await phone.inputValue()).replace(/\D/g, '') === full.slice(1), 'ARGENTINA_FINAL_TYPED_DIGIT_REQUIRED')
+  advance('signup_' + locale + '_paste_from_do')
+  await selectPhoneCountry(form, 'do')
   await phone.fill(full)
+  await form.locator('button[aria-label="Country selector"][data-country="ar"]').waitFor()
   check((await phone.inputValue()).replace(/\D/g, '') === full.slice(1), 'ARGENTINA_PASTE_REQUIRED')
   for (const number of ['+18095551234', '+12125551234']) {
     await phone.fill(number)
