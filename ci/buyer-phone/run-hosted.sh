@@ -6,7 +6,7 @@ die() { printf 'PLATFORM_BROWSER_REFUSED %s\n' "$1" >&2; exit 1; }
 bounded() { timeout --kill-after=8s "$@"; }
 [[ $# == 6 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 &&
-   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-buyer-phone-acceptance-20261125-v5 &&
+   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-buyer-phone-acceptance-20261125-v6 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die HOSTED_EXACT_EVENT_REQUIRED
 ops="$1"; frontend="$2"; baseline="$3"; backend="$4"; migration="$5"; relay="$6"
 [[ "$ops" == "$GITHUB_WORKSPACE/build-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-source" &&
@@ -19,12 +19,13 @@ for checkout in "$ops" "$frontend" "$baseline" "$backend" "$migration" "$relay";
 done
 expected_operations=$(cat <<'EXACT_OPERATIONS'
 .github/workflows/buyer-phone-acceptance.yml
+ci/buyer-phone/check-result.py
 ci/buyer-phone/run-hosted.sh
 ci/buyer-phone/run-urgent-browser.mjs
 EXACT_OPERATIONS
 )
 [[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" &&
-   $(git -C "$ops" rev-parse HEAD^) == 8caa497a67aaee67cffe67f4f5748e7660dc5d3d &&
+   $(git -C "$ops" rev-parse HEAD^) == 0d47df810d12dbcd88293a3a16200bdbc4d0e6b6 &&
    $(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) == "$expected_operations" ]] || die EXACT_OPERATIONS_REQUIRED
 backend_commit=d90a68cbfa07f42a02a841f7730999d96f40dc60
 backend_tree=df717faf477930d2a8a892be72b99d056553599a

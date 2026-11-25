@@ -9,9 +9,23 @@ assert mode in {'browser', 'api'} and re.fullmatch(r'[0-9]{1,3}', native)
 path = Path(filename)
 assert path.is_file() and path.stat().st_size <= 2 * 1024 * 1024
 failed = False
-presence, geometry, native_results, phone_traces = [], [], [], []
+presence, geometry, native_results, phone_traces, signup_census = [], [], [], [], []
 lines = path.read_bytes().splitlines()
 for line in lines:
+    if line.startswith(b'URGENT_SIGNUP_FAILURE_CENSUS '):
+        assert mode == 'browser' and len(line) <= 1024 and not signup_census
+        census = json.loads(line.split(b' ', 1)[1])
+        counts = {'phone_count', 'selector_count', 'listboxes', 'visible_listboxes', 'ar_options', 'visible_ar_options', 'do_options', 'visible_do_options'}
+        assert set(census) == counts | {'locale', 'country', 'digits', 'length', 'start', 'end', 'expanded', 'do_in_viewport', 'do_in_listbox'}
+        assert census['locale'] in {'en', 'es'} and re.fullmatch(r'[a-z]{2}|unknown', census['country'])
+        assert type(census['digits']) is str and re.fullmatch(r'[0-9]{0,20}', census['digits'])
+        assert all(type(census[key]) is int and 0 <= census[key] <= 99 for key in counts)
+        assert all(type(census[key]) is int for key in ('length', 'start', 'end'))
+        assert 0 <= census['length'] <= 64 and -1 <= census['start'] <= census['length'] and -1 <= census['end'] <= census['length']
+        assert census['expanded'] in {'true', 'false', 'missing'}
+        assert type(census['do_in_viewport']) is bool and type(census['do_in_listbox']) is bool
+        signup_census.append(census); failed = True
+        print('URGENT_SIGNUP_FAILURE_CENSUS ' + json.dumps(census, sort_keys=True))
     if line.startswith(b'URGENT_SYNTHETIC_PHONE_TRACE '):
         assert mode == 'browser' and len(line) <= 16384 and len(phone_traces) < 2
         trace = json.loads(line.split(b' ', 1)[1])

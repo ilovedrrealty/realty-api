@@ -4,7 +4,7 @@ import { chromium } from 'playwright-core'
 
 const API = 'http://127.0.0.1:8918', DASH = 'http://127.0.0.1:4175', LANDING = 'http://127.0.0.1:8917'
 const contexts = [], geometryChecks = [], presencePages = new WeakSet()
-let browser, timer, stage = 'fixture', pageErrors = 0, assignmentWrites = 0, signupRequests = 0
+let browser, timer, signupDiagnosticPage, signupDiagnosticLocale, stage = 'fixture', pageErrors = 0, assignmentWrites = 0, signupRequests = 0
 let externalWrites = 0, blockedExternal = 0, processFailed = false
 class Failure extends Error {}
 const check = (value, reason) => { if (!value) throw new Failure(reason) }
@@ -155,20 +155,24 @@ async function ownAgent(context, expected) {
   const me = await context.request.get(API + '/auth/me', { timeout: 15000 })
   check(me.status() === 200 && (await me.json()).role === 'buyer', 'BUYER_ROLE_PRESERVED_REQUIRED'); await me.dispose()
 }
-async function selectPhoneCountry(form, country) {
+async function selectPhoneCountry(form, country, label) {
+  advance(label + '_open')
   await form.getByRole('combobox', { name: 'Country selector', exact: true }).click()
+  advance(label + '_option')
   await form.locator(`li[role="option"][data-country="${country}"]`).click()
+  advance(label + '_selected')
   await form.locator(`button[aria-label="Country selector"][data-country="${country}"]`).waitFor()
 }
 async function phoneJourney(copy, locale) {
   advance('signup_' + locale + '_document')
   const context = await contextFor(locale), page = await context.newPage()
+  signupDiagnosticPage = page; signupDiagnosticLocale = locale
   await page.goto(LANDING + '/signup/', { waitUntil: 'domcontentloaded' }); await foreground(page)
   const form = page.getByRole('heading', { name: copy.auth.signup.form.heading, exact: true }).locator('..')
   await form.getByRole('button', { name: copy.auth.signup.form.submit, exact: true }).waitFor()
   const phone = form.locator('input[type=tel]'), full = '+5491123456789'
   advance('signup_' + locale + '_country')
-  await selectPhoneCountry(form, 'ar')
+  await selectPhoneCountry(form, 'ar', 'signup_' + locale + '_country_ar')
   advance('signup_' + locale + '_typing')
   await phone.fill('+54'); await phone.press('End'); await phone.pressSequentially('91123456789')
   const trace = await page.evaluate(() => {
@@ -177,9 +181,12 @@ async function phoneJourney(copy, locale) {
   console.log('URGENT_SYNTHETIC_PHONE_TRACE ' + JSON.stringify({ locale, rows: trace }))
   check((await phone.inputValue()).replace(/\D/g, '') === full.slice(1), 'ARGENTINA_FINAL_TYPED_DIGIT_REQUIRED')
   advance('signup_' + locale + '_paste_from_do')
-  await selectPhoneCountry(form, 'do')
+  await selectPhoneCountry(form, 'do', 'signup_' + locale + '_paste_do')
+  advance('signup_' + locale + '_paste_fill')
   await phone.fill(full)
+  advance('signup_' + locale + '_paste_ar')
   await form.locator('button[aria-label="Country selector"][data-country="ar"]').waitFor()
+  advance('signup_' + locale + '_paste_digits')
   check((await phone.inputValue()).replace(/\D/g, '') === full.slice(1), 'ARGENTINA_PASTE_REQUIRED')
   for (const number of ['+18095551234', '+12125551234']) {
     await phone.fill(number)
@@ -245,6 +252,33 @@ try {
     else if (cause?.name === 'TimeoutError') reason = 'LOCATOR_OR_EVENT_DEADLINE'
     else if (typeof cause?.message === 'string' && cause.message.includes('strict mode violation')) reason = 'STRICT_LOCATOR'
   } catch { /* Only finite source-owned classifications are emitted. */ }
+  if (signupDiagnosticPage && /^signup_(en|es)_/.test(stage)) {
+    try {
+      const census = await signupDiagnosticPage.evaluate(locale => {
+        const all = selector => [...document.querySelectorAll(selector)]
+        const visible = element => !!element && element.getClientRects().length > 0 && getComputedStyle(element).visibility !== 'hidden'
+        const phones = all('input[type=tel]'), selectors = all('button[aria-label="Country selector"]')
+        const listboxes = all('[role="listbox"]'), ar = all('li[role="option"][data-country="ar"]'), dr = all('li[role="option"][data-country="do"]')
+        const input = phones[0], selector = selectors[0], country = selector?.getAttribute('data-country') || 'unknown'
+        const expanded = selector?.getAttribute('aria-expanded') || 'missing'
+        const within = (child, parent) => visible(child) && !!parent && (() => {
+          const a = child.getBoundingClientRect(), b = parent.getBoundingClientRect()
+          return a.left >= b.left && a.right <= b.right && a.top >= b.top && a.bottom <= b.bottom
+        })()
+        const box = dr[0]?.getBoundingClientRect()
+        return { locale, country: /^[a-z]{2}$/.test(country) ? country : 'unknown',
+          digits: (input?.value || '').replace(/\D/g, '').slice(0, 20), length: input?.value.length || 0,
+          start: input?.selectionStart ?? -1, end: input?.selectionEnd ?? -1,
+          expanded: ['true', 'false'].includes(expanded) ? expanded : 'missing',
+          phone_count: phones.length, selector_count: selectors.length, listboxes: listboxes.length,
+          visible_listboxes: listboxes.filter(visible).length, ar_options: ar.length, visible_ar_options: ar.filter(visible).length,
+          do_options: dr.length, visible_do_options: dr.filter(visible).length,
+          do_in_viewport: !!box && visible(dr[0]) && box.left >= 0 && box.right <= innerWidth && box.top >= 0 && box.bottom <= innerHeight,
+          do_in_listbox: within(dr[0], dr[0]?.closest('[role="listbox"]')) }
+      }, signupDiagnosticLocale)
+      console.log('URGENT_SIGNUP_FAILURE_CENSUS ' + JSON.stringify(census))
+    } catch { /* The original classified failure and native exit remain authoritative. */ }
+  }
   console.log('URGENT_BROWSER_FAILURE ' + stage + ' ' + reason); process.exitCode = 1
 } finally {
   clearTimeout(timer)
