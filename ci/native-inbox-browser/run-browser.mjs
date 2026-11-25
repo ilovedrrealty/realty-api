@@ -285,6 +285,41 @@ async function manual(page, copy, actor, kind, body, locale) {
   await entry.getByText(copy.inbox.manual_record_notice, { exact: true }).waitFor()
   if (kind === 'manual_call') check((await entry.innerText()).includes(copy.inbox.outcomes.no_answer), 'REPORTED_CALL_OUTCOME_REQUIRED')
 }
+async function routeFetchFailureCensus(error, request, page, locale, path) {
+  const result = { stage: stage, locale, error_name: 'OtherError', transport_reason: 'other',
+    method_post: false, path_matches: false, origin_matches: false, json_content_type: false,
+    cookie_observed: false, cookie_present: false }
+  let deadline
+  try {
+    const name = typeof error?.name === 'string' ? error.name : ''
+    if (['Error', 'TypeError', 'TimeoutError', 'TargetClosedError', 'AbortError'].includes(name)) result.error_name = name
+    // Classify internally only. Never emit an exception message, URL, header,
+    // request/response body, cookie value, account or submission identifier.
+    const message = typeof error?.message === 'string' ? error.message : ''
+    const reasons = [
+      ['connection_reset', /ECONNRESET|socket hang up/i], ['connection_refused', /ECONNREFUSED/i],
+      ['timeout', /ETIMEDOUT|\btimeout\b|timed out/i], ['name_resolution', /ENOTFOUND|EAI_AGAIN/i],
+      ['invalid_header', /ERR_INVALID_HTTP_TOKEN|invalid (?:character in header|header|http token)/i],
+      ['closed', /target.*closed|request context disposed|context.*closed|browser.*closed/i],
+      ['tls_error', /EPROTO|certificate|\bTLS\b|\bSSL\b/i], ['redirect_error', /redirect/i],
+    ]
+    result.transport_reason = reasons.find(([, pattern]) => pattern.test(message))?.[0] ?? 'other'
+    const headers = request.headers()
+    result.method_post = request.method() === 'POST'
+    result.path_matches = request.url() === path
+    result.origin_matches = headers.origin === DASH
+    result.json_content_type = /^application\/json(?:\s*;|$)/i.test(headers['content-type'] ?? '')
+    const cookies = await Promise.race([
+      page.context().cookies(API),
+      new Promise((_, reject) => { deadline = setTimeout(() => reject(new Failure('FETCH_CENSUS_DEADLINE')), 2000) }),
+    ])
+    result.cookie_observed = true
+    result.cookie_present = cookies.some(cookie => cookie.name === 'ildr_token')
+  } catch { /* A failed local observation never changes the original rejection. */ }
+  finally { clearTimeout(deadline) }
+  try { writeSync(1, 'INBOX_BROWSER_FETCH_CENSUS ' + JSON.stringify(result) + '\n') }
+  catch { /* The original rejection is still rethrown. */ }
+}
 async function uncertain(page, context, copy, locale) {
   advance(locale + '_uncertain_committed_response')
   const thread = panel(page, copy.inbox.thread), path = API + '/messaging/conversations/' + facts.buyerThread + '/entries'
@@ -296,7 +331,9 @@ async function uncertain(page, context, copy, locale) {
     if (request.method() !== 'POST' || held) return route.continue()
     check(request.postDataJSON().body === facts.messages[locale].uncertain, 'EXACT_UNCERTAIN_BODY_REQUIRED')
     held = true
-    const response = await route.fetch({ timeout: 15000, maxRetries: 0, maxRedirects: 0 })
+    let response
+    try { response = await route.fetch({ timeout: 15000, maxRetries: 0, maxRedirects: 0 }) }
+    catch (error) { await routeFetchFailureCensus(error, request, page, locale, path); throw error }
     try { check(response.status() === 201 && noStore(response), 'ACTUAL_COMMITTED_ENTRY_REQUIRED'); actualReceipt = await response.json() }
     finally { await response.dispose() }
     recordCommand('buyer', actualReceipt)

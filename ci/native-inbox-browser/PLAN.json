@@ -1,8 +1,8 @@
 {
-  "schema": "native-inbox-browser-poll-window-v6",
+  "schema": "native-inbox-browser-fetch-diagnostic-v7",
   "status": "FROZEN_PENDING_ROOT_FULL_AND_INDEPENDENT_COLD_REVIEW_NO_PUSH",
-  "operations_parent": "b2f6da3b0c69ac4f7f349a58e1c88cd2cb4fcfbd",
-  "proposed_first_ref": "codex-ci-native-inbox-browser-poll-window-v6-20261125",
+  "operations_parent": "4ec5c56b099c74173ef6394f8dcb46dc19a5a46f",
+  "proposed_first_ref": "codex-ci-native-inbox-browser-fetch-diagnostic-v7-20261125",
   "frontend": "6015987e33375ed012996dddb27ca092532d793c",
   "frontend_tree": "dfc17c06f665e3088d56a0582013f5516ec6c106",
   "frontend_parent": "caa0e22f41f0d9d9d88e15fe7795dae776008408",
@@ -140,7 +140,7 @@
   "privacy": "Only bounded finite typed counts, approved source enums, source-owned line/column diagnostics; native failures, malformed/missing/duplicate receipts remain failures.",
   "cleanup": "Nonce label-checked containers/images/scratch; marker checked owned DB drop and absence; read-only source clean. No artifact upload; root independently verifies terminal/native/OOM/running/cleanup and actual artifacts[].",
   "release": "Root owns full source/ops plus independent review, first absent-ref push, actual hosted acceptance and later production changes. Preparation is not acceptance.",
-  "local_checks": "Actual Node syntax and Git diffcheck only for one-line response-bound change; inherited checker/fixture bytes unchanged. No app/browser/native/build/provider run.",
+  "local_checks": "Actual Node syntax0/checkerPythonAST1; strict baseline success1, validdiagnostics2bothalwaysfailed,28negativecontrols PASS inclduplicates/unknown/privatefields/type/size/stage/cookieconsistency. No browser/native/build/SQL/provider execution; unchangedfixture and originalsuccess/predicate paths retained.",
   "backend_parents": [
     "79e9311874e3ea91e45b990629965534d41bb5fa",
     "07b2b7c762b129c5b6ea978299ba69e528e3189e"
@@ -200,5 +200,27 @@
     "scope": "Only incomingWhileOlder response timeout45000ms. Original cursor/total/IDs/order assertions, Agentpost/foreground order,60sstage and600souter remain unchanged; no sleep/forcedevent/extraPOST/product change. A race is source-supported possibility, not directly observed proof.",
     "audit": "All other waitForResponse operations accompany explicit UIcommand/cursorchange/refresh/review renewal and use freshly mounted/refreshed read, not passive30s polling. Expiry explicitlyclicks refresh; no timeout change there.",
     "preserved": "Same179/601,523and95retainedproofs, freshVite/Next/UI, all32commands/70audit/24journeys/32geometry/fourDOMdenials/99and106preservation/provider0/cleanup."
+  },
+  "route_fetch_failure_diagnostic": {
+    "actual_failure": {
+      "run": 45599988430,
+      "job": 139156053983,
+      "operations": "4ec5c56b099c74173ef6394f8dcb46dc19a5a46f",
+      "stage": "en_uncertain_committed_response",
+      "reason": "PROCESS_ERROR",
+      "source_line": 299,
+      "statement": "await route.fetch({timeout:15000,maxRetries:0,maxRedirects:0})",
+      "log_utf8_bytes": 104385,
+      "log_sha256": "6775e0d145f3aac7da2d6462c316449b8b9afc10bca6faad556f8a71533a1cf1",
+      "actual": "FreshVite0/Next0/4exports; Englishpassivearrival/manualentries progressed to owned uncertainPOST fetch. Generic rejection reason suppressed; cause unproven. Failure/partialAPIledger/cleanup/artifacts[] preserved."
+    },
+    "scope": "Catch exactly owned route.fetch rejection, <=2s local cookie-jar observation, emit one <=1024B strict enum/bool marker, rethroworiginal. No rawerror messages/values/headers/cookies/body/IDs/URL/privateframeworkstate; no extraHTTPrequest.",
+    "fields": "Exactlocale/stage, finiteerror_name and transport_reason classifiedinternally; POST/exacttarget/ownedOrigin/JSONcontenttype equality booleans; cookiessafelyobserved/present flags from local context cookie jar. No nonexistentCSRFheader flag.",
+    "preserved": "Same15sroutefetch/maxRetries0/maxRedirects0, actualcommit201/noStore/abort/resolver/noresend/bodyimmutability predicates; all32commands70audit/24journeys32geometry/fourdenials and source179/601/523/95retainedproofs, freshbuilds/privacy/provider0/cleanup. Any diagnostic marker alwaysfails.",
+    "primary_implementation": [
+      "https://raw.githubusercontent.com/microsoft/playwright/v1.64.1/packages/playwright-core/src/client/network.ts",
+      "https://raw.githubusercontent.com/microsoft/playwright/v1.64.1/packages/playwright-core/src/client/fetch.ts"
+    ],
+    "source_checked": "Pinned route.fetch supports all supplied options and delegates context.request._innerFetch; response.dispose only disposes that response. Exact179 require_json_mutation checks Origin/JSON plus normal cookie auth; frontend axios has no separate CSRFheader. No product defect or transport correction claimed."
   }
 }

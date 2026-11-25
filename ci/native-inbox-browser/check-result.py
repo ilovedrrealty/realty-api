@@ -10,9 +10,17 @@ path = Path(filename)
 assert path.is_file() and not path.is_symlink() and path.stat().st_size <= 2 * 1024 * 1024
 lines = path.read_bytes().splitlines()
 failed = False
-presence, geometry, frames, sql_failures, input_census = [], [], [], [], []
+presence, geometry, frames, sql_failures, input_census, fetch_census = [], [], [], [], [], []
 labels = {f"{language}_{screen}" for language in ("en", "es") for screen in (
     "mine", "directory", "thread", "manual", "preferences", "blocks", "admin", "legacy")}
+def unique_fetch_pairs(items):
+    result = {}
+    for key, value in items:
+        assert key not in result
+        result[key] = value
+    return result
+
+
 for line in lines:
     if line.startswith(b"INBOX_LOOPBACK_STATE "):
         assert mode == "browser" and len(line) <= 256 and len(presence) < 10
@@ -65,6 +73,17 @@ for line in lines:
             else:
                 assert all(value[key] == -1 for key in lengths)
         print("INBOX_BROWSER_INPUT_CENSUS " + json.dumps(value, sort_keys=True)); input_census.append(value); failed = True
+    if line.startswith(b"INBOX_BROWSER_FETCH_CENSUS "):
+        assert mode == "browser" and len(line) <= 1024 and not fetch_census
+        value = json.loads(line.split(b" ", 1)[1], object_pairs_hook=unique_fetch_pairs)
+        booleans = {"method_post", "path_matches", "origin_matches", "json_content_type", "cookie_observed", "cookie_present"}
+        assert type(value) is dict and set(value) == {"stage", "locale", "error_name", "transport_reason"} | booleans
+        assert value["locale"] in {"en", "es"} and value["stage"] == value["locale"]+"_uncertain_committed_response"
+        assert value["error_name"] in {"Error", "TypeError", "TimeoutError", "TargetClosedError", "AbortError", "OtherError"}
+        assert value["transport_reason"] in {"connection_reset", "connection_refused", "timeout", "name_resolution", "invalid_header", "closed", "tls_error", "redirect_error", "other"}
+        assert all(type(value[key]) is bool for key in booleans)
+        assert not value["cookie_present"] or value["cookie_observed"]
+        print("INBOX_BROWSER_FETCH_CENSUS " + json.dumps(value, sort_keys=True)); fetch_census.append(value); failed = True
     if line.startswith(b"INBOX_FIXTURE_SQL_FAILURE "):
         assert mode == "api" and len(line) <= 512 and not sql_failures
         value = json.loads(line.split(b" ", 1)[1])
