@@ -96,7 +96,13 @@ async function openMenu(context, copy, item) {
   await button(page.locator('aside'), copy.nav[item]).click()
   advance(entry + '_ready')
   if (item === 'professional-profile') await page.getByLabel(copy.professionals.google.profile_url, { exact: true }).waitFor()
-  if (item === 'professionals') await page.getByLabel(copy.professionals.search, { exact: true }).waitFor()
+  if (item === 'professionals') {
+    const requestedSearch = page.getByLabel(copy.professionals.search, { exact: true })
+    const spanishSearch = page.getByLabel(diagnosticCopies.es.professionals.search, { exact: true })
+    await requestedSearch.or(spanishSearch).first().waitFor()
+    if (await spanishSearch.isVisible()) await language(page, diagnosticCopies.es)
+    await requestedSearch.waitFor()
+  }
   if (item === 'professional-directory') await page.getByRole('heading', { name: copy.professionals.directory_search.title, exact: true }).waitFor()
   return page
 }

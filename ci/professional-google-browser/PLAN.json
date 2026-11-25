@@ -8,8 +8,8 @@
   "frontend_tree": "e57b136e251493e2ee4b5b81e836843e8bd9e7a8",
   "frontend_parent": "7b9ec53f54141ef66b92466de4dde81f5bc0f69e",
   "frontend_tracked_blobs": 587,
-  "operations_parent": "dc8ed4b0f77b2beff866fbe2505a555f0a556164",
-  "proposed_first_ref": "codex-ci-professional-google-browser-20261125-v4",
+  "operations_parent": "354bb32b32358bc46a5c4c03c802bbd876ded086",
+  "proposed_first_ref": "codex-ci-professional-google-browser-20261125-v5",
   "contracts": {
     "files": 60,
     "tests": 489,
@@ -141,22 +141,36 @@
   "limits": "Synthetic profile updates only; no real contact import, account/invite/outreach, billing, keys, role/permission change, project/group mutation, stored ratings/reviews, provider message or production mutation. Native38 and the prior broad platform suites are retained, not repeated.",
   "publication": "Root reviews the exact six-file operations tree before any first absent-ref isolated push. This plan is not a production deployment authorization; root owns combined publication and recovery.",
   "prior_attempt": {
-    "run": 44300792892,
-    "job": 134789672844,
-    "operations": "dc8ed4b0f77b2beff866fbe2505a555f0a556164",
+    "run": 45542975757,
+    "job": 138965691386,
+    "operations": "354bb32b32358bc46a5c4c03c802bbd876ded086",
     "status": "ACTUAL_TERMINAL_FAILURE_READ",
     "fresh_vite": "PASS",
-    "browser": "entry_admin_ready LOCATOR_OR_EVENT_DEADLINE; nav click completed, unconditional search field absent from expected locator; no product or selector cause proven",
-    "valid_loopback_states": 3,
+    "browser": "entry_admin_ready LOCATOR_OR_EVENT_DEADLINE",
+    "census": {
+      "diagnostic_read_error": false,
+      "en_language": false,
+      "es_language": true,
+      "forms": 1,
+      "heading_en": 0,
+      "heading_es": 1,
+      "page_errors": 0,
+      "route_matches": true,
+      "search_inputs": 1,
+      "search_label_en": 0,
+      "search_label_es": 1,
+      "workspace_matches": true
+    },
     "owned_cleanup": "verified",
     "artifacts": [],
-    "receipt": "professional-google-browser-44300792892-v3-failure.json",
-    "receipt_sha256": "ec0c6e37e41fd949175dfb86f3a6f791f698a2ccea4605f8fa87d68f5579ad19",
-    "log_sha256": "268ac79d103635dfe1dfa171741632d6d549cd90b3cf8bd3120475452810783e"
+    "receipt": "professional-google-browser-45542975757-v4-failure.json",
+    "receipt_sha256": "219c6da246eb6ee30a3a76e3925f35ca1a8e039cec8c98f4e41b3e45e9a744ab",
+    "log_sha256": "9796f6e50d3f2cd5425d1f60da37025fe2077370dc2e452818c9cbca4caf25bf",
+    "diagnosis": "Actual Admin route/workspace/form correctly rendered in Spanish with zero page errors, while the driver expected English. No account-locale hydration or product-defect cause claimed."
   },
   "unchanged_ops_files": {
     "fixture": "41d1b798d22e93364b12e472a200bd3b86c85467318c8c27adf9d236a1ff2bb0",
-    "checker": "All success/API predicates byte-unchanged; adds only strictly allowlisted <=1024B failure census parser that always preserves failure."
+    "checker": "Identical Git blob to354bb32; all success/API/failure census predicates unchanged."
   },
   "retained_prior_attempt_v1": {
     "run": 44297510933,
@@ -233,5 +247,24 @@
     ],
     "privacy": "Boolean route/workspace/language matches and bounded0..999 counts only. No raw URL, text, DOM, labels, IDs, cookies, values or exceptions emitted.",
     "scope": "No changed locators, page actions, predicates, API fixture or39check calls; six/eight/ten acceptance unchanged. Actual full489/strict retained, fresh locked install/Vite only."
+  },
+  "retained_prior_attempt_v3": {
+    "run": 44300792892,
+    "job": 134789672844,
+    "operations": "dc8ed4b0f77b2beff866fbe2505a555f0a556164",
+    "status": "ACTUAL_TERMINAL_FAILURE_READ",
+    "fresh_vite": "PASS",
+    "browser": "entry_admin_ready LOCATOR_OR_EVENT_DEADLINE; nav click completed, unconditional search field absent from expected locator; no product or selector cause proven",
+    "valid_loopback_states": 3,
+    "owned_cleanup": "verified",
+    "artifacts": [],
+    "receipt": "professional-google-browser-44300792892-v3-failure.json",
+    "receipt_sha256": "ec0c6e37e41fd949175dfb86f3a6f791f698a2ccea4605f8fa87d68f5579ad19",
+    "log_sha256": "268ac79d103635dfe1dfa171741632d6d549cd90b3cf8bd3120475452810783e"
+  },
+  "admin_locale_precondition": {
+    "evidence": "V4 actual Admin Spanish form and search label, EN absent; route/workspace correct and pageErrors0",
+    "correction": "Await the actual English or Spanish search control. If Spanish is visible, use the existing normal Idioma sidebar toggle to select English, then require the original exact English search. Existing English-managed-editor check still runs before its planned normal switch to Spanish/geometry.",
+    "limits": "No forced localStorage, i18n injection, response mocking, fixture mutation, locator weakening or removed check. All39 checks/sixjourneys/eightgeometries/tenwrites unchanged; checker/fixture unchanged. Does not claim why initial Admin locale was Spanish."
   }
 }
