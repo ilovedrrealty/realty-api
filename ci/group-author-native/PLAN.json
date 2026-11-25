@@ -1,0 +1,72 @@
+{
+  "schema": "group_selected_author_native_plan_v1",
+  "status": "PREPARED_SOURCE_ONLY_ROOT_AND_COLD_REVIEW_REQUIRED",
+  "scope": "Fresh exact original134 on current Group-avatar source plus isolated current-schema GroupInput4 and SocialGroups24. No old22case/native99/c4 relabeling.",
+  "operations_parent": "c3034c78cb9d9960d14afc4752f30db431d17573",
+  "new_paths": 6,
+  "all389_inherited_tuples_immutable": true,
+  "source": {
+    "SOURCE": "6ef69b249c573eedaea962dad530eaed0a612b24",
+    "TREE": "f1ef617e51e0d8a900d9f4bfc15a559bf676276f"
+  },
+  "source_parent": "a75f9c26f3bceb14afcb6e1150e1b2a3d50fbada",
+  "source_tree": "f1ef617e51e0d8a900d9f4bfc15a559bf676276f",
+  "source_delta_paths": [
+    "routes/social_groups.py",
+    "services/social_groups.py",
+    "tests/test_social_groups.py"
+  ],
+  "source_blobs": 367,
+  "contract_sha256": "e37f33435f558b034e6fcda5739eec0864d812b2d2aa19625fbad47d007f0077",
+  "fresh_required": {
+    "original_profile_cases": 134,
+    "group_input_cases": 4,
+    "social_group_cases": 24,
+    "total": 162,
+    "original133_source_cases_plus_actual_handshake": true,
+    "profile_checker_exact_unchanged": true
+  },
+  "accepted_reference_only": {
+    "previous134_run": 45630574556,
+    "previous_source": "a75f9c26f3bceb14afcb6e1150e1b2a3d50fbada",
+    "previous134_not_substituted_for_current134": true
+  },
+  "adapter": {
+    "profile": "Read-only exact c303 verify.py loaded by SHA; only COMMIT/TREE retargeted to reviewed6ef; original run(),134 expectations, all assertions, handshakes and checker unchanged. Original134 genuinely rerun.",
+    "groups": "Separate client container/fresh Python process; DATABASE_URL and SOCIAL_GROUPS_FIXTURE=yes set before importing database/main/test_social_groups. Real bootstrap8957/c4\u2192179/d8\u21926ef/e8,106 catalog/105 modeled tables and exact current schema parity. All4+24 source tests and zero skips/providers required.",
+    "canonical_preservation": "Snapshot existing canonical profile106 rows/catalog/all sequence values+definitions/function security/server start before separate group bootstrap; exact equality after committed group tests. Native Inbox empty; canonical protections remain original134 proof.",
+    "disposal": "Group setUp commits users and actions; tearDown rollback/close is not row cleanup. Whole third nonce-marked DB removed only after stopped child and exact marker/absence checks. Canonical and legacy marked DBs also removed; labeled containers/image/scratch cleaned by inherited lifecycle."
+  },
+  "runtime": {
+    "unchanged_dependencies": true,
+    "same_accepted_Python_Postgres_recipe": true,
+    "loopback_only": true,
+    "per_client_memory_MiB": 1536,
+    "postgres_memory_MiB": 768,
+    "no_artifacts": true,
+    "provider_transports_fail_closed": true
+  },
+  "truth_limits": [
+    "Not a browser/full547/frontend test lane.",
+    "No production migrations/data/security/provider/billing changes.",
+    "No delivery or private file bytes claim from metadata-only Group avatar source cases.",
+    "Any process error,skip,wrong inventory,provider attempt,diagnostic marker,partial result or cleanup failure prevents acceptance."
+  ],
+  "local_checks": {
+    "status": "PASS_BOUNDED_SOURCE_AND_PARSER_ONLY",
+    "AST_units": [
+      "verify-profile.py",
+      "verify-groups.py",
+      "check.py",
+      "PY_COMPOSITION",
+      "PY_REQUIREMENTS"
+    ],
+    "readonly_current367_composition_guard_exit": 0,
+    "parser_positive": 1,
+    "parser_negative": 42,
+    "old389_tracked_files_unchanged": true,
+    "original134_checker_GitLF_SHA": "1c68fc3aea5965d500f749cf5327c39e00eb4f531213ad97e013d331f0986bd9",
+    "native_build_DB_application_execution": false,
+    "push": false
+  }
+}
