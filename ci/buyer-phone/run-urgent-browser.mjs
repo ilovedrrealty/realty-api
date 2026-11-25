@@ -155,13 +155,18 @@ async function ownAgent(context, expected) {
   const me = await context.request.get(API + '/auth/me', { timeout: 15000 })
   check(me.status() === 200 && (await me.json()).role === 'buyer', 'BUYER_ROLE_PRESERVED_REQUIRED'); await me.dispose()
 }
-async function selectPhoneCountry(form, country, label) {
+async function selectPhoneCountry(page, form, country, label) {
   advance(label + '_open')
   await form.getByRole('combobox', { name: 'Country selector', exact: true }).click()
   advance(label + '_option')
   await form.locator(`li[role="option"][data-country="${country}"]`).click()
   advance(label + '_selected')
   await form.locator(`button[aria-label="Country selector"][data-country="${country}"]`).waitFor()
+  advance(label + '_value')
+  await page.waitForFunction(expected => {
+    const selector = document.querySelector('button[aria-label="Country selector"]'), phone = document.querySelector('input[type=tel]')
+    return selector?.getAttribute('data-country') === expected.country && phone?.value.replace(/\D/g, '') === expected.dial
+  }, { country, dial: { ar: '54', do: '1' }[country] })
 }
 async function phoneJourney(copy, locale) {
   advance('signup_' + locale + '_document')
@@ -172,7 +177,7 @@ async function phoneJourney(copy, locale) {
   await form.getByRole('button', { name: copy.auth.signup.form.submit, exact: true }).waitFor()
   const phone = form.locator('input[type=tel]'), full = '+5491123456789'
   advance('signup_' + locale + '_country')
-  await selectPhoneCountry(form, 'ar', 'signup_' + locale + '_country_ar')
+  await selectPhoneCountry(page, form, 'ar', 'signup_' + locale + '_country_ar')
   advance('signup_' + locale + '_typing')
   await phone.fill('+54'); await phone.press('End'); await phone.pressSequentially('91123456789')
   const trace = await page.evaluate(() => {
@@ -181,7 +186,7 @@ async function phoneJourney(copy, locale) {
   console.log('URGENT_SYNTHETIC_PHONE_TRACE ' + JSON.stringify({ locale, rows: trace }))
   check((await phone.inputValue()).replace(/\D/g, '') === full.slice(1), 'ARGENTINA_FINAL_TYPED_DIGIT_REQUIRED')
   advance('signup_' + locale + '_paste_from_do')
-  await selectPhoneCountry(form, 'do', 'signup_' + locale + '_paste_do')
+  await selectPhoneCountry(page, form, 'do', 'signup_' + locale + '_paste_do')
   advance('signup_' + locale + '_paste_fill')
   await phone.fill(full)
   advance('signup_' + locale + '_paste_ar')
