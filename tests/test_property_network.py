@@ -68,6 +68,13 @@ class PropertyNetworkRoutes(unittest.TestCase):
         with cls.engine.begin() as connection:
             migration.op = Operations(MigrationContext.configure(connection))
             migration.upgrade()
+        path = Path(__file__).resolve().parents[1] / "alembic/versions/e8b5a3d1f907_private_profile_visuals.py"
+        spec = importlib.util.spec_from_file_location("profile_visual_migration_test", path)
+        visual_migration = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(visual_migration)
+        with cls.engine.begin() as connection:
+            visual_migration.op = Operations(MigrationContext.configure(connection))
+            visual_migration.upgrade()
         app = FastAPI()
         app.include_router(property_network.router)
         app.include_router(property_management.router)
@@ -408,6 +415,133 @@ class PropertyNetworkRoutes(unittest.TestCase):
         self.assertEqual(self.client.put("/property-network/me/profile", headers={"x-test-role": "owner", "cookie": "ildr_token=synthetic"}, json={}).status_code, 403)
         big = self.client.post("/property-network/projects", headers={"x-test-role": "owner", "Authorization": "Bearer synthetic", "content-type": "application/json"}, content=b" " * 65537)
         self.assertEqual(big.status_code, 413)
+
+
+    def profile_photo(self, role="owner", kind="avatar"):
+        result = self.client.post("/property-network/me/profile/media",
+            headers={"x-test-role": role, "Authorization": "Bearer synthetic-only"},
+            files={"file": ("chosen.png", photo(), "image/png")}, data={"kind": kind})
+        self.assertEqual(result.status_code, 201, result.text)
+        self.assertEqual(set(result.json()), {"id", "url", "content_type", "bytes", "sha256", "width", "height"})
+        return result.json()
+
+    def test_profile_visuals_never_copy_account_avatar_or_identity(self):
+        with Session(self.engine) as db:
+            db.get(User, self.ids["owner"]).avatar_url = "https://identity.example.invalid/account-photo.png"
+            db.commit()
+        profile = self.request("GET", "/me/profile").json()
+        self.assertIsNone(profile["avatar_media_id"])
+        self.assertIsNone(profile["cover_media_id"])
+        self.profile()
+        visible = self.request("GET", f"/profiles/{self.codes['owner']}", "outsider").json()
+        self.assertIsNone(visible["avatar_media_id"])
+        for field in ("avatar_url", "email", "phone", "google_id", "user_id"):
+            self.assertNotIn(field, visible)
+        with Session(self.engine) as db:
+            self.assertEqual(db.query(ProfessionalProfile).count(), 46)
+            self.assertTrue(all(row.listing_status == "hidden" and row.published_data is None for row in db.query(ProfessionalProfile)))
+
+    def test_profile_visual_first_save_preview_replace_remove_and_old_client_omission(self):
+        avatar, cover = self.profile_photo(), self.profile_photo(kind="cover")
+        self.assertEqual(self.request("GET", avatar["url"].removeprefix("/property-network"), "outsider").status_code, 404)
+        saved = self.profile(avatar_media_id=avatar["id"], cover_media_id=cover["id"])
+        self.assertEqual((saved["avatar_media_id"], saved["cover_media_id"]), (avatar["id"], cover["id"]))
+        retained = self.profile(status_text="Text-only older client")
+        self.assertEqual((retained["avatar_media_id"], retained["cover_media_id"]), (avatar["id"], cover["id"]))
+        replacement = self.profile_photo()
+        self.profile(avatar_media_id=replacement["id"], cover_media_id=None)
+        for old in (avatar, cover):
+            self.assertEqual(self.request("GET", old["url"].removeprefix("/property-network"), "outsider").status_code, 404)
+        current = self.request("GET", replacement["url"].removeprefix("/property-network"), "outsider")
+        self.assertEqual(current.status_code, 200)
+        self.assertEqual(current.headers["cache-control"], "no-store")
+        stale = self.request("PUT", "/me/profile", payload={"expected_version": saved["version"], "display_name": "owner", "avatar_media_id": None})
+        self.assertEqual(stale.status_code, 409)
+
+    def test_profile_visual_selection_refuses_foreign_project_wall_and_wrong_kind(self):
+        self.profile()
+        project = self.project()
+        photos = [self.profile_photo("other"), self.upload(project=project), self.upload(), self.profile_photo(kind="cover")]
+        for image in photos:
+            version = self.request("GET", "/me/profile").json()["version"]
+            result = self.request("PUT", "/me/profile", payload={"expected_version": version, "display_name": "owner", "avatar_media_id": image["id"]})
+            self.assertEqual(result.status_code, 422)
+        selected = self.profile_photo()
+        self.assertEqual(self.request("POST", f"/profiles/{self.codes['owner']}/posts", payload={
+            "submission_id": str(uuid4()), "body": "No profile-photo promotion", "media_ids": [selected["id"]]}).status_code, 422)
+
+    def test_profile_visual_reads_follow_current_visibility_blocks_and_selection(self):
+        image = self.profile_photo()
+        self.profile(avatar_media_id=image["id"])
+        path = image["url"].removeprefix("/property-network")
+        self.assertEqual(self.request("GET", path, "outsider").status_code, 200)
+        self.assertEqual(self.request("GET", path, "admin").status_code, 200)
+        self.request("PUT", f"/me/blocks/{self.codes['outsider']}", payload={"blocked": True})
+        self.assertEqual(self.request("GET", path, "outsider").status_code, 404)
+        self.profile(visibility="private")
+        self.assertEqual(self.request("GET", path, "pro").status_code, 404)
+        self.assertEqual(self.request("GET", path).status_code, 200)
+        self.profile(avatar_media_id=None)
+        self.assertEqual(self.request("GET", path, "admin").status_code, 404)
+        self.assertEqual(self.request("GET", path).status_code, 200)
+
+    def test_actual_profile_visual_guard_blocks_rebinding_and_project_promotion(self):
+        avatar = self.profile_photo()
+        self.profile(avatar_media_id=avatar["id"])
+        project_photo = self.upload(project=self.project())
+        for query, params in (
+            ("UPDATE network_media SET profile_kind='cover' WHERE id=:id", {"id": avatar["id"]}),
+            ("UPDATE social_network_profiles SET cover_media_id=:id WHERE user_id=:owner", {"id": project_photo["id"], "owner": self.ids["owner"]}),
+        ):
+            with self.assertRaises(IntegrityError), self.engine.begin() as connection:
+                connection.execute(text(query), params)
+
+    def shared_profile_projects(self):
+        self.profile("pro")
+        shared = self.project()
+        self.assign(shared, "pro")
+        private = self.project("other", self.other_listing)
+        self.request("POST", f"/projects/{private['id']}/members", "other", {
+            "expected_version": private["version"], "user_code": self.codes["pro"], "role": "professional"})
+        return shared, private
+
+    def test_profile_projects_intersect_viewer_and_target_current_assignment(self):
+        shared, private = self.shared_profile_projects()
+        path = f"/profiles/{self.codes['pro']}/projects"
+        own = self.request("GET", path, "pro").json()
+        self.assertEqual({item["id"] for item in own["items"]}, {shared["id"], private["id"]})
+        owner = self.request("GET", path).json()
+        self.assertEqual([item["id"] for item in owner["items"]], [shared["id"]])
+        self.assertEqual(self.request("GET", path, "outsider").json()["items"], [])
+        current = self.request("GET", f"/projects/{shared['id']}").json()
+        self.request("POST", f"/projects/{shared['id']}/members/{self.codes['pro']}/revoke", payload={"expected_version": current["version"]})
+        self.assertEqual(self.request("GET", path).json()["items"], [])
+        self.assertEqual(self.request("GET", f"/projects/{shared['id']}").status_code, 200)
+
+    def test_profile_history_intersection_and_profile_privacy_do_not_grant_access(self):
+        shared, private = self.shared_profile_projects()
+        visible, _ = self.update(shared)
+        self.update(private, "other", body="Different owner's private history")
+        path = f"/profiles/{self.codes['pro']}/history"
+        result = self.request("GET", path).json()
+        self.assertEqual([item["id"] for item in result["items"]], [visible["id"]])
+        self.assertEqual(self.request("GET", path, "outsider").json()["items"], [])
+        self.profile("pro", visibility="private")
+        self.assertEqual(self.request("GET", path).status_code, 404)
+        self.assertEqual(self.request("GET", f"/projects/{shared['id']}").status_code, 200)
+
+    def test_profile_photo_purpose_upload_auth_and_current_profile_block_apply(self):
+        for role in ("suspended", "unverified"):
+            result = self.client.post("/property-network/me/profile/media", headers={"x-test-role": role},
+                files={"file": ("chosen.png", photo(), "image/png")}, data={"kind": "avatar"})
+            self.assertEqual(result.status_code, 403)
+        result = self.client.post("/property-network/me/profile/media", headers={"x-test-role": "owner"},
+            files={"file": ("chosen.png", photo(), "image/png")}, data={"kind": "project"})
+        self.assertEqual(result.status_code, 422)
+        shared, _ = self.shared_profile_projects()
+        self.request("PUT", f"/me/blocks/{self.codes['pro']}", payload={"blocked": True})
+        self.assertEqual(self.request("GET", f"/profiles/{self.codes['pro']}/projects").status_code, 404)
+        self.assertEqual(self.request("GET", f"/projects/{shared['id']}").status_code, 200)
 
 
 class PrivateImageContracts(unittest.TestCase):

@@ -138,9 +138,13 @@ class SocialNetworkProfile(Base):
     wall_policy = Column(Text, nullable=False, default="own_only")
     comments_enabled = Column(Boolean, nullable=False, default=True)
     version = Column(Integer, nullable=False, default=1)
+    avatar_media_id = Column(UUID(as_uuid=True), ForeignKey("network_media.id", ondelete="RESTRICT"))
+    cover_media_id = Column(UUID(as_uuid=True), ForeignKey("network_media.id", ondelete="RESTRICT"))
     __table_args__ = (CheckConstraint("visibility IN ('private','members')", name="ck_network_profile_visibility"),
                      CheckConstraint("wall_policy IN ('own_only','approval_required')", name="ck_network_wall_policy"),
-                     CheckConstraint("version >= 1", name="ck_network_profile_version"))
+                       CheckConstraint("version >= 1", name="ck_network_profile_version"),
+                       CheckConstraint("avatar_media_id IS NULL OR cover_media_id IS NULL OR avatar_media_id <> cover_media_id",
+                                       name="ck_network_profile_visuals_distinct"))
 
 
 class NetworkPost(Base):
@@ -191,9 +195,18 @@ class NetworkMedia(Base):
     width = Column(Integer, nullable=False)
     height = Column(Integer, nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())
+    # Deliberately uploaded profile visuals; never inferred from account/project photos.
+    profile_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"))
+    profile_kind = Column(Text)
     __table_args__ = (CheckConstraint("NOT (update_id IS NOT NULL AND post_id IS NOT NULL)", name="ck_network_media_one_binding"),
                      CheckConstraint("byte_count > 0 AND byte_count <= 5242880", name="ck_network_media_size"),
-                     CheckConstraint("width > 0 AND height > 0", name="ck_network_media_dimensions"))
+                       CheckConstraint("width > 0 AND height > 0", name="ck_network_media_dimensions"),
+                       CheckConstraint("(profile_user_id IS NULL AND profile_kind IS NULL) OR "
+                                       "(profile_user_id IS NOT NULL AND profile_kind IS NOT NULL AND "
+                                       "profile_user_id = uploader_id AND profile_kind IN ('avatar','cover') AND "
+                                       "project_id IS NULL AND update_id IS NULL AND post_id IS NULL)",
+                                       name="ck_network_media_profile_scope"),
+                       Index("ix_network_media_profile_user", "profile_user_id", "profile_kind"))
 
 
 class NetworkAudit(Base):

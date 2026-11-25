@@ -135,6 +135,9 @@ class ProfileWrite(Input):
     visibility: Literal["private", "members"] = "private"
     wall_policy: Literal["own_only", "approval_required"] = "own_only"
     comments_enabled: StrictBool = True
+    # Omission preserves existing choices for compatible older clients; null removes.
+    avatar_media_id: UUID | None = None
+    cover_media_id: UUID | None = None
 
 
 class PostWrite(Input):

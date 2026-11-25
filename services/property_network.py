@@ -390,7 +390,7 @@ def media_for_attachment(db, user, identities, project_id):
     result = []
     for identity in identities:
         row = db.query(Media).filter(Media.id == identity).with_for_update().first()
-        if row is None or row.uploader_id != user.id or row.project_id != project_id or row.update_id or row.post_id:
+        if row is None or row.uploader_id != user.id or row.project_id != project_id or row.update_id or row.post_id or row.profile_user_id is not None:
             raise HTTPException(422, "Choose your own unattached photos for this context")
         result.append(row)
     return result
@@ -460,7 +460,19 @@ def profile_view(user, target, row):
             "bio": row.bio if row else "", "status_text": row.status_text if row else "",
             "visibility": row.visibility if row else "private", "wall_policy": row.wall_policy if row else "own_only",
             "comments_enabled": row.comments_enabled if row else True, "version": row.version if row else 0,
-            "can_edit": user.id == target.id}
+            "can_edit": user.id == target.id,
+            "avatar_media_id": str(row.avatar_media_id) if row and row.avatar_media_id else None,
+            "cover_media_id": str(row.cover_media_id) if row and row.cover_media_id else None}
+
+
+def profile_visual(db, user, identity, kind):
+    if identity is None:
+        return None
+    photo = db.query(Media).filter(Media.id == identity).with_for_update().first()
+    if (photo is None or photo.uploader_id != user.id or photo.profile_user_id != user.id
+            or photo.profile_kind != kind or photo.project_id or photo.update_id or photo.post_id):
+        raise HTTPException(422, "Choose a photo uploaded for this profile and purpose")
+    return photo.id
 
 
 def save_profile(db, user, body):
@@ -477,6 +489,12 @@ def save_profile(db, user, body):
         db.add(row)
     for key in ("display_name", "bio", "status_text", "visibility", "wall_policy", "comments_enabled"):
         setattr(row, key, getattr(body, key))
+    # A first-save row still has version0 until all supplied choices validate.
+    with db.no_autoflush:
+        for kind in ("avatar", "cover"):
+            key = kind + "_media_id"
+            if key in body.model_fields_set:
+                setattr(row, key, profile_visual(db, user, getattr(body, key), kind))
     row.version += 1
     audit(db, user, "profile", user.id, "profile_saved", {"version": row.version, "visibility": row.visibility})
     db.commit(); db.refresh(row)
@@ -492,6 +510,28 @@ def member_profiles(db, user, term, number):
         term = term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
         query = query.filter(Profile.display_name.ilike("%" + term + "%", escape="\\"))
     return page(query.order_by(Profile.display_name, Profile.user_id), number, lambda pair: profile_view(user, pair[1], pair[0]))
+
+
+def profile_projects_query(db, user, code):
+    # A visible member profile alone grants no project permission. Both scopes apply.
+    target, _ = profile_for(db, user, code)
+    assigned = db.query(Member.project_id).filter(Member.user_id == target.id, Member.active.is_(True))
+    return accessible_projects(db, user).filter(or_(Project.owner_id == target.id, Project.id.in_(assigned)))
+
+
+def profile_projects(db, user, code, number):
+    query = profile_projects_query(db, user, code)
+    return page(query.order_by(Project.updated_at.desc(), Project.id), number, lambda row: project_view(db, user, row))
+
+
+def profile_history(db, user, code, number):
+    visible = profile_projects_query(db, user, code).with_entities(Project.id)
+    query = db.query(Update, Project).join(Project, Project.id == Update.project_id).filter(Update.project_id.in_(visible))
+    return page(query.order_by(Update.created_at.desc(), Update.id), number, lambda pair: {
+        "id": str(pair[0].id), "project_id": str(pair[1].id), "project_title": pair[1].title,
+        "service_category_ids": pair[1].service_category_ids, "project_status": pair[1].status,
+        "kind": pair[0].kind, "body": pair[0].body, "occurred_on": pair[0].occurred_on,
+        "media_ids": pair[0].media_ids, "created_at": pair[0].created_at})
 
 
 def post_for(db, user, identity, *, lock=False, moderate=False):
@@ -631,7 +671,11 @@ def media_view(row):
             "bytes": row.byte_count, "sha256": row.sha256, "width": row.width, "height": row.height}
 
 
-def upload_media(db, user, project_id, raw):
+def upload_media(db, user, project_id, raw, *, profile_kind=None):
+    if profile_kind is not None:
+        if profile_kind not in {"avatar", "cover"} or project_id is not None:
+            raise HTTPException(422, "Choose a profile photo purpose")
+        active_user(db, user.user_code)
     # Serialize the per-uploader bound and preserve the service user-before-project lock order.
     db.query(User).filter(User.id == user.id).with_for_update().one()
     if project_id:
@@ -643,6 +687,7 @@ def upload_media(db, user, project_id, raw):
     key = f"network/{user.id}/{identity}.webp"
     storage.store_image(key, data)
     row = Media(id=identity, uploader_id=user.id, project_id=project_id, object_key=key,
+                profile_user_id=user.id if profile_kind is not None else None, profile_kind=profile_kind,
                 sha256=hashlib.sha256(data).hexdigest(), byte_count=len(data), width=width, height=height)
     db.add(row); db.commit(); db.refresh(row)
     return media_view(row)
@@ -652,7 +697,15 @@ def media_bytes(db, user, identity):
     row = db.get(Media, identity)
     if row is None:
         raise HTTPException(404, "Photo not found")
-    if row.project_id:
+    if row.profile_user_id is not None:
+        if row.uploader_id != user.id:
+            owner = db.get(User, row.profile_user_id)
+            if owner is None:
+                raise HTTPException(404, "Photo not found")
+            _, profile = profile_for(db, user, owner.user_code)
+            if profile is None or row.id != getattr(profile, row.profile_kind + "_media_id", None):
+                raise HTTPException(404, "Photo not found")
+    elif row.project_id:
         project_for(db, user, row.project_id)
         if row.update_id is None and row.uploader_id != user.id:
             raise HTTPException(404, "Photo not found")

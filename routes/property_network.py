@@ -327,6 +327,16 @@ def profile(user_code: int, user=Depends(get_current_user), db: Session = Depend
     return service.profile_view(user, target, row)
 
 
+@router.get("/profiles/{user_code}/projects")
+def profile_projects(user_code: int, page: int = Page, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return service.profile_projects(db, user, user_code, page)
+
+
+@router.get("/profiles/{user_code}/history")
+def profile_history(user_code: int, page: int = Page, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return service.profile_history(db, user, user_code, page)
+
+
 @router.get("/profiles/{user_code}/posts")
 def posts(user_code: int, page: int = Page, user=Depends(get_current_user), db: Session = Depends(get_db)):
     return service.wall_posts(db, user, user_code, page)
@@ -373,6 +383,14 @@ async def upload(request: Request, response: Response, file: UploadFile = File(.
                  user=Depends(get_current_user), db: Session = Depends(get_db)):
     raw = await file.read(MAX_BYTES + 1)
     return await run_in_threadpool(service.upload_media, db, user, project_id, raw)
+
+
+@router.post("/me/profile/media", status_code=201)
+@limiter.limit("10/minute")
+async def upload_profile_photo(request: Request, response: Response, kind: Literal["avatar", "cover"] = Form(...),
+                               file: UploadFile = File(...), user=Depends(get_current_user), db: Session = Depends(get_db)):
+    raw = await file.read(MAX_BYTES + 1)
+    return await run_in_threadpool(service.upload_media, db, user, None, raw, profile_kind=kind)
 
 
 @router.get("/media/{media_id}")
