@@ -1,0 +1,87 @@
+{
+  "schema": "group_author_native162_v3_plan_v1",
+  "status": "PREPARED_SOURCE_ONLY_ROOT_AND_FULL_COLD_REQUIRED_NATIVE_UNRUN",
+  "parent": "a8550edb328af5e837da06f27d3ac1a392f9163e",
+  "new_paths": [
+    ".github/workflows/group-author-native-v3.yml",
+    "ci/group-author-native-v3/PLAN.json",
+    "ci/group-author-native-v3/run-hosted.sh",
+    "ci/group-author-native-v3/verify-groups.py"
+  ],
+  "all399_inherited_tuples_immutable": true,
+  "source": {
+    "commit": "6ef69b249c573eedaea962dad530eaed0a612b24",
+    "tree": "f1ef617e51e0d8a900d9f4bfc15a559bf676276f",
+    "parent": "a75f9c26f3bceb14afcb6e1150e1b2a3d50fbada",
+    "blobs": 367,
+    "contract_SHA256": "e37f33435f558b034e6fcda5739eec0864d812b2d2aa19625fbad47d007f0077"
+  },
+  "fresh_required": {
+    "original134": 134,
+    "GroupInputTest": 4,
+    "SocialGroupsTest": 24,
+    "total": 162,
+    "group_schema_tables": 106,
+    "group_model_tables": 105,
+    "head": "e8b5a3d1f907",
+    "zero_skips_errors_failures_expected_unexpected_successes_providers": true
+  },
+  "failure": {
+    "run": 45649336732,
+    "job": 139329198345,
+    "stage": "current106",
+    "error_type": "AttributeError",
+    "source_cause": "Standard unittest.skipUnless(True) returns the original class without adding __unittest_skip__; direct attribute read raises before Group suites. Missing means not skipped under the standard runner.",
+    "original134_actual_pass_is_not_combined162_and_will_be_freshly_repeated": true,
+    "receipt": "group-author-native162-45649336732-groups-failure.json",
+    "receipt_bytes": 7689,
+    "receipt_SHA256": "aa54159f3a0bdb99b9efc96f513cb86a50af554fb117d9302b1ae3a7f1d5d0ef",
+    "primary_log_bytes": 93053,
+    "primary_log_SHA256": "2bc1f783178218dbd013ba1f8320164ea8c9fb7d5cb2fe1d8d09a033b89e957a",
+    "official_primary": "https://raw.githubusercontent.com/python/cpython/v3.11.14/Lib/unittest/case.py"
+  },
+  "only_worker_change": "Read optional class marker with getattr(SocialGroupsTest,\"__unittest_skip__\",False) is False. Entire worker reversed-one-line equals immutable a855 current worker, including real trade-contact registration and exact105-table set guard. No suite,route,application,DDL,skip decorator or count changes.",
+  "standard_semantics": "Enabled missing marker and explicitFalse pass; actual skippedTrue and explicitTrue or any non-False value refuse. Strict actual4/24/no-skips counts and original162 checker remain binding.",
+  "runtime": "Only namespace/ref/parent/new4-path403 guards change. Exact original verify-profile.py/check.py reused and hash-pinned; original134 worker/checker unchanged. Same current6ef, genuine8957/c4\u2192179/d8\u21926ef/e8, canonical134+legacy and separate committedGroup third marked DB, separate current Group process before imports, disabled provider workers and fail-closed transports, all106 canonical snapshots/catalog/sequences/guards/server start, process caps/threeDB drop+absence/owned cleanup/artifacts[].",
+  "not_claimed": [
+    "Actual Group4/24 or combined162 success before fresh hosted run",
+    "Any product change or frontend547/browser acceptance",
+    "Native/build/DB/application/models/provider/install/push by source author"
+  ],
+  "local_checks": {
+    "status": "PASS_PURE_STDLIB_AST_SOURCE_ONLY",
+    "python": "3.15.0",
+    "positive": 2,
+    "negative": 9,
+    "positive_cases": [
+      "enabled_decorator_with_missing_attribute",
+      "explicit_false"
+    ],
+    "negative_cases": [
+      "disabled_decorator_true",
+      "explicit_bool_True",
+      "explicit_NoneType_None",
+      "explicit_int_0",
+      "explicit_int_1",
+      "explicit_str_'false'",
+      "explicit_str_''",
+      "explicit_list_[]",
+      "explicit_dict_{}"
+    ],
+    "actual_stdlib_enabled_case_runs_without_skip": true,
+    "actual_stdlib_disabled_case_runs_with_skip_and_is_refused": true,
+    "direct_missing_attribute_reproduces_AttributeError": true,
+    "worker_reversed_optional_read_equals_a855": true,
+    "runner_reversed_namespace_parent_counts_equals_a855": true,
+    "AST_units": [
+      "verify-groups.py",
+      "PY_COMPOSITION",
+      "PY_REQUIREMENTS"
+    ],
+    "actual_readonly_current367_source_guard_exit": 0,
+    "old_profile_adapter_and_strict_checker_hashes_unchanged": true,
+    "inherited_parser_controls_retained": "Exact unchanged checker; original1+/42- andv2 1+/8- retained, not rerun.",
+    "app_models_native_DB_build_install_provider_CUA_push": false,
+    "local_Bash": "UNAVAILABLE_HOSTED_BASH_N_REQUIRED"
+  }
+}
