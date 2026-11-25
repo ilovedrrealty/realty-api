@@ -1,7 +1,7 @@
 name: Isolated buyer assignment and international Signup acceptance
 on:
   push:
-    branches: [codex-ci-buyer-phone-acceptance-20261125-v2]
+    branches: [codex-ci-buyer-phone-acceptance-20261125-v3]
 permissions:
   contents: read
 concurrency:
@@ -30,9 +30,9 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: ilovedrrealty/iLoveDRRealty
-          ref: a17197f2db143491950d33c5d0788b1f0c206b90
+          ref: 96425b7cecb65293ae6c96c89a6f6a28e70da443
           path: frontend-source
-          fetch-depth: 3
+          fetch-depth: 4
           persist-credentials: false
       - name: Read exact reviewed backend
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -59,7 +59,7 @@ jobs:
           ref: 3007728fd67c5889a8373e41ff3ffa5cc50d839b
           path: browser-relay
           persist-credentials: false
-      - name: Retain 492 and strict, run fresh builds, native 8 and buyer Signup journeys
+      - name: Run 492, strict builds, native 8 and responsive buyer Signup journeys
         shell: bash
         run: |
           set -euo pipefail
