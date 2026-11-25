@@ -13,7 +13,16 @@ failed = False
 diagnostics = []
 loopback = []
 process_failures = []
+held_responses = []
 for line in lines:
+    if line.startswith(b"SOCIAL_GROUPS_HELD_RESPONSE "):
+        assert mode == "browser" and len(line) <= 512 and len(held_responses) < 8
+        value = json.loads(line.split(b" ", 1)[1])
+        assert set(value) == {"phase", "kind", "method", "status"}
+        assert isinstance(value["phase"], str) and re.fullmatch(r"[A-Za-z][A-Za-z0-9_]{0,79}", value["phase"])
+        assert value["kind"] in {"invite_resolve", "invite_accept", "media", "posts", "other"}
+        assert value["method"] in {"GET", "POST"} and type(value["status"]) is int and 100 <= value["status"] <= 599
+        held_responses.append(value)
     if line.startswith(b"SOCIAL_GROUPS_PROCESS_FAILURE "):
         assert mode == "browser" and len(line) <= 2048 and not process_failures
         value = json.loads(line.split(b" ", 1)[1])
@@ -44,7 +53,8 @@ for line in lines:
             "G01_header_image", "G01_back_index", "G01_index_geometry", "G01_reopen", "G01_detail_geometry",
             "G02_direct_invitation", "G03_private_photos_comments", "G04_roles_moderation", "G05_fragment_invitation",
             "G06_discovery_requests", "G07_publication_draft_version", "G08_open_join_leave_scope", "G09_withdrawal",
-            "G10_history_unblock", "G11_archive_revoke", "G12_uncertain_auth_loss"}
+            "G10_history_unblock", "G11_archive_revoke", "G12_uncertain_auth_loss",
+            "G12_upload_hold", "G12_upload_input", "G12_upload_ready", "G12_upload_release", "G12_uncertain_status", "G12_feed_hold", "G12_feed_ready", "G12_auth_loss", "G12_auth_probe", "G12_feed_release", "G12_scope_clear", "G12_restore"}
         waits = {"none", "response_json", "write_response", "write_action", "foreground_front", "foreground_presence",
             "open_group_control", "open_group_heading", "tab_control", "header_response", "header_control",
             "geometry_viewport", "geometry_measure", "inbox_filter", "member_code_field", "alias_field",
@@ -90,6 +100,8 @@ if diagnostics:
     print("SOCIAL_GROUPS_ENTRY_DIAGNOSTIC " + json.dumps(diagnostics[0], sort_keys=True))
 for value in loopback:
     print("SOCIAL_GROUPS_LOOPBACK_STATE " + json.dumps(value, sort_keys=True))
+for value in held_responses:
+    print("SOCIAL_GROUPS_HELD_RESPONSE " + json.dumps(value, sort_keys=True))
 for value in process_failures:
     print("SOCIAL_GROUPS_PROCESS_FAILURE " + json.dumps(value, sort_keys=True))
 assert native == "0" and not failed

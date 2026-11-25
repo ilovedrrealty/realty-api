@@ -346,6 +346,10 @@ async function hold(page, path, method, predicate, mode = 'response') {
     if (mode === 'request') captured = { input: req.postDataJSON() }
     else {
       const actual = await route.fetch()
+      const kind = path === `${prefix}/group-invites/resolve` ? 'invite_resolve'
+        : path === `${prefix}/group-invites/accept` ? 'invite_accept'
+          : path.endsWith('/media') ? 'media' : path.endsWith('/posts') ? 'posts' : 'other'
+      console.log('SOCIAL_GROUPS_HELD_RESPONSE ' + JSON.stringify({ phase: stage, kind, method, status: actual.status() }))
       check([200, 201].includes(actual.status()), 'HELD_REAL_SUCCESS_REQUIRED')
       captured = { response: actual, value: await json(actual), input: (req.headers()['content-type'] || '').startsWith('application/json') ? req.postDataJSON() : null }
     }
@@ -597,23 +601,35 @@ try {
 
   advance('G12_uncertain_auth_loss')
   await tab(ownerPage, en, facts, 'feed')
+  advance('G12_upload_hold')
   const uncertainUpload = await hold(ownerPage, `${groupPath(facts.groupId)}/media`, 'POST', () => true, 'abort')
+  advance('G12_upload_input')
   await ownerPage.locator('form input[type=file]').setInputFiles(fixture.files.photo)
+  advance('G12_upload_ready')
   const actualUpload = await uncertainUpload.ready()
   check(actualUpload.value.current.kind === 'post', 'REAL_UNCERTAIN_UPLOAD_REQUIRED')
+  advance('G12_upload_release')
   await uncertainUpload.release()
+  advance('G12_uncertain_status')
   await button(ownerPage, g.check_action).waitFor()
   check(await button(ownerPage, g.retry_same).count() === 0, 'UNCERTAIN_UPLOAD_MUST_NOT_RESEND')
+  advance('G12_feed_hold')
   const oldRead = await hold(ownerPage, `${groupPath(facts.groupId)}/posts`, 'GET', () => true)
+  advance('G12_feed_ready')
   await button(ownerPage.getByRole('heading', { name: g.feed_title, exact: true }).locator('..'), en.network.refresh).first().click(); await oldRead.ready()
+  advance('G12_auth_loss')
   await owner.clearCookies()
   const denialPromise = ownerPage.waitForResponse(response => pathIs(response, groupPath(facts.groupId), 'GET') && [401, 403].includes(response.status()))
   const probePromise = ownerPage.waitForResponse(response => new URL(response.url()).origin === api
     && new URL(response.url()).pathname === `${prefix}/group-submissions/${actualUpload.value.submission_id}` && [401, 403].includes(response.status()))
+  advance('G12_auth_probe')
   await button(ownerPage, g.check_action).click(); await probePromise; await denialPromise
+  advance('G12_feed_release')
   await oldRead.release()
+  advance('G12_scope_clear')
   await ownerPage.getByRole('heading', { name: facts.groupName, exact: true }).waitFor({ state: 'hidden' })
   check(await ownerPage.getByText(facts.privatePost, { exact: true }).count() === 0 && await ownerPage.locator('img[src^="blob:"]').count() === 0, 'AUTH_LOSS_MUST_CLEAR_PRIVATE_SCOPE')
+  advance('G12_restore')
   await login(owner, fixture.accounts.owner, 'owner')
   await ownerPage.reload({ waitUntil: 'domcontentloaded' }); await ownerPage.getByRole('heading', { name: facts.groupName, level: 2, exact: true }).waitFor()
 
