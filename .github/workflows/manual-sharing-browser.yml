@@ -1,7 +1,7 @@
-name: Isolated manual sharing responsive chart acceptance
+name: Isolated manual sharing research wrapping acceptance
 on:
   push:
-    branches: [codex-ci-manual-sharing-responsive-v10-20261125]
+    branches: [codex-ci-manual-sharing-research-v11-20261125]
 permissions:
   contents: read
 concurrency:
@@ -30,9 +30,9 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: ilovedrrealty/iLoveDRRealty
-          ref: f1bd8c6a6d5aaee9e825aebb8211cf0581f334bb
+          ref: bb4a9c626fb96f93ae6d6bc55b5a2a67f85411ba
           path: frontend-source
-          fetch-depth: 14
+          fetch-depth: 15
           persist-credentials: false
       - name: Read exact reviewed unchanged API
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
