@@ -8,12 +8,13 @@ from fastapi.routing import APIRoute
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import select, text, update
+from sqlalchemy import func, select, text, update
 from sqlalchemy.orm import Session, load_only
 
 from database import get_db
 from models.lead import Lead
 from models.lead_delivery import DELIVERY_STATUSES, LeadDeliveryJob
+from models.user import User
 from config import settings
 from services.lead_delivery import (MANUAL_RETRY_PREFIX, MAX_ATTEMPTS, SAFE_ERROR_CODE,
                                    delivery_error_code, enabled)
@@ -218,3 +219,27 @@ def retry_communication(job_id: UUID, request: RetryDeliveryRequest, response: R
                         user=Depends(require_admin), db: Session = Depends(get_db)):
     _private(response)
     return _authorize_retry(db, job_id, lead_only=False, email_only=True)
+
+
+@router.get("/admin/users/{user_id}/communications")
+def signup_communications(user_id: UUID, response: Response,
+                          limit: int = Query(default=25, ge=1, le=100),
+                          offset: int = Query(default=0, ge=0, le=10000),
+                          user=Depends(require_admin), db: Session = Depends(get_db)):
+    """Read recorded signup jobs by immutable account ID, never name or email."""
+    _private(response)
+    if db.scalar(select(User.id).where(User.id == user_id)) is None:
+        raise HTTPException(404, "Account not found")
+    scope = (LeadDeliveryJob.user_id == user_id, LeadDeliveryJob.provider == "resend")
+    total = db.scalar(select(func.count()).select_from(LeadDeliveryJob).where(*scope))
+    rows = (_metadata_query(db, include_signup=True).filter(*scope)
+            .order_by(LeadDeliveryJob.created_at.desc(), LeadDeliveryJob.id.desc())
+            .offset(offset).limit(limit).all())
+    return {"total": total, "limit": limit, "offset": offset, "tracked": total > 0,
+            "items": [{"id": str(row.id), "event_kind": "signup", "channel": "email",
+                "step": row.step, "provider": row.provider, "status": row.status,
+                "attempts": row.attempt_count, "max_attempts": MAX_ATTEMPTS,
+                "created_at": row.created_at, "accepted_at": row.accepted_at,
+                "first_attempt_at": row.first_attempt_at, "last_attempt_at": row.last_attempt_at,
+                "next_attempt_at": row.next_attempt_at, "error_code": delivery_error_code(row.error_code),
+                "outcome_uncertain": row.outcome_uncertain} for row in rows]}

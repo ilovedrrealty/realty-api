@@ -22,7 +22,7 @@ from alembic.migration import MigrationContext
 from alembic.operations import Operations
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, event, text
 from sqlalchemy.engine import make_url
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -384,6 +384,81 @@ class CustomerDeliveryTests(unittest.TestCase):
         self.client.cookies.clear()
         self.assertEqual(self.client.get("/admin/communications").status_code, 401)
         self.assertEqual(self.client.post(f"/admin/lead-deliveries/{jobs['customer_email'].id}/retry", json={}, headers=self.admin_headers).status_code, 404)
+
+    def test_account_signup_history_is_readonly_id_bound_private_and_deterministically_paged(self):
+        self.assertEqual(self.verify("original@example.com").status_code, 200)
+        user_id, jobs = self.user_and_jobs("original@example.com")
+        self.assertEqual(self.verify("different@example.com").status_code, 200)
+        other_id, other_jobs = self.user_and_jobs("different@example.com")
+        with Session(self.engine) as db:
+            # The durable FK, not today's mutable email/name, identifies history.
+            account = db.get(User, user_id)
+            account.email, account.display_name = "changed@example.com", "Changed account name"
+            db.commit()
+            before = db.execute(text("SELECT id,status,attempt_count,updated_at FROM lead_delivery_jobs ORDER BY id")).all()
+
+        def no_private_columns(connection, cursor, statement, parameters, context, executemany):
+            if statement.lstrip().upper().startswith("SELECT"):
+                self.assertNotIn("payload", statement.lower())
+
+        event.listen(self.engine, "before_cursor_execute", no_private_columns)
+        try:
+            pages = []
+            for offset in (0, 2, 4):
+                result = self.client.get(f"/admin/users/{user_id}/communications?limit=2&offset={offset}", headers=self.admin_headers)
+                self.assertEqual(result.status_code, 200, result.text)
+                self.assertEqual(result.headers["cache-control"], "no-store")
+                self.assertEqual(result.headers["vary"], "Cookie, Authorization")
+                data = result.json()
+                self.assertEqual(set(data), {"total", "limit", "offset", "tracked", "items"})
+                self.assertEqual((data["total"], data["limit"], data["offset"], data["tracked"]), (5, 2, offset, True))
+                pages.extend(row["id"] for row in data["items"])
+                for row in data["items"]:
+                    self.assertEqual(row["event_kind"], "signup")
+                    self.assertEqual(row["status"], "pending")
+                    self.assertNotIn("can_retry", row)
+                for secret in ("payload", "provider_id", "original@example.com", "changed@example.com",
+                               "Changed account name", "owner1@example.com", str(user_id), str(other_id)):
+                    self.assertNotIn(secret, result.text)
+            self.assertEqual(pages, sorted((str(row.id) for row in jobs.values()), reverse=True))
+            self.assertTrue(set(pages).isdisjoint(str(row.id) for row in other_jobs.values()))
+        finally:
+            event.remove(self.engine, "before_cursor_execute", no_private_columns)
+        with Session(self.engine) as db:
+            self.assertEqual(db.execute(text("SELECT id,status,attempt_count,updated_at FROM lead_delivery_jobs ORDER BY id")).all(), before)
+        self.direct.assert_not_called()
+
+    def test_account_signup_history_empty_unknown_and_non_admin_reads_do_not_enqueue_or_transmit(self):
+        historical_id = uuid4()
+        staff = {}
+        with Session(self.engine) as db:
+            db.add(User(id=historical_id, user_code=9200, email="historical@example.com", display_name="Historical",
+                        role="buyer", email_verified=True, status="active"))
+            for number, role in enumerate(("buyer", "owner", "realtor"), 1):
+                identity = uuid4()
+                staff[role] = identity
+                db.add(User(id=identity, user_code=9200+number, email=f"reader-{role}@example.com",
+                            role=role, email_verified=True, status="active"))
+            db.commit()
+        url = f"/admin/users/{historical_id}/communications"
+        result = self.client.get(url, headers=self.admin_headers)
+        self.assertEqual(result.status_code, 200)
+        self.assertEqual(result.json(), {"total": 0, "limit": 25, "offset": 0, "tracked": False, "items": []})
+        for role, identity in staff.items():
+            token = jwt.encode({"sub": str(identity), "exp": datetime.now(timezone.utc)+timedelta(hours=1)},
+                               settings.jwt_secret, algorithm="HS256")
+            self.assertEqual(self.client.get(url, headers={"Authorization": "Bearer "+token}).status_code, 403, role)
+        self.client.cookies.clear()
+        self.assertEqual(self.client.get(url).status_code, 401)
+        self.assertEqual(self.client.get(f"/admin/users/{uuid4()}/communications", headers=self.admin_headers).status_code, 404)
+        invalid = self.client.get("/admin/users/PRIVATE_SENTINEL/communications", headers=self.admin_headers)
+        self.assertEqual(invalid.status_code, 422)
+        self.assertNotIn("PRIVATE_SENTINEL", invalid.text)
+        self.assertEqual(self.client.get(url+"?limit=101", headers=self.admin_headers).status_code, 422)
+        self.assertEqual(self.client.get(url+"?offset=10001", headers=self.admin_headers).status_code, 422)
+        with Session(self.engine) as db:
+            self.assertEqual(db.query(Job).count(), 0)
+        self.direct.assert_not_called()
 
     def test_database_xor_event_and_signup_step_uniqueness_constraints(self):
         self.verify()
