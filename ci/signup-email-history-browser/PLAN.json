@@ -1,0 +1,202 @@
+{
+  "status": "PREPARED_FOR_ROOT_REVIEW_NOT_RUN",
+  "date": "2026-11-26",
+  "namespace": "signup-email-history-browser",
+  "parent_operations": "215de538b85dc0f09f0d7c53f1d281f645411568",
+  "inherited_tuples": 425,
+  "new_paths": 6,
+  "expected_total_paths": 431,
+  "source_pins": {
+    "backend": {
+      "commit": "c4de3e2e25fd3699ccb776c740d6413b402ed317",
+      "tree": "916d590cd72af5c3f68778441010aa41b59661ea",
+      "parent": "6ef69b249c573eedaea962dad530eaed0a612b24",
+      "path_count": 367,
+      "changed_paths": [
+        "routes/lead_delivery.py",
+        "tests/test_customer_delivery.py"
+      ],
+      "unmodified_parent_tuples": 365,
+      "source_review": "Root and Groups FULL source accepted; root exact isolated source firstpush verified26Nov. No production publication."
+    },
+    "frontend": {
+      "commit": "de4d2b21f8e08720211407eb1449d6f85cfa9b34",
+      "tree": "145410287b963a3e80dbe162a1978c5dd50ab352",
+      "parent": "95077fb8e5cb784ed47be6a78d9632e62a0b9bf4",
+      "aggregate_base": "a8069c847a75823fc5a62101895a80d8fc1f8b1d",
+      "path_count": 622,
+      "aggregate_paths": 6,
+      "unmodified_base_tuples": 616,
+      "source_review": "Root and Groups FULL source accepted; root exact isolated source firstpush verified26Nov. No production publication."
+    }
+  },
+  "scope": "Fresh acceptance only for Admin account signup-email history, with existing communication flows preserved. No new mail sending, historical replay, Gmail/WhatsApp/call synchronization, account grants or production changes.",
+  "source_ownership": {
+    "workflow_plan_runner_driver": "google_browser_resume",
+    "fixture_checker": "groups_browser_resume",
+    "commits": "one coordinated freeze only after both full crossreviews",
+    "push_and_hosted_execution": "root only"
+  },
+  "fresh_frontend": {
+    "contract_tests": 555,
+    "test_files": 66,
+    "full_dashboard_standalone_typecheck": true,
+    "vite_build": true,
+    "landing_next_build": true,
+    "prior549_not_substituted": true,
+    "source": "Current exact FE child; these counts are expected, not an execution result."
+  },
+  "native21": {
+    "actual_required": true,
+    "suite": "CustomerDeliveryTests",
+    "current_definitions": 21,
+    "old_definitions": 19,
+    "new_definitions": 2,
+    "skip_fail_error_allowed": 0,
+    "database": "ildr_platform_test_20261025",
+    "port": 55449,
+    "marker": "ildr-signup-history-native-ci:<nonce>",
+    "scope": "The existing test class creates an isolated model schema and removes it. This is actual PG route/unit coverage, not a claim of genuine full106 migration parity.",
+    "process": "Separate fresh owned database and child process; actual config/provider guards before imports. Run original actual21 case methods, no source rewrite/count lowering.",
+    "cleanup": "Observe typed exit/running/OOM values and require the worker stopped before cleanup. Export bounded native results, then marker-check/drop/absence-check the owned database and remove the container before applying unchanged zero-OOM/exit/check acceptance. No canonical browser snapshot is shared with this test class."
+  },
+  "browser_schema": {
+    "chain": "Genuine8957/c4 old99 →179/d8 current106 →c4de/e8 same106, using pinned accepted read-only helpers and current source.",
+    "source_readonly_mounts": [
+      "/application",
+      "/previous",
+      "/baseline106",
+      "/ci-tools"
+    ],
+    "bootstrap_proof": "Old99 records/catalog/sequences preserved across genuine baseline upgrade; four profile columns additive under e8 proof; no schema changes in c4de.",
+    "fixture_prebaseline": "Reuse canonical four synthetic roles. Set known login hashes and seed exactly11 signup jobs bound to tracked Buyer's immutable user_id. These are explicit fixture preparations before the browser baseline, not unchanged original user/job records.",
+    "retained_seed": "Original82owner/46private9deliveryjobs/CMS7/floorplans2 remain protected;11additional signup jobs have canonical steps email_1..10 plus customer_email and do not dispatch.",
+    "after_browser": "All106 catalog/data/sequences/functions/ACL exactly equal prepared baseline. No role/assignment/verification/clock control is needed; no Inbox/profile/group/listing-view writes.",
+    "private_cleanup": "Facts file removed and authoritative absence checked; no photos/media fixture needed."
+  },
+  "browser": {
+    "engine": "Owned pinned Chromium only; no OS delivery or new optional-engine claim.",
+    "locales": [
+      "en",
+      "es"
+    ],
+    "journeys": 12,
+    "journey_names": [
+      "admin_user_entry",
+      "tracked_history_loading",
+      "metadata_and_paging_privacy",
+      "untracked_and_stale_account_switch",
+      "read_error_retry",
+      "auth_loss_and_role_boundaries"
+    ],
+    "geometry_labels": [
+      "users",
+      "history_loading",
+      "tracked_history",
+      "untracked_history",
+      "read_error"
+    ],
+    "widths": [
+      320,
+      390
+    ],
+    "geometry": 20,
+    "contexts": 10,
+    "admin_presence_pages": 2,
+    "actual_logins": 8,
+    "boundary_checks": 16,
+    "boundary_labels": {
+      "admin_tracked": 200,
+      "admin_untracked": 200,
+      "admin_unknown": 404,
+      "admin_invalid": 422,
+      "anonymous": 401,
+      "buyer": 403,
+      "owner": 403,
+      "realtor": 403
+    },
+    "role_keys": [
+      "admin",
+      "buyer",
+      "owner",
+      "realtor"
+    ],
+    "tracked_target": "buyer",
+    "untracked_target": "owner",
+    "read_only": true,
+    "meaningful_assertions": [
+      "No history GET before explicit open; actual panel loading while owned request is held, then real server response.",
+      "Actual canonical11rows over pages10/1, deterministic exact ordering through internal fixture IDs; UI only human labels/status/date/attempts, no raw job UUID, machine code, recipient, subject or body.",
+      "Accepted state retains explicit not-inbox/read/reply proof wording; uncertain/failed and no-record views use exact localized copy.",
+      "Actual APIlimit2 pages also match server order, native21 SELECT guard never fetches payload columns.",
+      "Hold an owned current history request before forwarding, switch to a different account, require real client AbortController cancellation, load the untracked account, release the canceled route and require no stale rows.",
+      "One owned current history GET transport abort, ordinary visible error, then explicit Refresh returns real200 and exact current rows.",
+      "Clear Admin context cookies, click Refresh and require actual401, localized access-lost state and no cached account history. The actual Axios client has no401redirect interceptor, so no forced login redirect is claimed.",
+      "Real unauthorized role/anonymous/error boundaries, zero mutation apart from exact8known synthetic logins.",
+      "EN contexts retired after complete flow before ES. This is cleanup, not a claim about a previous timeout cause."
+    ],
+    "paging_fidelity": "The API accepts at most13 distinct known canonical steps per account and defaults25; only the new account UI changes to10. Seed11valid steps for real10/1 UI pages. Derive expected page labels/order from actual bounded stored created_at/id/step metadata, never assume Welcome is page2 under UUID ties or update immutable rows. Deliberately ordered unit-fixture dates are unit-only evidence. Never invent26jobs or alter schema/decoder to force paging.",
+    "result_counts": {
+      "ui_page_checks": 4,
+      "api_page_checks": 12,
+      "untracked_accounts": 2,
+      "stale_read_checks": 2,
+      "transport_error_recovery_checks": 2,
+      "auth_loss_checks": 2,
+      "default_api_limit": 25,
+      "ui_page_size": 10,
+      "ui_mutation_requests": 0
+    },
+    "presence_contract": "Two unique locale records with actual before/modeled booleans, modeled==!before,aftertrue,visibletrue. No impossibletrue/true promise or external online claim."
+  },
+  "retention": {
+    "native162": {
+      "run": 45652164070,
+      "source": "6ef69b249c573eedaea962dad530eaed0a612b24",
+      "scope": "Unchanged native Inbox/resilience/profile/Group source implementations only, proven by all365 unaffected BE blobs plus unchanged schema. New history route gets fresh21 and browser proof, not covered by old162."
+    },
+    "profile_browser": {
+      "run": 45906144146,
+      "source": "a8069c847a75823fc5a62101895a80d8fc1f8b1d",
+      "scope": "Unchanged profile/private media/work/author components only; not a current account-history UI acceptance."
+    },
+    "group_browser": {
+      "run": 45905967713,
+      "source": "a8069c847a75823fc5a62101895a80d8fc1f8b1d",
+      "scope": "Unchanged Group author components only."
+    },
+    "communications": {
+      "scope": "Original generic route/client/page/outbox/template and enqueue functions stay exact accepted parent bytes; all old19 native cases and fresh full555 still run. No old live delivery proof is relabeled as current send."
+    }
+  },
+  "runtime_reuse": {
+    "parent_tools": "Approved V7 Docker/pinned Node/Playwright/Python dependency recipe, static Dashboard/Landing servers, owned nonce loopback PG, provider guards and no-artifacts cleanup.",
+    "caps": "Keep approved inherited caps/timeouts; no privileged networking, service configuration, PID or memory increase.",
+    "network": "Only owned loopback app/API origins in browser; external browser requests blocked. Dependency installation/pulls only in isolated hosted preparation.",
+    "failure_cleanup": "Browser/API acceptance is checked only after stopped API, marker-verified database drop+absence and container removal. Actual API/PG running/OOM facts are emitted; browser uses--rm so post-exit browser OOM is honestly unobserved."
+  },
+  "results": "Finite exact keysets/counters derive from final written fixture/driver/checker. Failure-only numeric markers must always fail; no screenshots, private payload logs or uploaded artifacts.",
+  "source_only_validation": {
+    "inline_python_ast_programs": 12,
+    "fixture_checker_python_ast": 2,
+    "driver_node_syntax": "PASS; syntax only, no browser execution",
+    "driver_literal_inventory": {"phases": 34, "reasons": 52},
+    "parser_controls": {"positive": 3, "negative": 73, "safe_output": 6, "receipt": "signup-history-browser-parser-controls-20261126.json", "sha256": "a2dc0ac1d21982a76e81933320df714e884e132f458a493f9b473623dc8f3492"},
+    "read_only_git_composition_guards": "Both actual backend and frontend guard blocks passed against exact c4de/de4d source; no app imports or runtime.",
+    "checkout_depths": {"frontend": 23, "backend": 12},
+    "primary_receipts": "Strict validated native/API/browser results plus every unique bounded geometry/presence observation are exported; no private raw-log output.",
+    "fresh_hosted_tests_builds_browser": "PENDING; source preparation and parser controls are not hosted acceptance"
+  },
+  "operations_scope": {
+    "local_source_only": true,
+    "no_local_app_or_database_runtime": true,
+    "no_installs_or_heavy_builds": true,
+    "no_provider_or_customer_sends": true,
+    "no_push": true
+  },
+  "final_freeze_requires": [
+    "Root and independent FULL source acceptance of BEc4de and finalFEde4d child, with root exact source push readback.",
+    "Both full crossreviews of these six new paths, source/old425tuple guards, finite native/browser/API contracts and bounded parser/AST controls.",
+    "Root FULL operations review before root first push; actual acceptance cannot be inferred from preparation."
+  ]
+}
