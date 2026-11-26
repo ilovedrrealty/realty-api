@@ -1,11 +1,11 @@
-name: Isolated current Group549 and browser acceptance
+name: Isolated Group browser with exact retained549 and strict proof
 on:
   push:
-    branches: [codex-ci-group-author-browser-v1-20261126]
+    branches: [codex-ci-group-author-browser-retained-v2-20261126]
 permissions:
   contents: read
 concurrency:
-  group: group-author-browser-${{ github.ref }}
+  group: group-author-browser-retained-v2-${{ github.ref }}
   cancel-in-progress: false
 jobs:
   browser:
@@ -24,7 +24,7 @@ jobs:
         with:
           ref: ${{ github.sha }}
           path: build-ops
-          fetch-depth: 2
+          fetch-depth: 3
           persist-credentials: false
       - name: Read exact reviewed combined profile and Group frontend
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -72,7 +72,7 @@ jobs:
           path: profile-baseline106
           fetch-depth: 6
           persist-credentials: false
-      - name: Run fresh549, standalone strict, builds and complete private Group author browser
+      - name: Retain exact549 and strict; run fresh builds and complete private Group author browser
         shell: bash
         run: |
           set -euo pipefail

@@ -1,6 +1,6 @@
 {
   "schema": "group_author_browser_hosted_source_plan_v1",
-  "status": "FROZEN_SOURCE_ONLY_PENDING_ROOT_REVIEW_NO_RUNTIME",
+  "status": "FROZEN_SOURCE_ONLY_RETAINED_ACTUAL549_TSC_PENDING_ROOT_REVIEW",
   "source": {
     "backend_commit": "6ef69b249c573eedaea962dad530eaed0a612b24",
     "backend_tree": "f1ef617e51e0d8a900d9f4bfc15a559bf676276f",
@@ -16,25 +16,9 @@
     "frontend_changed_from5ec": 10,
     "frontend_exact_outside5ec": 610,
     "contract_sha256": "e37f33435f558b034e6fcda5739eec0864d812b2d2aa19625fbad47d007f0077",
-    "operations_parent": "9051cbf266932b0157690a2d57df16c0dbb23fa6",
-    "operations_ref": "refs/heads/codex-ci-group-author-browser-v1-20261126",
-    "operations_delta": "Exactly six new paths; all415 parent mode/type/blob tuples remain unchanged,421 final. First new-ref push only, attempt1, exact workflow/source SHA, no dispatch/retry/force."
-  },
-  "required_fresh_frontend_gates": {
-    "full_current_contracts": 549,
-    "test_files": 65,
-    "standalone_dashboard_typecheck": true,
-    "fresh_dashboard_vite": true,
-    "fresh_owned_api_next": true,
-    "next_required_exports": [
-      "login",
-      "signup",
-      "verify",
-      "team",
-      "blog",
-      "calculator"
-    ],
-    "scope": "549/65 and standalone tsc remain current-required unless Root provides an immutable actual same-source accepted receipt before freeze. Vite and Next are always fresh for the served app. No future or retained result is represented as fresh."
+    "operations_parent": "a4e0e57db3e4e72f9c92642115977530e2fde85f",
+    "operations_ref": "refs/heads/codex-ci-group-author-browser-retained-v2-20261126",
+    "operations_delta": "Exactly three existing workflow/PLAN/runner paths change from a4e0; all418 other a4e0 tuples remain exact. Explicit a4e0→9051 chain, original six new paths across415→421 and all415 old tuples preserved. Operations depth3; driver/fixture/checker exact a4e0 GitLF pins."
   },
   "actors": [
     {
@@ -353,25 +337,22 @@
     "process": "Actual stopped API exit0/nonrunning/noOOM and running nonOOM PG observed before database drop; native browser exit, both strict checkers, empty private directory, marked DB absence and bounded owned lifecycle cleanup all required."
   },
   "local_checks": {
-    "status": "BOUNDED_SOURCE_CHECKS_PASS_NO_APPLICATION_RUNTIME",
+    "status": "FINITE_METADATA_SOURCE_CHECKS_PASS_NO_APPLICATION_RUNTIME",
     "completed": [
-      "Actual current driver Node --check0; TypeScript AST parse0, exact33-stage/57-literal-reason inventory;15 localized literal keys resolve in both actual A806 locales.",
-      "Actual isolated source family/object-shape helpers8 positive/7 negative controlsPASS with no browser/application import.",
-      "Actual Python AST-only13 embedded runner programs plus2 Group Python files parse0; exact readonly backend367/frontend620 composition guards both exit0 against final6ef/A806.",
-      "Groups final strict parser2 positive/40 negative controlsPASS, including valid finite diagnostics alwaysFAIL; receipt SHA27f4ce96f653e74ecd2a3f89c41acb3025fd287533861af9aee0414eb65bf2f2.",
-      "Release reviewer fully read fixture/checker and AST-bound exact42 API/24 browser fields+33 stages/57 reasons; no product/native/browser test executed by this source review."
+      "Original a4e0 bounded source-only checks and full six-file Root/Groups/Google source reviews remain immutable; no unchanged pure-helper/parser/application tests rerun for this metadata child.",
+      "Current11 embedded runner Python programs parse AST-only0; exact3 changed paths and original415→421 span with all418 other a4e0 tuples preserved are verified at freeze. Original9f5f/df83/e42b driver/fixture/checker GitLF remain exact.",
+      "Root actual immutable phase-only receipt verified1635B/SHA03e1b66bbc538d3440d48ff113de5bc5acab6dc7e98fe7149816488dc8812cd5; primary120299B/SHAa1730d941824f2131087cf461dd12adaec7ebe03f926b09362a869c1229b4efd. No overall browser acceptance inferred."
     ],
     "not_run": [
-      "application import",
-      "full549 contracts",
-      "standalone tsc",
+      "duplicated full549 and standalone tsc (retained actual unchanged-source proof only)",
       "Vite",
       "Next",
+      "application import",
       "browser",
       "native PostgreSQL",
       "provider calls",
-      "production change",
-      "first push"
+      "push",
+      "production change"
     ],
     "source_receipts": [
       {
@@ -384,13 +365,48 @@
       }
     ],
     "pending": [
-      "Root full final source review and first isolated push",
-      "Actual hosted fresh549/tsc/build/browser/API/process/cleanup proof. No same-source retained frontend acceptance is assumed."
+      "Immutable three-path child identity and Root/independent finite delta review",
+      "Actual fresh Group Vite/Next/browser12/16/8/16/24/full106/private4/process/cleanup proof."
     ]
   },
   "source_review": {
     "fixture_checker": "Release full source review passed exact df83 fixture/e42b checker; no runtime.",
     "runtime_driver": "Groups independently fully read all four files including final UID/exactUUID/no-store precisions, full474-line runner and exact current33/57 driver enums; no findings, final immutable receipt will bind commit identity.",
-    "additional_review": "Google provisionally fully read all six draft files and source interactions with no functional/privacy blocker; PLAN24-key wording corrected. Root full immutable review still required."
+    "additional_review": "Google provisionally fully read all six draft files and source interactions with no functional/privacy blocker; PLAN24-key wording corrected. Root full immutable review still required.",
+    "metadata_successor": "Original a4e0 source and both full cold reviews remain immutable. This three-path successor changes only exact parent/span guards, proof metadata/labels, and deletion of duplicated whole549 and standalone tsc commands. No fixed acceptance predicate is relaxed."
+  },
+  "retained_frontend_primary": {
+    "status": "ROOT_INDEPENDENT_ACTUAL_PHASE_ACCEPTED_BROWSER_INCOMPLETE",
+    "run": 45902156502,
+    "job": 140190268622,
+    "frontend": "a8069c847a75823fc5a62101895a80d8fc1f8b1d",
+    "frontend_tree": "3fbc3dc23f6ca5fec9515655c26e7d122fcd2679",
+    "backend": "6ef69b249c573eedaea962dad530eaed0a612b24",
+    "contracts": 549,
+    "test_files": 65,
+    "standalone_dashboard_typecheck_native": 0,
+    "root_primary_log_sha256": "a1730d941824f2131087cf461dd12adaec7ebe03f926b09362a869c1229b4efd",
+    "root_acceptance_file": "outputs/property-network-20261101/profile-current549-45902156502-root-phase-acceptance.json",
+    "root_acceptance_sha256": "03e1b66bbc538d3440d48ff113de5bc5acab6dc7e98fe7149816488dc8812cd5",
+    "scope": "Actual exact-source full549/65/native0 and separate Dashboard tsc0 accepted independently by Root. Overall profile browser/WebKit is incomplete. This child retains only those unchanged A806620-source unit/standalone phases; fresh Group Vite/owned-API Next and every browser/API/privacy/process/cleanup predicate remain mandatory.",
+    "root_primary_log_bytes": 120299
+  },
+  "frontend_proof_requirements": {
+    "retained_exact_source_contracts": 549,
+    "test_files": 65,
+    "retained_standalone_dashboard_typecheck": true,
+    "current_duplicate_contracts": false,
+    "current_duplicate_standalone_typecheck": false,
+    "fresh_dashboard_vite": true,
+    "fresh_owned_api_next": true,
+    "next_required_exports": [
+      "login",
+      "signup",
+      "verify",
+      "team",
+      "blog",
+      "calculator"
+    ],
+    "scope": "Remove only duplicated whole contract and standalone tsc phases once Root immutable actual same-source proof is bound. Always fresh serving Vite/Next; all original Group driver/API/native ledger/privacy/process/cleanup predicates unchanged."
   }
 }

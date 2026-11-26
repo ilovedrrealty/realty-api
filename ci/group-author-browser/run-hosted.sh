@@ -6,7 +6,7 @@ die() { printf 'GROUP_AUTHOR_REFUSED %s\n' "$1" >&2; exit 1; }
 bounded() { timeout --kill-after=8s "$@"; }
 [[ $# == 8 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 &&
-   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-group-author-browser-v1-20261126 &&
+   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-group-author-browser-retained-v2-20261126 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die HOSTED_EXACT_EVENT_REQUIRED
 ops="$1"; frontend="$2"; baseline="$3"; backend="$4"; migration="$5"; relay="$6"; previous="$7"; reference="$8"
 [[ "$ops" == "$GITHUB_WORKSPACE/build-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-source" &&
@@ -20,15 +20,13 @@ done
 expected_operations=$(cat <<'EXACT_OPERATIONS'
 .github/workflows/group-author-browser.yml
 ci/group-author-browser/PLAN.json
-ci/group-author-browser/check-result.py
-ci/group-author-browser/run-browser.mjs
 ci/group-author-browser/run-hosted.sh
-ci/group-author-browser/serve_fixture.py
 EXACT_OPERATIONS
 )
 operations_delta=$(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) || die OPERATIONS_DIFF_REQUIRED
 [[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" &&
-   $(git -C "$ops" show -s --format=%P HEAD) == 9051cbf266932b0157690a2d57df16c0dbb23fa6 &&
+   $(git -C "$ops" show -s --format=%P HEAD) == a4e0e57db3e4e72f9c92642115977530e2fde85f &&
+   $(git -C "$ops" rev-parse HEAD^^) == 9051cbf266932b0157690a2d57df16c0dbb23fa6 &&
    "$operations_delta" == "$expected_operations" ]] || die EXACT_OPERATIONS_REQUIRED
 python3 -I -B - "$ops" <<'PY_OPERATIONS_REUSE'
 from pathlib import Path
@@ -36,10 +34,15 @@ import subprocess,sys
 root=Path(sys.argv[1])
 def git(*args):return subprocess.check_output(['git','-C',str(root),*args])
 def tree(commit):return dict((line.split(b'\t',1)[1].decode(),line.split(b'\t',1)[0]) for line in git('ls-tree','-rz',commit).split(b'\0') if line)
-old,new=tree('HEAD^'),tree('HEAD')
+old,middle,new=tree('HEAD^^'),tree('HEAD^'),tree('HEAD')
 paths={'.github/workflows/group-author-browser.yml','ci/group-author-browser/PLAN.json','ci/group-author-browser/check-result.py','ci/group-author-browser/run-browser.mjs','ci/group-author-browser/run-hosted.sh','ci/group-author-browser/serve_fixture.py'}
-assert len(old)==415 and len(new)==421 and set(new)-set(old)==paths and not set(old)-set(new)
-assert all(new[name]==value for name,value in old.items())
+changed={'.github/workflows/group-author-browser.yml','ci/group-author-browser/PLAN.json','ci/group-author-browser/run-hosted.sh'}
+assert len(old)==415 and len(middle)==len(new)==421 and set(middle)-set(old)==paths and not set(old)-set(middle)
+assert set(middle)==set(new) and {name for name,value in middle.items() if new[name]!=value}==changed
+assert all(new[name]==middle[name]==value for name,value in old.items())
+pins={'ci/group-author-browser/run-browser.mjs':'9f5f4902e70349a51fdde0dec8b49862a47be297dbdf601043d22a36af222fef','ci/group-author-browser/serve_fixture.py':'df83d51fb80ca1a6f4c03bc34a0f25b401d33419d1a3c29935ef8d0c470ef6ad','ci/group-author-browser/check-result.py':'e42b2f3a8e36dd801f47adb5e2ed6a81522da77fb670a6c6185f2d71355e9be4'}
+from hashlib import sha256
+for name,digest in pins.items():assert sha256((root/name).read_bytes()).hexdigest()==digest
 PY_OPERATIONS_REUSE
 backend_commit=6ef69b249c573eedaea962dad530eaed0a612b24
 backend_tree=f1ef617e51e0d8a900d9f4bfc15a559bf676276f
@@ -91,7 +94,7 @@ assert len(base)==len(current)==620 and sum(current[name]==value for name,value 
 for name,digest in pins.items():assert sha256(git('show','HEAD:'+name)).hexdigest()==digest
 assert len([name for name in current if name.startswith('tests/') and name.endswith('.test.cjs')])==65
 PY_FRONTEND_COMPOSITION
-printf 'GROUP_AUTHOR_BUILD_SCOPE frontend_source=a8069c847a75823fc5a62101895a80d8fc1f8b1d backend_source=6ef69b249c573eedaea962dad530eaed0a612b24 expected_full_tests=549 current_tests=required current_strict=required native162=retained_not_rerun profile24_32=separate_gate_not_rerun\n'
+printf 'GROUP_AUTHOR_BUILD_SCOPE frontend_source=a8069c847a75823fc5a62101895a80d8fc1f8b1d backend_source=6ef69b249c573eedaea962dad530eaed0a612b24 expected_full_tests=549 retained_tests_run=45902156502 retained_strict_run=45902156502 current_tests=false current_strict=false native162=retained_not_rerun profile24_32=separate_gate_not_rerun\n'
 python3 -I -B - "$baseline/requirements.txt" "$backend/requirements.txt" <<'PY_REQUIREMENTS'
 from pathlib import Path
 import sys
@@ -205,40 +208,13 @@ assert sys.argv[2] == "0"
 PY
 verify_source || die INSTALLED_FRONTEND_MISMATCH
 
-native=0
-bounded 360s docker run "${prepare[@]}" --network none \
-  --mount "type=bind,src=$state/frontend-work,dst=/work" "$node_image" \
-  env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp CI=true NODE_OPTIONS=--max-old-space-size=1536 \
-  sh -c 'node --test --test-reporter=tap tests/*.test.cjs' >"$state/contracts.log" 2>&1 || native=$?
-python3 -I -B - "$state/contracts.log" "$native" <<'PY_CONTRACTS' || die ACTUAL_549_CONTRACTS_REQUIRED
-from pathlib import Path
-import re,sys
-raw=Path(sys.argv[1]).read_bytes()
-assert len(raw)<=4*1024*1024
-counts={key.decode():int(value) for key,value in re.findall(rb'(?m)^# (tests|pass|fail|cancelled|skipped|todo) ([0-9]+)\s*$',raw)}
-print('GROUP_AUTHOR_FRONTEND_CONTRACTS native='+sys.argv[2]+' '+str(counts))
-if sys.argv[2]!='0':
-    for name,line,col in re.findall(rb"location: '/work/(tests/[A-Za-z0-9_.-]+\.cjs):([0-9]+):([0-9]+)'",raw)[:12]:
-        print('GROUP_AUTHOR_CONTRACT_LOCATION '+name.decode()+':'+line.decode()+':'+col.decode())
-assert sys.argv[2]=='0' and counts=={'tests':549,'pass':549,'fail':0,'cancelled':0,'skipped':0,'todo':0}
-PY_CONTRACTS
-verify_source || die CONTRACTS_ALTERED_FRONTEND_SOURCE
-native=0
-bounded 360s docker run "${prepare[@]}" --network none \
-  --mount "type=bind,src=$state/frontend-work,dst=/work" "$node_image" \
-  env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp CI=true NODE_OPTIONS=--max-old-space-size=1536 \
-  sh -c 'npm run typecheck --workspace=dashboard' >"$state/strict.log" 2>&1 || native=$?
-python3 -I -B - "$state/strict.log" "$native" <<'PY_STRICT' || die ACTUAL_STRICT_DASHBOARD_REQUIRED
-from pathlib import Path
-import re,sys
-raw=Path(sys.argv[1]).read_bytes()
-assert len(raw)<=1048576
-for file,line,col,code in re.findall(rb'(?m)^((?:src|\.\./\.\./packages)/[A-Za-z0-9_./-]+\.(?:ts|tsx))\(([0-9]{1,5}),([0-9]{1,5})\): error (TS[0-9]{4}):',raw)[:12]:
-    print('GROUP_AUTHOR_STRICT_DIAGNOSTIC '+file.decode()+':'+line.decode()+':'+col.decode()+' '+code.decode())
-print('GROUP_AUTHOR_STRICT_DASHBOARD native='+sys.argv[2])
-assert sys.argv[2]=='0'
-PY_STRICT
-verify_source || die STRICT_ALTERED_FRONTEND_SOURCE
+# These exact unchanged-source phases are retained only from Root's actual primary receipt.
+retained_log_sha=a1730d941824f2131087cf461dd12adaec7ebe03f926b09362a869c1229b4efd
+retained_acceptance_sha=03e1b66bbc538d3440d48ff113de5bc5acab6dc7e98fe7149816488dc8812cd5
+[[ "$retained_log_sha" =~ ^[a-f0-9]{64}$ && "$retained_acceptance_sha" =~ ^[a-f0-9]{64}$ ]] || die RETAINED_ACTUAL_PRIMARY_PROOF_REQUIRED
+printf 'GROUP_AUTHOR_RETAINED_FRONTEND run=45902156502 job=140190268622 frontend=%s backend=%s contracts=549 pass=549 fail=0 cancelled=0 skipped=0 todo=0 test_files=65 standalone_typecheck_native=0 fresh_current=false log_sha256=%s root_acceptance_sha256=%s\n' \
+  "$frontend_commit" "$backend_commit" "$retained_log_sha" "$retained_acceptance_sha"
+verify_source || die RETAINED_FRONTEND_SOURCE_MISMATCH
 
 native=0
 bounded 360s docker run "${prepare[@]}" --network none \
@@ -266,7 +242,7 @@ if sys.argv[3] != "0":
     raise SystemExit(1)
 assert b"vite build" in data and index.is_file() and not index.is_symlink()
 assert b"127.0.0.1:8918" in b"".join(f.read_bytes() for f in index.parent.glob("assets/*.js") if f.is_file())
-print("GROUP_AUTHOR_DASHBOARD native=0 build=success standalone_typecheck=separate_current_phase")
+print("GROUP_AUTHOR_DASHBOARD native=0 build=success standalone_typecheck=retained_run_45902156502")
 PY
 verify_source || die DASHBOARD_ALTERED_SOURCE
 
@@ -470,5 +446,5 @@ PY_PROCESS
   verify_source || die BROWSER_ALTERED_FRONTEND_SOURCE
   [[ -z $(git -C "$backend" status --porcelain=v1 --untracked-files=all) ]] || die BROWSER_ALTERED_BACKEND_SOURCE
 done
-printf 'GROUP_AUTHOR_HOSTED_RESULT operations=%s frontend=%s backend=%s retained_native162_run=45652164070 frontend_tests=549_current standalone_strict=current dashboard=current landing=current browser=exact_checker_pass authoritative_fixture=exact_checker_pass live_provider_calls=0 run=%s attempt=1\n' \
+printf 'GROUP_AUTHOR_HOSTED_RESULT operations=%s frontend=%s backend=%s retained_native162_run=45652164070 retained_frontend_tests=549 retained_frontend_run=45902156502 retained_standalone_strict_run=45902156502 current_frontend_tests=false current_standalone_strict=false dashboard=current landing=current browser=exact_checker_pass authoritative_fixture=exact_checker_pass live_provider_calls=0 run=%s attempt=1\n' \
   "$GITHUB_SHA" "$frontend_commit" "$backend_commit" "$GITHUB_RUN_ID"
