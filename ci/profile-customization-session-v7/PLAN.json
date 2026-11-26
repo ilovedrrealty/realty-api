@@ -1,0 +1,426 @@
+{
+  "schema": "profile_completed_session_lifecycle_v7_plan_v1",
+  "status": "FROZEN_SOURCE_ONLY_READY_FOR_ROOT_AND_GROUPS_FULL_COLD_BROWSER_UNRUN",
+  "operations_parent": "579e4654627b2075f902426ff14d7ca0e18dd929",
+  "proposed_first_ref": "codex-ci-profile-customization-session-lifecycle-v7-20261126",
+  "new_paths": [
+    ".github/workflows/profile-customization-browser-v7.yml",
+    "ci/profile-customization-session-v7/PLAN.json",
+    "ci/profile-customization-session-v7/check-result.py",
+    "ci/profile-customization-session-v7/run-browser.mjs",
+    "ci/profile-customization-session-v7/run-hosted.sh"
+  ],
+  "frontend": {
+    "commit": "a8069c847a75823fc5a62101895a80d8fc1f8b1d",
+    "tree": "3fbc3dc23f6ca5fec9515655c26e7d122fcd2679",
+    "source_blobs": 620,
+    "original_merge": "5ecb7c6e16268f1e8edd1b54d70f11e605e57a02",
+    "testrepair_LF_pins": {
+      "tests/realtor-sale-catalog.test.cjs": "b2a45690dd716d6ba0bb6b1126ca4e20ff32a48a73938d52bbf4db262d3d33d7",
+      "tests/service-operations.test.cjs": "4a42d9a0a5d84b2d59c0802d7891b72e2c71b58d76d45fa5864cbad41cd1aa0f"
+    },
+    "productfix_LF_pins": {
+      "apps/dashboard/src/components/network/MemberCommunity.tsx": "42827187beaa5019539a6a2426bf4abbb9b84971350ebb53d345b283ac7dd77c",
+      "tests/property-network-ui.test.cjs": "62dc5a256533675f503eebf85a66a4fbe22a5d82431fa75c40b1ad4810074a49"
+    },
+    "fetch_depth": 21,
+    "test_files": 65,
+    "fresh_separate_Dashboard_typecheck": false,
+    "fresh_Vite_Next": true,
+    "previous544_tsc_must_not_substitute_on_changed_application": true,
+    "source_proposal": "profile-group-visuals-a806-combined-source-proposal-20261126.json",
+    "source_proposal_SHA256": "5346e69d7615e984aa4cd8b8e6ba590bb9ec4f2b7fc6270b6914b011b761b9e0",
+    "parents": [
+      "ee32af9f5c0db6f79412c7c089e7f9f7143f42d3",
+      "0bc3fc968199490344c79c9cbed44afb0875eb18"
+    ],
+    "current_full_tests": 549,
+    "fresh_full_tests": false,
+    "composition": "Exact original5ec union +two test repairs +bb79 member identities +ee32 Group identities +nine exclusive0bc/ee32 blobs and exact whole final UI overlap;620tuples/610outside10 unchanged.",
+    "profile_parent_chain": [
+      "5ecb7c6e16268f1e8edd1b54d70f11e605e57a02",
+      "09bfd9f54ec8bca8a1d0488a571d8dbac0df2743",
+      "3b7d8190951fcdca574d7af98bb1bbf62c97e764",
+      "bb79bcefb016309f77deea7695bdf65d3bcf1c8b",
+      "ee32af9f5c0db6f79412c7c089e7f9f7143f42d3"
+    ],
+    "original_profile_acceptance_and_firstpush": {
+      "root_FULL": {
+        "path": "C:\\Users\\hotel\\Documents\\Codex\\2026-10-13\\i-3\\outputs\\property-network-20261101\\profile-sibling-identities-bb79-root-full-source-review-20261125.json",
+        "bytes": 2861,
+        "sha256": "64e42974d9f51dfc0e55c9c8398c7ab10211023da5a8c8b750f4fc5760ecba1d"
+      },
+      "independent_FULL": {
+        "path": "C:\\Users\\hotel\\Documents\\Codex\\2026-10-13\\i-3\\outputs\\property-network-20261101\\profile-sibling-identities-bb79-groups-full-cold-review-20261125.json",
+        "bytes": 4583,
+        "sha256": "acf18e33e8dce21656f42ac397bf658b24051ae8dff137b591abe62b9dfdbcf7"
+      },
+      "first_review_ref_push": "Root confirmed actual native exit0/exact remote readback after FULL+cold acceptance on2026-11-25; no push by this author."
+    },
+    "final_source_acceptance": {
+      "root_FULL_receipt": "profile-group-visuals-a806-root-full-source-review-20261126.json",
+      "root_receipt_bytes": 4614,
+      "root_receipt_sha256": "c48ecf57bcc3bf243b77e8befeb26ccb683bd18eb73c6665de46e846e548846f",
+      "Groups_FULL_cold_bytes": 7903,
+      "Groups_FULL_cold_sha256": "a8c51d0ff802da0f719717e7f3598282b9a4c867991e75c19f0d41ca8f044795",
+      "first_review_ref": "Root confirmed native0/exact remote readback a806/codex-profile-group-visuals-20261126 on2026-11-26; no main/publication."
+    },
+    "source_proposal_bytes": 5388,
+    "retained_current_full_tests": 549,
+    "retained_actual_unit_strict_run": 45902156502
+  },
+  "backend": {
+    "commit": "6ef69b249c573eedaea962dad530eaed0a612b24",
+    "tree": "f1ef617e51e0d8a900d9f4bfc15a559bf676276f",
+    "contract": "profile-customization-contract-v4-20261125.json",
+    "contract_sha256": "573002892d45a8df38674956db7c97e621e2ecd15cf6e6b9bd1a0d76d6cde6dc",
+    "native_gate": "ACTUAL root+Groups independently accepted native162 run45652164070/job139339255787 on6ef; retained without rerun. Original profile fixture result field retained_native134_run remains unchanged45630574556.",
+    "migration": "Genuine owned106 bootstrap from accepted179, then actual e8b5a3d1f907. Table count stays106; exact four nullable column additions, checks/index/trigger/function/revoked execute must be validated. Original rows compared on original-column projection; original catalog changes limited to reviewed additive DDL.",
+    "parent": "a75f9c26f3bceb14afcb6e1150e1b2a3d50fbada",
+    "fetch_depth": 11,
+    "composition": "Preserve original367 a75 source union; extend only exact3 Group opt-in files with pinned LF hashes. All364 other tuples unchanged; same e8 schema and original44 API fields.",
+    "profile_application_source": "2ff311999d41b7719f64b61dc9d7fc04c3465cd4",
+    "current_application_source": "6ef69b249c573eedaea962dad530eaed0a612b24"
+  },
+  "current_failure": {
+    "run": 45902156502,
+    "job": 140190268622,
+    "stage": "es_save_persist_and_readonly",
+    "reason": "TIMEOUT",
+    "observed": "Expected document HTTP200; noDOMContentLoaded/load, boundedDOMprobe timedout. No current PID/memory measurement or proven cause.",
+    "primary_bytes": 120299,
+    "primary_sha256": "a1730d941824f2131087cf461dd12adaec7ebe03f926b09362a869c1229b4efd"
+  },
+  "only_driver_changes": [
+    "After all12 completed EN journeys, close exactly7 EN Chromium contexts/6 UI pages and assert acknowledged absence before any ES session is created. This is proper completed-session cleanup, not proof of the prior timeout cause.",
+    "Keep original created-contexts list14/finaljourneys24/presence12/logins12 and every original UI action/control/privacy/106/private-file check. ES owns fresh original7 contexts and supplies only its own cookie state to still-mandatory WebKit.",
+    "Bounded fixed-own-cgroup numeric observation at pre/postEN retirement, preWebKit and original navigation failure; no additional process/HTTP/protocol probe and no raw path/PID/cmdline/env/URL/identity/error output.",
+    "Only trust measurements after actual pids.max256 and memory.max2GiB verify current scope. Unknown metrics are null; memory.current is instantaneous and memory.peak is explicitly kernel peak. Original caps/timeouts unchanged.",
+    "Retired-set guards reject accidental context reuse and avoid redundant final close. Original navigation census and original error identity remain binding."
+  ],
+  "same_written_contract": {
+    "journeys": 24,
+    "geometry": 32,
+    "contexts": 14,
+    "presence": 12,
+    "actual_logins": 12,
+    "ui_mutation_requests": 20,
+    "upload_successes": 6,
+    "profile_saves": 8,
+    "stale_refusals": 2,
+    "auth_refusals": 4,
+    "uncertain_commits": 2,
+    "api_boundary_checks": 16,
+    "control_transitions": 28,
+    "denial_projection_checks": 8,
+    "stale_context_checks": 2,
+    "page_errors": 0,
+    "unexpected_mutations": 0,
+    "external_writes": 0,
+    "tracking_requests": 0
+  },
+  "same_ordered_ui_requests_per_locale": [
+    {
+      "method": "POST",
+      "path": "/property-network/me/profile/media",
+      "kind": "avatar",
+      "status": 201
+    },
+    {
+      "method": "POST",
+      "path": "/property-network/me/profile/media",
+      "kind": "cover",
+      "status": 201
+    },
+    {
+      "method": "PUT",
+      "path": "/property-network/me/profile",
+      "expected_version": 1,
+      "selection": "A/C",
+      "status": 200,
+      "result_version": 2
+    },
+    {
+      "method": "POST",
+      "path": "/property-network/me/profile/media",
+      "kind": "avatar_replacement",
+      "status": 201
+    },
+    {
+      "method": "PUT",
+      "path": "/property-network/me/profile",
+      "expected_version": 2,
+      "selection": "B/null",
+      "status": 200,
+      "result_version": 3
+    },
+    {
+      "method": "PUT",
+      "path": "/property-network/me/profile",
+      "expected_version": 3,
+      "selection": "B/null",
+      "body": "staleBio",
+      "status": 409
+    },
+    {
+      "method": "PUT",
+      "path": "/property-network/me/profile",
+      "expected_version": 4,
+      "selection": "B/null",
+      "body": "uncertainBio",
+      "status": 200,
+      "result_version": 5,
+      "browser_response": "aborted_after_real_commit"
+    },
+    {
+      "method": "PUT",
+      "path": "/property-network/me/profile",
+      "expected_version": 5,
+      "selection": "null/null",
+      "body": "uncertainBio",
+      "status": 200,
+      "result_version": 6
+    },
+    {
+      "method": "POST",
+      "path": "/property-network/me/profile/media",
+      "kind": "avatar",
+      "status": 403
+    },
+    {
+      "method": "PUT",
+      "path": "/property-network/me/profile",
+      "expected_version": 6,
+      "selection": "null/null",
+      "body": "deniedBio",
+      "status": 403
+    }
+  ],
+  "same_ordered_controls": {
+    "en": [
+      "advance_target_version",
+      "author_private",
+      "author_members",
+      "peer_members",
+      "revoke_peer_assignment",
+      "restore_peer_assignment",
+      "peer_private",
+      "target_private",
+      "target_members",
+      "target_avatar_none",
+      "target_avatar_restore",
+      "target_unverified_upload",
+      "target_verified_upload",
+      "target_unverified_save",
+      "target_verified_save"
+    ],
+    "es": [
+      "advance_target_version",
+      "author_private",
+      "author_members",
+      "revoke_peer_assignment",
+      "restore_peer_assignment",
+      "target_private",
+      "target_members",
+      "target_avatar_none",
+      "target_avatar_restore",
+      "target_unverified_upload",
+      "target_verified_upload",
+      "target_unverified_save",
+      "target_verified_save"
+    ]
+  },
+  "failure_only_diagnostic_contract": {
+    "scope": "Only when the original exact saved-notice wait fails after realPUT200, read bounded public DOM counts and raw receipt/request predicates; preserve the original exception and all existing success assertions.",
+    "marker": "PROFILE_BROWSER_SAVE_CENSUS",
+    "max_record_bytes": 1024,
+    "collection_deadline_ms": 2000,
+    "counts": "14 source-owned DOM counts capped at20, with explicit counts_capped boolean. No raw DOM text or attributes.",
+    "request_receipt": "Only request-valid/can_edit-valid booleans, finite actualPUT200/versions and selectedID equality booleans; no IDs/names/content/body/cookies/URLs/errors emitted.",
+    "side_effects": "No extra HTTP, mutations, clicks, sleeps, React state, or data writes.",
+    "parser": "Single strict typed <=1KiB record; duplicate/extra/wrong-type/unknown stage rejected; any valid diagnostic always fails acceptance even with laterPASS."
+  },
+  "read_only_assets": {
+    "fixture": "ci/profile-customization-browser/serve_fixture.py",
+    "fixture_SHA256": "91a79810c6d8b395721a6ff936d6d6c195be5920e48b33efb1f675619a015284",
+    "baseline_driver": "ci/profile-customization-webkit-navigation-v6/run-browser.mjs",
+    "baseline_driver_SHA256": "51ecbbc09ab2b457b0dabb5c42ff45f9a47182957fbe451cc2e1a28272de5ee9",
+    "baseline_checker": "ci/profile-customization-webkit-navigation-v6/check-result.py",
+    "baseline_checker_SHA256": "7282e44e71de28b36b2f0baac9282658b2e395657b9cf52aa41dd82b27b63703",
+    "prior_v5_driver": "ci/profile-customization-browser-v5/run-browser.mjs",
+    "new_checker": "ci/profile-customization-session-v7/check-result.py"
+  },
+  "fresh_required": [
+    "Dashboard Vite",
+    "Landing Next+6exports",
+    "All original24journeys32geometry20mutations28controls16boundaries/full106/media/audit/9private-file/privacy/process/ownedcleanup/artifacts",
+    "Mandatory available WebKit1journey2geometry2privateimages; absent-executable original alternative unchanged"
+  ],
+  "runtime": "All420 inherited source tuples immutable; five new namespace paths only. ExactA806/6ef/sourcecomposition/native162/identity-only91a798 fixture adapter remain unchanged. Retain actualsame549+TSC45902156502; freshViteNext/full24/32/20/28/16/API106/privatefiles required. Caps, navigation20s/action15s/stage60s/browser600s/provider refusal and cleanup unchanged.",
+  "source_evidence": [
+    {
+      "path": "C:\\Users\\hotel\\Documents\\Codex\\2026-10-13\\i-3\\outputs\\property-network-20261101\\profile-browser-v4-stale-lock-groups-source-finding-20261125.json",
+      "bytes": 6483,
+      "sha256": "2964bfdff532d9ad9b932301c423427532af14fdcb9eeaea44ca4dada2854d2b"
+    },
+    {
+      "path": "C:\\Users\\hotel\\Documents\\Codex\\2026-10-13\\i-3\\outputs\\property-network-20261101\\profile-fieldset-playwright1641-primary-20261125\\RECEIPT.json",
+      "bytes": 4466,
+      "sha256": "9da64cb4b091e6e34794dbf628bdf1c092d1f7b61856a662ad32852d58e11c85"
+    },
+    {
+      "path": "C:\\Users\\hotel\\Documents\\Codex\\2026-10-13\\i-3\\outputs\\property-network-20261101\\profile-browser-v4-45657875113-google-failure.json",
+      "bytes": 9077,
+      "sha256": "b45e3c246ccd3432e167580194b82e279f55dde3b9ce9b6c63339cd64506c56b"
+    },
+    {
+      "path": "C:\\Users\\hotel\\Documents\\Codex\\2026-10-13\\i-3\\outputs\\property-network-20261101\\profile-browser-v5-45898357372-google-failure.json",
+      "bytes": 5381,
+      "sha256": "4a5ca33f26599ab406abed8bfb7276074e4db7a0dc7afcccc3b4fb318596aa89"
+    }
+  ],
+  "not_performed": [
+    "Application/model/native/DB/browser/build/install",
+    "Full549 or standalone tsc",
+    "Provider/CUA/production changes",
+    "Push"
+  ],
+  "local_checks": {
+    "status": "PASS_BOUNDED_SOURCE_ONLY",
+    "Node_syntax_exit": 0,
+    "Node_old_space_MiB": 96,
+    "inline_Python_AST": 11,
+    "checker_AST": 1,
+    "total_AST": 12,
+    "whole_driver_and_checker_lifecycle_reversals_exact579e": true,
+    "unchanged_seven_source_adapter_runtime_programs_byte_exact579e": true,
+    "baseline016955_tree_literal_matches_actualGit": true,
+    "relay179_6ef_tree_literals_match_actualGit": true,
+    "controls": [
+      {
+        "path": "C:\\Users\\hotel\\Documents\\Codex\\2026-10-13\\i-3\\outputs\\property-network-20261101\\profile-v7-pure-lifecycle-controls-20261126.json",
+        "bytes": 408,
+        "sha256": "22c6736a486319b5a4c71d046d6e7c943c240f5568dd17313b2d5c6cb6a33358",
+        "result": {
+          "status": "PASS_PURE_SOURCE_LIFECYCLE_PRIVACY_CONTROLS",
+          "controls": 10,
+          "source_sha256": "cbbfd0e5e63715c95472a647301bd1c9dadafae538c598a3e4c6fc1593ffa997",
+          "same_original_navigation_error": true,
+          "retirement_acknowledged": true,
+          "incomplete_sessions_refused": true,
+          "unknown_metrics_null": true,
+          "kernel_peak_distinct_from_current": true,
+          "actual_app_browser_FS_DB_or_network": false
+        }
+      },
+      {
+        "path": "C:\\Users\\hotel\\Documents\\Codex\\2026-10-13\\i-3\\outputs\\property-network-20261101\\profile-v7-pure-parser-controls-20261126.json",
+        "bytes": 370,
+        "sha256": "2911f300a72f4ace4b765e4551eb5e019391780ba2229139e0e80c6d99cf7e51",
+        "result": {
+          "status": "PASS_PURE_STRICT_PARSER_CONTROLS",
+          "positive": 4,
+          "negative_refusals": 64,
+          "original_navigation_census_always_fails": true,
+          "failure_resource_always_fails": true,
+          "unknown_metrics_null_accepted": true,
+          "source_sha256": "1b3d9663387fb430ddf0dbc29a6af23a6035be6e533654e52f3304c03edb7cdf",
+          "app_browser_native_DB_or_network": false
+        }
+      }
+    ],
+    "Bash": "UNAVAILABLE_LOCALLY_HOSTED_BASH_N_REQUIRED",
+    "application_native_DB_browser_build_install_provider_push": false
+  },
+  "diagnostic_record": {
+    "prefix": "PROFILE_WEBKIT_NAVIGATION_CENSUS",
+    "max_line_bytes": 1024,
+    "max_collection_ms": 2000,
+    "max_document_counts": 20,
+    "single": true,
+    "parser": "Exact keys/types/known enums, duplicate JSON key/marker refusal; any valid diagnostic ALWAYS fails even if a later PASS exists.",
+    "preservation": "Original V6 navigation census record/limits/always-fail parser remain exact; only fixed resource snapshot added before collection while original rejection is rethrown."
+  },
+  "review_status": {
+    "root_FULL": "PENDING",
+    "Groups_FULL_cold": "PENDING",
+    "actual_browser": "UNRUN"
+  },
+  "retained_checks": {
+    "current549_and_standalone_tsc_run": 45902156502,
+    "primary_bytes": 120299,
+    "primary_sha256": "a1730d941824f2131087cf461dd12adaec7ebe03f926b09362a869c1229b4efd",
+    "root_phase_receipt": "profile-current549-45902156502-root-phase-acceptance.json",
+    "native162_run": 45652164070,
+    "original_fixture_native134_field": 45630574556,
+    "browser_still_unaccepted": true,
+    "root_phase_receipt_bytes": 1635,
+    "root_phase_receipt_sha256": "03e1b66bbc538d3440d48ff113de5bc5acab6dc7e98fe7149816488dc8812cd5"
+  },
+  "same620_paths_exact_reviewed_final_source_union": true,
+  "historical_not_substitution": {
+    "frontend": "bb79bcefb016309f77deea7695bdf65d3bcf1c8b",
+    "tree": "c96f86d323b1a16f205ebe4a2afce13a90313981",
+    "source_blobs": 620,
+    "contracts": 545,
+    "test_files": 65,
+    "standalone_Dashboard_tsc_exit": 0,
+    "run": 45657875113,
+    "job": 139359365226,
+    "primary_bytes": 119619,
+    "primary_SHA256": "f028dbf72f064f47486d47a490d1e2f18bf7466f34209628aee345cc8890ceb0",
+    "receipt": "profile-browser-v4-45657875113-google-failure.json",
+    "phase_scope": "545 and separate tsc passed before browser failure, not complete browser acceptance.",
+    "scope": "Historical bb79 only. Changed final a806 requires fresh full549 and standalone tsc; no substitution allowed."
+  },
+  "identity_only_fixture_adapter": {
+    "source": "Inline runner produces only one wrapper in owned scratch, mounted readonly at /profile-fixture-adapter.py; global cleanup removes scratch. Exact original fixture91a798 stays immutable/read-only.",
+    "preconditions": "Check readonly regular file/no symlink/hash91a798; import before any app/config/DB imports; assert original COMMIT=a75/TREE12bb; override ONLY module.COMMIT/TREE=6ef/f1ef, then call unchanged module.run().",
+    "globals_proof": "Original fixture reads COMMIT/TREE only inside native_helpers() at call time; no captured default argument or prior app import. Native helper receives current globals, every original guard/call remains in place.",
+    "main_preservation": "Original __main__ only runs run() inside safe Failure/SQLSTATE formatter and exit1. New wrapper preserves all original success/failure fields, filters, canonical JSON, stage and exit; setup failure uses safe source fallback.",
+    "reference": "Accepted native162 ci/group-author-native/verify-profile.py identity-only adapter on6ef, actual45652164070. Current wrapper additionally asserts original identities and retains original browser fixture formatter.",
+    "no_changes": "No native_helpers function/runtime guard/44field expected report/seed/schema/data/delta changes."
+  },
+  "operations_baseline": "579e4654627b2075f902426ff14d7ca0e18dd929",
+  "operations_fetch_depth": 2,
+  "all420_inherited_mode_type_blob_tuples_immutable": true,
+  "retirement_contract": {
+    "record": "PROFILE_BROWSER_RETIREMENT",
+    "required_once": true,
+    "locale": "en",
+    "completed_journeys": 12,
+    "created_Chromium_contexts": 7,
+    "closed_contexts": 7,
+    "pages_before": 6,
+    "live_contexts_after": 0,
+    "pages_after": 0,
+    "global_counters": "Original array accumulates14 created contexts; original12presence and12cookie logins plus all24/32/20/28/16 success predicates remain exact. WebKit context is separate and not added to trackedChromium counts.",
+    "future_EN_reuse": "No futureEN page reference exists outside completed locale closure. Retired-set guards on read/control/foreground/navigate reject reuse, final close skips already-retired contexts."
+  },
+  "resource_contract": {
+    "record": "PROFILE_BROWSER_RESOURCES",
+    "max_bytes": 1024,
+    "fixed_paths_only": "Seven fixed cgroup-v2 files under /sys/fs/cgroup; no /proc, pid, cmdline, env, URL, body, identity or raw error lookup/output.",
+    "max_collection_ms": 2000,
+    "phases": [
+      "pre_en_retirement",
+      "post_en_retirement",
+      "pre_webkit",
+      "webkit_failure only if original navigation rejects"
+    ],
+    "metrics": [
+      "pids_current",
+      "pids_limit",
+      "pids_max_events",
+      "memory_current_bytes",
+      "memory_limit_bytes",
+      "kernel_memory_peak_bytes",
+      "memory_oom_events",
+      "memory_oom_kill_events"
+    ],
+    "scope": "Require actual pids.max256 AND memory.max2147483648 before reporting any numeric resource field. Otherwise every metric is null. Individual unavailable metrics are null, not0.",
+    "memory_semantics": "memory_current_bytes is only the instant sample. kernel_memory_peak_bytes comes only from memory.peak; null if unavailable, no inferred sampled peak.",
+    "context_counts": "chromium_created_contexts/retired/live/pages refer only to tracked Chromium contexts. Optional WebKit remains separately instantiated and untracked.",
+    "acceptance": "Exactly3 ordered samples plus mandatory retirement record on success; failure sample and old navigation census always causeFAIL. Strict exact keys/types/enums/bounds/duplicates. Measurements do not independently prove resource pressure caused the prior timeout."
+  }
+}
