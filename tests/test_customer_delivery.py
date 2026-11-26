@@ -437,7 +437,7 @@ class CustomerDeliveryTests(unittest.TestCase):
             for number, role in enumerate(("buyer", "owner", "realtor"), 1):
                 identity = uuid4()
                 staff[role] = identity
-                db.add(User(id=identity, user_code=9200+number, email=f"reader-{role}@example.com",
+                db.add(User(id=identity, user_code=9200+number, email=f"reader-{role}@example.com", display_name=f"Synthetic {role} reader",
                             role=role, email_verified=True, status="active"))
             db.commit()
         url = f"/admin/users/{historical_id}/communications"
