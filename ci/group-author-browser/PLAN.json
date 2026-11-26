@@ -1,0 +1,396 @@
+{
+  "schema": "group_author_browser_hosted_source_plan_v1",
+  "status": "FROZEN_SOURCE_ONLY_PENDING_ROOT_REVIEW_NO_RUNTIME",
+  "source": {
+    "backend_commit": "6ef69b249c573eedaea962dad530eaed0a612b24",
+    "backend_tree": "f1ef617e51e0d8a900d9f4bfc15a559bf676276f",
+    "backend_paths": 367,
+    "backend_parent": "a75f9c26f3bceb14afcb6e1150e1b2a3d50fbada",
+    "frontend_commit": "a8069c847a75823fc5a62101895a80d8fc1f8b1d",
+    "frontend_tree": "3fbc3dc23f6ca5fec9515655c26e7d122fcd2679",
+    "frontend_parents": [
+      "ee32af9f5c0db6f79412c7c089e7f9f7143f42d3",
+      "0bc3fc968199490344c79c9cbed44afb0875eb18"
+    ],
+    "frontend_paths": 620,
+    "frontend_changed_from5ec": 10,
+    "frontend_exact_outside5ec": 610,
+    "contract_sha256": "e37f33435f558b034e6fcda5739eec0864d812b2d2aa19625fbad47d007f0077",
+    "operations_parent": "9051cbf266932b0157690a2d57df16c0dbb23fa6",
+    "operations_ref": "refs/heads/codex-ci-group-author-browser-v1-20261126",
+    "operations_delta": "Exactly six new paths; all415 parent mode/type/blob tuples remain unchanged,421 final. First new-ref push only, attempt1, exact workflow/source SHA, no dispatch/retry/force."
+  },
+  "required_fresh_frontend_gates": {
+    "full_current_contracts": 549,
+    "test_files": 65,
+    "standalone_dashboard_typecheck": true,
+    "fresh_dashboard_vite": true,
+    "fresh_owned_api_next": true,
+    "next_required_exports": [
+      "login",
+      "signup",
+      "verify",
+      "team",
+      "blog",
+      "calculator"
+    ],
+    "scope": "549/65 and standalone tsc remain current-required unless Root provides an immutable actual same-source accepted receipt before freeze. Vite and Next are always fresh for the served app. No future or retained result is represented as fresh."
+  },
+  "actors": [
+    {
+      "key": "admin",
+      "account_role": "admin",
+      "group_role": "none",
+      "purpose": "Existing platform-Admin media policy comparison only; no impersonation or new grant."
+    },
+    {
+      "key": "owner",
+      "account_role": "owner",
+      "group_role": "owner",
+      "purpose": "Owns both private groups, selected avatar and unrelated private project."
+    },
+    {
+      "key": "pro",
+      "account_role": "buyer",
+      "group_role": "member",
+      "purpose": "Existing Buyer actor is a Group member/post author, with selected avatar and separately selected cover; account role stays Buyer."
+    },
+    {
+      "key": "viewer",
+      "account_role": "realtor",
+      "group_role": "moderator",
+      "purpose": "Existing Realtor actor moderates groups but has no private-project grant; transient real unverified state tests auth403."
+    },
+    {
+      "key": "outsider",
+      "account_role": "buyer",
+      "group_role": "none",
+      "purpose": "New owned synthetic account can read a members-visible profile/avatar but cannot read the private groups."
+    }
+  ],
+  "seed_before_baseline": {
+    "groups": 2,
+    "groups_note": "One private, members-post-policy group per locale, no linked property/project. Explicit distinct owner/member aliases differ from network aliases and account names.",
+    "memberships": 4,
+    "seed_posts": 2,
+    "seed_comments": 2,
+    "seed_action_rows_proposed": 16,
+    "action_derivation": "Per group: create, invite/accept Pro, invite/accept Viewer, promote Viewer moderator, Owner post, Pro comment = eight native service actions. Written seeder must verify exact eight and baseline snapshots before claiming this count.",
+    "network_profiles": "Deliberately seeded members-visible Owner/Pro aliases and chosen private media. Never auto-copy account/Google identity. Existing account-layout photos are outside the new author component scope.",
+    "private_files": 4,
+    "file_purposes": [
+      "Owner selected avatar",
+      "Pro selected avatar",
+      "Pro selected cover",
+      "Unrelated private project update photo"
+    ],
+    "project": "One Owner-only private property/project/update/photo, with no Viewer/Pro/Outsider membership. Source author visuals may not promote its media or confer access.",
+    "original_baseline": "Keep canonical106/105-data/e8 bootstrap and original82 owner contacts/46 private drafts/9 accepted jobs/CMS7/floorplans2; declare all seeds before the Group-specific baseline."
+  },
+  "journeys_per_locale": [
+    {
+      "id": "feed_and_legacy_projection",
+      "proof": "Normal UI feed and comments show both selected private author pictures and exact group aliases. Actual no-flag and true GETs prove exact old2/new3 author keys. Proposed read-only UI compatibility step changes only exact owned Group feed/comment request query to false with route.continue; actual server old2 response reaches the current decoder. This models a legacy projection, not a deployed old backend or mocked successful body."
+    },
+    {
+      "id": "real_create_post_and_comment",
+      "proof": "Pro submits one normal post201; Owner submits one comment201. Observe author_visuals=true, exact receipt operation/target/submission/version, normal authorized image reads, no cover/account fallback and no GroupPhoto call for author avatars."
+    },
+    {
+      "id": "real_private_and_blocked_author",
+      "proof": "On opening comments, hold one newly mounted secondary-author media GET before it reaches the API, set Pro profile private, then release the ORIGINAL GET to real404. That failed picture disappears while exact alias/body and other authorized pictures remain. Normal current feed/comments reads show null avatar. Restore members, then Owner-Pro bilateral block makes current author avatar null and old selected-media GET404 while Owner moderation retains content; remove only that declared block. Do not claim already-loaded blobs disappear before a current read/unmount."
+    },
+    {
+      "id": "comment_moderation_and_access_intersection",
+      "proof": "Owner hides its new comment200, version1 to2. Exact hidden/current author receipt remains authorized. Viewer Group moderator still has project and project-photo404; Outsider members-profile/avatar200 still has private-Group404. Real Admin follows only the pre-existing profile media policy."
+    },
+    {
+      "id": "uncertain_post_moderation_current_resolver",
+      "proof": "Owner hides Pro new post: preserve original browser POST, actual API200 commit/receipt, then abort response to make uncertainty. No resend. Clear Pro avatar selection through one declared fixture control while cover stays selected. Normal enabled Check result GET resolves same action/target/version2 with current group alias and null avatar; no cover fallback. Default resolver returns exact old2, true resolver exact new3. Independently derive stored creation_sha256 from captured submission body/operation/target and prove flags are absent from digest; saved result_versions and all eight action rows remain exact. Restore Pro selection and fresh current reads recover the same selected picture."
+    },
+    {
+      "id": "real_auth_denial_and_restoration",
+      "proof": "Set Viewer email_verified false, issue a real fresh Group read403 and media403. Existing useNetworkRead clears cached Group data on403; assert Group header/feed/comments/compose content disappear. Restore the original verified flag and normal fresh reads restore the authorized view. This is whole-Group auth denial, never a picture-only403 or a retained Group-authority claim."
+    }
+  ],
+  "exact_ui_commands_per_locale": [
+    {
+      "actor": "pro",
+      "operation": "post_create",
+      "native_status": 201,
+      "result_version": 1
+    },
+    {
+      "actor": "owner",
+      "operation": "comment_create",
+      "native_status": 201,
+      "result_version": 1
+    },
+    {
+      "actor": "owner",
+      "operation": "comment_hide",
+      "native_status": 200,
+      "result_version": 2
+    },
+    {
+      "actor": "owner",
+      "operation": "post_hide",
+      "native_status": 200,
+      "result_version": 2,
+      "browser_response": "aborted only after original native commit"
+    }
+  ],
+  "seven_route_families": [
+    "GET /property-network/groups/{group_id}/posts",
+    "GET /property-network/group-posts/{post_id}/comments",
+    "GET /property-network/group-submissions/{submission_id}",
+    "POST /property-network/groups/{group_id}/posts",
+    "POST /property-network/group-posts/{post_id}/comments",
+    "POST /property-network/group-comments/{comment_id}/actions",
+    "POST /property-network/group-posts/{post_id}/actions"
+  ],
+  "controls_per_locale": [
+    "pro_profile_private",
+    "restore_pro_members",
+    "owner_pro_block",
+    "remove_exact_declared_block",
+    "pro_avatar_none",
+    "restore_exact_pro_avatar",
+    "viewer_unverified",
+    "restore_viewer_verified"
+  ],
+  "boundary_cases_per_locale": [
+    {
+      "case": "anonymous_group",
+      "status": 401
+    },
+    {
+      "case": "anonymous_profile_avatar",
+      "status": 401
+    },
+    {
+      "case": "outsider_private_group",
+      "status": 404
+    },
+    {
+      "case": "outsider_members_selected_avatar",
+      "status": 200
+    },
+    {
+      "case": "group_moderator_private_project",
+      "status": 404
+    },
+    {
+      "case": "group_moderator_private_project_photo",
+      "status": 404
+    },
+    {
+      "case": "owner_private_author_avatar",
+      "status": 404
+    },
+    {
+      "case": "platform_admin_private_selected_author_avatar",
+      "status": 200
+    },
+    {
+      "case": "owner_blocked_author_avatar",
+      "status": 404
+    },
+    {
+      "case": "owner_deselected_author_avatar",
+      "status": 404
+    },
+    {
+      "case": "unverified_viewer_group",
+      "status": 403
+    },
+    {
+      "case": "unverified_viewer_avatar",
+      "status": 403
+    }
+  ],
+  "proposed_finite_counts_not_runtime_facts": {
+    "locales": [
+      "en",
+      "es"
+    ],
+    "journeys": 12,
+    "geometry": 16,
+    "geometry_labels": [
+      "feed",
+      "comments",
+      "picture_denied",
+      "receipt"
+    ],
+    "widths": [
+      320,
+      390
+    ],
+    "real_logins": 10,
+    "contexts": 12,
+    "visible_presence_checks": 6,
+    "ui_mutation_requests": 8,
+    "new_action_rows": 8,
+    "new_posts": 2,
+    "new_comments": 2,
+    "uncertain_commits": 2,
+    "resolver_recoveries_without_resend": 2,
+    "control_transitions": 16,
+    "real_no_store_boundary_requests": 24,
+    "unexpected_mutations": 0,
+    "provider_attempts": 0,
+    "tracking_requests": 0,
+    "native_os_delivery": false,
+    "note": "Derive and lock every metric from the written ordered driver/fixture and independent API ledger before freezing; counts here are a source-only proposal. Three UI pages plus Admin/Outsider API contexts and one anonymous context per locale; no extra compatibility context. Honor actual login limiter, no spoof/reset. No optional WebKit requirement in this narrow Group lane."
+  },
+  "preservation_and_cleanup": [
+    "Exactly eight UI GroupAction rows, two new posts and two new comments; UI-created posts hidden/version2, comments hidden/version2. No duplicate command after lost response; exact stored digests/versions/actor/body/status/target chronology, not aggregate-only checks.",
+    "Only declared Group post/comment/action rows may change from seeded baseline. Group/member/link/media tables, all profile selections/audiences/block rows/user verification and four private file bytes/SHA remain exact after restoring16 transient controls.",
+    "All other106 catalog/data/sequence state remains exact under explicit three-Group-table write allowlist. Keep105-data versus version-row bookkeeping honest. No Inbox, listing/view, leads, owner-contact, imported-professional, project/update, provider or image-upload writes.",
+    "No image assets/PDFs/customer data/raw IDs/cookies/bodies in public logs or artifacts. Finite diagnostics use source enums, HTTP status and own-driver numeric frames only; failure markers always fail acceptance.",
+    "Remove facts plus all four owned private files on failure/success, then prove nonce-owned database/container/volume/image/scratch absence and zero retained artifacts. Never delete shared/unmarked state."
+  ],
+  "source_pointers": {
+    "frontend": [
+      "apps/dashboard/src/api/socialGroups.ts:211-253 author_visuals fixed opt-in and old2/new3 decoder",
+      "apps/dashboard/src/components/network/GroupFeed.tsx:120,217 ProfileAuthor post/comment placements",
+      "apps/dashboard/src/components/network/ProfileAuthor.tsx secondary fetch denial affects image only",
+      "apps/dashboard/src/hooks/useNetworkRead.ts:21-25 auth denial clears data",
+      "apps/dashboard/src/components/network/GroupWorkspace.tsx:18-47 Group content depends on current read.data",
+      "apps/dashboard/src/hooks/useGroupMutation.ts:34-91 Check result reads receipt before any permitted retry; normal check forbids resend"
+    ],
+    "backend": [
+      "utils/auth.py:get_current_user verified/active viewer gate",
+      "services/social_groups.py:eligible/group_for/post_for/comments moderation and bilateral-block context",
+      "services/social_groups.py:_author/receipt/_current/_replay/_digest current alias and presentation-only opt-in",
+      "services/property_network.py:author_avatar/profile_for/media_for_reader independent current profile/selection/purpose ACL",
+      "routes/property_network.py:NetworkRoute no-store on successful and refused responses"
+    ]
+  },
+  "scope_limits": [
+    "No invented403 transport. Actual403 viewer auth denies Group reads and clears Group data. Real author-private/block/deselection404 proves picture-only containment.",
+    "The existing GroupFeed EN/ES leaf models404. Do not claim a distinct already-executed Group403 image case. ProfileAuthor source catches secondary fetch failure independent of status; any retained component claim stays at its actual source/unit scope.",
+    "New-FE old2 projection uses actual current server default output if implemented. It is not an old-backend deployment or an additional successful mutation. Native162 contains the real all-seven-route false/true compatibility and duplicate-replay checks.",
+    "A selected author picture can reveal recognition across group aliases; preserve the already-reviewed EN/ES chosen-photo disclosure. No account identity, cover image, project image or access grant is substituted.",
+    "This plan does not imply any runtime gate passed, any candidate published, or the full website goal completed. Root retains review, first-push, hosted acceptance, recovery and publication decisions."
+  ],
+  "accepted_planning_source": {
+    "path": "outputs/property-network-20261101/group-author-browser-acceptance-plan-20261125.json",
+    "sha256": "cc79527203a58adc8db53abab627c038dd4233deb0002523528eb613631641ad",
+    "precedence": "This current exact-source implementation supersedes only historical source/parent/test-count/pending-native bookkeeping; all twelve journeys, eight writes, sixteen controls and twentyfour boundaries remain required."
+  },
+  "native_dependency": {
+    "actual_accepted_run": 45652164070,
+    "source": "6ef69b249c573eedaea962dad530eaed0a612b24",
+    "tests": 162,
+    "scope": "Fresh accepted original134 plus GroupInput4/SocialGroups24; no unchanged native rerun inside browser phase. Browser fixture genuinely builds previous99/c4 to baseline106/d8 to current106/e8/105 modeled, rather than asserting modeled tables imply deployed migration."
+  },
+  "actual_driver_compatibility_proof": {
+    "legacy_projection_pairs": 6,
+    "legacy_ui_reads": 4,
+    "route_families": 7,
+    "read_only_handoff": "Only exact scoped feed/comment GET author_visuals true query is changed to false by route.continue. Actual server old2 response reaches current FE; no fake success body or mutation. All normal four command route families remain true. Resolver GET default and true bind the same committed action with current selection and alias."
+  },
+  "runtime": {
+    "network": "Owned PG network-none namespace with loopback only. API8918, Dashboard4175, Landing8917; all application external HTTP/SDK/mail/provider transports refused. Browser foreign origins abort; tracking/sends/unexpected writes fail. Synthetic standalone Google client id is not a provider activation.",
+    "caps": {
+      "postgres_bytes": 805306368,
+      "api_bytes": 2147483648,
+      "browser_bytes": 2147483648,
+      "node_build_bytes": 8589934592,
+      "sql_connect_seconds": 4,
+      "browser_outer_seconds": 600,
+      "browser_stage_seconds": 60,
+      "normal_dom_ms": 15000,
+      "navigation_ms": 20000,
+      "original_route_fetch_ms": 15000,
+      "route_fetch_retries": 0,
+      "workflow_minutes": 45
+    },
+    "private_scope": "Four actual native decoded/validated/stored WebP files plus one facts file; owner UID, no symlinks, inode/bytes/hash proof and exactly5 removals. No upload UI command, screenshot, artifact, real account/data or credential.",
+    "database": "One marked nonce DB ildr_browser_ci_$nonce; claim and drop require exact marker ildr-group-author-browser-ci:$nonce, PG17.6 and loopback fresh public schema. Original inherited runtime labels and inode/path bounded cleanup remain; fresh explicit drop+absence before final acceptance gate.",
+    "source_preservation": "Exact all620 archived GitLF blobs before/after each install/test/tsc/build/browser phase; all367 backend unchanged checkout, all415 operations parent tuples unchanged. Full original package/lock/dependency inventories and pinned images/npm core tarball remain.",
+    "host_bash_syntax": "Bash is not executed locally; pinned hosted workflow must actually bash -n the complete runner before any acceptance phase."
+  },
+  "authoritative_ledger": {
+    "ui_command_rows": 8,
+    "seed_action_rows": 16,
+    "final_action_rows": 24,
+    "final_posts": 4,
+    "final_comments": 4,
+    "mutated_tables": [
+      "network_group_posts",
+      "network_group_comments",
+      "network_group_actions"
+    ],
+    "unchanged_application_data_tables": 102,
+    "alembic_version": "Exactly one e8 head checked separately; version table is excluded from raw application data snapshot.",
+    "proof": "Each original request uses actual source Pydantic defaults/schema, actor-cookie, operation/path/body/submission id, independent SHA256 digest without presentation flag, actual status/receipt/time/version and only target content/action row delta. No resend; final new content hidden/version2. Full106 catalog/functionACL/all sequence definitions and values unchanged, private RLS/ACL, postmaster start, protected82/46/9/CMS7/floorplans2 retained."
+  },
+  "timing_and_lifecycle": {
+    "uncertainty": "Original handler validates native200/selected-author receipt, disposes APIResponse and aborts browser response. Await handler completion then actual enabled Check result button before pending/frozen assertions; no sleep, retry, extra POST or product state access. Capture main failure synchronously before context cleanup.",
+    "secondary_denial": "Hold a newly mounted author-avatar request, apply real private control, release original GET to native404; exact Group alias/body/other picture remain. Loaded blobs are not claimed revoked without a current read/unmount.",
+    "labels": "Textarea/select locators verify one real direct associated label and exact label copy after removing control subtree, avoiding controlled value/option label drift. No forced click or direct input state change.",
+    "sessions": "Exactly12 contexts,10 real cookie logins,6 Owner/Pro/Viewer UI pages and presence observations; Admin/Outsider/anonymous are real API contexts, not impersonated accounts.",
+    "group_auth_denial": "Actual Viewer verified=false makes native403 on Group and avatar. Normal explicit Group refresh clears header/feed/composer/private blobs; exact prior verification flag and ordinary navigation restore authorized view."
+  },
+  "output_contract": {
+    "prefixes": [
+      "GROUP_AUTHOR_BROWSER_RESULT",
+      "GROUP_AUTHOR_BROWSER_FAILURE",
+      "GROUP_AUTHOR_BROWSER_FRAMES",
+      "GROUP_AUTHOR_BROWSER_OBSERVATION",
+      "GROUP_AUTHOR_GEOMETRY",
+      "GROUP_AUTHOR_PRESENCE",
+      "GROUP_AUTHOR_FIXTURE_RESULT",
+      "GROUP_AUTHOR_FIXTURE_GUARD",
+      "GROUP_AUTHOR_FIXTURE_FAILURE",
+      "GROUP_AUTHOR_PROCESS"
+    ],
+    "browser": "Exact agreed24 keys including bounded blocked_external_requests; 12 ordered journeys,16 exact geometry pairs,6 presence records,8 commands/16 controls/24 boundaries/7 routefamilies/6 legacy pairs/4 UI legacy reads.",
+    "api": "Exact42 keys from actual native ledger and owned cleanup. Strict duplicate-key/type/unknown-field rejection; any finite failure/diagnostic record always refuses acceptance, even alongside a PASS marker.",
+    "privacy": "Only fixed enums, booleans/counts/statuses and owned source numeric frames are emitted. No body/identity/media ID/contact/cookie/header/URL/provider credential/error text, private artifact or photo bytes are printed.",
+    "process": "Actual stopped API exit0/nonrunning/noOOM and running nonOOM PG observed before database drop; native browser exit, both strict checkers, empty private directory, marked DB absence and bounded owned lifecycle cleanup all required."
+  },
+  "local_checks": {
+    "status": "BOUNDED_SOURCE_CHECKS_PASS_NO_APPLICATION_RUNTIME",
+    "completed": [
+      "Actual current driver Node --check0; TypeScript AST parse0, exact33-stage/57-literal-reason inventory;15 localized literal keys resolve in both actual A806 locales.",
+      "Actual isolated source family/object-shape helpers8 positive/7 negative controlsPASS with no browser/application import.",
+      "Actual Python AST-only13 embedded runner programs plus2 Group Python files parse0; exact readonly backend367/frontend620 composition guards both exit0 against final6ef/A806.",
+      "Groups final strict parser2 positive/40 negative controlsPASS, including valid finite diagnostics alwaysFAIL; receipt SHA27f4ce96f653e74ecd2a3f89c41acb3025fd287533861af9aee0414eb65bf2f2.",
+      "Release reviewer fully read fixture/checker and AST-bound exact42 API/24 browser fields+33 stages/57 reasons; no product/native/browser test executed by this source review."
+    ],
+    "not_run": [
+      "application import",
+      "full549 contracts",
+      "standalone tsc",
+      "Vite",
+      "Next",
+      "browser",
+      "native PostgreSQL",
+      "provider calls",
+      "production change",
+      "first push"
+    ],
+    "source_receipts": [
+      {
+        "path": "outputs/property-network-20261101/group-author-browser-fixture-checker-release-source-review-20261126.json",
+        "sha256": "2c0e952a63e84b240ddc04fda2bb948aaf97e15647f56145098ed3eed21abd7f"
+      },
+      {
+        "path": "outputs/property-network-20261101/group-author-browser-parser-controls-final-enums-20261126/RECEIPT.json",
+        "sha256": "27f4ce96f653e74ecd2a3f89c41acb3025fd287533861af9aee0414eb65bf2f2"
+      }
+    ],
+    "pending": [
+      "Root full final source review and first isolated push",
+      "Actual hosted fresh549/tsc/build/browser/API/process/cleanup proof. No same-source retained frontend acceptance is assumed."
+    ]
+  },
+  "source_review": {
+    "fixture_checker": "Release full source review passed exact df83 fixture/e42b checker; no runtime.",
+    "runtime_driver": "Groups independently fully read all four files including final UID/exactUUID/no-store precisions, full474-line runner and exact current33/57 driver enums; no findings, final immutable receipt will bind commit identity.",
+    "additional_review": "Google provisionally fully read all six draft files and source interactions with no functional/privacy blocker; PLAN24-key wording corrected. Root full immutable review still required."
+  }
+}
