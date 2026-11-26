@@ -1,11 +1,11 @@
-name: Isolated Group browser with exact retained549 and strict proof
+name: Isolated Group browser with exact baseline tree and retained549 proof
 on:
   push:
-    branches: [codex-ci-group-author-browser-retained-v2-20261126]
+    branches: [codex-ci-group-author-browser-baseline-tree-v3-20261126]
 permissions:
   contents: read
 concurrency:
-  group: group-author-browser-retained-v2-${{ github.ref }}
+  group: group-author-browser-baseline-tree-v3-${{ github.ref }}
   cancel-in-progress: false
 jobs:
   browser:
@@ -24,7 +24,7 @@ jobs:
         with:
           ref: ${{ github.sha }}
           path: build-ops
-          fetch-depth: 3
+          fetch-depth: 4
           persist-credentials: false
       - name: Read exact reviewed combined profile and Group frontend
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1

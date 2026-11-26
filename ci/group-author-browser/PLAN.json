@@ -1,6 +1,6 @@
 {
   "schema": "group_author_browser_hosted_source_plan_v1",
-  "status": "FROZEN_SOURCE_ONLY_RETAINED_ACTUAL549_TSC_PENDING_ROOT_REVIEW",
+  "status": "FROZEN_SOURCE_ONLY_BASELINE_TREE_CORRECTION_PENDING_ROOT_AND_COLD_REVIEW",
   "source": {
     "backend_commit": "6ef69b249c573eedaea962dad530eaed0a612b24",
     "backend_tree": "f1ef617e51e0d8a900d9f4bfc15a559bf676276f",
@@ -16,9 +16,9 @@
     "frontend_changed_from5ec": 10,
     "frontend_exact_outside5ec": 610,
     "contract_sha256": "e37f33435f558b034e6fcda5739eec0864d812b2d2aa19625fbad47d007f0077",
-    "operations_parent": "a4e0e57db3e4e72f9c92642115977530e2fde85f",
-    "operations_ref": "refs/heads/codex-ci-group-author-browser-retained-v2-20261126",
-    "operations_delta": "Exactly three existing workflow/PLAN/runner paths change from a4e0; all418 other a4e0 tuples remain exact. Explicit a4e0→9051 chain, original six new paths across415→421 and all415 old tuples preserved. Operations depth3; driver/fixture/checker exact a4e0 GitLF pins."
+    "operations_parent": "0aea8a7786042ccdc709cf58e04be32ef944ddf5",
+    "operations_ref": "refs/heads/codex-ci-group-author-browser-baseline-tree-v3-20261126",
+    "operations_delta": "Exactly three existing workflow/PLAN/runner paths change from0aea. Correct one dependency-baseline tree literal to the immutable01695530 Git tree; all other source pins and predicates remain exact. Explicit0aea -> a4e0 ->9051 chain, operationsdepth4, original415 ->421 span, and all418 tuples outside the three metadata paths preserved. Original driver/fixture/checker GitLF pins unchanged."
   },
   "actors": [
     {
@@ -337,17 +337,18 @@
     "process": "Actual stopped API exit0/nonrunning/noOOM and running nonOOM PG observed before database drop; native browser exit, both strict checkers, empty private directory, marked DB absence and bounded owned lifecycle cleanup all required."
   },
   "local_checks": {
-    "status": "FINITE_METADATA_SOURCE_CHECKS_PASS_NO_APPLICATION_RUNTIME",
+    "status": "BOUNDED_SOURCE_GUARDS_ONLY_NO_APPLICATION_RUNTIME",
     "completed": [
-      "Original a4e0 bounded source-only checks and full six-file Root/Groups/Google source reviews remain immutable; no unchanged pure-helper/parser/application tests rerun for this metadata child.",
-      "Current11 embedded runner Python programs parse AST-only0; exact3 changed paths and original415→421 span with all418 other a4e0 tuples preserved are verified at freeze. Original9f5f/df83/e42b driver/fixture/checker GitLF remain exact.",
-      "Root actual immutable phase-only receipt verified1635B/SHA03e1b66bbc538d3440d48ff113de5bc5acab6dc7e98fe7149816488dc8812cd5; primary120299B/SHAa1730d941824f2131087cf461dd12adaec7ebe03f926b09362a869c1229b4efd. No overall browser acceptance inferred."
+      "All fixed checkout commit/tree/parent predicates preflighted read-only against immutable Git objects; original wrong tree differs and corrected tree matches.",
+      "Eleven embedded runner Python programs parse AST-only; child exactthree paths/original415 immutable/all418 outside preserved and original9f5f/df83/e42b asset hashes verified at freeze.",
+      "Runner reversal of ref/ancestry/span metadata and one tree token yields the whole0aea runner; original549/TSC source proof and all fresh-build/browser/private-state predicates unchanged."
     ],
     "not_run": [
-      "duplicated full549 and standalone tsc (retained actual unchanged-source proof only)",
+      "application import",
+      "unchanged pure-helper/parser/application tests",
+      "duplicated full549 or standalone tsc",
       "Vite",
       "Next",
-      "application import",
       "browser",
       "native PostgreSQL",
       "provider calls",
@@ -362,11 +363,17 @@
       {
         "path": "outputs/property-network-20261101/group-author-browser-parser-controls-final-enums-20261126/RECEIPT.json",
         "sha256": "27f4ce96f653e74ecd2a3f89c41acb3025fd287533861af9aee0414eb65bf2f2"
+      },
+      {
+        "path": "outputs/property-network-20261101/group-author-browser-baseline-tree-v3-source-controls-20261126.json",
+        "bytes": 3123,
+        "sha256": "08229a4cf353324043d8b0a310bdf5d278234c8928b7ba873f8a57d5f13037c0"
       }
     ],
     "pending": [
-      "Immutable three-path child identity and Root/independent finite delta review",
-      "Actual fresh Group Vite/Next/browser12/16/8/16/24/full106/private4/process/cleanup proof."
+      "Root and independent immutable finite successor review",
+      "Root-only firstpush",
+      "Actual fresh Group Vite/Next/browser12/16/8/16/24/full106/private4/process/cleanup proof"
     ]
   },
   "source_review": {
@@ -408,5 +415,23 @@
       "calculator"
     ],
     "scope": "Remove only duplicated whole contract and standalone tsc phases once Root immutable actual same-source proof is bound. Always fresh serving Vite/Next; all original Group driver/API/native ledger/privacy/process/cleanup predicates unchanged."
+  },
+  "prior_failed_run": {
+    "run_id": 45904893882,
+    "job_id": 140199169739,
+    "attempt": 1,
+    "source_commit": "0aea8a7786042ccdc709cf58e04be32ef944ddf5",
+    "conclusion": "failure",
+    "marker": "GROUP_AUTHOR_REFUSED EXACT_SOURCES_REQUIRED",
+    "stage": "source_guards_before_build_or_owned_resources",
+    "primary_log": "outputs/property-network-20261101/group-author-browser-45904893882-groups-primary.log",
+    "primary_utf8_bytes": 116049,
+    "primary_sha256": "f815121433369047a0161b58b9b13f0f23a2b031fd00d44bce9959189e539b75",
+    "artifact_count": 0,
+    "incorrect_baseline_tree": "e88ea0c57f9fac39549322532a5992d5a2927676",
+    "actual_baseline_commit": "01695530df670a94ac28f8b3bf36cc34b5b7a942",
+    "actual_baseline_tree": "e88ea0c57f9fac39545322532a5992d5a2927676",
+    "browser_acceptance": false,
+    "cause_scope": "The incorrect constant is independently disproven by the immutable Git object. The combined runtime guard printed no per-predicate values; no later-phase diagnosis is inferred."
   }
 }

@@ -6,7 +6,7 @@ die() { printf 'GROUP_AUTHOR_REFUSED %s\n' "$1" >&2; exit 1; }
 bounded() { timeout --kill-after=8s "$@"; }
 [[ $# == 8 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 &&
-   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-group-author-browser-retained-v2-20261126 &&
+   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-group-author-browser-baseline-tree-v3-20261126 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die HOSTED_EXACT_EVENT_REQUIRED
 ops="$1"; frontend="$2"; baseline="$3"; backend="$4"; migration="$5"; relay="$6"; previous="$7"; reference="$8"
 [[ "$ops" == "$GITHUB_WORKSPACE/build-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-source" &&
@@ -25,8 +25,9 @@ EXACT_OPERATIONS
 )
 operations_delta=$(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) || die OPERATIONS_DIFF_REQUIRED
 [[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" &&
-   $(git -C "$ops" show -s --format=%P HEAD) == a4e0e57db3e4e72f9c92642115977530e2fde85f &&
-   $(git -C "$ops" rev-parse HEAD^^) == 9051cbf266932b0157690a2d57df16c0dbb23fa6 &&
+   $(git -C "$ops" show -s --format=%P HEAD) == 0aea8a7786042ccdc709cf58e04be32ef944ddf5 &&
+   $(git -C "$ops" rev-parse HEAD^^) == a4e0e57db3e4e72f9c92642115977530e2fde85f &&
+   $(git -C "$ops" rev-parse HEAD^^^) == 9051cbf266932b0157690a2d57df16c0dbb23fa6 &&
    "$operations_delta" == "$expected_operations" ]] || die EXACT_OPERATIONS_REQUIRED
 python3 -I -B - "$ops" <<'PY_OPERATIONS_REUSE'
 from pathlib import Path
@@ -34,12 +35,15 @@ import subprocess,sys
 root=Path(sys.argv[1])
 def git(*args):return subprocess.check_output(['git','-C',str(root),*args])
 def tree(commit):return dict((line.split(b'\t',1)[1].decode(),line.split(b'\t',1)[0]) for line in git('ls-tree','-rz',commit).split(b'\0') if line)
-old,middle,new=tree('HEAD^^'),tree('HEAD^'),tree('HEAD')
+old,original,retained,new=tree('HEAD^^^'),tree('HEAD^^'),tree('HEAD^'),tree('HEAD')
 paths={'.github/workflows/group-author-browser.yml','ci/group-author-browser/PLAN.json','ci/group-author-browser/check-result.py','ci/group-author-browser/run-browser.mjs','ci/group-author-browser/run-hosted.sh','ci/group-author-browser/serve_fixture.py'}
 changed={'.github/workflows/group-author-browser.yml','ci/group-author-browser/PLAN.json','ci/group-author-browser/run-hosted.sh'}
-assert len(old)==415 and len(middle)==len(new)==421 and set(middle)-set(old)==paths and not set(old)-set(middle)
-assert set(middle)==set(new) and {name for name,value in middle.items() if new[name]!=value}==changed
-assert all(new[name]==middle[name]==value for name,value in old.items())
+assert len(old)==415 and len(original)==len(retained)==len(new)==421 and set(original)-set(old)==paths and not set(old)-set(original)
+assert set(original)==set(retained)==set(new)
+assert {name for name,value in original.items() if retained[name]!=value}==changed
+assert {name for name,value in retained.items() if new[name]!=value}==changed
+assert all(new[name]==retained[name]==original[name]==value for name,value in old.items())
+assert all(new[name]==retained[name]==value for name,value in original.items() if name not in changed)
 pins={'ci/group-author-browser/run-browser.mjs':'9f5f4902e70349a51fdde0dec8b49862a47be297dbdf601043d22a36af222fef','ci/group-author-browser/serve_fixture.py':'df83d51fb80ca1a6f4c03bc34a0f25b401d33419d1a3c29935ef8d0c470ef6ad','ci/group-author-browser/check-result.py':'e42b2f3a8e36dd801f47adb5e2ed6a81522da77fb670a6c6185f2d71355e9be4'}
 from hashlib import sha256
 for name,digest in pins.items():assert sha256((root/name).read_bytes()).hexdigest()==digest
@@ -54,7 +58,7 @@ frontend_paths=620
    $(git -C "$frontend" show -s --format=%P HEAD) == "ee32af9f5c0db6f79412c7c089e7f9f7143f42d3 0bc3fc968199490344c79c9cbed44afb0875eb18" &&
    $(git -C "$frontend" show -s --format=%P 5ecb7c6e16268f1e8edd1b54d70f11e605e57a02) == "bb4a9c626fb96f93ae6d6bc55b5a2a67f85411ba 44a3fdae157039f42fad562bde281f7205ca19f3" &&
    $(git -C "$baseline" rev-parse HEAD) == 01695530df670a94ac28f8b3bf36cc34b5b7a942 &&
-   $(git -C "$baseline" rev-parse HEAD^{tree}) == e88ea0c57f9fac39549322532a5992d5a2927676 &&
+   $(git -C "$baseline" rev-parse HEAD^{tree}) == e88ea0c57f9fac39545322532a5992d5a2927676 &&
    $(git -C "$migration" rev-parse HEAD) == c193a925ba57ea2d67ea48c44e5262817885c8a2 &&
    $(git -C "$relay" rev-parse HEAD) == 3007728fd67c5889a8373e41ff3ffa5cc50d839b &&
    $(git -C "$relay" rev-parse HEAD^{tree}) == 80868dce147c2cd4609e303493669d0a19f09741 &&
