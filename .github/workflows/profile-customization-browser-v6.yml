@@ -24,7 +24,7 @@ jobs:
         with:
           ref: ${{ github.sha }}
           path: build-ops
-          fetch-depth: 2
+          fetch-depth: 3
           persist-credentials: false
       - name: Read exact reviewed combined profile frontend
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1

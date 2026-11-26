@@ -1,7 +1,7 @@
 {
   "schema": "profile_customization_webkit_navigation_v6_diagnostic_plan_v1",
   "status": "FROZEN_SOURCE_ONLY_READY_FOR_ROOT_AND_GROUPS_FULL_COLD_CURRENT549_BROWSER_UNRUN",
-  "operations_parent": "9051cbf266932b0157690a2d57df16c0dbb23fa6",
+  "operations_parent": "2cfbcaa290dcfbb53a80f26099c4d4a456618f19",
   "proposed_first_ref": "codex-ci-profile-customization-webkit-navigation-v6-20261126",
   "new_paths": [
     ".github/workflows/profile-customization-browser-v6.yml",
@@ -29,7 +29,7 @@
     "fresh_Vite_Next": true,
     "previous544_tsc_must_not_substitute_on_changed_application": true,
     "source_proposal": "profile-group-visuals-a806-combined-source-proposal-20261126.json",
-    "source_proposal_SHA256": "97e5e1933dd993e6308c7385ee22f62f88da052b51e0b8c2d54fee225cd02d6c",
+    "source_proposal_SHA256": "5346e69d7615e984aa4cd8b8e6ba590bb9ec4f2b7fc6270b6914b011b761b9e0",
     "parents": [
       "ee32af9f5c0db6f79412c7c089e7f9f7143f42d3",
       "0bc3fc968199490344c79c9cbed44afb0875eb18"
@@ -64,7 +64,8 @@
       "Groups_FULL_cold_bytes": 7903,
       "Groups_FULL_cold_sha256": "a8c51d0ff802da0f719717e7f3598282b9a4c867991e75c19f0d41ca8f044795",
       "first_review_ref": "Root confirmed native0/exact remote readback a806/codex-profile-group-visuals-20261126 on2026-11-26; no main/publication."
-    }
+    },
+    "source_proposal_bytes": 5388
   },
   "backend": {
     "commit": "6ef69b249c573eedaea962dad530eaed0a612b24",
@@ -371,7 +372,8 @@
           "prior_local_proof_correction": "Immutable GitLF bytes used; Windows worktree CRLF is not the Linux runtime/source-hash representation."
         }
       }
-    ]
+    ],
+    "child_scope": "Metadata SHA +explicit two-commit operations chain/depth3/base-span415 preservation; driver/checker/helper/parser and app source unchanged. No unchanged helper/parser/app proof rerun."
   },
   "all415_inherited_mode_type_blob_tuples_immutable": true,
   "diagnostic_record": {
@@ -415,5 +417,20 @@
     "main_preservation": "Original __main__ only runs run() inside safe Failure/SQLSTATE formatter and exit1. New wrapper preserves all original success/failure fields, filters, canonical JSON, stage and exit; setup failure uses safe source fallback.",
     "reference": "Accepted native162 ci/group-author-native/verify-profile.py identity-only adapter on6ef, actual45652164070. Current wrapper additionally asserts original identities and retains original browser fixture formatter.",
     "no_changes": "No native_helpers function/runtime guard/44field expected report/seed/schema/data/delta changes."
+  },
+  "operations_baseline": "9051cbf266932b0157690a2d57df16c0dbb23fa6",
+  "operations_child_changed_paths": [
+    ".github/workflows/profile-customization-browser-v6.yml",
+    "ci/profile-customization-webkit-navigation-v6/PLAN.json",
+    "ci/profile-customization-webkit-navigation-v6/run-hosted.sh"
+  ],
+  "operations_baseline_span": "Exactly original five namespace paths added across9051→final; all415 original tuples immutable. Only PLAN/workflow/runner differ from frozen2cfb; original driver/checker remain exact.",
+  "operations_fetch_depth": 3,
+  "prior_full_reviews_retained": {
+    "root_receipt": "profile-webkit-v6-2cfb-root-full-source-review-20261126.json",
+    "root_sha256": "07142b0a59488bd036e9126d87f7fb3e77fc29f7af18e27526cb6f102bca4143",
+    "Groups_receipt": "profile-browser-webkit-v6-2cfb-groups-full-cold-review-20261126.json",
+    "Groups_sha256": "7bc240506ccb30f69d96ef0448677a33ff6f5dc075ab87858c5ec499feaf6a7d",
+    "findings_scope": "Only historical source-proposal SHA documentary mismatch; no functional/privacy issue. Original frozen2cfb is preserved."
   }
 }

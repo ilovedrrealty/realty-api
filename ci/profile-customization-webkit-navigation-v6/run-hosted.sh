@@ -25,10 +25,18 @@ ci/profile-customization-webkit-navigation-v6/run-browser.mjs
 ci/profile-customization-webkit-navigation-v6/run-hosted.sh
 EXACT_OPERATIONS
 )
-operations_delta=$(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) || die OPERATIONS_DIFF_REQUIRED
+operations_delta=$(git -C "$ops" diff --name-only 9051cbf266932b0157690a2d57df16c0dbb23fa6 HEAD) || die OPERATIONS_DIFF_REQUIRED
+child_operations_delta=$(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) || die CHILD_OPERATIONS_DIFF_REQUIRED
+expected_child_operations=$(cat <<'EXACT_CHILD_OPERATIONS'
+.github/workflows/profile-customization-browser-v6.yml
+ci/profile-customization-webkit-navigation-v6/PLAN.json
+ci/profile-customization-webkit-navigation-v6/run-hosted.sh
+EXACT_CHILD_OPERATIONS
+)
 [[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" &&
-   $(git -C "$ops" show -s --format=%P HEAD) == 9051cbf266932b0157690a2d57df16c0dbb23fa6 &&
-   "$operations_delta" == "$expected_operations" ]] || die EXACT_OPERATIONS_REQUIRED
+   $(git -C "$ops" show -s --format=%P HEAD) == 2cfbcaa290dcfbb53a80f26099c4d4a456618f19 &&
+   $(git -C "$ops" show -s --format=%P HEAD^) == 9051cbf266932b0157690a2d57df16c0dbb23fa6 &&
+   "$operations_delta" == "$expected_operations" && "$child_operations_delta" == "$expected_child_operations" ]] || die EXACT_OPERATIONS_REQUIRED
 python3 -I -B - "$ops" <<'PY_OPERATIONS_REUSE'
 from hashlib import sha256
 from pathlib import Path
@@ -37,10 +45,17 @@ root=Path(sys.argv[1])
 def git(*args):return subprocess.check_output(['git','-C',str(root),*args])
 def tree(commit):
     return dict((line.split(b'\t',1)[1].decode(),line.split(b'\t',1)[0]) for line in git('ls-tree','-rz',commit).split(b'\0') if line)
-old,new=tree('HEAD^'),tree('HEAD')
+old,middle,new=tree('9051cbf266932b0157690a2d57df16c0dbb23fa6'),tree('HEAD^'),tree('HEAD')
+assert git('rev-parse','HEAD^').decode().strip()=='2cfbcaa290dcfbb53a80f26099c4d4a456618f19'
+assert git('show','-s','--format=%P','HEAD^').decode().strip()=='9051cbf266932b0157690a2d57df16c0dbb23fa6'
 paths={'ci/profile-customization-webkit-navigation-v6/run-hosted.sh', '.github/workflows/profile-customization-browser-v6.yml', 'ci/profile-customization-webkit-navigation-v6/PLAN.json', 'ci/profile-customization-webkit-navigation-v6/run-browser.mjs', 'ci/profile-customization-webkit-navigation-v6/check-result.py'}
 assert len(old)==415 and len(new)==420 and set(new)-set(old)==paths and not set(old)-set(new)
 assert all(new[name]==value for name,value in old.items())
+child_paths={'.github/workflows/profile-customization-browser-v6.yml','ci/profile-customization-webkit-navigation-v6/PLAN.json','ci/profile-customization-webkit-navigation-v6/run-hosted.sh'}
+assert len(middle)==420 and middle.keys()==new.keys()
+assert {name for name,value in middle.items() if new[name]!=value}==child_paths
+assert all(middle[name]==value for name,value in old.items())
+assert all(new[name]==middle[name] for name in ('ci/profile-customization-webkit-navigation-v6/run-browser.mjs','ci/profile-customization-webkit-navigation-v6/check-result.py'))
 pins={'ci/profile-customization-browser/serve_fixture.py':'91a79810c6d8b395721a6ff936d6d6c195be5920e48b33efb1f675619a015284',
       'ci/profile-customization-browser/check-result.py':'1b0ab1e3add5d35dbefab1392197187f71cb798be74b3ebf3ace8f7ef3d88343',
       'ci/profile-customization-browser/run-browser.mjs':'d454a45fe05ab6fcda982fecece7fef2ae709bee599fa6b85e540d541818be1c',
