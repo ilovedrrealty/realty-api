@@ -1,0 +1,419 @@
+{
+  "schema": "profile_customization_webkit_navigation_v6_diagnostic_plan_v1",
+  "status": "FROZEN_SOURCE_ONLY_READY_FOR_ROOT_AND_GROUPS_FULL_COLD_CURRENT549_BROWSER_UNRUN",
+  "operations_parent": "9051cbf266932b0157690a2d57df16c0dbb23fa6",
+  "proposed_first_ref": "codex-ci-profile-customization-webkit-navigation-v6-20261126",
+  "new_paths": [
+    ".github/workflows/profile-customization-browser-v6.yml",
+    "ci/profile-customization-webkit-navigation-v6/PLAN.json",
+    "ci/profile-customization-webkit-navigation-v6/check-result.py",
+    "ci/profile-customization-webkit-navigation-v6/run-browser.mjs",
+    "ci/profile-customization-webkit-navigation-v6/run-hosted.sh"
+  ],
+  "frontend": {
+    "commit": "a8069c847a75823fc5a62101895a80d8fc1f8b1d",
+    "tree": "3fbc3dc23f6ca5fec9515655c26e7d122fcd2679",
+    "source_blobs": 620,
+    "original_merge": "5ecb7c6e16268f1e8edd1b54d70f11e605e57a02",
+    "testrepair_LF_pins": {
+      "tests/realtor-sale-catalog.test.cjs": "b2a45690dd716d6ba0bb6b1126ca4e20ff32a48a73938d52bbf4db262d3d33d7",
+      "tests/service-operations.test.cjs": "4a42d9a0a5d84b2d59c0802d7891b72e2c71b58d76d45fa5864cbad41cd1aa0f"
+    },
+    "productfix_LF_pins": {
+      "apps/dashboard/src/components/network/MemberCommunity.tsx": "42827187beaa5019539a6a2426bf4abbb9b84971350ebb53d345b283ac7dd77c",
+      "tests/property-network-ui.test.cjs": "62dc5a256533675f503eebf85a66a4fbe22a5d82431fa75c40b1ad4810074a49"
+    },
+    "fetch_depth": 21,
+    "test_files": 65,
+    "fresh_separate_Dashboard_typecheck": true,
+    "fresh_Vite_Next": true,
+    "previous544_tsc_must_not_substitute_on_changed_application": true,
+    "source_proposal": "profile-group-visuals-a806-combined-source-proposal-20261126.json",
+    "source_proposal_SHA256": "97e5e1933dd993e6308c7385ee22f62f88da052b51e0b8c2d54fee225cd02d6c",
+    "parents": [
+      "ee32af9f5c0db6f79412c7c089e7f9f7143f42d3",
+      "0bc3fc968199490344c79c9cbed44afb0875eb18"
+    ],
+    "current_full_tests": 549,
+    "fresh_full_tests": true,
+    "composition": "Exact original5ec union +two test repairs +bb79 member identities +ee32 Group identities +nine exclusive0bc/ee32 blobs and exact whole final UI overlap;620tuples/610outside10 unchanged.",
+    "profile_parent_chain": [
+      "5ecb7c6e16268f1e8edd1b54d70f11e605e57a02",
+      "09bfd9f54ec8bca8a1d0488a571d8dbac0df2743",
+      "3b7d8190951fcdca574d7af98bb1bbf62c97e764",
+      "bb79bcefb016309f77deea7695bdf65d3bcf1c8b",
+      "ee32af9f5c0db6f79412c7c089e7f9f7143f42d3"
+    ],
+    "original_profile_acceptance_and_firstpush": {
+      "root_FULL": {
+        "path": "C:\\Users\\hotel\\Documents\\Codex\\2026-10-13\\i-3\\outputs\\property-network-20261101\\profile-sibling-identities-bb79-root-full-source-review-20261125.json",
+        "bytes": 2861,
+        "sha256": "64e42974d9f51dfc0e55c9c8398c7ab10211023da5a8c8b750f4fc5760ecba1d"
+      },
+      "independent_FULL": {
+        "path": "C:\\Users\\hotel\\Documents\\Codex\\2026-10-13\\i-3\\outputs\\property-network-20261101\\profile-sibling-identities-bb79-groups-full-cold-review-20261125.json",
+        "bytes": 4583,
+        "sha256": "acf18e33e8dce21656f42ac397bf658b24051ae8dff137b591abe62b9dfdbcf7"
+      },
+      "first_review_ref_push": "Root confirmed actual native exit0/exact remote readback after FULL+cold acceptance on2026-11-25; no push by this author."
+    },
+    "final_source_acceptance": {
+      "root_FULL_receipt": "profile-group-visuals-a806-root-full-source-review-20261126.json",
+      "root_receipt_bytes": 4614,
+      "root_receipt_sha256": "c48ecf57bcc3bf243b77e8befeb26ccb683bd18eb73c6665de46e846e548846f",
+      "Groups_FULL_cold_bytes": 7903,
+      "Groups_FULL_cold_sha256": "a8c51d0ff802da0f719717e7f3598282b9a4c867991e75c19f0d41ca8f044795",
+      "first_review_ref": "Root confirmed native0/exact remote readback a806/codex-profile-group-visuals-20261126 on2026-11-26; no main/publication."
+    }
+  },
+  "backend": {
+    "commit": "6ef69b249c573eedaea962dad530eaed0a612b24",
+    "tree": "f1ef617e51e0d8a900d9f4bfc15a559bf676276f",
+    "contract": "profile-customization-contract-v4-20261125.json",
+    "contract_sha256": "573002892d45a8df38674956db7c97e621e2ecd15cf6e6b9bd1a0d76d6cde6dc",
+    "native_gate": "ACTUAL root+Groups independently accepted native162 run45652164070/job139339255787 on6ef; retained without rerun. Original profile fixture result field retained_native134_run remains unchanged45630574556.",
+    "migration": "Genuine owned106 bootstrap from accepted179, then actual e8b5a3d1f907. Table count stays106; exact four nullable column additions, checks/index/trigger/function/revoked execute must be validated. Original rows compared on original-column projection; original catalog changes limited to reviewed additive DDL.",
+    "parent": "a75f9c26f3bceb14afcb6e1150e1b2a3d50fbada",
+    "fetch_depth": 11,
+    "composition": "Preserve original367 a75 source union; extend only exact3 Group opt-in files with pinned LF hashes. All364 other tuples unchanged; same e8 schema and original44 API fields.",
+    "profile_application_source": "2ff311999d41b7719f64b61dc9d7fc04c3465cd4",
+    "current_application_source": "6ef69b249c573eedaea962dad530eaed0a612b24"
+  },
+  "current_failure": {
+    "run": 45898357372,
+    "job": 140177776738,
+    "stage": "es_save_persist_and_readonly",
+    "reason": "TIMEOUT",
+    "source_call": "Only optionalWebkit navigate(page,ownPath,true), original page.goto default20s after authenticated owned /auth/me200; actual lifecycle cause remains unknown.",
+    "primary_bytes": 119701,
+    "primary_sha256": "2f61ea325f8d843f02ebe96185849e4cf2e406e69c85783632e8936844b9c9a2",
+    "passed_scope": "Fresh Vite/Next0+6 exports; EN completed by source control flow only. Actual545/65 plus standalone tsc are retained unchanged from45657875113, not rerun."
+  },
+  "only_driver_changes": [
+    "Passive main-frame document lifecycle listeners only around the existing optional WebKit navigation call; no new request/action/timeouts or retry.",
+    "On original navigate rejection, emit one <=1024B exact typed finite census with capped counters, real last HTTP status, expected-route booleans, finite requestfailure class, DOMContentLoaded/load flags and one <=2s readyState/visibility/online snapshot. No raw URLs/IDs/headers/cookies/body/text/errors.",
+    "Always detach listeners; diagnostic collection errors never replace the same original rejected navigation error. Success performs no probe/census.",
+    "The existing v5 corrected native fieldset/actual bio+save disabled checks and localized409 visible alert wait are unchanged. Entire driver reverses only helper plus one call replacement to exact9051. Existing b596 save census is unchanged."
+  ],
+  "same_written_contract": {
+    "journeys": 24,
+    "geometry": 32,
+    "contexts": 14,
+    "presence": 12,
+    "actual_logins": 12,
+    "ui_mutation_requests": 20,
+    "upload_successes": 6,
+    "profile_saves": 8,
+    "stale_refusals": 2,
+    "auth_refusals": 4,
+    "uncertain_commits": 2,
+    "api_boundary_checks": 16,
+    "control_transitions": 28,
+    "denial_projection_checks": 8,
+    "stale_context_checks": 2,
+    "page_errors": 0,
+    "unexpected_mutations": 0,
+    "external_writes": 0,
+    "tracking_requests": 0
+  },
+  "same_ordered_ui_requests_per_locale": [
+    {
+      "method": "POST",
+      "path": "/property-network/me/profile/media",
+      "kind": "avatar",
+      "status": 201
+    },
+    {
+      "method": "POST",
+      "path": "/property-network/me/profile/media",
+      "kind": "cover",
+      "status": 201
+    },
+    {
+      "method": "PUT",
+      "path": "/property-network/me/profile",
+      "expected_version": 1,
+      "selection": "A/C",
+      "status": 200,
+      "result_version": 2
+    },
+    {
+      "method": "POST",
+      "path": "/property-network/me/profile/media",
+      "kind": "avatar_replacement",
+      "status": 201
+    },
+    {
+      "method": "PUT",
+      "path": "/property-network/me/profile",
+      "expected_version": 2,
+      "selection": "B/null",
+      "status": 200,
+      "result_version": 3
+    },
+    {
+      "method": "PUT",
+      "path": "/property-network/me/profile",
+      "expected_version": 3,
+      "selection": "B/null",
+      "body": "staleBio",
+      "status": 409
+    },
+    {
+      "method": "PUT",
+      "path": "/property-network/me/profile",
+      "expected_version": 4,
+      "selection": "B/null",
+      "body": "uncertainBio",
+      "status": 200,
+      "result_version": 5,
+      "browser_response": "aborted_after_real_commit"
+    },
+    {
+      "method": "PUT",
+      "path": "/property-network/me/profile",
+      "expected_version": 5,
+      "selection": "null/null",
+      "body": "uncertainBio",
+      "status": 200,
+      "result_version": 6
+    },
+    {
+      "method": "POST",
+      "path": "/property-network/me/profile/media",
+      "kind": "avatar",
+      "status": 403
+    },
+    {
+      "method": "PUT",
+      "path": "/property-network/me/profile",
+      "expected_version": 6,
+      "selection": "null/null",
+      "body": "deniedBio",
+      "status": 403
+    }
+  ],
+  "same_ordered_controls": {
+    "en": [
+      "advance_target_version",
+      "author_private",
+      "author_members",
+      "peer_members",
+      "revoke_peer_assignment",
+      "restore_peer_assignment",
+      "peer_private",
+      "target_private",
+      "target_members",
+      "target_avatar_none",
+      "target_avatar_restore",
+      "target_unverified_upload",
+      "target_verified_upload",
+      "target_unverified_save",
+      "target_verified_save"
+    ],
+    "es": [
+      "advance_target_version",
+      "author_private",
+      "author_members",
+      "revoke_peer_assignment",
+      "restore_peer_assignment",
+      "target_private",
+      "target_members",
+      "target_avatar_none",
+      "target_avatar_restore",
+      "target_unverified_upload",
+      "target_verified_upload",
+      "target_unverified_save",
+      "target_verified_save"
+    ]
+  },
+  "failure_only_diagnostic_contract": {
+    "scope": "Only when the original exact saved-notice wait fails after realPUT200, read bounded public DOM counts and raw receipt/request predicates; preserve the original exception and all existing success assertions.",
+    "marker": "PROFILE_BROWSER_SAVE_CENSUS",
+    "max_record_bytes": 1024,
+    "collection_deadline_ms": 2000,
+    "counts": "14 source-owned DOM counts capped at20, with explicit counts_capped boolean. No raw DOM text or attributes.",
+    "request_receipt": "Only request-valid/can_edit-valid booleans, finite actualPUT200/versions and selectedID equality booleans; no IDs/names/content/body/cookies/URLs/errors emitted.",
+    "side_effects": "No extra HTTP, mutations, clicks, sleeps, React state, or data writes.",
+    "parser": "Single strict typed <=1KiB record; duplicate/extra/wrong-type/unknown stage rejected; any valid diagnostic always fails acceptance even with laterPASS."
+  },
+  "read_only_assets": {
+    "fixture": "ci/profile-customization-browser/serve_fixture.py",
+    "fixture_SHA256": "91a79810c6d8b395721a6ff936d6d6c195be5920e48b33efb1f675619a015284",
+    "baseline_driver": "ci/profile-customization-save-diagnostic-v3/run-browser.mjs",
+    "baseline_driver_SHA256": "dfa2abe744969a68c1fba4489dc93b08885cc8f40f5040a609810ce0f37054e2",
+    "baseline_checker": "ci/profile-customization-save-diagnostic-v3/check-result.py",
+    "baseline_checker_SHA256": "5fd649fa09b9c7159569d87ff435ac3e15cfc060819c3b515e2640fc06ceddba",
+    "prior_v5_driver": "ci/profile-customization-browser-v5/run-browser.mjs",
+    "new_checker": "ci/profile-customization-webkit-navigation-v6/check-result.py (only new strict always-fail census branch; reverse to exact baseline checker)"
+  },
+  "fresh_required": [
+    "Current full549/65",
+    "Current standalone Dashboard tsc",
+    "Fresh Dashboard Vite",
+    "Fresh Landing Next",
+    "All original24/32/20/28/16 and full106/media/audit/privatefile/privacy/process/cleanup/artifacts gates"
+  ],
+  "runtime": "Same dependencies/caps/loopback/nonce/provider refusals/cleanup;5new namespace paths, all415old immutable. Current finalFE549+standalone strict+Vite/Next required. Driver/checker add only failure census; immutable fixture gets source identity-only launch adapter, no seed/expectation/schema/body changes.",
+  "source_evidence": [
+    {
+      "path": "C:\\Users\\hotel\\Documents\\Codex\\2026-10-13\\i-3\\outputs\\property-network-20261101\\profile-browser-v4-stale-lock-groups-source-finding-20261125.json",
+      "bytes": 6483,
+      "sha256": "2964bfdff532d9ad9b932301c423427532af14fdcb9eeaea44ca4dada2854d2b"
+    },
+    {
+      "path": "C:\\Users\\hotel\\Documents\\Codex\\2026-10-13\\i-3\\outputs\\property-network-20261101\\profile-fieldset-playwright1641-primary-20261125\\RECEIPT.json",
+      "bytes": 4466,
+      "sha256": "9da64cb4b091e6e34794dbf628bdf1c092d1f7b61856a662ad32852d58e11c85"
+    },
+    {
+      "path": "C:\\Users\\hotel\\Documents\\Codex\\2026-10-13\\i-3\\outputs\\property-network-20261101\\profile-browser-v4-45657875113-google-failure.json",
+      "bytes": 9077,
+      "sha256": "b45e3c246ccd3432e167580194b82e279f55dde3b9ce9b6c63339cd64506c56b"
+    },
+    {
+      "path": "C:\\Users\\hotel\\Documents\\Codex\\2026-10-13\\i-3\\outputs\\property-network-20261101\\profile-browser-v5-45898357372-google-failure.json",
+      "bytes": 5381,
+      "sha256": "4a5ca33f26599ab406abed8bfb7276074e4db7a0dc7afcccc3b4fb318596aa89"
+    }
+  ],
+  "not_performed": [
+    "Application/model/native/DB/browser/build/install",
+    "Full549 or standalone tsc",
+    "Provider/CUA/production changes",
+    "Push"
+  ],
+  "local_checks": {
+    "status": "PASS_BOUNDED_SOURCE_ONLY",
+    "Node_syntax_exit": 0,
+    "Node_old_space_MiB": 96,
+    "inline_Python_AST": 13,
+    "checker_AST": 1,
+    "total_AST": 14,
+    "actual_readonly_FE620_BE367_guards_exit": [
+      0,
+      0
+    ],
+    "whole_driver_diagnostic_reversal_exact9051": true,
+    "whole_checker_one_branch_reversal_exact_b596": true,
+    "full_original_v4_unit_and_standalone_tsc_blocks_restored_exact_except_549": true,
+    "fixture_GitLF_immutable_dynamic_identity_loads_only_native_helpers": true,
+    "no_app_native_DB_browser_build_install_provider_push": true,
+    "Bash": "UNAVAILABLE_LOCALLY_HOSTED_BASH_N_REQUIRED",
+    "controls": [
+      {
+        "path": "C:\\Users\\hotel\\Documents\\Codex\\2026-10-13\\i-3\\outputs\\property-network-20261101\\profile-webkit-v6-pure-helper-controls-20261126.json",
+        "bytes": 436,
+        "sha256": "2a4438e55263f8a21df6b24dea1c8f16435cf91da26fa409fa404bd15133b1f8",
+        "result": {
+          "status": "PASS_PURE_HELPER_CONTROLS",
+          "controls": 7,
+          "source_sha256": "51ecbbc09ab2b457b0dabb5c42ff45f9a47182957fbe451cc2e1a28272de5ee9",
+          "same_original_error": true,
+          "no_success_probe": true,
+          "all_listeners_detached": true,
+          "bounded_timeout": true,
+          "private_sentinel_absent": true,
+          "not_executed": [
+            "Playwright",
+            "app",
+            "network",
+            "browser",
+            "DB",
+            "build",
+            "install",
+            "push"
+          ]
+        }
+      },
+      {
+        "path": "C:\\Users\\hotel\\Documents\\Codex\\2026-10-13\\i-3\\outputs\\property-network-20261101\\profile-webkit-v6-pure-parser-controls-20261126.json",
+        "bytes": 333,
+        "sha256": "2c66f33da5fe0f98a1c6e4c3f07141321345380bd243b51fc19077e4494baa49",
+        "result": {
+          "status": "PASS_PURE_PARSER_CONTROLS",
+          "unchanged_baselines_pass": 2,
+          "valid_diagnostics_always_fail": 2,
+          "malformed_or_scope_negative_refusals": 47,
+          "source_sha256": "7282e44e71de28b36b2f0baac9282658b2e395657b9cf52aa41dd82b27b63703",
+          "current_browser_or_API_acceptance": false,
+          "app_or_DB_imports": false
+        }
+      },
+      {
+        "path": "C:\\Users\\hotel\\Documents\\Codex\\2026-10-13\\i-3\\outputs\\property-network-20261101\\profile-webkit-v6-pure-adapter-controls-20261126.json",
+        "bytes": 840,
+        "sha256": "d020bda53f9a3b5ad32ab35ae2a88ab8a673f2946352b03c7e5aead81b505e15",
+        "result": {
+          "status": "PASS_PURE_IDENTITY_ADAPTER_SOURCE_AND_FORMATTER_CONTROLS",
+          "fixture_GitLF_sha256": "91a79810c6d8b395721a6ff936d6d6c195be5920e48b33efb1f675619a015284",
+          "current_global_loads": [
+            [
+              "native_helpers",
+              "COMMIT",
+              63
+            ],
+            [
+              "native_helpers",
+              "TREE",
+              63
+            ]
+          ],
+          "only_two_module_attribute_writes": [
+            "COMMIT",
+            "TREE"
+          ],
+          "captured_identity_defaults": 0,
+          "same_original_main_failure_formatter_cases": 6,
+          "old_module_import_run_or_application_executed": false,
+          "schema_ledger_native_helpers_changes": false,
+          "adapter_sha256": "578cdb5241e311a51adc16b8c4f6c61c3ed721e14d9dc9e132c89d41346a4156",
+          "prior_local_proof_correction": "Immutable GitLF bytes used; Windows worktree CRLF is not the Linux runtime/source-hash representation."
+        }
+      }
+    ]
+  },
+  "all415_inherited_mode_type_blob_tuples_immutable": true,
+  "diagnostic_record": {
+    "prefix": "PROFILE_WEBKIT_NAVIGATION_CENSUS",
+    "max_line_bytes": 1024,
+    "max_collection_ms": 2000,
+    "max_document_counts": 20,
+    "single": true,
+    "parser": "Exact keys/types/known enums, duplicate JSON key/marker refusal; any valid diagnostic ALWAYS fails even if a later PASS exists."
+  },
+  "review_status": {
+    "root": "PENDING_FULL_V6",
+    "Groups_FULL_cold": "PENDING_FULL_V6",
+    "actual_current549_standalone_tsc_build_browser": "UNRUN"
+  },
+  "retained_checks": {
+    "native162_run": 45652164070,
+    "native134_fixture_field": 45630574556,
+    "old_bb79_545_and_tsc": "Historical only; may not substitute for current changed final application549+tsc."
+  },
+  "same620_paths_exact_reviewed_final_source_union": true,
+  "historical_not_substitution": {
+    "frontend": "bb79bcefb016309f77deea7695bdf65d3bcf1c8b",
+    "tree": "c96f86d323b1a16f205ebe4a2afce13a90313981",
+    "source_blobs": 620,
+    "contracts": 545,
+    "test_files": 65,
+    "standalone_Dashboard_tsc_exit": 0,
+    "run": 45657875113,
+    "job": 139359365226,
+    "primary_bytes": 119619,
+    "primary_SHA256": "f028dbf72f064f47486d47a490d1e2f18bf7466f34209628aee345cc8890ceb0",
+    "receipt": "profile-browser-v4-45657875113-google-failure.json",
+    "phase_scope": "545 and separate tsc passed before browser failure, not complete browser acceptance.",
+    "scope": "Historical bb79 only. Changed final a806 requires fresh full549 and standalone tsc; no substitution allowed."
+  },
+  "identity_only_fixture_adapter": {
+    "source": "Inline runner produces only one wrapper in owned scratch, mounted readonly at /profile-fixture-adapter.py; global cleanup removes scratch. Exact original fixture91a798 stays immutable/read-only.",
+    "preconditions": "Check readonly regular file/no symlink/hash91a798; import before any app/config/DB imports; assert original COMMIT=a75/TREE12bb; override ONLY module.COMMIT/TREE=6ef/f1ef, then call unchanged module.run().",
+    "globals_proof": "Original fixture reads COMMIT/TREE only inside native_helpers() at call time; no captured default argument or prior app import. Native helper receives current globals, every original guard/call remains in place.",
+    "main_preservation": "Original __main__ only runs run() inside safe Failure/SQLSTATE formatter and exit1. New wrapper preserves all original success/failure fields, filters, canonical JSON, stage and exit; setup failure uses safe source fallback.",
+    "reference": "Accepted native162 ci/group-author-native/verify-profile.py identity-only adapter on6ef, actual45652164070. Current wrapper additionally asserts original identities and retains original browser fixture formatter.",
+    "no_changes": "No native_helpers function/runtime guard/44field expected report/seed/schema/data/delta changes."
+  }
+}
