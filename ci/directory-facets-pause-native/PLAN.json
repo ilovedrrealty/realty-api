@@ -1,0 +1,250 @@
+{
+  "schema": "directory-facets-and-paused-assignment-owned-native-v1",
+  "status": "PREPARED_SOURCE_ONLY_FROZEN_FOR_ROOT_AND_INDEPENDENT_FULL_REVIEW_NO_RUNTIME_OR_PUSH",
+  "operations_parent": "e6ddea033187acb4196810a263df7a28cda2ac86",
+  "operations_parent_tree": "afd5c5eecd6f3e7bdf25797a85dce545f6014e44",
+  "first_ref": "codex-ci-directory-facets-pause-native-v2-20261127",
+  "application": {
+    "commit": "f9315a9fee76f46df7ecbf8e5d67d26de1bd2d4b",
+    "tree": "e48d0e9b22bf66b5a921befb2ad2e892378e242f",
+    "parents": [
+      "4880569cd1efefcc63b129bffa9e31373d5d5960"
+    ],
+    "changed_paths_from_baseline": [
+      "alembic/versions/f7a9c3e2d114_private_assignment_notifications.py",
+      "main.py",
+      "models/__init__.py",
+      "models/assignment_notification.py",
+      "routes/admin.py",
+      "routes/assignment_notification.py",
+      "routes/leads.py",
+      "routes/professionals.py",
+      "schemas/assignment_notification.py",
+      "schemas/professionals.py",
+      "services/assignment_notification.py",
+      "tests/test_assignment_notification.py",
+      "tests/test_lead_tracking.py",
+      "tests/test_professional_catalog.py",
+      "tests/test_professionals.py",
+      "utils/assignment_messages.py",
+      "utils/professional_options.py"
+    ],
+    "file_hashes": {
+      "alembic/versions/f7a9c3e2d114_private_assignment_notifications.py": "6cbdd85c7b6fe9b63c55818591f5803513942df85ffad3925691133e60acabd9",
+      "main.py": "e6a8cc2b9d8fd408aeecedc9143c95d418af5f3b94a307a5897bee8c86cac694",
+      "models/__init__.py": "1da999625e990a4bdf1d9f1dde05356f59ee1cef111c515cf5887ffd69723514",
+      "models/assignment_notification.py": "e579077d9c04ab32af9ff3a5da8ef2b46feedc364b345514b250bfb8216d2a63",
+      "routes/admin.py": "520e4cf875c83b211a7e76d207a46943294b23ecbaa7cd69765c9a50eac1a752",
+      "routes/assignment_notification.py": "09728650341a02fb1c73aaeff9283a3685e638f46a2ba860c0470fc971536d88",
+      "routes/leads.py": "48f6e6972f2c0f52083f8028767463074a4053ad0246bcfe83a596c8fc3d918b",
+      "routes/professionals.py": "92f0b5363aa234d0ba71945689b0cb186cc9a358368e3a50c5fd4f34f05d4652",
+      "schemas/assignment_notification.py": "4ab39353f4ad5aadf0897449d31e999e1df1cd2387a671ddf7ad2c7830851336",
+      "schemas/professionals.py": "3888211aec7b6a76b7c4888fc8068e87e88647c56e44ab17ee9c5ec12017b2b1",
+      "services/assignment_notification.py": "22832c315580c4092c65d68087b54ee180e0f0e080f7a60765edc920aa82339c",
+      "tests/test_assignment_notification.py": "85cda108835c079212aafc4eca48d4f0376c59923d4be21601511b02e35ba4ba",
+      "tests/test_lead_tracking.py": "885c5f518158255799f97638e49cf85573994ff3aea7e625a3f2ba0f70e886b0",
+      "tests/test_professional_catalog.py": "2f40570ffd73cc4e1220f20ad8811c2aa75853015f25d59fe845195ab7d7b24a",
+      "tests/test_professionals.py": "53036f2ffeac78d1fe56bb71282c5366f02a58e85ba30ff27fa3c28bfae2ca49",
+      "utils/assignment_messages.py": "c6d29396513d4be88bea8c4e935ece2f624c6b903641f41246bc4918c5f9a1e9",
+      "utils/professional_options.py": "58572d907288317ba095599a5cebee7c8bf4e0115a8e980a26fecda8c3dfa8b0"
+    }
+  },
+  "paused_application": {
+    "commit": "770a633176697adcf7545fcd6117c1018a0fcaf2",
+    "tree": "92da8070b531594edd268abc67a93cd0a64e6d16",
+    "parents": [
+      "f9315a9fee76f46df7ecbf8e5d67d26de1bd2d4b"
+    ],
+    "changed_paths_from_active": [
+      "main.py",
+      "routes/admin.py",
+      "routes/leads.py",
+      "tests/test_assignment_fallback.py"
+    ],
+    "file_hashes": {
+      "main.py": "6364dc69510dec17382f27d4e4ed9769ad69458019060c6f8068c08bbba64334",
+      "routes/admin.py": "9505b18c84505f45c0804cf03ddfeab3dedf067b3436fbb19ef983e0a669c714",
+      "routes/leads.py": "28ef21b52e020793fea8c2b67d96482f32377ebe7060b39d76195b85e7903bbc",
+      "tests/test_assignment_fallback.py": "b3616f3117b7b6de236160e6ab1c35de974f39def55d3a0ceefd4d3fa23d0686"
+    }
+  },
+  "accepted488": {
+    "commit": "4880569cd1efefcc63b129bffa9e31373d5d5960",
+    "tree": "e1476f7efa3ea3a270234da23122916aff86751a"
+  },
+  "baseline106": {
+    "commit": "26ca867a1008868f7dc5f322d28dc289a7763980",
+    "tree": "3a30b7e8c5b53827b97374c18806a7cb03ef9c5c",
+    "head": "e8b5a3d1f907",
+    "catalog_tables": 106,
+    "modeled_tables": 105
+  },
+  "previous99": {
+    "commit": "8957b18520d15dac503e0e4a5ce4b2455135d601",
+    "tree": "11ab69db36eb30881e4f3086578201f584c4092d",
+    "head": "c4e2a7319b60"
+  },
+  "source_suites": {
+    "professionals": {
+      "file": "tests/test_professionals.py",
+      "class": "ProfessionalTests",
+      "count": 37,
+      "methods": [
+        "test_options_missing_profile_and_real_roles_unchanged_for_every_account_type",
+        "test_directory_requires_verified_active_login_for_search_and_details_for_every_role",
+        "test_external_real_estate_service_profile_requires_company_and_never_grants_team_permissions",
+        "test_incomplete_draft_is_private_and_submission_requires_explicit_public_contacts",
+        "test_moderation_auth_and_self_ownership_never_grant_realtor_or_admin_rights",
+        "test_public_response_is_whitelisted_and_pending_edits_never_change_public_snapshot",
+        "test_suspension_survives_edits_approval_and_withdraw_then_reinstate_stays_hidden",
+        "test_withdraw_cancels_pending_review_and_consent_revocation_hides_immediately",
+        "test_directory_filters_are_bounded_literal_and_use_approved_area_coverage",
+        "test_owner_inactivation_or_loss_of_verification_hides_existing_public_profile",
+        "test_stale_versions_and_concurrent_save_reject_lost_updates",
+        "test_concurrent_first_create_has_one_profile_and_one_validation_conflict",
+        "test_draft_validation_and_body_limit_block_unsupported_fields_urls_and_photos",
+        "test_photo_validation_reencodes_to_immutable_business_asset_without_avatar_deletion",
+        "test_chunked_multipart_upload_without_content_length_has_a_hard_receive_cap",
+        "test_migration_is_additive_idempotent_rls_protected_and_preserves_history_on_downgrade",
+        "test_directory_copy_and_optional_menu_route_are_content_not_private_profiles",
+        "test_admin_managed_creation_never_creates_accounts_or_sends_invitations",
+        "test_managed_routes_require_admin_and_never_edit_account_owned_profiles",
+        "test_managed_submit_and_explicit_approval_require_permission_and_complete_business_data",
+        "test_managed_pending_edits_use_approved_snapshot_and_public_custom_service_search_only",
+        "test_managed_suspension_and_contact_permission_revocation_are_independent",
+        "test_managed_expected_version_blocks_concurrent_admin_lost_updates",
+        "test_custom_services_are_bounded_unique_and_require_other_without_breaking_incomplete_drafts",
+        "test_historical_snapshots_default_custom_services_without_backfilling_or_republishing",
+        "test_google_links_use_explicit_review_approved_snapshot_versions_and_contact_withdrawal",
+        "test_managed_photo_assets_are_profile_scoped_immutable_and_do_not_change_saved_versions",
+        "test_nullable_owner_migration_retains_managed_rows_history_and_existing_owner_visibility_rules",
+        "test_declared_facets_accept_all_known_choices_and_reject_unknown_duplicate_or_excess",
+        "test_old_client_omission_preserves_declared_facets_and_explicit_empty_clears",
+        "test_historical_facet_read_defaults_never_write_or_republish",
+        "test_declared_facets_share_approved_list_map_scope_and_compose_dimensions",
+        "test_new_facet_drafts_are_admin_only_until_approved_and_withdrawal_hides",
+        "test_public_experience_is_not_inferred_from_private_service_preferences",
+        "test_area_map_requires_verified_member_and_uses_approved_snapshot_until_withdrawal",
+        "test_area_map_deduplicates_services_and_matches_shared_filters_without_private_fields",
+        "test_area_map_removes_revoked_consent_suspended_profiles_and_inactive_owners"
+      ],
+      "test_file_sha256": "53036f2ffeac78d1fe56bb71282c5366f02a58e85ba30ff27fa3c28bfae2ca49"
+    },
+    "catalog": {
+      "file": "tests/test_professional_catalog.py",
+      "class": "ProfessionalCatalogTests",
+      "count": 7,
+      "methods": [
+        "test_existing_category_ids_labels_and_order_are_preserved",
+        "test_reviewed_service_expansion_is_additive",
+        "test_all_options_have_unique_ids_and_nonempty_english_spanish_labels",
+        "test_property_classes_are_separate_from_professional_service_categories",
+        "test_existing_geographic_matching_is_unchanged",
+        "test_language_catalog_retains_existing_choices",
+        "test_options_consumer_retains_existing_keys_and_exposes_property_classes"
+      ],
+      "test_file_sha256": "2f40570ffd73cc4e1220f20ad8811c2aa75853015f25d59fe845195ab7d7b24a"
+    },
+    "fallback": {
+      "file": "tests/test_assignment_fallback.py",
+      "class": "AssignmentFallbackTests",
+      "count": 6,
+      "methods": [
+        "test_lead_legacy_fresh_and_exact_replay_pause_before_any_assignment_work",
+        "test_account_assign_clear_and_exact_replay_preserve_all_existing_data",
+        "test_populated_assignment_and_signup_histories_remain_private_metadata",
+        "test_pause_keeps_admin_authentication_and_json_origin_boundaries",
+        "test_lifespan_pauses_only_assignment_worker_and_drains_prior_tasks",
+        "test_existing_delivery_pause_policy_does_not_touch_pending_signup_or_assignment_jobs"
+      ],
+      "test_file_sha256": "b3616f3117b7b6de236160e6ab1c35de974f39def55d3a0ceefd4d3fa23d0686"
+    }
+  },
+  "runtime": {
+    "dependency_baseline": "01695530df670a94ac28f8b3bf36cc34b5b7a942",
+    "dependency_tree": "e88ea0c57f9fac39545322532a5992d5a2927676",
+    "recipe": "c193a925ba57ea2d67ea48c44e5262817885c8a2",
+    "dockerfile_sha256": "e546d8c5668b87ef28e604107bbb330e6f4b3873cf0208b4d24ca378bd0851f9",
+    "python": "docker.io/library/python:3.11-slim@sha256:673719e071ecf27434fd2635bbd8d00f49f4fdd81f243143438a42ced8bedf60",
+    "postgres": "docker.io/library/postgres:17.6@sha256:b86568d3e0fe1dfaeff52714f9da36f206a30e4c49131b82bf96982d78627409",
+    "requirements": "Actual baseline inventory plus only unchanged hash-pinned openpyxl3.1.5/defusedxml0.7.1/et-xmlfile2.0.0, pip check and exact runtime inventory. No new dependency.",
+    "resources": "Reuse accepted PG768MiB/384MiBtmpfs/96pids/1CPU; clients1536MiB/192pids/2CPU/128MiBtmpfs. Canonical900s, professional900s, catalog120s, fallback600s; workflow65min. No resource increases.",
+    "processes": "Four fresh clients (canonical/professional/catalog/fallback); genuine108 in separate nonce DB. Fixed empty unit DB recreated with fallback marker only after prior clients stopped. No unchanged53/21 suites.",
+    "database_names": [
+      "ildr_directory_ci_<nonce>",
+      "ildr_platform_test_20261025"
+    ],
+    "ownership": "Unique nonce comments and Docker labels; typed actual process/native/timeout/OOM facts, stop before removal, both DB marker-checked DROP/absence and final labelled resource absence even on failure."
+  },
+  "helper_pins": {
+    "ci/native-inbox/verify.py": "388fcae33bf63234df9739ac7405c1a2d49b4914af2a32d56e9023fdb7ed144e",
+    "ci/social-groups-browser/serve_social_groups_fixture.py": "e0c5f0971c7c13ed47063907f01fa6ef01590b00fa2855eb1ecb16a38b99463e",
+    "ci/social-groups-native/catalog.py": "5869dcbd30dc659a649fc6c2bbbe2de1337904ef11e4b91d6ad1992ef7ea9c2f",
+    "ci/social-groups-native/records.py": "bffdf8900f286079807ba43e8db5c09160caaf139b1e934449b90e577c1cb5cf",
+    "ci/assignment-notifications-native/verify.py": "3241db2946da0f331fe1b8beb3f256ba8e1911a50384166a7a9f59ee00c1519e",
+    "ci/assignment-notifications-native/PLAN.json": "4a5bc624072da4c10661a48c420a2696f25cf24f877aa67ca3f84822b1117a6e"
+  },
+  "retained_proof_not_rerun": {
+    "assignment53": {
+      "run": 45927195017,
+      "job": 140271195854,
+      "application": "4880569cd1efefcc63b129bffa9e31373d5d5960",
+      "primary_bytes": 92014,
+      "primary_sha256": "6bf8097b72fd9012a319cf594c9b750534c395c3d5b7b63a2bf9c6a712bb037a",
+      "independent_receipt": "outputs/property-network-20261101/assignment-native-e6dd-45927195017-google-independent-acceptance.json",
+      "receipt_sha256": "1654a537f544073aaf611f8fa21862e7dc0624fb4b65dad4352727704e2416ab"
+    },
+    "customer21": {
+      "run": 45914574770,
+      "application": "26ca867a1008868f7dc5f322d28dc289a7763980",
+      "scope": "Previously accepted21 customer-delivery tests retained separately, not rerun or relabelled as current facade/fallback proof."
+    }
+  },
+  "proof_scope": {
+    "new_native_cases": 43,
+    "pure_catalog_cases": 7,
+    "separate_modes": [
+      "canonical",
+      "professionals",
+      "catalog",
+      "fallback"
+    ],
+    "unit_scope": "Professional37 and fallback6 use independently model-created schemas on a marked fixed owned DB in separate processes; catalogue7 is pure. Unit DB is marker-checked/dropped/recreated before fallback with its exact required new marker. No model-create substitute in canonical lifecycle.",
+    "canonical": "Actual8957c4 bootstrap→26cae8/106 with retained82/46/9/CMS7/floorplans2; before f7 prepare synthetic11 signup rows and2professionals with declared facets, then genuine upgrade108. Seed legal historical6 assignment notice statuses/8events without claiming provider acceptance. Snapshot all108 rows/catalog/sequences/security. Real paused bootstrap+Alembic recognition and main lifespan/ASGI503/privacy/history/facet reads, followed by active-source startup equivalence on same data. No downgrade, reset, restore or retry.",
+    "baseline_honesty": "Initial accepted retained seed identity/counts checked first. Declared synthetic fixture additions occur BEFORE the prepared baseline; final equality binds that prepared fixture and separately retains the original protected rows.",
+    "startup": "Passively observe actual selected source coroutine creation/drain; prior cleanup/payout/customer delivery tasks execute and drain; paused assignment worker not created, active restored worker created. Synthetic master delivery disabled/customer flag true, effective signup false; this prevents dispatch without changing production settings or mocking lifecycle functions.",
+    "privacy": "No live providers or transport attempts; real ASGI request responses only. Metadata history keys/status/date/attempts verified, no payload/email/providerID leaked. No logs of raw SQL/errors/private IDs/body/addresses.",
+    "current_requirements": "Exact37+6+7 counts/no skips/errors/failures; real108/headf7/model107; all prepared rows/catalog/sequences/functions/types/schema/roles unchanged; old/protected82/46/9/CMS7/floorplan2,11signup states; no provider calls; stopped/nonOOM processes, same server and marked DB absence/owned cleanup/artifacts[].",
+    "private_storage_bytes": "No private media/storage bytes created/fetched. Complete DB rows include existing storage/hash references; no storage backup or restoration claim.",
+    "unit_migration_separation": "Old37professional methods retain their isolated model-schema migration controls; fallback6 retains its own per-case TRUNCATE in the marked model schema. Neither targets the genuine nonce108 DB, which is never downgraded/reset/restored."
+  },
+  "fallback_plan_reference": {
+    "path": "outputs/property-network-20261101/assignment-f7-fallback-source-20261127/OWNED-HOSTED-PROOF-PLAN.json",
+    "sha256": "ad67918ee752a15cb14b8f5d77265e3f07095b27282a4de35414cde50edc11fd"
+  },
+  "local_checks": {
+    "app_native_DB_build_install_browser_provider": "NOT_RUN_OR_AUTHORIZED",
+    "pure_parser": {
+      "positive": 4,
+      "negative": 83,
+      "source_only": true,
+      "receipt": "outputs/directory-facets-pause-native-20261127-google/PURE-SOURCE-CONTROLS.json",
+      "sha256": "a849584f7a2dd64b0fb156b76abb18795393732fc65b124f1db58e08504f9cbf"
+    },
+    "AST": 3,
+    "Bash_syntax": "UNRUN locally: Git Bash unavailable, no install. Workflow performs bash -n before any runtime.",
+    "Git_only_composition": "Root active+paused identities and full source maps bound; full hosted source block waits final Git freeze; no app import.",
+    "owned_enum_delta": {
+      "path": "outputs/directory-facets-pause-native-20261127-google/PURE-ENUM-DELTA-CONTROLS.json",
+      "sha256": "91c9da1e9211727d80db317e5bcb8ad8f1c0bc0550fcd004cc866d924a68af88",
+      "valid_failure_always_rejects": true
+    }
+  },
+  "review": "No freeze, push or CI until Root final active+paused pins and Root plus independent full source cold.",
+  "source_first_pushes": {
+    "path": "outputs/property-network-20261101/directory-facets-f931-paused770a-root-first-pushes-20261127.json",
+    "bytes": 4309,
+    "sha256": "be30b69f8193c03abe5bd479644d970f7083c26330eff71fefeab4d464003bc4",
+    "scope": "Root actual0/exactremote both source refs; main8957 unchanged. Source availability only, no hosted native or production acceptance."
+  }
+}
