@@ -421,7 +421,7 @@ def run():
     patches,owned = old.provider_patches(),[]
     observed = {'logins':Counter(),'commands':[],'controls':[],'boundaries':Counter(),'pages':Counter(),'safe_selects':0,'refused':0,
         'profile_commands':[],'workflow_controls':[],'workflow_control_times':{},'workflow_boundaries':Counter(),
-        'workflow_directory_queries':Counter(),'workflow_denial_routes':set()}
+        'workflow_directory_queries':Counter(),'workflow_denial_routes':set(),'workflow_public_reads':[]}
     try:
         for item in patches:
             item.start()
@@ -516,7 +516,8 @@ def run():
         'workflow_new_revisions':8,'workflow_controls':14,'workflow_boundaries':12,
         'workflow_old46_profiles_revisions_unchanged':True,'workflow_published_snapshots_unchanged':True,
         'workflow_directory_cases':6,'workflow_list_map_snapshots_exact':True,'workflow_detected_denial_routes':4,
-        'workflow_manual_mutations':0,'workflow_controls_restored':True}),flush=True)
+        'workflow_manual_mutations':0,'workflow_controls_restored':True,
+        'workflow_public_reads':3,'workflow_withdrawn_refusal_complete':True}),flush=True)
 
 
 # The functions below keep all HTTP facts independent of the UI receipt. The
@@ -960,6 +961,44 @@ async def workflow_request(app, scope, receive, send, request, actor, base, cata
             require('draft' not in value and 'review_note' not in value, 'workflow_no_private_draft_projection_required')
         observed['workflow_boundaries'][label]+=1
         return True
+    # Only the three real anonymous UI listing reads; tagged boundary reads above
+    # keep their existing independent ledger. Forward the SAME ASGI messages.
+    if method=='GET' and path=='/listings/'+facts['workflows']['manual']['valid']['property_id']:
+        expected=(200,200,404)
+        ordinal=len(observed['workflow_public_reads'])
+        require(ordinal<len(expected) and actor is None and not scope['query_string']
+            and 'cookie' not in request.headers and 'authorization' not in request.headers
+            and 'sec-purpose' not in request.headers, 'workflow_exact_anonymous_public_read_required')
+        withdrawn='manual_property_withdrawn' in observed['workflow_controls']
+        restored='manual_property_restore' in observed['workflow_controls']
+        require((ordinal==2)==withdrawn and not restored, 'workflow_public_withdrawal_chronology_required')
+        receipt={'status':expected[ordinal],'complete':False}
+        observed['workflow_public_reads'].append(receipt)
+        starts=[];final=False;refusal=bytearray();declared_length=None
+        async def public_send(message):
+            nonlocal final,declared_length
+            if message['type']=='http.response.start':
+                headers=dict(message['headers'])
+                require(not starts and message['status']==expected[ordinal]
+                    and headers.get(b'cache-control')==b'no-store', 'workflow_actual_public_status_no_store_required')
+                starts.append(message['status'])
+                if ordinal==2:declared_length=headers.get(b'content-length')
+            elif message['type']=='http.response.body':
+                require(starts==[expected[ordinal]] and not final, 'workflow_public_response_frame_order_required')
+                # Never store successful listing bodies, including public contacts.
+                if ordinal==2:
+                    require(len(refusal)+len(message.get('body',b''))<=2048, 'workflow_bounded_public_refusal_required')
+                    refusal.extend(message.get('body',b''))
+                final=message.get('more_body',False) is False
+            await send(message)
+        await app(scope,receive,public_send)
+        require(starts==[expected[ordinal]] and final, 'workflow_actual_public_final_frame_required')
+        if ordinal==2:
+            require(re.fullmatch(rb'[ \t\r\n]*\{[ \t\r\n]*"detail"[ \t\r\n]*:[ \t\r\n]*"Listing not found"[ \t\r\n]*\}[ \t\r\n]*',refusal)
+                and declared_length is not None and re.fullmatch(rb'[0-9]{1,4}',declared_length)
+                and int(declared_length)==len(refusal), 'workflow_exact_public_refusal_body_length_required')
+        receipt['complete']=True
+        return True
     if await workflow_directory_read(app,scope,receive,send,request,actor,catalog,database,facts,observed):return True
     managed_path='/admin/professionals/'+profiles['managed']['id']
     if method=='PUT' and path in ('/professional-profile',managed_path):
@@ -1035,6 +1074,8 @@ async def workflow_request(app, scope, receive, send, request, actor, base, cata
 
 
 def verify_workflows(catalog,database,facts,observed,baseline):
+    require(observed['workflow_public_reads']==[{'status':status,'complete':True} for status in (200,200,404)],
+            'workflow_three_public_reads_same_response_complete_required')
     require(len(observed['profile_commands'])==10 and observed['workflow_controls']==list(WORKFLOW_CONTROL_ORDER),
             'workflow_exact_command_control_totals_required')
     require(observed['workflow_boundaries']==Counter({name:1 for name in workflow_boundary_specs(facts)}),

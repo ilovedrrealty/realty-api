@@ -420,7 +420,7 @@ async function workflowRead(context,path){const result=await read(context,path);
 async function actualGET(page,path,status,action,observe=null,complete=null){
  const waiting=page.waitForResponse(response=>{const url=new URL(response.url()),matched=url.origin===API&&url.pathname===path&&response.request().method()==='GET'&&response.status()===status;if(matched)observe?.('response_received',response.status());return matched})
  observe?.('action_wait');await action();observe?.('response_wait');const result=await waiting
- if(complete){observe?.('body_wait',result.status());await complete(result);observe?.('body_received')}
+ if(complete){observe?.('response_check_wait',result.status());await complete(result);observe?.('response_checked')}
  else{observe?.('finished_wait',result.status());await result.finished();observe?.('finished_resolved')}
  workflowReads++;return result
 }
@@ -429,19 +429,16 @@ function publicProgress(primitive,status=null){
  if(primitive!=='response_received')publicCheckpoint.primitive=primitive
  if(status!==null)publicCheckpoint.observed_status=status
  if(primitive==='finished_resolved')publicCheckpoint.finished_resolved=true
- if(primitive==='body_received')publicCheckpoint.body_received=true
 }
-async function publicWithdrawalBody(response){
+async function publicWithdrawalResponse(response){
  const request=response.request()
- publicProgress('body_headers_wait');const headers=await request.allHeaders();if(publicCheckpoint)publicCheckpoint.headers_obtained=true
- check(request.resourceType()==='fetch'&&!Object.keys(headers).some(name=>name.toLowerCase()==='sec-purpose'),'ACTUAL_PUBLIC_WITHDRAWAL_BODY_REQUIRED')
- publicProgress('body_wait')
- const body=await response.body()
- check(Buffer.isBuffer(body)&&body.length<=2048&&/^[ \t\r\n]*\{[ \t\r\n]*"detail"[ \t\r\n]*:[ \t\r\n]*"Listing not found"[ \t\r\n]*\}[ \t\r\n]*$/.test(body.toString('utf8'))&&(response.headers()['cache-control']??'').split(',').some(part=>part.trim().toLowerCase()==='no-store'),'ACTUAL_PUBLIC_WITHDRAWAL_BODY_REQUIRED')
+ publicProgress('refusal_headers_wait');const headers=await request.allHeaders();if(publicCheckpoint)publicCheckpoint.headers_obtained=true
+ check(request.resourceType()==='fetch'&&!Object.keys(headers).some(name=>['cookie','authorization','sec-purpose'].includes(name.toLowerCase()))&&(response.headers()['cache-control']??'').split(',').some(part=>part.trim().toLowerCase()==='no-store'),'ACTUAL_PUBLIC_WITHDRAWAL_RESPONSE_REQUIRED')
+ publicProgress('refusal_headers_checked')
 }
 async function publicGET(page,path,status,action){
  publicCheckpoint={ordinal:(publicCheckpoint?.ordinal??0)+1,primitive:'action_wait',expected_status:status,observed_status:null,finished_resolved:false,body_received:false,headers_obtained:false}
- const response=await actualGET(page,path,status,action,publicProgress,status===404?publicWithdrawalBody:null);publicProgress('headers_wait');const headers=await response.request().allHeaders();publicCheckpoint.headers_obtained=true
+ const response=await actualGET(page,path,status,action,publicProgress,status===404?publicWithdrawalResponse:null);publicProgress('headers_wait');const headers=await response.request().allHeaders();publicCheckpoint.headers_obtained=true
  check(!Object.hasOwn(headers,'cookie')&&!Object.hasOwn(headers,'authorization'),'PUBLIC_LINK_REQUEST_MUST_OMIT_AUTH_HEADERS_REQUIRED')
  publicProgress('headers_checked')
  return response

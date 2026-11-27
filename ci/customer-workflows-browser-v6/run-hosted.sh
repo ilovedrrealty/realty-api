@@ -6,7 +6,7 @@ die() { printf 'CUSTOMER_WORKFLOWS_REFUSED %s\n' "$1" >&2; exit 1; }
 bounded() { timeout --kill-after=8s "$@"; }
 [[ $# == 8 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 &&
-   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-customer-workflows-browser-v6-20261127 &&
+   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-customer-workflows-browser-v7-20261127 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die HOSTED_EXACT_EVENT_REQUIRED
 ops="$1"; frontend="$2"; baseline="$3"; backend="$4"; migration="$5"; relay="$6"; previous="$7"; reference="$8"
 [[ "$ops" == "$GITHUB_WORKSPACE/build-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-source" &&
@@ -23,17 +23,24 @@ import subprocess,sys
 root=Path(sys.argv[1])
 def git(*args):return subprocess.check_output(['git','-C',str(root),*args])
 def tree(commit):return dict((line.split(b'\t',1)[1].decode(),line.split(b'\t',1)[0]) for line in git('ls-tree','-rz',commit).split(b'\0') if line)
-base='96a98433cbe2289a73d9da86bfb0f49ed547ff27'
-paths=set(['.github/workflows/customer-workflows-browser-v6.yml', 'ci/customer-workflows-browser-v6/PLAN.json', 'ci/customer-workflows-browser-v6/check-result.py', 'ci/customer-workflows-browser-v6/run-browser.mjs', 'ci/customer-workflows-browser-v6/run-hosted.sh', 'ci/customer-workflows-browser-v6/serve_fixture.py'])
+base='2c369518f1ae46618e262bdfb6c048df4af6d636'
+modified={
+ 'ci/customer-workflows-browser-v6/PLAN.json','ci/customer-workflows-browser-v6/run-hosted.sh',
+ 'ci/customer-workflows-browser-v6/run-browser.mjs','ci/customer-workflows-browser-v6/check-result.py',
+ 'ci/customer-workflows-browser/serve_fixture.py'}
+added={'.github/workflows/customer-workflows-browser-v7.yml'}
 assert git('rev-parse','HEAD').decode().strip()==sys.argv[2]
 assert git('show','-s','--format=%P','HEAD').decode().strip()==base
-assert git('rev-parse',base+'^{tree}').decode().strip()=='9048f3fae0a53cdb91c493c65d101b912edb3d20'
+assert git('rev-parse',base+'^{tree}').decode().strip()=='1ffd07ba1753ca820a730e88a82a5cdd49890e53'
 old,new=tree(base),tree('HEAD')
-assert len(old)==467 and len(new)==473 and new.keys()-old.keys()==paths
-assert all(new[name]==value for name,value in old.items())
-assert set(git('diff','--name-only',base,'HEAD').decode().splitlines())==paths
-assert set(git('diff','--diff-filter=A','--name-only',base,'HEAD').decode().splitlines())==paths
-for name in paths:assert (root/name).is_file() and not (root/name).is_symlink()
+assert len(old)==473 and len(new)==474 and new.keys()-old.keys()==added and not old.keys()-new.keys()
+assert {name for name in old if old[name]!=new[name]}==modified
+assert all(new[name]==value for name,value in old.items() if name not in modified)
+assert len(old.keys()-modified)==468
+assert set(git('diff','--name-only',base,'HEAD').decode().splitlines())==modified|added
+assert set(git('diff','--diff-filter=M','--name-only',base,'HEAD').decode().splitlines())==modified
+assert set(git('diff','--diff-filter=A','--name-only',base,'HEAD').decode().splitlines())==added
+for name in modified|added:assert (root/name).is_file() and not (root/name).is_symlink()
 PY_OPERATIONS
 backend_commit=875ade946f633ce71bec23cd0c2f6bf79b7dc2ed
 backend_tree=9ccf81ad0b67fa2e0b678974479458697def8f51
@@ -567,7 +574,7 @@ from pathlib import Path
 import sys
 source=Path('/ci-tools/customer-workflows-browser/serve_fixture.py')
 if not (source.is_file() and not source.is_symlink() and os.statvfs(source).f_flag & os.ST_RDONLY
-        and sha256(source.read_bytes()).hexdigest()=='b62dc0e20df2824e0a5532d30c9431f45e5afa01bf2fb9ac3a93b0d0c4a6e69a'):
+        and sha256(source.read_bytes()).hexdigest()=='0d247b28fc33b439c189a7b95976b7f0cf601ba27a99d665754836dcec6ff680'):
     raise SystemExit(1)
 spec=spec_from_file_location('owned_customer_fixture_875',source)
 module=module_from_spec(spec)

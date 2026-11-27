@@ -2,22 +2,34 @@
   "status": "SOURCE_ONLY_FROZEN_PENDING_ROOT_AND_NONAUTHOR_REVIEW_NOT_RUN",
   "schema": 1,
   "operations": {
-    "parent": "96a98433cbe2289a73d9da86bfb0f49ed547ff27",
-    "parent_tree": "9048f3fae0a53cdb91c493c65d101b912edb3d20",
-    "ref": "codex-ci-customer-workflows-browser-v6-20261127",
-    "new_paths": 6,
-    "inherited_tuples": 467,
-    "final_tuples": 473,
-    "all_inherited_immutable": true
+    "parent": "2c369518f1ae46618e262bdfb6c048df4af6d636",
+    "parent_tree": "1ffd07ba1753ca820a730e88a82a5cdd49890e53",
+    "ref": "codex-ci-customer-workflows-browser-v7-20261127",
+    "modified_paths": [
+      "ci/customer-workflows-browser-v6/PLAN.json",
+      "ci/customer-workflows-browser-v6/run-hosted.sh",
+      "ci/customer-workflows-browser-v6/run-browser.mjs",
+      "ci/customer-workflows-browser-v6/check-result.py",
+      "ci/customer-workflows-browser/serve_fixture.py"
+    ],
+    "added_paths": [
+      ".github/workflows/customer-workflows-browser-v7.yml"
+    ],
+    "new_paths": 1,
+    "inherited_tuples": 473,
+    "unmodified_inherited_tuples": 468,
+    "final_tuples": 474,
+    "all_inherited_immutable": false,
+    "scope": "Explicit five inherited-file modifications and one new one-time workflow; every other468 parent tuple exact. Earlier retained_ops preservation statements describe those historical freezes, not current all-file immutability."
   },
   "sources": {
-    "operations_base": "96a98433cbe2289a73d9da86bfb0f49ed547ff27",
+    "operations_base": "2c369518f1ae46618e262bdfb6c048df4af6d636",
     "frontend": "ab704882398a9d71dcd060ca54bd0b6b17ca4e9c",
     "backend": "875ade946f633ce71bec23cd0c2f6bf79b7dc2ed",
     "fixed_checkouts": {
       "backend": [
-        "f9315a9fee76f46df7ecbf8e5d67d26de1bd2d4b",
-        "e48d0e9b22bf66b5a921befb2ad2e892378e242f"
+        "875ade946f633ce71bec23cd0c2f6bf79b7dc2ed",
+        "9ccf81ad0b67fa2e0b678974479458697def8f51"
       ],
       "frontend": [
         "ab704882398a9d71dcd060ca54bd0b6b17ca4e9c",
@@ -726,21 +738,28 @@
     "geometry_presence_safe_export": true
   },
   "local_checks": {
-    "status": "SOURCE_ONLY_BOUNDED_CONTROLS_PASS_NO_RUNTIME",
-    "changed_and_new_inline_AST": 4,
-    "actual_readonly_professional_and_public_overlay_source_guards_exit": [
-      0,
-      0
-    ],
-    "canonical_source_mirror": "875 detached worktree created with per-command core.autocrlf=false; no global config changes or app imports.",
-    "identity_adapter_only_two_globals": true,
-    "original_main_run_exception_reporting_AST_exact": true,
-    "no_module_level_capture_of_old_identity": true,
-    "whole_runner_declared_inverse_exact96a": true,
-    "driver_checker_exact_accepted_b807": true,
-    "fixture_exact_b62": true,
+    "status": "SOURCE_ONLY_BOUNDED_CONTROLS_PASS_NOT_APP_RUNTIME",
+    "python_source_AST": 2,
+    "inline_python_AST": 13,
+    "node_driver_syntax_exit": 0,
+    "extracted_passthrough_observer": {
+      "positive": 2,
+      "negative": 17
+    },
+    "changed_ledger_parser": {
+      "positive": 2,
+      "negative": 17
+    },
+    "same_ASGI_message_object_identity_forwarded": true,
+    "successful200_bodies_not_retained": true,
+    "original_fixture_main_and_identity_adapter": "Unchanged except literal importedfixture SHA; whole source reversal and AST bound in external proof.",
     "no_app_DB_browser_native_build_provider_execution": true,
-    "bash_syntax": "NOT_RUN_LOCALLY_REQUIRED_HOSTED_BASH_N"
+    "bash_syntax": "NOT_RUN_LOCALLY_REQUIRED_HOSTED_BASH_N",
+    "extracted_raw_header_response_inspector": {
+      "positive": 2,
+      "negative": 5,
+      "body_primitive_called": false
+    }
   },
   "unrun_in_this_lane": [
     "All593/69",
@@ -752,9 +771,9 @@
     "Production"
   ],
   "required_before_hosted_first_push": [
-    "Root and Groups finite/fullcomposed review inclaccepted675+b807 sourcecold and completeidentityadapter; no blindrun.",
-    "Exact6newpaths/all467oldtuples/6LF+aggregatepatch/proposal/sourceguards bound.",
-    "Root unique firstpush/currentmaine4d check; no sourcepush or runtime byauthor."
+    "Root FULL finite composed review plus Release nonauthor cold of exact six-path delta/source/checker/observer.",
+    "Exact2c parent,473→474 trees,468 unchanged old tuples, five modified plus one added path and all canonical LF hashes bound.",
+    "Root unique firstpush and actual currentmain check only; no push/runtime by author."
   ],
   "whole_owner_goal_complete": false,
   "workflow_extension": {
@@ -795,7 +814,7 @@
     "manual_targets": "Two separate synthetic assigned leads; valid explicitE164 and raw extension-bearing invalid phone, same existing public ownedlisting. No modifications to old Main/valuation/seller notice inputs.",
     "directory": "Approved snapshot ORwithin/ANDacross facet cases, actual list/map parity; private drafts diverge and stay private. Real own+managed UI selections/explicitclear, actual legacy omission,409 and detected403+retired old callbacks.",
     "manual": "Actual Admin/current-assignee fresh server authorization and editable ENES draft. Native ownedclipboard success+readback and separately identified controlled rejection; request-only URL capture, never external navigation/sending. Public active/withdrawn anonymous reads, oldtarget/contact/assignee/session loss reset.",
-    "driver_metrics": "Current actual source binds strict57-key browser/56-key API receipts, final literal driver enums, all original and additional independent per-locale counts. No runtime claim.",
+    "driver_metrics": "Strict57-key browser/58-key API receipts including locale; adds only2 required SAMEpublicresponse fields. All previous counts unchanged; no current acceptance claim.",
     "retained_old_scope": "All original perlocale16journeys26geometry9PUT7events7jobs16boundaries, role promotion, signup10/1, private source/process/cleanup predicates required unchanged.",
     "no_paused_API_substitution": "Paused fallback503 source cannot satisfy this active assignment lane; its startup/retention proof remains separate.",
     "browser_per_locale": {
@@ -923,21 +942,25 @@
     }
   },
   "source_hashes_without_self": {
-    ".github/workflows/customer-workflows-browser-v6.yml": {
+    ".github/workflows/customer-workflows-browser-v7.yml": {
       "bytes": 3676,
-      "sha256": "eb8249742f9f6c5c7b6a0eec8acea0fd05937734b49ae84019d28391b482c61d"
+      "sha256": "242d0a367b326dbd0800732e7b6b039f6ae68b9552b4f518d1bcde38a009604d"
     },
     "ci/customer-workflows-browser-v6/run-hosted.sh": {
-      "bytes": 76572,
-      "sha256": "4934881f73fb46ba8cdcd74dbaa89c04af1bd5f8ddeaa6f8854c316a6482cebe"
+      "bytes": 76849,
+      "sha256": "8054ff7eb7cf4c75c505335fc974d8e5b77fcd8c0a63ae90023ede8bcbe7b015"
     },
     "ci/customer-workflows-browser-v6/run-browser.mjs": {
-      "bytes": 84494,
-      "sha256": "997ed322ee7916a248ed2166a803370f2531ff5e780d96527f26eac891defc26"
+      "bytes": 84253,
+      "sha256": "5cd3f65d8799efd310580ccdad6ecdd6820130fc975e028be1ca93cca9a96156"
     },
     "ci/customer-workflows-browser-v6/check-result.py": {
-      "bytes": 28420,
-      "sha256": "6a2bf9398136b7c6fc0967ceaf0078288a602d221caec4886fdf98f35c1f7327"
+      "bytes": 28899,
+      "sha256": "8b6864dc985ebc6face9238e1a98f1b8386aae441cf3320831a60e91be9a1818"
+    },
+    "ci/customer-workflows-browser/serve_fixture.py": {
+      "bytes": 79504,
+      "sha256": "0d247b28fc33b439c189a7b95976b7f0cf601ba27a99d665754836dcec6ff680"
     },
     "ci/customer-workflows-browser-v6/serve_fixture.py": {
       "bytes": 76495,
@@ -1063,22 +1086,23 @@
     "documentation_precision": "The driver packet next_ops_contract says106+private by typo; actual fixture and current full authoritative ledger remain108 catalog/107 modeled. No ledger/predicate exception or change."
   },
   "public_await_diagnostic": {
-    "source_commit": "b807cdd3a0da4f585781cbfae80303c7626cd710",
+    "source_commit": "2c369518f1ae46618e262bdfb6c048df4af6d636",
     "source_packet": {
       "path": "outputs/customer-workflows-public-404-rawheaders-v2-20261127-google/SOURCE-PROPOSAL.json",
       "bytes": 4838,
       "sha256": "1d2e9026b4440cfd80abbbb7d514ce40c3e505dcd3e85a0b13d49295a28ecc5b"
     },
-    "whole_driver_checker_exact": true,
-    "fixture_whole_exact_bfa91": true,
+    "whole_driver_checker_exact": false,
+    "fixture_whole_exact_bfa91": false,
     "failure_only_prefix": "CUSTOMER_WORKFLOWS_BROWSER_PUBLIC_CHECKPOINT",
     "max_json_bytes": 1024,
     "fields": 7,
-    "finite_primitive_values": 26,
-    "all_original_success_predicates_actions_counts_timeouts_unchanged": true,
+    "finite_primitive_values": 27,
+    "all_original_success_predicates_actions_counts_timeouts_unchanged": "All product/UI/count/privacy/timeouts preserved. Extra browser404-body readiness is explicitly replaced with actual response/header+existing UI readiness and strict SAMEresponse ASGI final-body ledger.",
     "every_diagnostic_always_refuses_success": true,
     "whole_owner_goal_complete": false,
-    "third404_real_body_completion": "RawallHeaders/no-prefetch guard before sameResponse.body and boundedexact404JSON; finished_resolved staysfalse; allotheractualGETfinishedunchanged."
+    "third404_real_body_completion": "Exact refusal body and final ASGI frame are required by server-side passthrough; browser intentionally does not consume nonOK404. Failure checkpoint remains honest finished=false/body_received=false. Every emitted diagnostic still refuses success.",
+    "source_commit_scope": "Retained reviewed parent; current explicit V7 delta defined in operations."
   },
   "retained_bfa91_ops": {
     "commit": "bfa91f44832ce34ccf16173f9a58f210b83095b4",
@@ -1114,7 +1138,7 @@
     "all373_old_outside_schema_exact": true,
     "live_e4d_serializer_bytes_same": true,
     "models_migrations_routes_requirements_unchanged": true,
-    "fixture_adapter": "Inline ownedstate script verifies immutableoriginalb62 and oldCOMMIT/TREE, overrides ONLY2identityglobals, calls unchangedrun with original__main__BaseException reporting. Original fixture bytes and all108/private/action predicates unchanged.",
+    "fixture_adapter": "Inline ownedstate script verifies current reviewed original fixture at ci/customer-workflows-browser/serve_fixture.py with literal SHA below; original __file__/TOOLS imports, old COMMIT/TREE assertions, ONLYtwo identity overrides and original run/exception reporting remain exact. The copied V6 fixture remains unused historicalb62. All old108/private/action predicates preserved, plus same-response public-refusal completion ledger.",
     "source_fetch_depth": 20,
     "oldest_required_8957_shortest_ancestry_distance": 16,
     "retained_projection16": {
@@ -1122,6 +1146,38 @@
       "bytes": 9342,
       "sha256": "7a61833e99840c88eeacc93774e67b439bae7d30db5c1ef170287524223e563f",
       "scope": "Actualfocused16 on875/model107; genuine108 migration/preservation retained separately, not rerun."
+    },
+    "imported_fixture": {
+      "path": "ci/customer-workflows-browser/serve_fixture.py",
+      "sha256": "0d247b28fc33b439c189a7b95976b7f0cf601ba27a99d665754836dcec6ff680",
+      "changes": "Only additive same-owned-public-GET passthrough metadata/body validation plus two required final receipt fields; no successful200 bodies retained."
+    },
+    "unused_copied_fixture": {
+      "path": "ci/customer-workflows-browser-v6/serve_fixture.py",
+      "sha256": "b62dc0e20df2824e0a5532d30c9431f45e5afa01bf2fb9ac3a93b0d0c4a6e69a",
+      "executed": false,
+      "unchanged": true
     }
+  },
+  "public_refusal_readiness_correction": {
+    "source_finding": {
+      "path": "outputs/customer-workflows-browser-v6-source-20261127-google/customer-workflows-v6-google-forwarding-and-product-readiness-finding-20261127.json",
+      "bytes": 7042,
+      "sha256": "c3b2350f9cdc46649c4b0c77a05e996d400ca6c3c9224d9417ae0880268153e5"
+    },
+    "actual_failure": {
+      "run": 45971400446,
+      "job": 140412450735,
+      "primary_sha256": "8169776932cdff10ee0ce9926b1db5915ef579e19881c981a3509ed074fddb07",
+      "checkpoint": "ordinal3/404/body_wait/rawheadersobtained/bodyfalse; not product acceptance."
+    },
+    "browser": "SAME actual404, raw noCookie/noAuthorization/noSecPurpose, fetch resource, no-store; then original UI unavailable, cleared link, no new outgoing action, restore control. No body/finished await for refusal only. First two200 completions unchanged.",
+    "api": "SAME three anonymous UI GETs, exact200/200/404 chronology. Pass through original ASGI messages; no replacement or newGET. Retain no200body. Bounded2048B exact404 JSON, actual matching Content-Length/no-store/final more_bodyfalse and successful send/app return required in final authoritative ledger.",
+    "ledger_additions": {
+      "workflow_public_reads": 3,
+      "workflow_withdrawn_refusal_complete": true
+    },
+    "no_new_requests_actions_retries_timeout_increase_product_change": true,
+    "actual_cause_limit": "No claim about inner CDP transport/abort cause or current UI assertion completion."
   }
 }
