@@ -2,28 +2,27 @@
   "status": "SOURCE_ONLY_FROZEN_PENDING_ROOT_AND_NONAUTHOR_REVIEW_NOT_RUN",
   "schema": 1,
   "operations": {
-    "parent": "2c369518f1ae46618e262bdfb6c048df4af6d636",
-    "parent_tree": "1ffd07ba1753ca820a730e88a82a5cdd49890e53",
-    "ref": "codex-ci-customer-workflows-browser-v7-20261127",
+    "parent": "7b87a3d79f2e245826d80d57bde82f67876fabba",
+    "parent_tree": "adccc662233b604e96f6e31f8ccc5de87ae93085",
+    "ref": "codex-ci-customer-workflows-browser-v8-20261127",
     "modified_paths": [
       "ci/customer-workflows-browser-v6/PLAN.json",
       "ci/customer-workflows-browser-v6/run-hosted.sh",
-      "ci/customer-workflows-browser-v6/run-browser.mjs",
       "ci/customer-workflows-browser-v6/check-result.py",
       "ci/customer-workflows-browser/serve_fixture.py"
     ],
     "added_paths": [
-      ".github/workflows/customer-workflows-browser-v7.yml"
+      ".github/workflows/customer-workflows-browser-v8.yml"
     ],
     "new_paths": 1,
-    "inherited_tuples": 473,
-    "unmodified_inherited_tuples": 468,
-    "final_tuples": 474,
+    "inherited_tuples": 474,
+    "unmodified_inherited_tuples": 470,
+    "final_tuples": 475,
     "all_inherited_immutable": false,
-    "scope": "Explicit five inherited-file modifications and one new one-time workflow; every other468 parent tuple exact. Earlier retained_ops preservation statements describe those historical freezes, not current all-file immutability."
+    "scope": "Four explicit inherited-file changes and one unique one-time workflow; every other470 parent tuple exact. Driver and all application sources are unchanged."
   },
   "sources": {
-    "operations_base": "2c369518f1ae46618e262bdfb6c048df4af6d636",
+    "operations_base": "7b87a3d79f2e245826d80d57bde82f67876fabba",
     "frontend": "ab704882398a9d71dcd060ca54bd0b6b17ca4e9c",
     "backend": "875ade946f633ce71bec23cd0c2f6bf79b7dc2ed",
     "fixed_checkouts": {
@@ -735,31 +734,35 @@
     "api": "Source-owned phase/error type/reason/SQLSTATE only;512bytes; main cause emitted before cleanup.",
     "browser_receipt_bytes": 2048,
     "api_receipt_bytes": 2048,
-    "geometry_presence_safe_export": true
+    "geometry_presence_safe_export": true,
+    "api_public_chronology": "Failure-only exact eight fields;512-byte JSON cap; ordinal/prior slot statuses/completed/control counts and boolean flags only; safe export at most once; any diagnostic always refuses acceptance."
   },
   "local_checks": {
-    "status": "SOURCE_ONLY_BOUNDED_CONTROLS_PASS_NOT_APP_RUNTIME",
+    "status": "PASS_SOURCE_ONLY_NO_APP_RUNTIME",
+    "positive_baseline_protocols": 2,
+    "valid_new_census_shapes": 4,
+    "malformed_new_census_refused": 55,
+    "diagnostics_always_refuse_beside_success": 16,
+    "actual_emitted_dictionary_synthetic_metadata_controls": 4,
+    "safe_cli_exports": 1,
+    "safe_cli_native": 1,
+    "safe_cli_output_bytes": 278,
     "python_source_AST": 2,
-    "inline_python_AST": 13,
-    "node_driver_syntax_exit": 0,
-    "extracted_passthrough_observer": {
-      "positive": 2,
-      "negative": 17
+    "inline_python_AST": 17,
+    "whole_fixture_inverse_exact": true,
+    "whole_checker_inverse_exact": true,
+    "whole_runner_inverse_exact": true,
+    "workflow_inverse_exact": true,
+    "whole_driver_exact_parent": true,
+    "bash_n": "NOT_RUN_LOCALLY_REQUIRED_HOSTED",
+    "no_app_DB_browser_provider_native_build_execution": true,
+    "changed_only_proof": {
+      "path": "outputs/customer-workflows-browser-v8-source-20261127-release/CHANGED-SOURCE-CONTROLS.json",
+      "bytes": 1223,
+      "sha256": "24e34f2d30009870ff2ee3aa9cd738c5be1461a82f0735d3d69d3f1391863def"
     },
-    "changed_ledger_parser": {
-      "positive": 2,
-      "negative": 17
-    },
-    "same_ASGI_message_object_identity_forwarded": true,
-    "successful200_bodies_not_retained": true,
-    "original_fixture_main_and_identity_adapter": "Unchanged except literal importedfixture SHA; whole source reversal and AST bound in external proof.",
-    "no_app_DB_browser_native_build_provider_execution": true,
-    "bash_syntax": "NOT_RUN_LOCALLY_REQUIRED_HOSTED_BASH_N",
-    "extracted_raw_header_response_inspector": {
-      "positive": 2,
-      "negative": 5,
-      "body_primitive_called": false
-    }
+    "scope": "Two baseline protocol shapes and only changed diagnostic shape/refusal/export/source controls; no repeated accepted app/native/browser tests. No new ASGI/app simulation was executed.",
+    "inline_program_count_qualification": "Actual17 here-doc Python programs counted including delimiters followed by shell failure suffixes. Historical retained_v7_local_checks.inline_python_AST13 is retained historical metadata, not the current measured count."
   },
   "unrun_in_this_lane": [
     "All593/69",
@@ -771,9 +774,9 @@
     "Production"
   ],
   "required_before_hosted_first_push": [
-    "Root FULL finite composed review plus Release nonauthor cold of exact six-path delta/source/checker/observer.",
-    "Exact2c parent,473→474 trees,468 unchanged old tuples, five modified plus one added path and all canonical LF hashes bound.",
-    "Root unique firstpush and actual currentmain check only; no push/runtime by author."
+    "Root finite composed review and Groups independent finite cold of the five changed paths, retaining prior whole-source reviews.",
+    "Exact7b87 parent/tree;474→475 tuples;470 unchanged outside four modifications; all canonical LF hashes and explicit reversals bound.",
+    "Root owns unique first push and actual current-main verification; author performs no push/runtime."
   ],
   "whole_owner_goal_complete": false,
   "workflow_extension": {
@@ -942,25 +945,25 @@
     }
   },
   "source_hashes_without_self": {
-    ".github/workflows/customer-workflows-browser-v7.yml": {
+    ".github/workflows/customer-workflows-browser-v8.yml": {
       "bytes": 3676,
-      "sha256": "242d0a367b326dbd0800732e7b6b039f6ae68b9552b4f518d1bcde38a009604d"
+      "sha256": "75a1b013864973f8da2544f660e72814c9fd0a92605e42959f19d8a387b3a573"
     },
     "ci/customer-workflows-browser-v6/run-hosted.sh": {
-      "bytes": 76849,
-      "sha256": "8054ff7eb7cf4c75c505335fc974d8e5b77fcd8c0a63ae90023ede8bcbe7b015"
+      "bytes": 76798,
+      "sha256": "a74cc7b324755bb27fe1f9497b87ffd65b41120e3cbdcfe52d6b53d0e9aa0537"
     },
     "ci/customer-workflows-browser-v6/run-browser.mjs": {
       "bytes": 84253,
       "sha256": "5cd3f65d8799efd310580ccdad6ecdd6820130fc975e028be1ca93cca9a96156"
     },
     "ci/customer-workflows-browser-v6/check-result.py": {
-      "bytes": 28899,
-      "sha256": "8b6864dc985ebc6face9238e1a98f1b8386aae441cf3320831a60e91be9a1818"
+      "bytes": 30202,
+      "sha256": "0f04cb1c2134e18eb57af0fca26dc6be535517cbd11c0f206920a8f9bad2eaca"
     },
     "ci/customer-workflows-browser/serve_fixture.py": {
-      "bytes": 79504,
-      "sha256": "0d247b28fc33b439c189a7b95976b7f0cf601ba27a99d665754836dcec6ff680"
+      "bytes": 80328,
+      "sha256": "685140596f959083e73c5fe67088c12056db12c0eab6b54f15d3cffbb32f97e1"
     },
     "ci/customer-workflows-browser-v6/serve_fixture.py": {
       "bytes": 76495,
@@ -1179,5 +1182,81 @@
     },
     "no_new_requests_actions_retries_timeout_increase_product_change": true,
     "actual_cause_limit": "No claim about inner CDP transport/abort cause or current UI assertion completion."
+  },
+  "retained_v7_local_checks": {
+    "status": "SOURCE_ONLY_BOUNDED_CONTROLS_PASS_NOT_APP_RUNTIME",
+    "python_source_AST": 2,
+    "inline_python_AST": 13,
+    "node_driver_syntax_exit": 0,
+    "extracted_passthrough_observer": {
+      "positive": 2,
+      "negative": 17
+    },
+    "changed_ledger_parser": {
+      "positive": 2,
+      "negative": 17
+    },
+    "same_ASGI_message_object_identity_forwarded": true,
+    "successful200_bodies_not_retained": true,
+    "original_fixture_main_and_identity_adapter": "Unchanged except literal importedfixture SHA; whole source reversal and AST bound in external proof.",
+    "no_app_DB_browser_native_build_provider_execution": true,
+    "bash_syntax": "NOT_RUN_LOCALLY_REQUIRED_HOSTED_BASH_N",
+    "extracted_raw_header_response_inspector": {
+      "positive": 2,
+      "negative": 5,
+      "body_primitive_called": false
+    }
+  },
+  "public_chronology_failure_census": {
+    "status": "SOURCE_ONLY_UNRUN",
+    "prefix": "CUSTOMER_WORKFLOWS_FIXTURE_PUBLIC_CHRONOLOGY",
+    "max_json_bytes": 512,
+    "fields": [
+      "ordinal",
+      "prior_slot_statuses",
+      "completed_count",
+      "withdrawn",
+      "restored",
+      "control_count",
+      "prior_read_control_counts",
+      "tagged_boundary"
+    ],
+    "bounds": {
+      "ordinal": [
+        0,
+        3
+      ],
+      "completed_count": [
+        0,
+        3
+      ],
+      "control_count": [
+        0,
+        14
+      ],
+      "prior_read_control_counts_values": [
+        0,
+        14
+      ],
+      "arrays_max": 3
+    },
+    "slot_status_semantics": "Assigned expected slot values200,200,404; incomplete slots are not claimed as actual observed response statuses.",
+    "control_count_semantics": "Bounded number of already completed workflow controls when each prior untagged owned read begins; not private payload data.",
+    "failure_only": "Emitted immediately before the unchanged chronology guard fails. Diagnostic never permits success, even beside a valid PASS result; duplicate/unknown/wrong-type/extra-field records refuse.",
+    "unchanged": "Expected exactly3 actual anonymous UI reads200,200,404; tagged boundary early return; actual ASGI final body/private/API108/UI/action counts/timeouts/source pins/resource caps/process/drop/owned cleanup unchanged. Driver bytes exact7b87.",
+    "actual_v7_failure": {
+      "run": 45976328459,
+      "job": 140428847984,
+      "primary_bytes": 127205,
+      "primary_sha256": "39c3b725e3f74840e396f357afde40233ec0cf39ceef7e99d0ef03e8cbd97198",
+      "first_guard": "workflow_public_withdrawal_chronology_required",
+      "browser_checkpoint": "ordinal2/handoff_capture_wait/expected200/observednull; no successful full EN or ES/API preservation proof"
+    },
+    "source_finding": {
+      "path": "outputs/customer-workflows-browser-v7-source-20261127-google/customer-workflows-v7-release-chronology-source-finding-20261127.json",
+      "bytes": 6180,
+      "sha256": "90ed40ef1b1ce937aec7a9ece52904ab6e1762c9c3709e82d738982af0012d77"
+    },
+    "no_cause_claim": "Static source found one wrapper and matching tagged branch, with three explicit manual fetch call sites. No exact origin of unexpected runtime chronology is established."
   }
 }

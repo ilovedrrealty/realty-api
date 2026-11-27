@@ -147,6 +147,20 @@ def safe_record(prefix,raw,locale):
                 and all(type(number) is int for number in row.values()) and 0<=row['ordinal']<value['positive_count']
                 and 0<=row['tagCode']<=3 and -100000<=row['left']<=row['right']<=100000 and 0<=row['width']<=100000)
         return value
+    if prefix=='CUSTOMER_WORKFLOWS_FIXTURE_PUBLIC_CHRONOLOGY':
+        value=decoded(raw,512)
+        require(value.keys()=={'ordinal','prior_slot_statuses','completed_count','withdrawn','restored','control_count',
+            'prior_read_control_counts','tagged_boundary'} and type(value['ordinal']) is int and 0<=value['ordinal']<=3
+            and type(value['prior_slot_statuses']) is list and all(type(number) is int for number in value['prior_slot_statuses'])
+            and value['prior_slot_statuses']==list((200,200,404)[:value['ordinal']])
+            and type(value['completed_count']) is int and 0<=value['completed_count']<=value['ordinal']
+            and all(type(value[key]) is bool for key in ('withdrawn','restored','tagged_boundary'))
+            and type(value['control_count']) is int and 0<=value['control_count']<=14
+            and type(value['prior_read_control_counts']) is list and len(value['prior_read_control_counts'])==value['ordinal']
+            and all(type(number) is int and 0<=number<=value['control_count'] for number in value['prior_read_control_counts'])
+            and value['prior_read_control_counts']==sorted(value['prior_read_control_counts'])
+            and not ((value['ordinal']==2)==value['withdrawn'] and not value['restored']))
+        return value
     if prefix in ('CUSTOMER_WORKFLOWS_FIXTURE_GUARD','CUSTOMER_WORKFLOWS_FIXTURE_FAILURE'):
         value=decoded(raw,512)
         require(value.keys()=={'stage','error_type','reason','sqlstate'} and value['stage'] in STAGES

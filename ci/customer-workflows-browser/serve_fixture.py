@@ -421,7 +421,8 @@ def run():
     patches,owned = old.provider_patches(),[]
     observed = {'logins':Counter(),'commands':[],'controls':[],'boundaries':Counter(),'pages':Counter(),'safe_selects':0,'refused':0,
         'profile_commands':[],'workflow_controls':[],'workflow_control_times':{},'workflow_boundaries':Counter(),
-        'workflow_directory_queries':Counter(),'workflow_denial_routes':set(),'workflow_public_reads':[]}
+        'workflow_directory_queries':Counter(),'workflow_denial_routes':set(),'workflow_public_reads':[],
+        'workflow_public_read_control_counts':[]}
     try:
         for item in patches:
             item.start()
@@ -971,9 +972,18 @@ async def workflow_request(app, scope, receive, send, request, actor, base, cata
             and 'sec-purpose' not in request.headers, 'workflow_exact_anonymous_public_read_required')
         withdrawn='manual_property_withdrawn' in observed['workflow_controls']
         restored='manual_property_restore' in observed['workflow_controls']
-        require((ordinal==2)==withdrawn and not restored, 'workflow_public_withdrawal_chronology_required')
+        chronology=(ordinal==2)==withdrawn and not restored
+        if not chronology:
+            print('CUSTOMER_WORKFLOWS_FIXTURE_PUBLIC_CHRONOLOGY '+canonical({
+                'ordinal':ordinal,'prior_slot_statuses':[item['status'] for item in observed['workflow_public_reads']],
+                'completed_count':sum(item['complete'] is True for item in observed['workflow_public_reads']),
+                'withdrawn':withdrawn,'restored':restored,'control_count':len(observed['workflow_controls']),
+                'prior_read_control_counts':list(observed['workflow_public_read_control_counts']),
+                'tagged_boundary':bool(request.headers.get('x-ci-workflow-boundary'))}),flush=True)
+        require(chronology, 'workflow_public_withdrawal_chronology_required')
         receipt={'status':expected[ordinal],'complete':False}
         observed['workflow_public_reads'].append(receipt)
+        observed['workflow_public_read_control_counts'].append(len(observed['workflow_controls']))
         starts=[];final=False;refusal=bytearray();declared_length=None
         async def public_send(message):
             nonlocal final,declared_length
