@@ -6,6 +6,7 @@ import unittest
 from utils.professional_options import (
     CATEGORIES, CATEGORY_IDS, PROPERTY_CLASSES, PROPERTY_CLASS_IDS,
     AREAS, AREA_IDS, LANGUAGES, LANGUAGE_IDS, matching_areas,
+    PROVIDER_KINDS, PROVIDER_KIND_IDS, WORK_SCOPES, WORK_SCOPE_IDS,
 )
 
 
@@ -66,7 +67,8 @@ class ProfessionalCatalogTests(unittest.TestCase):
 
     def test_all_options_have_unique_ids_and_nonempty_english_spanish_labels(self):
         for catalog, identifiers in ((CATEGORIES, CATEGORY_IDS), (PROPERTY_CLASSES, PROPERTY_CLASS_IDS),
-                                     (AREAS, AREA_IDS), (LANGUAGES, LANGUAGE_IDS)):
+                                     (AREAS, AREA_IDS), (LANGUAGES, LANGUAGE_IDS),
+                                     (PROVIDER_KINDS, PROVIDER_KIND_IDS), (WORK_SCOPES, WORK_SCOPE_IDS)):
             with self.subTest(catalog=catalog[0]["id"]):
                 self.assertIsInstance(identifiers, frozenset)
                 self.assertEqual(len(catalog), len(identifiers))
@@ -88,6 +90,12 @@ class ProfessionalCatalogTests(unittest.TestCase):
         # A property class is contextual metadata, not a substitute service option.
         self.assertNotIn("hotel_hospitality", CATEGORY_IDS)
         self.assertIn("property_management", CATEGORY_IDS)
+        self.assertTrue({"financial_institution", "cooperative", "management_company", "utility_provider",
+                         "insurance_provider", "other_provider"}.issubset(PROVIDER_KIND_IDS))
+        self.assertEqual(len(PROVIDER_KINDS), 10)
+        self.assertEqual(len(WORK_SCOPES), 12)
+        self.assertTrue({"advisory", "financing", "insurance", "management", "utility_service", "other_work"}.issubset(WORK_SCOPE_IDS))
+        self.assertTrue(PROVIDER_KIND_IDS.isdisjoint({"buyer", "owner", "realtor", "admin"}))
 
     def test_existing_geographic_matching_is_unchanged(self):
         self.assertEqual(len(AREAS), 51)
@@ -108,14 +116,17 @@ class ProfessionalCatalogTests(unittest.TestCase):
                         if isinstance(node, ast.FunctionDef) and node.name == "professional_options")
         function.decorator_list = []
         namespace = {"CATEGORIES": CATEGORIES, "PROPERTY_CLASSES": PROPERTY_CLASSES,
-                     "AREAS": AREAS, "LANGUAGES": LANGUAGES}
+                     "AREAS": AREAS, "LANGUAGES": LANGUAGES,
+                     "PROVIDER_KINDS": PROVIDER_KINDS, "WORK_SCOPES": WORK_SCOPES}
         exec(compile(ast.Module(body=[function], type_ignores=[]), str(source), "exec"), namespace)
         response = namespace["professional_options"]()
-        self.assertEqual(set(response), {"categories", "areas", "languages", "property_classes"})
+        self.assertEqual(set(response), {"categories", "areas", "languages", "property_classes", "provider_kinds", "work_scopes"})
         self.assertEqual(response["categories"], CATEGORIES)
         self.assertEqual(response["areas"], AREAS)
         self.assertEqual(response["languages"], LANGUAGES)
         self.assertEqual(response["property_classes"], PROPERTY_CLASSES)
+        self.assertEqual(response["provider_kinds"], PROVIDER_KINDS)
+        self.assertEqual(response["work_scopes"], WORK_SCOPES)
 
 
 if __name__ == "__main__":

@@ -156,7 +156,7 @@ class ProfessionalTests(unittest.TestCase):
         self.assertEqual(response.status_code, 401)
         self.assertEqual(response.headers.get("cache-control"), "no-store")
         options = self.call("GET", "/professionals/options", actor=None)
-        self.assertEqual(set(options), {"categories", "areas", "languages", "property_classes"})
+        self.assertEqual(set(options), {"categories", "areas", "languages", "property_classes", "provider_kinds", "work_scopes"})
         self.assertNotIn("Synthetic", str(options))
 
     def test_external_real_estate_service_profile_requires_company_and_never_grants_team_permissions(self):
@@ -605,6 +605,126 @@ class ProfessionalTests(unittest.TestCase):
         self.assertEqual(self.call("GET", f"/professionals/{managed['id']}", "other")["id"], managed["id"])
         self.assertEqual(len(self.call("GET", f"/admin/professionals/{managed['id']}", "admin_b")["history"]), managed["version"])
 
+
+    def test_declared_facets_accept_all_known_choices_and_reject_unknown_duplicate_or_excess(self):
+        options = self.call("GET", "/professionals/options", actor=None)
+        choices = {"provider_kind_ids": [item["id"] for item in options["provider_kinds"]],
+                   "property_class_ids": [item["id"] for item in options["property_classes"]],
+                   "work_scope_ids": [item["id"] for item in options["work_scopes"]]}
+        own = self.save(draft(**choices))
+        for key, values in choices.items():
+            self.assertEqual(own["draft"][key], values)
+            for bad in (["unknown"], [values[0], values[0]], values + ["unknown"]):
+                self.save(draft(**{key: bad}), version=own["version"], status=422)
+        self.assertEqual(self.call("GET", "/auth/me")["role"], "buyer")
+
+    def test_old_client_omission_preserves_declared_facets_and_explicit_empty_clears(self):
+        chosen = {"provider_kind_ids": ["cooperative", "supplier"], "property_class_ids": ["hotel_hospitality"],
+                  "work_scope_ids": ["supply", "management"]}
+        own = self.save(draft(**chosen))
+        own = self.save(draft("Older client edit"), version=own["version"])
+        for key, values in chosen.items():
+            self.assertEqual(own["draft"][key], values)
+        for key in chosen:
+            own = self.save(draft(**{key: []}), version=own["version"])
+            self.assertEqual(own["draft"][key], [])
+        managed = self.managed(draft(**chosen))
+        managed = self.managed_save(managed, draft("Older Admin client edit"))
+        for key, values in chosen.items():
+            self.assertEqual(managed["draft"][key], values)
+        managed = self.managed_save(managed, draft(**{key: [] for key in chosen}))
+        self.assertTrue(all(managed["draft"][key] == [] for key in chosen))
+
+    def test_historical_facet_read_defaults_never_write_or_republish(self):
+        approved = self.publish()
+        hidden = self.managed()
+        with Session(self.engine) as db:
+            for identity in (approved["id"], hidden["id"]):
+                row = db.get(ProfessionalProfile, UUID(identity))
+                row.draft_data = {key: value for key, value in row.draft_data.items() if key not in professionals.FACET_FIELDS}
+                if row.published_data:
+                    row.published_data = {key: value for key, value in row.published_data.items() if key not in professionals.FACET_FIELDS}
+            db.commit()
+            before = [(row.id, deepcopy(row.draft_data), deepcopy(row.published_data), row.version, row.updated_at,
+                       row.listing_status, row.published_at) for row in db.query(ProfessionalProfile).order_by(ProfessionalProfile.id)]
+            history = [(row.id, deepcopy(row.snapshot)) for row in db.query(ProfessionalProfileRevision).order_by(ProfessionalProfileRevision.id)]
+        responses = [self.call("GET", "/professional-profile")["draft"],
+                     self.call("GET", f"/professionals/{approved['id']}"),
+                     self.call("GET", "/admin/professionals", "admin")["items"][0]]
+        for response in responses:
+            self.assertTrue(all(response[key] == [] for key in professionals.FACET_FIELDS))
+        self.call("GET", f"/professionals/{hidden['id']}", status=404)
+        with Session(self.engine) as db:
+            after = [(row.id, deepcopy(row.draft_data), deepcopy(row.published_data), row.version, row.updated_at,
+                      row.listing_status, row.published_at) for row in db.query(ProfessionalProfile).order_by(ProfessionalProfile.id)]
+            self.assertEqual(after, before)
+            self.assertEqual([(row.id, deepcopy(row.snapshot)) for row in db.query(ProfessionalProfileRevision).order_by(ProfessionalProfileRevision.id)], history)
+
+    def test_declared_facets_share_approved_list_map_scope_and_compose_dimensions(self):
+        records = [
+            ("Alpha practice", ["professional_practice"], ["house_villa"], ["advisory"], ["sosua"]),
+            ("Beta supplier", ["supplier"], ["hotel_hospitality"], ["supply"], ["sosua"]),
+            ("Gamma cooperative", ["cooperative", "financial_institution"], ["hotel_hospitality"], ["advisory", "financing"], ["nationwide"]),
+        ]
+        for name, kinds, classes, scopes, areas in records:
+            self.moderate(self.managed_submit(self.managed(draft(name, provider_kind_ids=kinds,
+                property_class_ids=classes, work_scope_ids=scopes, service_area_ids=areas))))
+        self.managed(draft("Hidden matching entry", provider_kind_ids=["supplier"], property_class_ids=["hotel_hospitality"]))
+        for query, total in (("provider_kind=supplier&provider_kind=cooperative&property_class=hotel_hospitality", 2),
+                             ("property_class=house_villa&work_scope=advisory", 1),
+                             ("provider_kind=professional_practice&work_scope=financing", 0),
+                             ("provider_kind=cooperative&area=sosua&language=en", 1)):
+            listed = self.call("GET", "/professionals?" + query + "&limit=1")
+            mapped = self.call("GET", "/professionals/map?" + query)
+            self.assertEqual((listed["total"], mapped["total"]), (total, total))
+        choices = self.call("GET", "/professionals/options", actor=None)
+        for key, catalog in (("provider_kind", "provider_kinds"), ("property_class", "property_classes"), ("work_scope", "work_scopes")):
+            known = [item["id"] for item in choices[catalog]]
+            valid = "&".join(key + "=" + value for value in known)
+            for route in ("/professionals", "/professionals/map", "/admin/professionals"):
+                self.call("GET", route + "?" + valid, "admin")
+            for query in (key + "=unknown", key + "=", key + "=" + known[0] + "&" + key + "=" + known[0], valid + "&" + key + "=unknown"):
+                for route in ("/professionals", "/professionals/map", "/admin/professionals"):
+                    self.call("GET", route + "?" + query, "admin", status=422)
+
+    def test_new_facet_drafts_are_admin_only_until_approved_and_withdrawal_hides(self):
+        managed = self.moderate(self.managed_submit(self.managed(draft(provider_kind_ids=["supplier"],
+            property_class_ids=["house_villa"], work_scope_ids=["supply"]))))
+        changed = self.managed_save(managed, draft(provider_kind_ids=["cooperative"],
+            property_class_ids=["farm_rural"], work_scope_ids=["financing"]))
+        for route in ("/professionals", "/professionals/map"):
+            self.assertEqual(self.call("GET", route + "?provider_kind=cooperative")["total"], 0)
+            self.assertEqual(self.call("GET", route + "?provider_kind=supplier")["total"], 1)
+        reviewed = self.call("GET", "/admin/professionals?provider_kind=cooperative&property_class=farm_rural&work_scope=financing", "admin")
+        self.assertEqual(reviewed["items"][0]["provider_kind_ids"], ["cooperative"])
+        self.call("GET", "/admin/professionals?provider_kind=cooperative", "buyer", status=403)
+        self.call("PUT", f"/admin/professionals/{changed['id']}", "admin",
+                  {"expected_version": managed["version"], "draft": changed["draft"]}, status=409)
+        pending = self.managed_submit(changed)
+        published = self.moderate(pending)
+        self.assertEqual(self.call("GET", "/professionals?property_class=farm_rural")["total"], 1)
+        withdrawn = self.managed_save(published, draft(public_contact_consent=False))
+        self.assertEqual(withdrawn["listing_status"], "hidden")
+        self.assertEqual(self.call("GET", "/professionals?provider_kind=cooperative")["total"], 0)
+
+    def test_public_experience_is_not_inferred_from_private_service_preferences(self):
+        from models.service_workflow import NetworkServicePreference
+        try:
+            with Session(self.engine) as db:
+                db.add(NetworkServicePreference(user_id=self.accounts["buyer"], service_opt_in=True,
+                    member_alias="Private provider alias", category_ids=["plumbing"],
+                    property_class_ids=["hotel_hospitality"], version=1))
+                db.commit()
+            own = self.publish()
+            self.assertEqual(own["draft"]["property_class_ids"], [])
+            self.assertEqual(self.call("GET", "/professionals?property_class=hotel_hospitality")["total"], 0)
+            with Session(self.engine) as db:
+                preference = db.get(NetworkServicePreference, self.accounts["buyer"])
+                self.assertEqual((preference.property_class_ids, preference.version), (["hotel_hospitality"], 1))
+        finally:
+            with Session(self.engine) as db:
+                db.query(NetworkServicePreference).filter(NetworkServicePreference.user_id == self.accounts["buyer"]).delete()
+                db.commit()
 
     def test_area_map_requires_verified_member_and_uses_approved_snapshot_until_withdrawal(self):
         approved = self.publish(draft("Synthetic area-map approved", service_area_ids=["sosua"]))

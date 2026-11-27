@@ -122,7 +122,35 @@ LANGUAGES = [option("es", "Spanish", "Español"), option("en", "English", "Ingl�
              option("fr", "French", "Francés"), option("de", "German", "Alemán"),
              option("it", "Italian", "Italiano"), option("pt", "Portuguese", "Portugués"),
              option("ru", "Russian", "Ruso"), option("other", "Other", "Otro")]
+PROVIDER_KINDS = [
+    option("professional_practice", "Professional practice", "Servicios profesionales"),
+    option("contractor", "Contractor", "Contratista"),
+    option("supplier", "Supplier", "Proveedor de productos y equipos"),
+    option("laboratory", "Laboratory", "Laboratorio"),
+    option("financial_institution", "Bank or lender", "Banco o entidad de financiamiento"),
+    option("cooperative", "Cooperative", "Cooperativa"),
+    option("management_company", "Management company", "Empresa de administración"),
+    option("utility_provider", "Utility or internet provider", "Proveedor de servicios básicos o internet"),
+    option("insurance_provider", "Insurance provider", "Proveedor de seguros"),
+    option("other_provider", "Another business type", "Otro tipo de negocio"),
+]
+WORK_SCOPES = [
+    option("design", "Design", "Diseño"),
+    option("installation", "Installation", "Instalación"),
+    option("inspection", "Inspection", "Inspección"),
+    option("repair", "Repair", "Reparación"),
+    option("recurring_maintenance", "Recurring maintenance", "Mantenimiento periódico"),
+    option("supply", "Products and equipment supply", "Suministro de productos y equipos"),
+    option("advisory", "Advice and consulting", "Asesoría y consultoría"),
+    option("financing", "Financing", "Financiamiento"),
+    option("insurance", "Insurance", "Seguros"),
+    option("management", "Management and operation", "Administración y operación"),
+    option("utility_service", "Utility and internet services", "Servicios básicos y de internet"),
+    option("other_work", "Other work", "Otros trabajos"),
+]
 CATEGORY_IDS = frozenset(item["id"] for item in CATEGORIES)
+PROVIDER_KIND_IDS = frozenset(item["id"] for item in PROVIDER_KINDS)
+WORK_SCOPE_IDS = frozenset(item["id"] for item in WORK_SCOPES)
 PROPERTY_CLASS_IDS = frozenset(item["id"] for item in PROPERTY_CLASSES)
 AREA_IDS = frozenset(item["id"] for item in AREAS)
 LANGUAGE_IDS = frozenset(item["id"] for item in LANGUAGES)

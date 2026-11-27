@@ -25,7 +25,7 @@ from schemas.professionals import (ProfessionalDraft, SaveProfessionalBody, Crea
     AdminProfessionalPage, ReviewStatus, ListingStatus)
 from utils.auth import get_current_user
 from utils.permission import require_admin
-from utils.professional_options import CATEGORIES, PROPERTY_CLASSES, AREAS, LANGUAGES, CATEGORY_IDS, AREA_IDS, LANGUAGE_IDS, matching_areas
+from utils.professional_options import CATEGORIES, PROPERTY_CLASSES, AREAS, LANGUAGES, CATEGORY_IDS, AREA_IDS, LANGUAGE_IDS, matching_areas, PROVIDER_KINDS, WORK_SCOPES, PROVIDER_KIND_IDS, PROPERTY_CLASS_IDS, WORK_SCOPE_IDS
 from utils.professional_photos import (MAX_PHOTO_BYTES, prepare_photo, upload_professional_photo, validate_owned_photo,
     upload_managed_professional_photo, validate_managed_photo)
 from utils.limiter import limiter
@@ -35,7 +35,8 @@ from utils.directory_geo import AREA_KEYS, map_summary, professional_mapped_expr
 logger = logging.getLogger(__name__)
 NO_STORE = {"Cache-Control": "no-store", "Pragma": "no-cache"}
 MULTIPART_LIMIT_DETAIL = "Professional upload exceeds the size limit"
-PUBLIC_FIELDS = ("business_name", "contact_name", "category_ids", "custom_services", "service_area_ids", "descriptions", "languages",
+FACET_FIELDS = ("provider_kind_ids", "property_class_ids", "work_scope_ids")
+PUBLIC_FIELDS = ("business_name", "contact_name", "category_ids", *FACET_FIELDS, "custom_services", "service_area_ids", "descriptions", "languages",
                  "public_phone", "public_email", "public_whatsapp", "website_url", "photo_url", "google_profile_url", "google_maps_embed_url")
 
 
@@ -89,7 +90,7 @@ router = APIRouter(tags=["professionals"], route_class=NoStoreRoute)
 def _public(row):
     if not row.published_data or not row.published_at:
         return None
-    snapshot = {"custom_services": [], "google_profile_url": "", "google_maps_embed_url": "", **row.published_data}
+    snapshot = {**{key: [] for key in FACET_FIELDS}, "custom_services": [], "google_profile_url": "", "google_maps_embed_url": "", **row.published_data}
     return {"id": row.id, **{key: deepcopy(snapshot[key]) for key in PUBLIC_FIELDS}, "approved_at": row.published_at}
 
 
@@ -146,7 +147,13 @@ def _validate_profile_photo(row, url):
 
 
 def _save_draft(row, draft):
-    row.draft_data = draft.model_dump(mode="json")
+    incoming = draft.model_dump(mode="json")
+    # Older clients omit these optional declarations. Only an explicit [] clears
+    # a stored choice; GET defaults never rewrite historical JSON or revisions.
+    for key in FACET_FIELDS:
+        if key not in draft.model_fields_set:
+            incoming[key] = deepcopy((row.draft_data or {}).get(key, []))
+    row.draft_data = ProfessionalDraft.model_validate(incoming).model_dump(mode="json")
     row.review_status = "draft"
     row.submitted_at = None
     row.review_note = None
@@ -191,15 +198,28 @@ def _visible(db):
 
 @router.get("/professionals/options")
 def professional_options():
-    return {"categories": CATEGORIES, "areas": AREAS, "languages": LANGUAGES, "property_classes": PROPERTY_CLASSES}
+    return {"categories": CATEGORIES, "areas": AREAS, "languages": LANGUAGES, "property_classes": PROPERTY_CLASSES,
+            "provider_kinds": PROVIDER_KINDS, "work_scopes": WORK_SCOPES}
 
 
-def _directory_query(db, category=None, area=None, language=None, q=None, location_status="all", map_area=""):
+def _facet_query(query, snapshot, provider_kind=None, property_class=None, work_scope=None):
+    for values, field, known in ((provider_kind, "provider_kind_ids", PROVIDER_KIND_IDS),
+                                 (property_class, "property_class_ids", PROPERTY_CLASS_IDS),
+                                 (work_scope, "work_scope_ids", WORK_SCOPE_IDS)):
+        if values:
+            if len(values) > len(known) or len(set(values)) != len(values) or set(values) - known:
+                raise HTTPException(422, "Select unique known professional filters")
+            query = query.filter(or_(*(snapshot[field].contains([value]) for value in values)))
+    return query
+
+
+def _directory_query(db, category=None, area=None, language=None, q=None, location_status="all", map_area="",
+                     provider_kind=None, property_class=None, work_scope=None):
     if len(category or []) > 8 or len(area or []) > 20 or set(category or []) - CATEGORY_IDS or set(area or []) - AREA_IDS or (language and language not in LANGUAGE_IDS):
         raise HTTPException(422, "Unknown or excessive professional filters")
     if map_area and map_area not in AREA_KEYS:
         raise HTTPException(422, "Choose a known map reference area")
-    query = _visible(db)
+    query = _facet_query(_visible(db), ProfessionalProfile.published_data, provider_kind, property_class, work_scope)
     if category:
         query = query.filter(or_(*(ProfessionalProfile.published_data["category_ids"].contains([value]) for value in set(category))))
     if area:
@@ -226,9 +246,11 @@ def _directory_query(db, category=None, area=None, language=None, q=None, locati
 def directory(category: Optional[list[str]] = Query(None), area: Optional[list[str]] = Query(None),
               language: Optional[str] = Query(None), q: Optional[str] = Query(None, max_length=100),
               location_status: LocationStatus = "all", map_area: str = Query("", max_length=100),
+              provider_kind: Optional[list[str]] = Query(None), property_class: Optional[list[str]] = Query(None),
+              work_scope: Optional[list[str]] = Query(None),
               limit: int = Query(24, ge=1, le=50), offset: int = Query(0, ge=0, le=10000),
               user=Depends(get_current_user), db: Session = Depends(get_db)):
-    query = _directory_query(db, category, area, language, q, location_status, map_area)
+    query = _directory_query(db, category, area, language, q, location_status, map_area, provider_kind, property_class, work_scope)
     total = query.count()
     rows = query.order_by(func.lower(ProfessionalProfile.published_data["business_name"].astext), ProfessionalProfile.id).offset(offset).limit(limit).all()
     return {"items": [_public(row) for row in rows], "total": total, "limit": limit, "offset": offset}
@@ -238,8 +260,10 @@ def directory(category: Optional[list[str]] = Query(None), area: Optional[list[s
 def professional_map(category: Optional[list[str]] = Query(None), area: Optional[list[str]] = Query(None),
                      language: Optional[str] = Query(None), q: Optional[str] = Query(None, max_length=100),
                      location_status: LocationStatus = "all", map_area: str = Query("", max_length=100),
+                     provider_kind: Optional[list[str]] = Query(None), property_class: Optional[list[str]] = Query(None),
+                     work_scope: Optional[list[str]] = Query(None),
                      user=Depends(get_current_user), db: Session = Depends(get_db)):
-    query = _directory_query(db, category, area, language, q, location_status, map_area)
+    query = _directory_query(db, category, area, language, q, location_status, map_area, provider_kind, property_class, work_scope)
     # Only IDs, declared areas and optional country are read; no contact/name or
     # unpublished draft fields enter this full-scope aggregate.
     rows = query.with_entities(ProfessionalProfile.id, ProfessionalProfile.published_data["service_area_ids"],
@@ -330,8 +354,11 @@ async def upload_photo(request: Request, file: UploadFile = File(...), user=Depe
 @router.get("/admin/professionals", response_model=AdminProfessionalPage)
 def admin_profiles(review_status: Optional[ReviewStatus] = Query(None), listing_status: Optional[ListingStatus] = Query(None),
                    q: Optional[str] = Query(None, max_length=100), limit: int = Query(30, ge=1, le=50), offset: int = Query(0, ge=0, le=10000),
+                   provider_kind: Optional[list[str]] = Query(None), property_class: Optional[list[str]] = Query(None),
+                   work_scope: Optional[list[str]] = Query(None),
                    admin=Depends(require_admin), db: Session = Depends(get_db)):
     query = db.query(ProfessionalProfile, User).outerjoin(User, User.id == ProfessionalProfile.user_id)
+    query = _facet_query(query, ProfessionalProfile.draft_data, provider_kind, property_class, work_scope)
     if review_status:
         query = query.filter(ProfessionalProfile.review_status == review_status)
     if listing_status:
@@ -346,6 +373,7 @@ def admin_profiles(review_status: Optional[ReviewStatus] = Query(None), listing_
     return {"items": [{"id": row.id, "version": row.version, "review_status": row.review_status, "listing_status": row.listing_status,
                        **{key: row.draft_data[key] for key in ("business_name", "contact_name", "category_ids", "service_area_ids")},
                        "custom_services": deepcopy(row.draft_data.get("custom_services", [])),
+                        **{key: deepcopy(row.draft_data.get(key, [])) for key in FACET_FIELDS},
                        "management_type": "admin_managed" if row.user_id is None else "account_owned",
                        "owner": _owner(owner), "submitted_at": row.submitted_at, "reviewed_at": row.reviewed_at,
                        "published_at": row.published_at, "updated_at": row.updated_at} for row, owner in rows], "total": total, "limit": limit, "offset": offset}

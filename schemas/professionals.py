@@ -8,7 +8,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, StrictBool, field_validator, model_validator
 from schemas.website_settings import validate_public_https_url
 from schemas.professional_google import ProfessionalGoogleFields
-from utils.professional_options import CATEGORY_IDS, AREA_IDS, LANGUAGE_IDS
+from utils.professional_options import CATEGORY_IDS, AREA_IDS, LANGUAGE_IDS, PROPERTY_CLASS_IDS, PROVIDER_KIND_IDS, WORK_SCOPE_IDS
 
 ReviewStatus = Literal["draft", "pending", "approved", "rejected"]
 ListingStatus = Literal["hidden", "published", "suspended"]
@@ -34,6 +34,9 @@ class ProfessionalDraft(ProfessionalGoogleFields):
     business_name: str = Field(default="", max_length=120)
     contact_name: str = Field(default="", max_length=100)
     category_ids: list[str] = Field(default_factory=list, max_length=8)
+    provider_kind_ids: list[str] = Field(default_factory=list, max_length=10)
+    property_class_ids: list[str] = Field(default_factory=list, max_length=10)
+    work_scope_ids: list[str] = Field(default_factory=list, max_length=12)
     custom_services: list[str] = Field(default_factory=list, max_length=8)
     service_area_ids: list[str] = Field(default_factory=list, max_length=20)
     descriptions: Descriptions = Field(default_factory=Descriptions)
@@ -52,10 +55,12 @@ class ProfessionalDraft(ProfessionalGoogleFields):
             raise ValueError("Control characters are not allowed")
         return value.strip()
 
-    @field_validator("category_ids", "service_area_ids", "languages")
+    @field_validator("category_ids", "service_area_ids", "languages", "provider_kind_ids", "property_class_ids", "work_scope_ids")
     @classmethod
     def known_options(cls, values, info):
-        allowed = {"category_ids": CATEGORY_IDS, "service_area_ids": AREA_IDS, "languages": LANGUAGE_IDS}[info.field_name]
+        allowed = {"category_ids": CATEGORY_IDS, "service_area_ids": AREA_IDS, "languages": LANGUAGE_IDS,
+                   "provider_kind_ids": PROVIDER_KIND_IDS, "property_class_ids": PROPERTY_CLASS_IDS,
+                   "work_scope_ids": WORK_SCOPE_IDS}[info.field_name]
         if set(values) - allowed or len(set(values)) != len(values):
             raise ValueError("Select unique known options")
         return values
@@ -134,6 +139,9 @@ class PublicProfessional(ProfessionalGoogleFields):
     business_name: str
     contact_name: str
     category_ids: list[str]
+    provider_kind_ids: list[str] = Field(default_factory=list)
+    property_class_ids: list[str] = Field(default_factory=list)
+    work_scope_ids: list[str] = Field(default_factory=list)
     custom_services: list[str] = Field(default_factory=list)
     service_area_ids: list[str]
     descriptions: Descriptions
@@ -199,6 +207,9 @@ class AdminProfessionalSummary(StrictModel):
     business_name: str
     contact_name: str
     category_ids: list[str]
+    provider_kind_ids: list[str] = Field(default_factory=list)
+    property_class_ids: list[str] = Field(default_factory=list)
+    work_scope_ids: list[str] = Field(default_factory=list)
     custom_services: list[str] = Field(default_factory=list)
     service_area_ids: list[str]
     management_type: Literal["admin_managed", "account_owned"]
