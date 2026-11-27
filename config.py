@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings
+from pydantic import Field
 
 
 class Settings(BaseSettings):
@@ -21,6 +22,13 @@ class Settings(BaseSettings):
     ghl_enabled: bool = False
     lead_delivery_enabled: bool = False
     customer_messages_enabled: bool = False
+    # Separate rollout gates; no model or public contact command is enabled by default.
+    public_assistant_enabled: bool = False
+    public_assistant_contacts_enabled: bool = False
+    public_assistant_model: str = ""
+    public_assistant_gateway_key: str = Field(default="", repr=False, exclude=True)
+    public_assistant_no_new_spend_verified: bool = False
+    public_assistant_verified_models: str = ""
     property_inquiry_require_consent: bool = False
     ghl_webhook_secret: str = ""
     notify_email: str = ""  # set to ilovedrrealty@gmail.com in Railway

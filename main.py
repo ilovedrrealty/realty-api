@@ -177,7 +177,7 @@ app.add_middleware(
     allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization"],
+    allow_headers=["Content-Type", "Authorization", "X-Assistant-CSRF"],
 )
 
 
@@ -211,6 +211,8 @@ app.include_router(listing_performance.router)
 app.include_router(transaction_room.router)
 app.include_router(transaction_documents.router)
 app.include_router(chat.router)
+from routes import public_assistant_http
+app.include_router(public_assistant_http.router)
 app.include_router(webhooks.router)
 app.include_router(stats.router)
 app.include_router(professionals.router)
