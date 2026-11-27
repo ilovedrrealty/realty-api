@@ -1,0 +1,210 @@
+{
+  "schema": "assignment-notifications-owned-native-v1",
+  "status": "PREPARED_SOURCE_ONLY_PENDING_ROOT_AND_NONAUTHOR_FULL_REVIEW_NO_PUSH",
+  "operations_parent": "2cfb0169f9fc904f374c209d6b8c0a21e80583b1",
+  "first_ref": "codex-ci-assignment-notifications-native-v2-20261127",
+  "application": {
+    "commit": "4880569cd1efefcc63b129bffa9e31373d5d5960",
+    "tree": "e1476f7efa3ea3a270234da23122916aff86751a",
+    "parents": [
+      "56a569fcca37bb2ec6f06651ae1c6d88a074f58f"
+    ],
+    "changed_paths_from_baseline": [
+      "alembic/versions/f7a9c3e2d114_private_assignment_notifications.py",
+      "main.py",
+      "models/__init__.py",
+      "models/assignment_notification.py",
+      "routes/admin.py",
+      "routes/assignment_notification.py",
+      "routes/leads.py",
+      "schemas/assignment_notification.py",
+      "services/assignment_notification.py",
+      "tests/test_assignment_notification.py",
+      "tests/test_lead_tracking.py",
+      "tests/test_professional_catalog.py",
+      "utils/assignment_messages.py",
+      "utils/professional_options.py"
+    ],
+    "file_hashes": {
+      "alembic/versions/f7a9c3e2d114_private_assignment_notifications.py": "6cbdd85c7b6fe9b63c55818591f5803513942df85ffad3925691133e60acabd9",
+      "main.py": "e6a8cc2b9d8fd408aeecedc9143c95d418af5f3b94a307a5897bee8c86cac694",
+      "models/__init__.py": "1da999625e990a4bdf1d9f1dde05356f59ee1cef111c515cf5887ffd69723514",
+      "models/assignment_notification.py": "e579077d9c04ab32af9ff3a5da8ef2b46feedc364b345514b250bfb8216d2a63",
+      "routes/admin.py": "520e4cf875c83b211a7e76d207a46943294b23ecbaa7cd69765c9a50eac1a752",
+      "routes/assignment_notification.py": "09728650341a02fb1c73aaeff9283a3685e638f46a2ba860c0470fc971536d88",
+      "routes/leads.py": "48f6e6972f2c0f52083f8028767463074a4053ad0246bcfe83a596c8fc3d918b",
+      "schemas/assignment_notification.py": "4ab39353f4ad5aadf0897449d31e999e1df1cd2387a671ddf7ad2c7830851336",
+      "services/assignment_notification.py": "22832c315580c4092c65d68087b54ee180e0f0e080f7a60765edc920aa82339c",
+      "tests/test_assignment_notification.py": "85cda108835c079212aafc4eca48d4f0376c59923d4be21601511b02e35ba4ba",
+      "tests/test_lead_tracking.py": "885c5f518158255799f97638e49cf85573994ff3aea7e625a3f2ba0f70e886b0",
+      "tests/test_professional_catalog.py": "8c7de9593848e891fbbbff5d30d1c5e4010c0a2e3bb378a6133cbba399eb1a62",
+      "utils/assignment_messages.py": "c6d29396513d4be88bea8c4e935ece2f624c6b903641f41246bc4918c5f9a1e9",
+      "utils/professional_options.py": "82a64f1b31b96aa7038f638a6b6a95ad766497113f7c414d832c8ef1e264ef22"
+    },
+    "source_note": "Exact reviewed56a assignment/province union plus one owned Tracking setUp cleanup statement at488; all production source is byte-exact56a. Source-only, no native pass assumed."
+  },
+  "baseline106": {
+    "commit": "26ca867a1008868f7dc5f322d28dc289a7763980",
+    "tree": "3a30b7e8c5b53827b97374c18806a7cb03ef9c5c",
+    "head": "e8b5a3d1f907",
+    "catalog_tables": 106,
+    "modeled_tables": 105
+  },
+  "previous99": {
+    "commit": "8957b18520d15dac503e0e4a5ce4b2455135d601",
+    "tree": "11ab69db36eb30881e4f3086578201f584c4092d",
+    "head": "c4e2a7319b60"
+  },
+  "source_suites": {
+    "assignment": {
+      "file": "tests/test_assignment_notification.py",
+      "class": "AssignmentNotificationTests",
+      "count": 28,
+      "methods": [
+        "test_account_assign_and_clear_record_events_without_any_email_or_role_change",
+        "test_exact_seller_upgrade_and_structured_valuation_notice_policy",
+        "test_optional_invalid_address_and_render_failure_do_not_lose_assignment",
+        "test_request_replay_after_later_reassignment_never_reapplies_old_agent",
+        "test_fresh_same_agent_legacy_and_explicit_actions_remain_distinct",
+        "test_assignment_event_and_jobs_rollback_together_on_database_failure",
+        "test_disabled_worker_keeps_real_queued_jobs_and_does_no_database_or_provider_work",
+        "test_valid_provider_acceptance_once_with_event_specific_idempotency_and_private_snapshot",
+        "test_provider_outcomes_are_truthful_and_never_automatically_retried",
+        "test_missing_provider_config_is_not_acceptance",
+        "test_superseded_and_changed_or_ineligible_destinations_never_receive_contacts",
+        "test_assignment_cycles_never_revive_old_a_b_a_but_fresh_a_a_notices_remain",
+        "test_owner_promotion_confirmation_survives_later_agent_change_or_suspension",
+        "test_absolute_header_deadline_cancels_the_actual_async_exchange_without_resend",
+        "test_absolute_drip_body_deadline_cancels_inactivity_resetting_stream",
+        "test_response_size_and_encoding_are_bounded_before_provider_json_projection",
+        "test_worker_database_statement_lock_and_idle_bounds_are_transaction_local",
+        "test_expired_processing_is_unconfirmed_and_stale_token_cannot_accept_or_resend",
+        "test_only_proven_unsent_shutdown_can_release_an_initial_claim",
+        "test_concurrent_exact_command_replay_creates_one_event_and_notice",
+        "test_concurrent_workers_claim_distinct_jobs_without_duplicate_provider_handoffs",
+        "test_source_assignment_lock_remains_held_through_bounded_provider_handoff",
+        "test_admin_history_paging_is_payload_free_private_and_current_role_bound",
+        "test_assignment_mutations_keep_admin_and_exact_json_origin_boundaries",
+        "test_private_ddl_immutability_and_populated_downgrade_refusal",
+        "test_empty_downgrade_reupgrade_preserves_all_legacy_model_schema_rows",
+        "test_pure_new_renderers_preserve_all_existing_assignment_notice_content",
+        "test_worker_thread_is_nonblocking_and_cancellation_drains_current_batch"
+      ],
+      "test_file_sha256": "85cda108835c079212aafc4eca48d4f0376c59923d4be21601511b02e35ba4ba",
+      "scope": "Actual source model-created isolated schemas on a separate marked fixed test DB; never described as a genuine108 migration proof. Exact current frozen inventory, no skipped/expected-failed/errored cases."
+    },
+    "admin_assignment": {
+      "file": "tests/test_admin_agent_assignments.py",
+      "class": "AdminAgentAssignmentTests",
+      "count": 8,
+      "methods": [
+        "test_agent_choices_include_two_admins_and_realtor_only_and_no_private_profile",
+        "test_both_admins_can_assign_self_and_enter_own_pipeline_without_role_change",
+        "test_admin_owner_workspace_can_have_an_agent_without_changing_admin_role",
+        "test_buyer_account_agent_assignment_readback_and_clear_preserve_roles_and_audit",
+        "test_admin_submitted_lead_mirrors_agent_but_never_downgrades_admin",
+        "test_ineligible_or_inactive_agents_cannot_be_selected",
+        "test_non_admin_cannot_list_or_assign_and_anonymous_is_denied",
+        "test_bad_agent_ids_are_validation_errors_and_supported_unassignments_still_work"
+      ],
+      "test_file_sha256": "9353771bd35e3fd7ddf910d41a40663490440d27c7c3e67c8286fa1f207b9bbc",
+      "scope": "Existing coupled Admin agent/role/eligibility/auth assignment regressions, unchanged or explicitly reviewed queue-only adaptation; separate fresh process."
+    },
+    "lead_tracking": {
+      "file": "tests/test_lead_tracking.py",
+      "class": "LeadTrackingTests",
+      "count": 17,
+      "methods": [
+        "test_phone_only_email_only_and_both_keep_structured_attribution_out_of_message",
+        "test_identical_retry_persists_one_lead_and_notifies_once",
+        "test_seller_valuation_receipt_preserves_one_private_subject_and_normal_delivery",
+        "test_only_staff_feeds_classify_structured_valuations_without_loading_subjects",
+        "test_valuation_assignment_preserves_buyer_role_and_my_agent_but_ordinary_assignment_upgrades",
+        "test_valuation_subject_is_rejected_without_seller_scope_consent_or_valid_fields",
+        "test_private_valuation_failure_rolls_back_its_lead_and_can_retry",
+        "test_concurrent_retry_uses_database_unique_key_and_side_effects_once",
+        "test_reused_identifier_with_changed_payload_or_actor_returns_no_receipt",
+        "test_all_contact_intents_preserve_generic_action_and_explicit_internal_tests_are_excluded",
+        "test_measurement_decline_never_blocks_contact_and_discards_click_identifiers",
+        "test_contact_consent_and_contact_validation_precede_database_and_notifications",
+        "test_whitelist_ignores_unknown_fields_sanitizes_paths_and_drops_obvious_pii",
+        "test_legacy_callers_remain_compatible_and_do_not_guess_measurement_consent",
+        "test_admin_only_detail_and_summary_never_return_raw_click_ids",
+        "test_aggregate_excludes_explicit_tests_from_intent_and_ad_reference_counts",
+        "test_additive_migration_preserves_existing_rows_rls_and_nullable_columns"
+      ],
+      "test_file_sha256": "885c5f518158255799f97638e49cf85573994ff3aea7e625a3f2ba0f70e886b0",
+      "scope": "Existing coupled structured-valuation versus ordinary Buyer-to-Owner policy/attribution regressions; queue assertions replace old inline-mail expectations only in reviewed source. Separate fresh process."
+    }
+  },
+  "migration": {
+    "parent": "e8b5a3d1f907",
+    "head": "f7a9c3e2d114",
+    "new_tables": [
+      "assignment_email_jobs",
+      "assignment_events"
+    ],
+    "new_functions": [
+      "assignment_guard_event",
+      "assignment_guard_notice"
+    ],
+    "catalog_tables": 108,
+    "modeled_tables": 107,
+    "proof": "A separate nonce canonical database genuinely bootstraps8957/c4, upgrades exact accepted26ca to e8/106, seeds only accepted synthetic retained data under26ca, and snapshots all106 rows/catalog/sequence/function/schema/role ACL metadata BEFORE running current f7. No current create_all can substitute for this migration.",
+    "preservation": "105 old application tables exact raw rows, old106 logical catalog unchanged after removing only exact new2 guard functions, all public sequence definitions/values and old function/security attributes unchanged; alembic_version excluded from row equality and exact e8 to f7 transition separately required. Owned synthetic82 owner contacts,46 hidden profiles,9 old accepted jobs,CMS7,floorplans2 remain exact. This is fixture proof, not a live-production data audit.",
+    "projection": "Independently create all107 current models in an owned schema with checkfirst=False; compare only new2 native column order/types/null/default/identity/generated, PK/check/unique/FK definitions and valid/ready indexes against actual public migration. Qualification normalization only, PostgreSQL-native deparsing, no ignored default/type differences.",
+    "privacy": "New2 RLS enabled, no policies and no PUBLIC/anon/authenticated/service_role grants even after broad fixture-only defaults. Exactly2 active source guard triggers, both guard functions SECURITY INVOKER/fixed search_path with no ordinary client execute. Old public functions/type/schema/table/sequence/role access remains exact.",
+    "rollback": "Empty actual Alembic f7 to e8 retains old106 and removes only new2 tables/functions, then exact f7 reupgrade. Populated actual f7 downgrade-node rejection is exercised within an owned transaction/savepoint, then rolled back; no retained history deletion or disabling guards."
+  },
+  "runtime": {
+    "dependency_baseline": "01695530df670a94ac28f8b3bf36cc34b5b7a942",
+    "dependency_tree": "e88ea0c57f9fac39545322532a5992d5a2927676",
+    "recipe": "c193a925ba57ea2d67ea48c44e5262817885c8a2",
+    "dockerfile_sha256": "e546d8c5668b87ef28e604107bbb330e6f4b3873cf0208b4d24ca378bd0851f9",
+    "python": "docker.io/library/python:3.11-slim@sha256:673719e071ecf27434fd2635bbd8d00f49f4fdd81f243143438a42ced8bedf60",
+    "postgres": "docker.io/library/postgres:17.6@sha256:b86568d3e0fe1dfaeff52714f9da36f206a30e4c49131b82bf96982d78627409",
+    "requirements": "Actual baseline inventory plus only unchanged hash-pinned openpyxl3.1.5/defusedxml0.7.1/et-xmlfile2.0.0, pip check and exact runtime inventory. No new dependency.",
+    "resources": "Postgres768MiB/384MiB data tmpfs/96pids/1CPU; each native client1536MiB/192pids/2CPUs/128MiB tmpfs; canonical/new-assignment phases900s each, coupled classes300s each. Whole workflow65min bounds dependency preparation plus all4 phases and cleanup. Network-none PG with shared loopback only, readonly source/rootfs, no host env or provider credentials.",
+    "processes": "Canonical migration/projection worker and each of3 source test classes run in separate fresh client containers/processes to prevent cached database/model metadata contamination. The fixed unit DB must return empty after every class. No previous162/555/browser lane is rerun.",
+    "database_names": [
+      "ildr_assignment_ci_<nonce>",
+      "ildr_platform_test_20261025"
+    ],
+    "ownership": "Unique nonce comments and Docker labels; typed actual process/native/timeout/OOM facts, stop before removal, both DB marker-checked DROP/absence and final labelled resource absence even on failure."
+  },
+  "helper_pins": {
+    "ci/native-inbox/verify.py": "388fcae33bf63234df9739ac7405c1a2d49b4914af2a32d56e9023fdb7ed144e",
+    "ci/social-groups-browser/serve_social_groups_fixture.py": "e0c5f0971c7c13ed47063907f01fa6ef01590b00fa2855eb1ecb16a38b99463e",
+    "ci/social-groups-native/catalog.py": "5869dcbd30dc659a649fc6c2bbbe2de1337904ef11e4b91d6ad1992ef7ea9c2f",
+    "ci/social-groups-native/records.py": "bffdf8900f286079807ba43e8db5c09160caaf139b1e934449b90e577c1cb5cf"
+  },
+  "output_contract": {
+    "raw_logs": "Remain private owned scratch, <=4MiB, never dumped or uploaded. Only strict finite typed counts/results/allowlisted failure stage/class/reason/SQLSTATE are emitted.",
+    "provider_calls": "Live HTTP/SMTP/Resend/requests/urllib transports refused and counted, must be0. Both actual httpx.MockTransport sync and async handler invocations are counted separately and summed; the new assignment suite requires actual async mocked calls, coupled route suites may require none. No URLs/body/IDs/headers retained or printed. Mocked calls are not delivery proof.",
+    "acceptance": "Both actual processes exit0/stopped/noOOM, exact current source method inventory fully passes, genuine108/model107/new2 privacy/parity/preservation/rollback all pass, source remains clean and both marked DBs absent. Any failure diagnostic always rejects acceptance. No artifacts."
+  },
+  "local_checks": {
+    "application_or_test_imports": false,
+    "native_or_database_or_container_execution": false,
+    "build_or_install": false,
+    "source_only_controls": "Final AST/parser/source controls pending this final source binding; prior4-positive/60-negative pure checker controls used explicit synthetic2-case inventory, not a native pass."
+  },
+  "prohibited": [
+    "production SQL",
+    "backup capture",
+    "provider/credential/settings reads or writes",
+    "live sends",
+    "CUA",
+    "local application imports",
+    "publication or push by authors"
+  ],
+  "review": "Prepared source only. Exact final source and53 method inventory bound; Root plus non-author full review and Root first push required before any owned native run. No local application/native/provider execution.",
+  "source_inventory_provenance": {
+    "commit": "4880569cd1efefcc63b129bffa9e31373d5d5960",
+    "file": "C:\\Users\\hotel\\Documents\\Codex\\2026-10-13\\i-3\\outputs\\assignment-email-history-handoff-20261126-google\\NATIVE-CASE-INVENTORY-v3-20261127.json",
+    "bytes": 5565,
+    "sha256": "af9eb14271b52b1074825f73856bc2f246516dc853eccfd34af67f94eb0abab8",
+    "expected_definitions_only": 53,
+    "runtime": "UNRUN; final reviewed488 assignment/province fixture source is pinned; all53 remain definitions only"
+  }
+}

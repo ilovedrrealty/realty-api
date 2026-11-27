@@ -1,0 +1,69 @@
+name: Isolated assignment notification native proof
+on:
+  push:
+    branches: [codex-ci-assignment-notifications-native-v2-20261127]
+permissions:
+  contents: read
+concurrency:
+  group: assignment-notifications-native-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  native:
+    if: >-
+      github.repository == 'ilovedrrealty/realty-api' &&
+      github.event.repository.private == false && github.event.created == true &&
+      github.event.deleted == false && github.event.forced == false &&
+      github.event.before == '0000000000000000000000000000000000000000' &&
+      github.run_attempt == 1 && github.event.after == github.sha && github.workflow_sha == github.sha
+    runs-on: ubuntu-24.04
+    timeout-minutes: 65
+    steps:
+      - name: Read exact reviewed operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          path: assignment-ops
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Read final reviewed assignment API
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 4880569cd1efefcc63b129bffa9e31373d5d5960
+          path: assignment-app
+          fetch-depth: 24
+          persist-credentials: false
+      - name: Read accepted106-table baseline
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 26ca867a1008868f7dc5f322d28dc289a7763980
+          path: assignment-baseline106
+          fetch-depth: 12
+          persist-credentials: false
+      - name: Read genuine99-table startup
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 8957b18520d15dac503e0e4a5ce4b2455135d601
+          path: assignment-previous99
+          persist-credentials: false
+      - name: Read unchanged dependency baseline
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 01695530df670a94ac28f8b3bf36cc34b5b7a942
+          path: assignment-dependencies
+          persist-credentials: false
+      - name: Read accepted Python recipe
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: c193a925ba57ea2d67ea48c44e5262817885c8a2
+          path: assignment-recipe
+          persist-credentials: false
+      - name: Run owned current native suite and genuine108 migration proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          runner="$GITHUB_WORKSPACE/assignment-ops/ci/assignment-notifications-native/run-hosted.sh"
+          bash --noprofile --norc -n "$runner"
+          exec bash --noprofile --norc "$runner" "$GITHUB_WORKSPACE/assignment-ops" \
+            "$GITHUB_WORKSPACE/assignment-app" "$GITHUB_WORKSPACE/assignment-baseline106" \
+            "$GITHUB_WORKSPACE/assignment-previous99" "$GITHUB_WORKSPACE/assignment-dependencies" \
+            "$GITHUB_WORKSPACE/assignment-recipe"
