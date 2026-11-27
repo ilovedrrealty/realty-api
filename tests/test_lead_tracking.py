@@ -26,6 +26,7 @@ from config import settings
 from database import Base, get_db
 import models
 from models.lead import Lead
+from models.assignment_notification import AssignmentEvent, AssignmentEmailJob
 from models.seller_valuation import SellerValuationIntake
 from models.user import User
 from models.site_settings import SiteSettings
@@ -230,9 +231,12 @@ class LeadTrackingTests(unittest.TestCase):
                 self.assertIsNotNone(lead.assigned_at)
                 self.assertEqual(buyer.role, "buyer")
                 self.assertEqual(buyer.assigned_realtor_id, previous_agent)
-            staff_mail.assert_called_once()
+            staff_mail.assert_not_called()
             owner_welcome.assert_not_called()
             owner_assignment.assert_not_called()
+            with Session(self.engine) as db:
+                assigned_event = db.query(AssignmentEvent).filter(AssignmentEvent.lead_id == UUID(valuation_id)).one()
+                self.assertEqual({row.kind for row in db.query(AssignmentEmailJob).filter(AssignmentEmailJob.event_id == assigned_event.id)}, {"lead_assigned_agent"})
 
             assign(ordinary_id)
             with Session(self.engine) as db:
@@ -242,9 +246,12 @@ class LeadTrackingTests(unittest.TestCase):
                 self.assertEqual(lead.status, "assigned")
                 self.assertEqual(buyer.role, "owner")
                 self.assertEqual(buyer.assigned_realtor_id, realtor_id)
-            self.assertEqual(staff_mail.call_count, 2)
-            owner_welcome.assert_called_once()
-            owner_assignment.assert_called_once()
+            staff_mail.assert_not_called()
+            owner_welcome.assert_not_called()
+            owner_assignment.assert_not_called()
+            with Session(self.engine) as db:
+                assigned_event = db.query(AssignmentEvent).filter(AssignmentEvent.lead_id == UUID(ordinary_id)).one()
+                self.assertEqual({row.kind for row in db.query(AssignmentEmailJob).filter(AssignmentEmailJob.event_id == assigned_event.id)}, {"lead_assigned_agent", "owner_upgrade_customer", "owner_assigned_agent"})
 
     def test_valuation_subject_is_rejected_without_seller_scope_consent_or_valid_fields(self):
         subject = {"property_type": "land", "location": "Synthetic interior valley"}

@@ -47,3 +47,5 @@ from .social_groups import (NetworkGroup, NetworkGroupMembership, NetworkGroupIn
     NetworkGroupPost, NetworkGroupComment, NetworkGroupMedia, NetworkGroupAction)
 from .native_inbox import (InboxPreference, InboxBlock, InboxConversation, InboxCommand,
     InboxEntry, InboxReadState, InboxAudit)
+
+from .assignment_notification import AssignmentEvent, AssignmentEmailJob

@@ -150,12 +150,14 @@ async def lifespan(app: FastAPI):
     payout_task = asyncio.create_task(_payout_cron())
     from services.lead_delivery import worker_loop
     delivery_task = asyncio.create_task(worker_loop(SessionLocal))
+    from services.assignment_notification import worker_loop as assignment_worker_loop
+    assignment_task = asyncio.create_task(assignment_worker_loop(SessionLocal))
     try:
         yield
     finally:
-        for task in (cleanup_task, payout_task, delivery_task):
+        for task in (cleanup_task, payout_task, delivery_task, assignment_task):
             task.cancel()
-        await asyncio.gather(cleanup_task, payout_task, delivery_task, return_exceptions=True)
+        await asyncio.gather(cleanup_task, payout_task, delivery_task, assignment_task, return_exceptions=True)
 
 
 app = FastAPI(title="I Love DR Realty API", lifespan=lifespan)
@@ -216,6 +218,8 @@ app.include_router(research_workspaces.router)
 app.include_router(trade_contacts.router)
 app.include_router(analytics.router)
 app.include_router(lead_delivery_routes.router)
+from routes import assignment_notification as assignment_notification_routes
+app.include_router(assignment_notification_routes.router)
 app.include_router(property_management.router)
 app.include_router(property_network.router)
 app.include_router(social_groups.router)

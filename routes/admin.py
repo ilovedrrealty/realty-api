@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from decimal import Decimal
-from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Query, Response, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Query, Request, Response, UploadFile
 from pydantic import BaseModel, field_validator
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, aliased
@@ -34,6 +34,8 @@ from schemas.listing_edit import ListingEditApproveBody, ListingEditResponse, Li
 from schemas.listing_event import ListingEventResponse
 from utils.permission import require_admin
 from utils.agents import eligible_agent_query, find_eligible_agent
+from services import assignment_notification
+from utils.request_security import require_json_mutation
 from utils.security import hash_password
 from utils.share_image import generate_share_image, maybe_regenerate_share_image
 from utils.bulk_import import parse_csv, run_bulk_import
@@ -663,23 +665,36 @@ class ChangeRoleBody(BaseModel):
 
 class AssignRealtorBody(BaseModel):
     realtor_id: Optional[str] = None
+    request_id: Optional[str] = None
 
 @router.put("/users/{user_id}/assign-realtor", status_code=204)
-def assign_realtor_to_owner(user_id: str, body: AssignRealtorBody, admin=Depends(require_admin), db: Session = Depends(get_db)):
-    target = db.query(User).filter(User.id == UUID(user_id)).first()
+def assign_realtor_to_owner(user_id: str, body: AssignRealtorBody, request: Request, admin=Depends(require_admin), db: Session = Depends(get_db)):
+    require_json_mutation(request)
+    prior, request_id, body_hash, target_id, agent_id = assignment_notification.prepare_request(
+        db, actor_id=admin.id, source_kind="account", source_id=user_id,
+        agent_id=body.realtor_id or None, request_id=body.request_id)
+    if prior is not None:
+        db.rollback()  # Exact replay resolves; it never reapplies an older assignment.
+        return
+    users = assignment_notification.lock_users(db, (target_id, agent_id))
+    target = users.get(target_id)
     if not target:
         raise HTTPException(status_code=404, detail="User not found")
     if target.role not in ("buyer", "owner", "admin"):
         raise HTTPException(status_code=400, detail="Can only assign an agent to a buyer, owner or admin account")
-    if body.realtor_id:
-        realtor = find_eligible_agent(db, body.realtor_id)
-        if not realtor:
+    previous_agent = target.assigned_realtor_id
+    realtor = users.get(agent_id) if agent_id else None
+    if agent_id:
+        if not assignment_notification.eligible(realtor):
             raise HTTPException(status_code=404, detail="Active verified agent not found")
         target.assigned_realtor_id = realtor.id
         _log(db, "realtor_assigned", f"Realtor {realtor.display_name or realtor.email} assigned to account {target.display_name or target.email}", actor_id=admin.id)
     else:
         target.assigned_realtor_id = None
         _log(db, "realtor_unassigned", f"Realtor unassigned from account {target.display_name or target.email}", actor_id=admin.id)
+    assignment_notification.record_event(db, actor_id=admin.id, request_id=request_id,
+        request_sha256=body_hash, source_kind="account", source_id=target.id,
+        previous_agent_id=previous_agent, agent=realtor)
     db.commit()
 
 

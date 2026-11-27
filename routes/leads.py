@@ -29,7 +29,8 @@ from utils.phone import normalize_phone
 from schemas.lead_tracking import LeadTracking
 from schemas.seller_valuation import SellerValuationSubject
 from utils.lead_tracking import tracking_metadata, measurement_receipt, private_tracking_summary
-from services import lead_delivery
+from services import lead_delivery, assignment_notification
+from utils.request_security import require_json_mutation
 
 class PrivateMineRoute(APIRoute):
     def get_route_handler(self):
@@ -140,6 +141,7 @@ class StaffLeadResponse(LeadResponse):
 
 class AssignBody(BaseModel):
     realtor_id: str
+    request_id: Optional[str] = None
 
 
 class StatusBody(BaseModel):
@@ -525,72 +527,46 @@ def admin_lead_tracking_summary(response: Response, user=Depends(require_admin),
 def admin_assign_lead(
     lead_id: str,
     body: AssignBody,
+    request: Request,
     user=Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    lead = db.query(Lead).filter(Lead.id == UUID(lead_id)).first()
+    require_json_mutation(request)
+    prior, request_id, body_hash, target_id, agent_id = assignment_notification.prepare_request(
+        db, actor_id=user.id, source_kind="lead", source_id=lead_id,
+        agent_id=body.realtor_id, request_id=body.request_id)
+    if prior is not None:
+        db.rollback()
+        return
+    lead = db.query(Lead).filter(Lead.id == target_id).populate_existing().with_for_update().first()
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
-    realtor = find_eligible_agent(db, body.realtor_id)
-    if not realtor:
+    users = assignment_notification.lock_users(db, (agent_id, lead.from_user_id))
+    realtor = users.get(agent_id)
+    if not assignment_notification.eligible(realtor):
         raise HTTPException(status_code=404, detail="Active verified agent not found")
+    previous_agent = lead.assigned_realtor_id
     lead.assigned_realtor_id = realtor.id
     lead.status = "assigned"
     _apply_status_timestamp(lead, "assigned")
     valuation_request = lead.type == "seller_interest" and db.query(SellerValuationIntake.lead_id).filter(
         SellerValuationIntake.lead_id == lead.id,
     ).first() is not None
-    # A structured valuation assignment changes the lead's staff access only.
     owner_upgraded = None
     if lead.from_user_id and not valuation_request:
-        submitter = db.query(User).filter(User.id == lead.from_user_id).first()
+        submitter = users.get(lead.from_user_id)
         if submitter:
             if lead.type == "seller_interest" and submitter.role == "buyer":
                 submitter.role = "owner"
                 owner_upgraded = submitter
             if submitter.role in ("owner", "buyer", "admin"):
                 submitter.assigned_realtor_id = realtor.id
+    assignment_notification.record_event(db, actor_id=user.id, request_id=request_id,
+        request_sha256=body_hash, source_kind="lead", source_id=lead.id,
+        previous_agent_id=previous_agent, agent=realtor, lead=lead, owner_upgraded=owner_upgraded)
     db.commit()
-
     if lead.ghl_contact_id:
         ghl.update_contact_status(lead.ghl_contact_id, "assigned")
-
-    # Notify assigned realtor
-    try:
-        notify_property_info = None
-        if lead.property_id:
-            notify_listing = db.query(Listing).filter(Listing.id == lead.property_id).first()
-            if notify_listing:
-                notify_property_info = {"id": str(notify_listing.id), "title": notify_listing.title}
-        send_realtor_lead_assigned_email(
-            realtor.email,
-            realtor.display_name or realtor.email,
-            lead,
-            notify_property_info,
-            calendly_url=getattr(realtor, 'calendly_url', None),
-        )
-    except Exception:
-        pass
-
-    # Notify both parties after commit
-    if owner_upgraded is not None:
-        try:
-            send_upgrade_approved_email(
-                owner_upgraded.email,
-                owner_upgraded.display_name or owner_upgraded.email,
-                "owner",
-            )
-        except Exception:
-            pass
-        try:
-            send_realtor_assigned_owner_email(
-                realtor.email,
-                realtor.display_name or realtor.email,
-                owner_upgraded.display_name or owner_upgraded.email,
-                owner_upgraded.email,
-            )
-        except Exception:
-            pass
 
 
 @router.put("/admin/leads/{lead_id}/status", status_code=204)
