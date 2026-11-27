@@ -1,0 +1,53 @@
+name: Isolated public assistant lead confirmation13 proof
+on:
+  push:
+    branches: [codex-ci-public-assistant-lead-native-20261127]
+permissions:
+  contents: read
+concurrency:
+  group: assistant-dependencies-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  focused:
+    if: >-
+      github.repository == 'ilovedrrealty/realty-api' && github.event.repository.private == false &&
+      github.event.created == true && github.event.deleted == false && github.event.forced == false &&
+      github.event.before == '0000000000000000000000000000000000000000' && github.run_attempt == 1 &&
+      github.event.after == github.sha && github.workflow_sha == github.sha
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - name: Read exact reviewed operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          path: assistant-ops
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Read exact reviewed lead confirmation source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: cb746abe45216576a88fb1036a9351f70a63d9fc
+          path: assistant-app
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Read unchanged dependency baseline
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 01695530df670a94ac28f8b3bf36cc34b5b7a942
+          path: assistant-dependencies
+          persist-credentials: false
+      - name: Read pinned accepted Python recipe
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: c193a925ba57ea2d67ea48c44e5262817885c8a2
+          path: assistant-recipe
+          persist-credentials: false
+      - name: Run exact thirteen owned lead confirmation cases
+        shell: bash
+        run: |
+          set -euo pipefail
+          runner="$GITHUB_WORKSPACE/assistant-ops/ci/public-assistant-lead-native/run-hosted.sh"
+          bash --noprofile --norc -n "$runner"
+          exec bash --noprofile --norc "$runner" "$GITHUB_WORKSPACE/assistant-ops" \
+            "$GITHUB_WORKSPACE/assistant-app" "$GITHUB_WORKSPACE/assistant-dependencies" "$GITHUB_WORKSPACE/assistant-recipe"

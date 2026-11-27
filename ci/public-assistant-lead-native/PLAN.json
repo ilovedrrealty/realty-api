@@ -1,0 +1,131 @@
+{
+  "status": "SOURCE_ONLY_UNRUN_FOCUSED13_NO_ACTIVATION",
+  "operations_parent": "2a474ccc8b6b5188a79a460fa059cf4080fdefe7",
+  "operations_parent_tree": "dab774530f4c3b962482924e7a52ef7ab94cca33",
+  "ref": "codex-ci-public-assistant-lead-native-20261127",
+  "inherited_paths": 451,
+  "total_paths": 456,
+  "new_paths": 5,
+  "application": {
+    "commit": "cb746abe45216576a88fb1036a9351f70a63d9fc",
+    "tree": "f5fbe0a7d67df22b925f7637530dbf7c938e5b96",
+    "parent": "ef72afc550d25ebbfebfa247cd977ca27f492d20",
+    "parent_tree": "7d6abfdd5086cb228b50d7f3d1a8e7c9b7a071ef",
+    "old_paths": 388,
+    "paths": 390,
+    "all388_old_exact": true,
+    "files": {
+      "services/public_assistant_lead_commands.py": {
+        "tuple": "100644 blob 49857dfa9c1efd50f4a38d24a363f940291256f1",
+        "bytes": 9806,
+        "sha256": "d7e7c52480ccd464a491a3c74b3ac7e6e75ceabcfe15cb4252c1f93356d64599"
+      },
+      "tests/test_public_assistant_lead_commands.py": {
+        "tuple": "100644 blob 95b0f253db4fb758217024afc8f617c19f98d178",
+        "bytes": 18540,
+        "sha256": "b007389ebd5f120709f26673d7015f0723fb033e9e7bb7f9a86a3ce878241def"
+      }
+    },
+    "expected_models": 107
+  },
+  "suites": {
+    "lead_confirm": {
+      "file": "tests/test_public_assistant_lead_commands.py",
+      "sha256": "b007389ebd5f120709f26673d7015f0723fb033e9e7bb7f9a86a3ce878241def",
+      "class": "PublicAssistantLeadCommandTests",
+      "count": 13,
+      "methods": [
+        "test_prepare_uses_current_contact_validation_normalizes_and_never_writes",
+        "test_buy_sell_rent_and_public_property_confirm_real_leads_and_existing_outbox",
+        "test_only_explicit_true_with_trusted_enabled_context_can_enter_persistence",
+        "test_review_contact_consent_locale_and_unknown_authority_tampering_refused",
+        "test_duplicate_nonfinite_or_control_json_and_model_actor_fields_refused",
+        "test_signature_session_and_expiry_refuse_before_database_use",
+        "test_persistent_replay_across_fresh_contexts_and_sessions_never_duplicates_jobs",
+        "test_concurrent_same_approved_command_has_one_atomic_winner_and_one_replay",
+        "test_existing_unique_submission_rejects_even_a_resigned_changed_body",
+        "test_withdrawn_property_refuses_new_confirmation_without_lead_or_jobs",
+        "test_queue_failure_rolls_back_lead_and_jobs_without_automatic_retry",
+        "test_lost_postcommit_receipt_is_uncertain_then_explicit_replay_keeps_one_lead",
+        "test_disabled_existing_outbox_still_records_without_inline_provider_fallback"
+      ],
+      "all_source_methods": [
+        "test_prepare_uses_current_contact_validation_normalizes_and_never_writes",
+        "test_buy_sell_rent_and_public_property_confirm_real_leads_and_existing_outbox",
+        "test_only_explicit_true_with_trusted_enabled_context_can_enter_persistence",
+        "test_review_contact_consent_locale_and_unknown_authority_tampering_refused",
+        "test_duplicate_nonfinite_or_control_json_and_model_actor_fields_refused",
+        "test_signature_session_and_expiry_refuse_before_database_use",
+        "test_persistent_replay_across_fresh_contexts_and_sessions_never_duplicates_jobs",
+        "test_concurrent_same_approved_command_has_one_atomic_winner_and_one_replay",
+        "test_existing_unique_submission_rejects_even_a_resigned_changed_body",
+        "test_withdrawn_property_refuses_new_confirmation_without_lead_or_jobs",
+        "test_queue_failure_rolls_back_lead_and_jobs_without_automatic_retry",
+        "test_lost_postcommit_receipt_is_uncertain_then_explicit_replay_keeps_one_lead",
+        "test_disabled_existing_outbox_still_records_without_inline_provider_fallback"
+      ]
+    }
+  },
+  "helper_pins": {
+    "ci/native-inbox/verify.py": "388fcae33bf63234df9739ac7405c1a2d49b4914af2a32d56e9023fdb7ed144e",
+    "ci/social-groups-browser/serve_social_groups_fixture.py": "e0c5f0971c7c13ed47063907f01fa6ef01590b00fa2855eb1ecb16a38b99463e",
+    "ci/social-groups-native/catalog.py": "5869dcbd30dc659a649fc6c2bbbe2de1337904ef11e4b91d6ad1992ef7ea9c2f",
+    "ci/social-groups-native/records.py": "bffdf8900f286079807ba43e8db5c09160caaf139b1e934449b90e577c1cb5cf",
+    "ci/assignment-notifications-native/verify.py": "3241db2946da0f331fe1b8beb3f256ba8e1911a50384166a7a9f59ee00c1519e",
+    "ci/assignment-notifications-native/PLAN.json": "4a5bc624072da4c10661a48c420a2696f25cf24f877aa67ca3f84822b1117a6e"
+  },
+  "runtime": {
+    "python_digest": "sha256:673719e071ecf27434fd2635bbd8d00f49f4fdd81f243143438a42ced8bedf60",
+    "postgres_image": "docker.io/library/postgres:17.6@sha256:b86568d3e0fe1dfaeff52714f9da36f206a30e4c49131b82bf96982d78627409",
+    "dockerfile_sha256": "e546d8c5668b87ef28e604107bbb330e6f4b3873cf0208b4d24ca378bd0851f9",
+    "dependency_commit": "01695530df670a94ac28f8b3bf36cc34b5b7a942",
+    "dependency_tree": "e88ea0c57f9fac39545322532a5992d5a2927676",
+    "recipe_commit": "c193a925ba57ea2d67ea48c44e5262817885c8a2",
+    "recipe_tree": "10edb138fba1d201e66042d25ba022313b300cc2",
+    "pydantic": "2.8.0",
+    "client_memory_MiB": 1536,
+    "client_pids": 192,
+    "client_tmpfs_MiB": 128,
+    "postgres_memory_MiB": 768,
+    "postgres_pids": 96,
+    "postgres_tmpfs_MiB": 384,
+    "phase_seconds": 180,
+    "workflow_minutes": 40,
+    "all_clients_readonly_capdrop_all": true,
+    "postgres_initialization_exception": "Same inherited pinned loopback initializer; no read-only root/cap-dropALL claimed for PG.",
+    "httpx": "0.27.0"
+  },
+  "database": {
+    "host": "127.0.0.1",
+    "port": 55449,
+    "name": "ildr_platform_test_20261025",
+    "marker": "ildr-public-lead-confirm-ci:<nonce>",
+    "class_schema": "assistant_lead_confirm_test_<uuidhex>",
+    "fresh_public_and_no_custom_schemas_before": true,
+    "model_created_only": true,
+    "genuine108_migration_claim": false
+  },
+  "execution": "One fresh process/markedDB, exact13 native methods. Existing test module sets synthetic config before application imports. Actual current validators/persistence/outbox and PG unique index/rollback are used; no HTTP server, route attachment, model/provider, or source tests changed.",
+  "coverage": "Preparation, explicit confirm/type/enabled boundaries, locale/contact/consent tamper, expiry/session/HMAC, persistent fresh-context replay, concurrent same-command, changed-body conflict, real withdrawal, outbox rollback, lost postcommit receipt then explicit replay, disabled-queue no-inline fallback.",
+  "truth_limits": [
+    "Concurrent test proves one persisted command and replay under concurrent callers; it does not force or prove execution of the unique-index-loser catch branch.",
+    "All model-created class schemas must be removed and the preexisting public relations/catalog/sequences/functions/types/schema/default ACL/roles and namespaces/postmaster remain exact. Outer marker-owned DBdrop/absence and container/image/scratch cleanup are separate mandatory host facts.",
+    "Positive PG connections are counted separately from external/socket/provider attempts. Loopback127.0.0.1:55449 is the only allowed DB/network exception. No mocked or live provider call is expected.",
+    "All13 source definitions are currently UNRUN. Native service tests are not real customer UI confirmation, default HTTP wiring, genuine108 migrations, model activation, delivery, production or recovery proof.",
+    "Accepted12/17/25 and other old suites are retained unchanged; none run in this lane."
+  ],
+  "strict_output": "Raw unittest/stdout/stderr/PII/token/SQL assertions captured privately and never echoed. Exact finite source-owned methods/counts/errors/results only. Any diagnostic, skip, expected/unexpected failure, nonzero/running/OOM, unknown/duplicate field or invalid counter refuses; result exported only after complete process success.",
+  "safety": "Same pinned image/recipe/dependency inventory; new source only. Nonroot readonly/capdropALL/no-new-privileges client, env-i, network namespace of loopback-only isolatedPG. PG initializer exception inherited. Providers/HTTPX/requests/SMTP and sockets beyond exactloopback refused; no activation or secrets.",
+  "local_checks": {
+    "AST_files": 2,
+    "embedded_source_AST": 1,
+    "worker_checker_result_keys_equal": true,
+    "new_parser_positive": 1,
+    "new_parser_negative_failure_refusals": 35,
+    "safe_failure_CLI_exports": 1,
+    "control_sha256": "d13f0b8a05c15c0dffdca6a2eb27d937d4e23596b0528aa0931a07d239c42cec",
+    "Bash_syntax": "UNRUN locally; mandatory hosted bash-n",
+    "application_DB_HTTPX_native_browser_provider_execution": false
+  },
+  "whole_goal_complete": false
+}
