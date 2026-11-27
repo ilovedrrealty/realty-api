@@ -1,0 +1,277 @@
+{
+  "status": "SOURCE_ONLY_STAGE1_RETAINED_FIXTURE_NOT_RUN_NO_CAPTURE_AUTHORITY",
+  "operations_parent": "13ff2233072e842e7e2c2f228028a044b90d6a5c",
+  "operations_parent_tree": "7ceb032787bc6590f0d0763e752f3ac72bea3a52",
+  "ref": "codex-ci-backup-capacity-1g-native-20261127",
+  "inherited_tuples": 219,
+  "final_tuples": 224,
+  "new_paths": [
+    ".github/workflows/backup-capacity-1g-native.yml",
+    "ci/backup-capacity-1g-native/PLAN.json",
+    "ci/backup-capacity-1g-native/run-hosted.sh",
+    "ci/backup-capacity-1g-native/check-result.py",
+    "ci/backup-capacity-1g-native/verify-native.py"
+  ],
+  "purpose": "One capacity-only hosted wrapper around immutable13ff full snapshot/PGP transport/originalreceiver/finalizer pipeline. Stage1 retained-fixture correctness and positive measured headroom only, never current production-pressure or capture authority.",
+  "provider_fact": {
+    "authority": {
+      "path": "outputs/property-network-20261101/supabase-backup-compute-dashboard-root-observation-20261127.json",
+      "bytes": 1843,
+      "sha256": "b9d7beab47c806b3defdd9a11fb285ded1630c915be6b812da44754029052d09"
+    },
+    "observed_at": "2026-11-27T07:23:37.498Z",
+    "selected_compute": "MICRO",
+    "dashboard_memory_gb": 1,
+    "spend_cap_enabled": true,
+    "allocated_disk_gb": 8,
+    "latest_scheduled_physical_backup_utc": "2026-11-26T10:02:12Z",
+    "PITR": "off",
+    "storage_API_bytes_excluded": true,
+    "restore_test_verified": false,
+    "public_primary_docs": {
+      "url": "https://supabase.com/docs/guides/platform/compute-and-disk.md",
+      "retrieved_date": "2026-11-27",
+      "claim": "Official table lists Micro with1GB memory and shared CPU. It does not report this project current free RAM or prove hosted-test/production byte equivalence."
+    },
+    "changelog_checked": {
+      "url": "https://supabase.com/changelog.md",
+      "date": "2026-11-27",
+      "relevant_breaking_resource_change_identified": false
+    },
+    "no_provider_query_or_mutation_by_this_task": true
+  },
+  "sources": {
+    "original13ff": "13ff2233072e842e7e2c2f228028a044b90d6a5c",
+    "all219_inherited_tuples_preserved": true,
+    "original20_V2_V3_V4_V5_staged_JSON_unchanged": true,
+    "original17_manifest_pins_and3staged_and4JSONpins_checked": true,
+    "explicit_pins": {
+      "ci/backup-transport-json-native/verify-native.py": {
+        "bytes": 18443,
+        "sha256": "a835e9b41edf7e29822ecca4bb67254b7cbf11701960bb702f1efd3b5995b78f"
+      },
+      "ci/backup-transport-json-native/check-result.py": {
+        "bytes": 11197,
+        "sha256": "45588f26c30d04a4b1bcb7df993bee0b858cdab9fd59b033ab5f658f17d05fe2"
+      },
+      "ci/backup-transport-json-native/candidate/make-daily-compressed-query-json-v1.py": {
+        "bytes": 1108,
+        "sha256": "a964425d0f5ba6d76ab89ffb7ba78acbbae47df30b9bf6818c528915bf558c1c"
+      },
+      "ci/backup-transport-json-native/candidate/test-transport-json-v1.py": {
+        "bytes": 5363,
+        "sha256": "1fdf9d584b2f6272e1f63ff2729ad7e3366c93fe523a3ad2e013155c0c34249c"
+      },
+      "ci/backup-query-v4-native/verify-native.py": {
+        "bytes": 34504,
+        "sha256": "b2565a1b76eec78df9252f3ab08d4b30bc2ee308c40982a29002459761b1d500"
+      },
+      "ci/backup-query-v4-native/source-manifest.json": {
+        "bytes": 3108,
+        "sha256": "a87fc4d31d18625ebbd9e0e532f518feb54bd8dfc7c08a187ca626fa7c86ffef"
+      },
+      "ci/backup-transport-stages-native/verify-native.py": {
+        "bytes": 14838,
+        "sha256": "23cdd8359c2c6ebdb712cc1ca89a3b51a2dadd853436e24ebdee429d28cb2cf5"
+      }
+    },
+    "accepted_recipe_commit": "c193a925ba57ea2d67ea48c44e5262817885c8a2",
+    "accepted_recipe_sha256": "e546d8c5668b87ef28e604107bbb330e6f4b3873cf0208b4d24ca378bd0851f9"
+  },
+  "entrypoint": "The new1142-byte launcher verifies the read-only frozen13ff worker hash and runpy-executes its unchanged __main__. Original /new-tools,/v5-tools,/staged-tools,/tools and /state contracts remain. No run/fixture/generator/receiver/finalizer monkeypatch or copy is introduced.",
+  "checker_adaptation": {
+    "original_sha256": "45588f26c30d04a4b1bcb7df993bee0b858cdab9fd59b033ab5f658f17d05fe2",
+    "exact_old_PG_literal": "536870912",
+    "exact_new_PG_literal": "1073741824",
+    "occurrences": 2,
+    "all_other_original_source_bytes_preserved": true,
+    "actual_old_client_limit_unchanged": 1073741824,
+    "new_gate": "Kernel memory.max must equal1073741824 and memory.swap.max0 before/after. Original full strict native/process/memory gates must pass. Whole-phase PGpeak must be strictly less than actualcap. Success buffer is published only after all new gates; zero-margin emits numericFAIL and refuses.",
+    "protocol": "Original BACKUP_TRANSPORT_JSON_NATIVE_* finite reports remain checked by their frozen parser with only the exactPGthreshold/report literal changed. New BACKUP_CAPACITY_1G_NATIVE_LIMIT/LIMIT_OBSERVATION/HEADROOM/REFUSED and compositeACCEPTANCE qualify actualownedlimits and stage1-only authority."
+  },
+  "runtime": {
+    "recipe_commit": "c193a925ba57ea2d67ea48c44e5262817885c8a2",
+    "dockerfile_sha256": "e546d8c5668b87ef28e604107bbb330e6f4b3873cf0208b4d24ca378bd0851f9",
+    "requirements": "Unchanged accepted PGPy0.6.0/pyasn10.6.1/cryptography50.0.2 compatibility recipe; never product requirements.",
+    "python_digest": "sha256:673719e071ecf27434fd2635bbd8d00f49f4fdd81f243143438a42ced8bedf60",
+    "postgres_digest": "sha256:b86568d3e0fe1dfaeff52714f9da36f206a30e4c49131b82bf96982d78627409",
+    "postgres_version_num": 170006,
+    "postgres_memory_bytes": 1073741824,
+    "postgres_memory_swap_bytes": 1073741824,
+    "client_memory_bytes": 1073741824,
+    "postgres_cpus": 1,
+    "client_cpus": 2,
+    "shared_buffers": "128MB",
+    "work_mem": "4MB",
+    "max_parallel_workers_per_gather": 0,
+    "jit": "off",
+    "namespace": "Network-none PostgreSQL; client shares only owned loopback network namespace; no Docker socket or host credentials in containers.",
+    "database_storage": "Exact owned anonymous Docker volume, disk-backed. Cgroup totals include reclaimable file cache. Verified removal/volume absence in finally; no host production data mount.",
+    "kernel_memory_max_required": 1073741824,
+    "kernel_memory_swap_max_required": 0,
+    "phase_timeout_seconds": 480,
+    "sql_timeout_seconds": 60,
+    "workflow_minutes": 35,
+    "postgres_pids": 96,
+    "client_pids": 128,
+    "nominal_unit_qualification": "Provider UI/docs say MICRO1GB; this synthetic profile is explicitly1GiB=1073741824 bytes. No exact provider cgroup/freeRAM or equal background services/concurrency is inferred."
+  },
+  "phases": {
+    "compact": {
+      "public_tables": 99,
+      "fixture_schema": "Current real99table names; representative enums/functions/checks/sequence/bytea and exact trade-contact/source column contracts. This is synthetic schema/data, not a claim of reproducing every production DDL definition.",
+      "sequence_control": "Advance the owned mutable sequence once after the first catalog is prepared, then establish immutable baseline before either query. Both snapshots must capture current sequence values and leave all state unchanged.",
+      "bytea": "Original accepted binary and PNG rows round-trip through native jsonb_populate_record; four compact direct comparison row checks, and downstream validation too.",
+      "pure_generator_contracts": 4,
+      "downstream": "New finalJSON-object writer only, same7d67snapshot/digest/cipher prefix+PGP options. Actual fulltransport cursor typeOID114/dict exact4keys, original frozen receiver exact SHA/length, all original finalizer validation/raw3cleanup, one exact intercepted sealer dispatch.",
+      "v2_v5_comparison": "Parsed complete snapshots equal after removing ONLY top-level captured_at_utc. Every payload string/count/hash/full schema/storage field must match; timestamp types checked. Explicit per-table UTF8 payload byte equality and SHA256 equality verified for all99 names. All proof fresh for V5.",
+      "storage_inventory_reference": "Three actual native oldV4/newV5 byte/hash/count comparisons in separate statements: real17-object fixture, emptydataset, inlineparameterized3canonicalrecords with nestedJSON/Unicode/quotes/backslashes/JSONnull/SQLnullmetadata/date/reversedinput and tiedtimestamps. No fixture row mutation.",
+      "staged_wrapper_contracts": 4,
+      "native_json_controls": "Three small parameterized actualnative JSON/JSONB pairs with Unicode/escaped/nested/null typed mappings; verify OID114/3802 and exactPythonobjects. Separately actual fulltransport decoder binding, not only constantcontrol. Run both oldstaged4 and newJSONwrapper4 actual file-controls."
+    },
+    "guards": {
+      "cases": [
+        "row_bound",
+        "byte_bound",
+        "schema_bound",
+        "tableset_bound"
+      ],
+      "independent_predicates": "Assert exact four-boolean matrix: only row/count, byte, schema fingerprint or table-set condition fails for its named case. Row case1000001small integer rows stays under64MiB; byte case100000small rows exceeds64MiB and stays under1M.",
+      "schema": "Add a column after query generation; table set unchanged.",
+      "table_set": "Deliberately supply old99table list with the current100table schema fingerprint to isolate the table-set guard; no candidate SQL mutation.",
+      "proof": "Actual guarded SELECT returns only failure/count metadata and no payload/hash/fullschema. Actual owned-only EXPLAIN ANALYZE FORMATJSON requires all99payload CTEs plus map/metadata CTE nodes present with ActualLoops=0.",
+      "whole_output_limit": "The genuine final67108864-byte text guard remains unchanged. It necessarily follows payload construction; no claim that its branches stay unevaluated. This plan does not replace the real byte limit with a smaller test constant.",
+      "wrapped_proof": "Fresh wrapped query for each original isolated failure matrix: all99payload and2mapmetadata CTEs present with ActualLoops0; three outer MATERIALIZED snapshot,digest,cipher CTEs each present once and ActualLoops1, processing only the safe guard-failure metadata. Original unwrapped guard proof remains mandatory too."
+    },
+    "stress": {
+      "contacts": 5633,
+      "contact_row_bytes": 9317650,
+      "sources": 5640,
+      "source_row_bytes": 8743189,
+      "storage_objects": 34315,
+      "notes": "Exact native SUM(octet_length(to_jsonb(row)::text)) totals, calibrated with <=1000-character deterministic varied MD5-chunk padding inside synthetic source notes. Unicode, quotes, backslashes and control escapes retained. Storage metadata has realistic nested/string/numeric values; its measured bytes are reported rather than invented from production.",
+      "execution": "Fresh same fullV5 pressure/inventory comparison, unchanged3MATERIALIZED prefix, finaljson_build_object only. Actual fulltransport OID114/dict exact4keys and receivedbytesSHA required, original receiver/finalizer/sealer1/raw3/preservation/start/process/metrics/source/cleanup unchanged. Declared1GiBPG/unchanged1GiBclient/60sSQL/480sphase; zeroOOM.",
+      "state": "All99 rows/payload hashes/full catalog/mutable sequences/storage hashes unchanged after baseline. This does not access or copy any production record."
+    }
+  },
+  "metrics": {
+    "original": "All original client1GiB and source/process/cgroup zeroOOM/counters/time bounds retained. Each phase creates fresh ownedPG; memory.peak is whole phase since creation, never reset.",
+    "actual_limits": "Bounded ownPGkernel memory.max/memory.swap.max read before/after; no source paths/container IDs/PIDs/environment values exposed. HostConfig.Memory/MemorySwap also must be exact1073741824.",
+    "headroom": "Actuallimit\u2212actualwhole_phase_peak; ppm is integerfloor(bytes*1000000/limit). Strictpositive margin only. No cache subtraction or query-only RSS/production-safe percentage.",
+    "failure": "Safe originalprocess/cgroup observations and boundedkernel-limit states remain visible even on failure; missing/wrong/unlimited/invalidlimits or zero headroom refuse acceptance. A validatedoldPASS buffer is suppressed when new gates fail."
+  },
+  "finalizer_boundary": {
+    "executed": "Unchanged validation/coverage/row-hash/profile/storage checks, exact sealer argv and main finally raw3 cleanup.",
+    "intercepted": "Only subprocess invocation of the downstream source-history/archive sealer. No owner public/private key access, no archive encryption, no Git ancestry bundling, no cloud upload or success-index change claimed."
+  },
+  "failure_controls": "Strict exact result key/type/count checks, native exits plus client/Postgres process/oom facts binding. Missing metrics, unexpected fields, changed source bytes, guard misclassification or missing lazy plan nodes fail closed. No raw payload, IDs, URLs, exception text or query plans printed.",
+  "cleanup": "Nonce-labelled owned containers/image/scratch only; exact marked test databases dropped/absence checked; owned anonymous volumes removed/absence queried authoritatively. No artifact uploads; root independently inspects actual artifacts[].",
+  "pressure_qualification": {
+    "retained_synthetic_bytes": 19299376,
+    "prior_verified_real_complete_snapshot_bytes": 24658922,
+    "prior_real_reference": "Prior verified20261125T063100Z before2304 cooperative additions, as bound by existing safe metadata protocol; not a current size.",
+    "retained_fixture_is_smaller_than_prior_real": true,
+    "source_current_maxrow_or_storage_shape_known": false,
+    "stage1_cannot_authorize_current_capture": true
+  },
+  "approved_stages": [
+    {
+      "stage": 1,
+      "action": "Hosted1GiB full correctness/headroom on exactly retained fixture. Root+nonauthor review then Root-alone firstpush/one actualrun.",
+      "authority": "Synthetic retained-fixture evidence only, not current-capture authority."
+    },
+    {
+      "stage": 2,
+      "action": "Only after acceptedstage1, Root may execute existing reviewed101 files: preflight,99 per-table rowwise numeric measurements,postflight; unchanged sequential short readonly transactions.",
+      "source_protocol": {
+        "path": "outputs/property-network-20261101/backup-public-pressure-measurement-utf8-20261125/PROTOCOL.json",
+        "bytes": 21787,
+        "sha256": "0a3f19ca26161d3bfc51550a6d0e08260289741d961ce1e73202774367d0533a"
+      },
+      "source_head": "c4e2a7319b60",
+      "exact_tables": 99,
+      "numeric_aggregation_allowed": [
+        "COUNT",
+        "SUM row-JSON UTF8 lengths",
+        "SUM quoted-row-JSON UTF8 lengths"
+      ],
+      "forbidden": "No full payload aggregation, PGP, base64, complete snapshot/JSON-envelope construction or row-value export.",
+      "per_file_limits": "15s statement/1s lock/5s idle; full BEGIN throughROLLBACK on one connection; preserveSELECT result beforeROLLBACK; stop on anyscope/head/server change/error.",
+      "still_no_execution_by_this_task": true
+    },
+    {
+      "stage": 3,
+      "action": "Freeze a source-only calibrated synthetic pressure profile in this same wrapper after measured public map/count results and any separately reviewed missing numeric shape evidence. Preserve original13ff generator/recovery helpers. Root+nonauthor review and actual strictheadroom replay before capture consideration.",
+      "important_limits": [
+        "Existing101 protocol is non-atomic over99 snapshots and gives exact observed map arithmetic, not a full snapshot",
+        "It has no max-row/distribution field; maxrow/shape remains unmeasured without a later narrow reviewed numeric addendum",
+        "Public map totals exclude schema/metadata/hash/count maps,storage inventory and envelope overhead; account for these in the calibrated pressure profile rather than declaring measuredmap==wholepayload",
+        "No copy/decrypt/customer value reading is needed or authorized for calibration"
+      ]
+    },
+    {
+      "stage": 4,
+      "action": "Only Root may separately consider the original-compatible logical encrypted production checkpoint after all calibration/headroom/source/receiver/finalizer/recovery prerequisites.",
+      "not_automatic": true,
+      "no_authority_from_this_proposal": true
+    }
+  ],
+  "production_freeze": "No production SQL/read/capture, keys, cloud, provider/settings/paid change or broaderrelease authority. Latest scheduled physical backup is independently observed but excludesStorageAPIbytes and is not a verified restore. Stage1 retained19.3MB fixture is below older verified24.7MB real snapshot and cannot establish currentcapture safety.",
+  "local_checks": {
+    "status": "PASS_SOURCE_ONLY_ALL_1G_PHASES_UNRUN",
+    "Python_AST": 2,
+    "inline_scope_AST": 1,
+    "pure_parser_positive": 6,
+    "pure_parser_negative": 36,
+    "zero_margin_numericFAIL_and_success_suppressed": true,
+    "valid_native_failure_only_exported": true,
+    "invalid_private_value_not_echoed": true,
+    "canonical_GitLF_test_mirror_removed": true,
+    "source_controls": {
+      "path": "outputs/property-network-20261101/backup-capacity-1g-source-20261127/CAPACITY-SOURCE-CONTROLS.json",
+      "bytes": 1746,
+      "sha256": "ea87be6441d141de6052abe5110e7f58b3fec05aff9fc141385785ed742ad928"
+    },
+    "parser_controls": {
+      "path": "outputs/property-network-20261101/backup-capacity-1g-source-20261127/CAPACITY-PARSER-CONTROLS.json",
+      "bytes": 1926,
+      "sha256": "f5e05856f498fc7707e8a559227d36250c5c88c2018b375e55fcb3f9c5299493"
+    },
+    "Bash_syntax": "UNRUN locally; required hosted bash -n",
+    "application_SQL_native_build_browser_install_provider_CUA_credentials": false
+  },
+  "review_evidence": {
+    "scope_proposal": {
+      "path": "outputs/property-network-20261101/backup-capacity-1g-source-20261127/CAPACITY-SOURCE-PROPOSAL.json",
+      "bytes": 15979,
+      "sha256": "de0296685350cf9f9649611813ed8713ec4bcec8e7588f25605feb7c893c0e4b"
+    },
+    "original_root_source_review": {
+      "path": "outputs/property-network-20261101/backup-query-memory-20261125/backup-transport-json-13ff-root-full-review-20261125.json",
+      "bytes": 3344,
+      "sha256": "119db063caf3f6f5a6ee5cd0592ec2a1589f3ec4ed6b08b94953b425c955631c"
+    },
+    "actual512failure": {
+      "path": "outputs/property-network-20261101/backup-query-memory-20261125/backup-transport-json-45607148057-root-failure.json",
+      "bytes": 6370,
+      "sha256": "9d1c658e55c2761e3f0109fb096819c9a61da1bff2ea92e37c0cf8751806045a"
+    },
+    "actual_scalar_only_not_acceptance": {
+      "path": "outputs/property-network-20261101/backup-query-memory-20261125/backup-packaging-components-45609882421-root-observation.json",
+      "bytes": 4345,
+      "sha256": "850cc03a9284a073814e508d0940a498a6bf96e42e2b59238b52f33d1fe6f702"
+    }
+  },
+  "required_before_push": [
+    "Frozen5source additions/all219old tuples/proof and canonicalpatch",
+    "Root relevant fullsource review and independent nonauthor cold",
+    "Root identity/source availability/currentmain/absent-onetime-ref check and Root-only firstpush"
+  ],
+  "unrun": [
+    "Actual1GiB compact/guards/stress/receiver/finalizer/headroom",
+    "Current99numeric calibration and calibratedcurrentpressure replay",
+    "Owner archive encryption/cloud/currentlogicalcapture/restore",
+    "Production"
+  ],
+  "whole_goal_complete": false
+}
