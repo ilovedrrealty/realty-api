@@ -1,0 +1,326 @@
+{
+  "status": "SOURCE_ONLY_PREPARED25_UNRUN_PENDING_FROZEN_REVIEW",
+  "operations_parent": "51f6d1d7c16b2f68a826e3bcd49d64363f8345e1",
+  "operations_parent_tree": "ca23cd51871376817842d671e976403d7809154f",
+  "ref": "codex-ci-assistant-dependencies-native-20261127",
+  "inherited_tuples": 446,
+  "final_tuples": 451,
+  "new_paths": [
+    ".github/workflows/assistant-dependencies-native.yml",
+    "ci/assistant-dependencies-native/PLAN.json",
+    "ci/assistant-dependencies-native/run-hosted.sh",
+    "ci/assistant-dependencies-native/verify.py",
+    "ci/assistant-dependencies-native/check-result.py"
+  ],
+  "application": {
+    "commit": "9a422618139ad3a01bc8c0b3fd38ae5dd7f42f41",
+    "tree": "b09f1c01af1260225778f915dc3cd79b10807525",
+    "parents": [
+      "53d730a1676abde47eae5609925e74ffad7ede21",
+      "8f57a60cca3cf9e8568eb52e64e5f6d50c0db9b4"
+    ],
+    "facts_parent": "625cc7a372faf1edaf668d80ab635f78937263b9",
+    "facts_tree": "dee4f72557415f39f1abef6146ffb6389c9c10b7",
+    "listing_source": "875ade946f633ce71bec23cd0c2f6bf79b7dc2ed",
+    "listing_tree": "9ccf81ad0b67fa2e0b678974479458697def8f51",
+    "paths": 383,
+    "listing_source_paths": 375,
+    "facts_paths": 378,
+    "read_paths": 380,
+    "help_paths": 381,
+    "all375_listing_source_tuples_exact": true,
+    "all380_read_parent_tuples_exact": true,
+    "files": {
+      "schemas/public_assistant_listing.py": {
+        "bytes": 4616,
+        "sha256": "920e8ce79bc48d5659d91f74f7245507fda780acb4ed9f5b39d3a9f680ce1866",
+        "tuple": "100644 blob cababfb23cbf643c8db63df7b44b60d4605f80b5"
+      },
+      "services/assistant_feature_help.json": {
+        "bytes": 29547,
+        "sha256": "f3f44242f5722e758e40d676bca4c875cfc7d51a773c352deed12c1f9c6edd4e",
+        "tuple": "100644 blob f4ecc87716b04210e51be80e6cb1d78a6d74b35f"
+      },
+      "services/assistant_feature_help.py": {
+        "bytes": 6059,
+        "sha256": "56a8cd83476bcd694bc6032a893a28642dd1db386f02193115e54c2f73217a81",
+        "tuple": "100644 blob edbcd96b82e631b3cf818e98a796a7a13af0bf12"
+      },
+      "services/public_assistant_listing.py": {
+        "bytes": 9740,
+        "sha256": "c8dc55255a90056bc2f6e1fc20bf093d6d25f25c57d90ce0b26456f9005a29df",
+        "tuple": "100644 blob fc898736ea8510948cafb3ecade29a9a1fbb0029"
+      },
+      "services/public_assistant_listing_reads.py": {
+        "bytes": 4957,
+        "sha256": "29f591e6bb51e93147fd7030a903defc62b42d3ac90f191c44ffb3b7a8fa0c07",
+        "tuple": "100644 blob ae02f463d0535c659c225f7469e5bf52e707cc23"
+      },
+      "tests/test_assistant_feature_help.py": {
+        "bytes": 5750,
+        "sha256": "b563dbb9616efea85f860d03eaa723fda5ec495a653080c0708b0535d861be8b",
+        "tuple": "100644 blob fc0257c7c3c4e28b31d65fb63bc575881c304ed9"
+      },
+      "tests/test_public_assistant_listing.py": {
+        "bytes": 10429,
+        "sha256": "d38fd5d13f884a236dd711d0a46d5af463c0fbd35e340d221f323f222fd6c796",
+        "tuple": "100644 blob fd18abcbfef370bd7ca478818499ecc573751873"
+      },
+      "tests/test_public_assistant_listing_reads.py": {
+        "bytes": 15286,
+        "sha256": "d2c4c71f4d055b14e72c29494b3539c08223e914fc816b95db9d09079b3fbe36",
+        "tuple": "100644 blob edfe36c8716ab96fbb228dd363a68c185f371346"
+      }
+    },
+    "expected_models": 107
+  },
+  "suites": {
+    "facts": {
+      "file": "tests/test_public_assistant_listing.py",
+      "class": "PublicAssistantListingTests",
+      "sha256": "d38fd5d13f884a236dd711d0a46d5af463c0fbd35e340d221f323f222fd6c796",
+      "methods": [
+        "test_wire_inputs_reject_unknown_fields_nonfinite_duplicates_and_size",
+        "test_search_request_only_uses_existing_fixed_route_and_current_options",
+        "test_detail_uuid_cannot_become_arbitrary_url_path_or_sql",
+        "test_projection_does_not_read_structured_contacts_or_prose",
+        "test_search_comparison_price_is_route_value_not_a_new_conversion",
+        "test_rent_period_is_never_guessed_from_generic_price",
+        "test_location_policy_and_untrusted_labels_remain_honest_and_bounded",
+        "test_wrong_target_withdrawn_page_mismatch_duplicates_and_naive_time_refuse",
+        "test_empty_search_and_output_schema_caps_without_success_fabrication"
+      ],
+      "count": 9,
+      "all_source_methods": [
+        "test_wire_inputs_reject_unknown_fields_nonfinite_duplicates_and_size",
+        "test_search_request_only_uses_existing_fixed_route_and_current_options",
+        "test_detail_uuid_cannot_become_arbitrary_url_path_or_sql",
+        "test_projection_does_not_read_structured_contacts_or_prose",
+        "test_search_comparison_price_is_route_value_not_a_new_conversion",
+        "test_rent_period_is_never_guessed_from_generic_price",
+        "test_location_policy_and_untrusted_labels_remain_honest_and_bounded",
+        "test_wrong_target_withdrawn_page_mismatch_duplicates_and_naive_time_refuse",
+        "test_empty_search_and_output_schema_caps_without_success_fabrication"
+      ]
+    },
+    "wiring": {
+      "file": "tests/test_public_assistant_listing_reads.py",
+      "class": "PublicAssistantListingReadContractTests",
+      "sha256": "d2c4c71f4d055b14e72c29494b3539c08223e914fc816b95db9d09079b3fbe36",
+      "methods": [
+        "test_invalid_tool_input_never_opens_a_session",
+        "test_explicit_handler_defaults_and_cleanup_without_http",
+        "test_no_store_failure_is_finite_and_cleanup_still_runs"
+      ],
+      "count": 3,
+      "all_source_methods": [
+        "test_invalid_tool_input_never_opens_a_session",
+        "test_explicit_handler_defaults_and_cleanup_without_http",
+        "test_no_store_failure_is_finite_and_cleanup_still_runs"
+      ]
+    },
+    "reads": {
+      "file": "tests/test_public_assistant_listing_reads.py",
+      "class": "PublicAssistantListingReadTests",
+      "sha256": "d2c4c71f4d055b14e72c29494b3539c08223e914fc816b95db9d09079b3fbe36",
+      "methods": [
+        "test_current_detail_withdrawal_is_rechecked_and_does_not_count_views",
+        "test_supported_options_are_read_again_without_a_caller_catalog",
+        "test_real_route_day_month_and_currency_values_are_preserved",
+        "test_actual_search_paging_counts_and_empty_page_match_public_inventory",
+        "test_actual_masked_projection_never_forwards_private_contact_or_evidence",
+        "test_read_only_transaction_refuses_handler_write_and_restores_pool_state"
+      ],
+      "count": 6,
+      "all_source_methods": [
+        "test_current_detail_withdrawal_is_rechecked_and_does_not_count_views",
+        "test_supported_options_are_read_again_without_a_caller_catalog",
+        "test_real_route_day_month_and_currency_values_are_preserved",
+        "test_actual_search_paging_counts_and_empty_page_match_public_inventory",
+        "test_actual_masked_projection_never_forwards_private_contact_or_evidence",
+        "test_read_only_transaction_refuses_handler_write_and_restores_pool_state"
+      ]
+    },
+    "help": {
+      "file": "tests/test_assistant_feature_help.py",
+      "class": "FeatureHelpTests",
+      "sha256": "b563dbb9616efea85f860d03eaa723fda5ec495a653080c0708b0535d861be8b",
+      "methods": [
+        "test_anonymous_help_never_exposes_authenticated_directory_or_staff_topics",
+        "test_current_roles_select_navigation_without_granting_target_access",
+        "test_model_json_cannot_supply_role_actor_workspace_or_arbitrary_navigation",
+        "test_actor_is_server_object_and_selector_reads_no_identity_or_contact_fields",
+        "test_role_and_verification_changes_take_effect_on_next_selection",
+        "test_response_changes_cannot_rewrite_later_help",
+        "test_both_languages_use_fixed_surface_links_and_unpublished_source_state"
+      ],
+      "count": 7,
+      "all_source_methods": [
+        "test_anonymous_help_never_exposes_authenticated_directory_or_staff_topics",
+        "test_current_roles_select_navigation_without_granting_target_access",
+        "test_model_json_cannot_supply_role_actor_workspace_or_arbitrary_navigation",
+        "test_actor_is_server_object_and_selector_reads_no_identity_or_contact_fields",
+        "test_role_and_verification_changes_take_effect_on_next_selection",
+        "test_response_changes_cannot_rewrite_later_help",
+        "test_both_languages_use_fixed_surface_links_and_unpublished_source_state"
+      ]
+    }
+  },
+  "helper_pins": {
+    "ci/native-inbox/verify.py": "388fcae33bf63234df9739ac7405c1a2d49b4914af2a32d56e9023fdb7ed144e",
+    "ci/social-groups-browser/serve_social_groups_fixture.py": "e0c5f0971c7c13ed47063907f01fa6ef01590b00fa2855eb1ecb16a38b99463e",
+    "ci/social-groups-native/catalog.py": "5869dcbd30dc659a649fc6c2bbbe2de1337904ef11e4b91d6ad1992ef7ea9c2f",
+    "ci/social-groups-native/records.py": "bffdf8900f286079807ba43e8db5c09160caaf139b1e934449b90e577c1cb5cf",
+    "ci/assignment-notifications-native/verify.py": "3241db2946da0f331fe1b8beb3f256ba8e1911a50384166a7a9f59ee00c1519e",
+    "ci/assignment-notifications-native/PLAN.json": "4a5bc624072da4c10661a48c420a2696f25cf24f877aa67ca3f84822b1117a6e"
+  },
+  "runtime": {
+    "python_digest": "sha256:673719e071ecf27434fd2635bbd8d00f49f4fdd81f243143438a42ced8bedf60",
+    "postgres_image": "docker.io/library/postgres:17.6@sha256:b86568d3e0fe1dfaeff52714f9da36f206a30e4c49131b82bf96982d78627409",
+    "dockerfile_sha256": "e546d8c5668b87ef28e604107bbb330e6f4b3873cf0208b4d24ca378bd0851f9",
+    "dependency_commit": "01695530df670a94ac28f8b3bf36cc34b5b7a942",
+    "dependency_tree": "e88ea0c57f9fac39545322532a5992d5a2927676",
+    "recipe_commit": "c193a925ba57ea2d67ea48c44e5262817885c8a2",
+    "recipe_tree": "10edb138fba1d201e66042d25ba022313b300cc2",
+    "pydantic": "2.8.0",
+    "client_memory_MiB": 1536,
+    "client_pids": 192,
+    "client_tmpfs_MiB": 128,
+    "postgres_memory_MiB": 768,
+    "postgres_pids": 96,
+    "postgres_tmpfs_MiB": 384,
+    "phase_seconds": 180,
+    "workflow_minutes": 40,
+    "all_clients_readonly_capdrop_all": true,
+    "postgres_initialization_exception": "Same inherited pinned loopback initializer; no read-only root/cap-dropALL claimed for PG."
+  },
+  "purpose": "Run the exact25 existing dependency cases on the accepted actual source union. This proves input/facts/help selection and direct current-handler read dependencies, not a complete or deployed AI assistant.",
+  "case_scope": {
+    "facts": 9,
+    "wiring": 3,
+    "owned_pg_reads": 6,
+    "help": 7,
+    "total": 25,
+    "four_separate_processes_and_fresh_marked_database_per_mode": true,
+    "model_created_schema_modes": [
+      "reads"
+    ],
+    "pure_selected_modules": [
+      "facts",
+      "help"
+    ],
+    "wiring_application_imports": true,
+    "http_wire_or_model_or_server_auth_adapter_claim": false,
+    "genuine_migration_claim": false
+  },
+  "fixture_order": {
+    "before_import": "Verify exact source/read-only helper mounts/dependencies; claim fresh marked fixed-name loopback PostgreSQL; capture empty public/catalog/sequences/security/namespaces/postmaster snapshots. Set only synthetic env and SEARCH_FILTER_TEST_DATABASE_URL before importing tests.",
+    "facts_help": "Selected case modules must not import config/database/main/routes. Outer owned PG claim/preservation and provider safety remain separate harness bookkeeping.",
+    "wiring_reads": "Shared test module retains its own DATABASE_URL=syntheticSQLite and blank provider configuration before importing app/models/routes. Actual107 registry including TradeContact is required. Wiring3 uses unit stubs only. Reads6 binds its own actual PG Session factory in random public_tool_test_<hex> schema; no source/test edits.",
+    "cleanup": "Existing class cleanup must remove all random schemas/engine state. Verify unchanged public catalog/all sequences/role/function ACLs/postmaster and exact source after every mode. All failed modes still reach marked DB drop/absence and owned container/private-scratch removal before final refusal."
+  },
+  "privacy": "All actual private strings remain in suppressed owned test buffers only. Strict worker/checker emit finite counts/booleans/known method names/reasons/SQLSTATE. No raw response, assertion, trace, recipient/UUID/body/credential output, screenshots or artifacts. Existing business co-broker contact fields intentionally preserved.",
+  "cleanup": "Per mode fresh fixed-name DB has exact nonce+mode comment; stopped client and marker required before DROP, assert absence, remove client even if checker refuses. Same PG start/security/public tables/sequences/namespaces unchanged after random-schema fixture teardown; labels/image/scratch removed via inherited trap.",
+  "runtime_scope": "Keep original accepted pinned images/projectPydantic2.8 and client/PG caps; no localhost app/native runtime here, no cap/time increase.",
+  "protocol": {
+    "prefix": "ASSISTANT_DEPENDENCIES_NATIVE_",
+    "counts_fields": [
+      "suite",
+      "expected",
+      "run",
+      "failures",
+      "errors",
+      "skipped"
+    ],
+    "result_truth": "Finite mode-specific proof fields derive from actual current worker; model registry count is actual107 for wiring/reads and0 when not imported; model-created schema is reads only.",
+    "all_diagnostics_fail_acceptance": true,
+    "capture_bytes_cap": 2097152,
+    "private_native_log_bytes_cap": 4194304
+  },
+  "preservation_limits": [
+    "Synthetic model-created owned schema only; no old99/real108 migration/startup proof or protected82/46/9 production dataset claim",
+    "No HTTP response/browser validation, model call, real chat/auth adapter, target access grant, public data write, provider activation or production action",
+    "Wiring3 is separately typed unit proof; cannot substitute for actual6 PG handler reads",
+    "No unrelated16/50/53/21/frontend rerun"
+  ],
+  "push_guard": {
+    "expected_production_main": "e4d1c21883557ea743e427d588e7e194bb6dd961",
+    "authority": "Root revalidates actual remote main/absent one-time source and operations refs before pushing. This workflow never deploys or changes main."
+  },
+  "retained_evidence": {
+    "approved25_scope": {
+      "path": "outputs/assistant-dependencies-combined-20261127/HOSTED25-SCOPE-PROPOSAL.json",
+      "bytes": 13699,
+      "sha256": "5854b89553b4388a205d5c43a17fbd444b5b1bb0e9a854ad13dc58381c5bb876"
+    },
+    "source_union": {
+      "path": "outputs/assistant-dependencies-combined-20261127/SOURCE-UNION-PROPOSAL.json",
+      "bytes": 4847,
+      "sha256": "86fafe17bb2d160e10b74ddf66c0cc3766caf3bd1f7ab0783776f5e628de04a3"
+    },
+    "help_full_cold": {
+      "path": "outputs/assistant-feature-help-20261127/assistant-help-8f57-groups-full-source-cold-review-20261127.json",
+      "bytes": 4942,
+      "sha256": "e9e061e6d933d21c083e07f2d514bb99da7aa111c101b1491e027eda71167a9e"
+    },
+    "readtools_full_cold": {
+      "path": "outputs/public-assistant-listing-tools-20261127-google/public-assistant-listing-tools-53d-release-full-source-cold-review-20261127.json",
+      "bytes": 8943,
+      "sha256": "09786cd5ed0b21da74fb1932fb147292b0fea0120194a082c62f41a43366b642"
+    },
+    "facts_full_cold": {
+      "path": "outputs/public-assistant-listing-boundary-20261127-google/public-assistant-boundary-625cc7-release-full-source-cold-review-20261127.json",
+      "bytes": 5440,
+      "sha256": "4f6b9e7e26927dca51aff5df0c49bbfd7a1c9bb45cebc475756304ba999830d7"
+    },
+    "parent_recipe_full_cold": {
+      "path": "outputs/public-listing-projection-hosted-20261127/public-listing-native-51f6-release-full-nonauthor-cold-review-20261127.json",
+      "bytes": 5489,
+      "sha256": "5ca0068f8ca60e119c7f120540868dc0d2a34d6c4ff1fe50f7a7292ee85daa47"
+    },
+    "Root_source_acceptance": {
+      "path": "outputs/property-network-20261101/assistant-9a4226-root-team-source-review-20261127.json",
+      "bytes": 3918,
+      "sha256": "af70dc46f0d297c96c75c2157d5532e5f4cbea3f56ad4dab7605a871b76175c1"
+    },
+    "Root_source_firstpush": {
+      "path": "outputs/property-network-20261101/assistant-9a4226-root-source-first-push-20261127.json",
+      "bytes": 1507,
+      "sha256": "79a99237c6bc2164cda0da6ae6a49a0a7336c18b327ce79eeccddc7fdd20514a"
+    }
+  },
+  "required_before_push": [
+    "Freeze exact5additions/all446 inherited tuples preserved",
+    "Root complete changed-source review and independent nonauthor cold",
+    "Root exact source/identity/hash/absent-one-time-ref check then Root-only push"
+  ],
+  "unrun": [
+    "All25 actual hosted cases/current107 registration and actual owned-PG behavior",
+    "Current hosted build/dependencies/PG/process/cleanup",
+    "Model/provider/orchestration/chat/auth adapter/production"
+  ],
+  "whole_goal_complete": false,
+  "local_checks": {
+    "status": "SOURCE_ONLY_CONTROLS_PASS_ALL25_CASES_UNRUN",
+    "Python_AST": 2,
+    "inline_source_guard_AST": 1,
+    "parser_positive": 4,
+    "parser_negative": 48,
+    "safe_CLI_exports": 4,
+    "valid_failure_export_no_success": true,
+    "invalid_private_method_not_echoed": true,
+    "worker_RESULT_AST_matches_checker_all4_modes": true,
+    "source_and_preservation_controls": {
+      "path": "outputs/assistant-dependencies-hosted-20261127/SOURCE-CONTROLS.json",
+      "bytes": 1300,
+      "sha256": "8b0490a30f568c9044d1b8682110ea016521d010170e057b910ebb387c0aedef"
+    },
+    "parser_controls": {
+      "path": "outputs/assistant-dependencies-hosted-20261127/PARSER-CONTROLS.json",
+      "bytes": 1926,
+      "sha256": "73d2e76b4238f8dd0b34833d555e6a4ac9b7deaba5441712bded124149fd0201"
+    },
+    "Bash_syntax": "UNRUN locally; required hosted bash -n",
+    "application_native_DB_build_browser_install_provider_CUA": false
+  }
+}

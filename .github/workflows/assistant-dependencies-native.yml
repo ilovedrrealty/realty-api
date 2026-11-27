@@ -1,0 +1,53 @@
+name: Isolated assistant dependency proof
+on:
+  push:
+    branches: [codex-ci-assistant-dependencies-native-20261127]
+permissions:
+  contents: read
+concurrency:
+  group: assistant-dependencies-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  focused:
+    if: >-
+      github.repository == 'ilovedrrealty/realty-api' && github.event.repository.private == false &&
+      github.event.created == true && github.event.deleted == false && github.event.forced == false &&
+      github.event.before == '0000000000000000000000000000000000000000' && github.run_attempt == 1 &&
+      github.event.after == github.sha && github.workflow_sha == github.sha
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - name: Read exact reviewed operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          path: assistant-ops
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Read reviewed assistant source union
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 9a422618139ad3a01bc8c0b3fd38ae5dd7f42f41
+          path: assistant-app
+          fetch-depth: 4
+          persist-credentials: false
+      - name: Read unchanged dependency baseline
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 01695530df670a94ac28f8b3bf36cc34b5b7a942
+          path: assistant-dependencies
+          persist-credentials: false
+      - name: Read pinned accepted Python recipe
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: c193a925ba57ea2d67ea48c44e5262817885c8a2
+          path: assistant-recipe
+          persist-credentials: false
+      - name: Run nine facts, three wiring, six owned reads and seven help cases
+        shell: bash
+        run: |
+          set -euo pipefail
+          runner="$GITHUB_WORKSPACE/assistant-ops/ci/assistant-dependencies-native/run-hosted.sh"
+          bash --noprofile --norc -n "$runner"
+          exec bash --noprofile --norc "$runner" "$GITHUB_WORKSPACE/assistant-ops" \
+            "$GITHUB_WORKSPACE/assistant-app" "$GITHUB_WORKSPACE/assistant-dependencies" "$GITHUB_WORKSPACE/assistant-recipe"
