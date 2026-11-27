@@ -72,12 +72,27 @@ async function foreground(page){
   console.log('SIGNUP_HISTORY_BROWSER_PRESENCE '+JSON.stringify({locale:contextLocales.get(page.context()),...value}));presenceSeen.add(page);presence++
  }
 }
+function controlCensus(boxes,width){
+ try{
+  if(!Array.isArray(boxes)||boxes.length>1000000||boxes.some((box,index)=>box.ordinal!==index||!Number.isInteger(box.tagCode)||box.tagCode<0||box.tagCode>3||![box.left,box.right,box.width].every(Number.isFinite)||box.width<0||box.left>box.right))return
+  const outside=boxes.filter(box=>box.left < -1||box.right > width+1||box.width > width+1)
+  if(boxes.length<=200&&outside.length===0)return
+  const limit=value=>Math.max(-100000,Math.min(100000,value))
+  const rows=outside.slice(0,8).map(box=>{
+   if(!Number.isInteger(box.ordinal)||box.ordinal<0||box.ordinal>=boxes.length||!Number.isInteger(box.tagCode)||box.tagCode<0||box.tagCode>3||![box.left,box.right,box.width].every(Number.isFinite)||box.width<0)throw 0
+   return {ordinal:box.ordinal,tagCode:box.tagCode,left:limit(Math.floor(box.left)),right:limit(Math.ceil(box.right)),width:Math.min(100000,Math.ceil(box.width))}
+  })
+  const value={positive_count:boxes.length,outside_count:outside.length,rows},raw=JSON.stringify(value)
+  if(Buffer.byteLength(raw,'utf8')<=2048)writeSync(1,'SIGNUP_HISTORY_BROWSER_CONTROL_CENSUS '+raw+'\n')
+ }catch{}
+}
 async function geometry(page,scope,label){
  for(const width of [320,390]){
   advance(label+'_geometry_'+width);await page.setViewportSize({width,height:844});await foreground(page)
   const value=await page.evaluate(()=>({width:innerWidth,document:document.documentElement.scrollWidth}))
   check(value.width===width&&value.document<=width+1,'VIEWPORT_OVERFLOW')
-  const boxes=await scope.locator('input,select,textarea,button').evaluateAll(nodes=>nodes.filter(node=>{const r=node.getBoundingClientRect();return r.width>0&&r.height>0}).map(node=>{const r=node.getBoundingClientRect();return {left:r.left,right:r.right,width:r.width}}))
+  const boxes=await scope.locator('input,select,textarea,button').evaluateAll(nodes=>nodes.filter(node=>{const r=node.getBoundingClientRect();return r.width>0&&r.height>0}).map((node,ordinal)=>{const r=node.getBoundingClientRect();return {ordinal,tagCode:{INPUT:0,SELECT:1,TEXTAREA:2,BUTTON:3}[node.tagName],left:r.left,right:r.right,width:r.width}}))
+  if(!(boxes.length<=200&&boxes.every(box=>box.left>=-1&&box.right<=width+1&&box.width<=width+1)))controlCensus(boxes,width)
   check(boxes.length<=200&&boxes.every(box=>box.left>=-1&&box.right<=width+1&&box.width<=width+1),'CONTROL_OVERFLOW')
   check(!geometries.some(row=>row.label===label&&row.width===width),'UNIQUE_GEOMETRY_REQUIRED')
   const record={label,width,document:value.document};geometries.push(record);console.log('SIGNUP_HISTORY_BROWSER_GEOMETRY '+JSON.stringify(record))

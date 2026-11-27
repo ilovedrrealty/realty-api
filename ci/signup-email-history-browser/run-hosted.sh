@@ -6,7 +6,7 @@ die() { printf 'SIGNUP_HISTORY_REFUSED %s\n' "$1" >&2; exit 1; }
 bounded() { timeout --kill-after=8s "$@"; }
 [[ $# == 8 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 &&
-   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-signup-email-history-browser-v2-20261126 &&
+   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-signup-email-history-browser-v3-20261126 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die HOSTED_EXACT_EVENT_REQUIRED
 ops="$1"; frontend="$2"; baseline="$3"; backend="$4"; migration="$5"; relay="$6"; previous="$7"; reference="$8"
 [[ "$ops" == "$GITHUB_WORKSPACE/build-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-source" &&
@@ -20,13 +20,14 @@ done
 expected_operations=$(cat <<'EXACT_OPERATIONS'
 .github/workflows/signup-email-history-browser.yml
 ci/signup-email-history-browser/PLAN.json
+ci/signup-email-history-browser/check-result.py
+ci/signup-email-history-browser/run-browser.mjs
 ci/signup-email-history-browser/run-hosted.sh
-ci/signup-email-history-browser/serve_fixture.py
 EXACT_OPERATIONS
 )
 operations_delta=$(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) || die OPERATIONS_DIFF_REQUIRED
 [[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" &&
-   $(git -C "$ops" show -s --format=%P HEAD) == 77e58508596c04dfba3d7d169e10add91473b765 &&
+   $(git -C "$ops" show -s --format=%P HEAD) == df96182794e007935be1ce9b71cb8dd04ec9a7e3 &&
    "$operations_delta" == "$expected_operations" ]] || die EXACT_OPERATIONS_REQUIRED
 python3 -I -B - "$ops" <<'PY_OPERATIONS_REUSE'
 from pathlib import Path
@@ -35,12 +36,12 @@ root=Path(sys.argv[1])
 def git(*args):return subprocess.check_output(['git','-C',str(root),*args])
 def tree(commit):return dict((line.split(b'\t',1)[1].decode(),line.split(b'\t',1)[0]) for line in git('ls-tree','-rz',commit).split(b'\0') if line)
 old,new=tree('HEAD^'),tree('HEAD')
-paths={'.github/workflows/signup-email-history-browser.yml','ci/signup-email-history-browser/PLAN.json','ci/signup-email-history-browser/run-hosted.sh','ci/signup-email-history-browser/serve_fixture.py'}
+paths={'.github/workflows/signup-email-history-browser.yml','ci/signup-email-history-browser/PLAN.json','ci/signup-email-history-browser/run-hosted.sh','ci/signup-email-history-browser/run-browser.mjs','ci/signup-email-history-browser/check-result.py'}
 assert len(old)==len(new)==431 and old.keys()==new.keys()
 assert {name for name in old if old[name]!=new[name]}==paths
 assert all(new[name]==value for name,value in old.items() if name not in paths)
 for name in paths:assert (root/name).is_file() and not (root/name).is_symlink()
-for name in ('ci/signup-email-history-browser/run-browser.mjs','ci/signup-email-history-browser/check-result.py'):
+for name in ('ci/signup-email-history-browser/serve_fixture.py',):
     assert old[name]==new[name]
 PY_OPERATIONS_REUSE
 backend_commit=26ca867a1008868f7dc5f322d28dc289a7763980
@@ -234,7 +235,7 @@ child_paths={'apps/dashboard/src/components/admin/SignupCommunicationHistory.tsx
 assert len(intermediate)==622 and {k for k in intermediate if intermediate[k]!=history_current[k]}==child_paths
 
 PY_FRONTEND_COMPOSITION
-printf 'SIGNUP_HISTORY_BUILD_SCOPE current_tests=false retained_tests=555 retained_files=66 current_standalone_typecheck=false retained_standalone_typecheck=pass fresh_dashboard_build=required fresh_landing_build=required native162=retained_unchanged_sources profile24_32=retained_unchanged_components group12_16=retained_unchanged_components native21=current_required\n'
+printf 'SIGNUP_HISTORY_BUILD_SCOPE current_tests=false retained_tests=555 retained_files=66 current_standalone_typecheck=false retained_standalone_typecheck=pass fresh_dashboard_build=required fresh_landing_build=required native162=retained_unchanged_sources profile24_32=retained_unchanged_components group12_16=retained_unchanged_components native21=retained_actual_pass\n'
 python3 -I -B - "$baseline/requirements.txt" "$backend/requirements.txt" <<'PY_REQUIREMENTS'
 from pathlib import Path
 import sys
@@ -480,33 +481,8 @@ bounded 10s docker exec "$pg" psql -X -h 127.0.0.1 -p 55449 -U postgres -d postg
 
 runtime=(--label "$label=$run_key" --network "container:$pg" --user "$(id -u):$(id -g)" --read-only --init
          --cap-drop ALL --security-opt no-new-privileges:true --pids-limit 256 --cpus 2)
-native_db=ildr_platform_test_20261025
-native_marker="ildr-signup-history-native-ci:$nonce"
-bounded 10s docker exec "$pg" psql -X -h 127.0.0.1 -p 55449 -U postgres -d postgres -v ON_ERROR_STOP=1 \
-  -c "CREATE DATABASE $native_db" -c "COMMENT ON DATABASE $native_db IS '$native_marker'" >/dev/null || die NATIVE_OWNED_DATABASE_REQUIRED
-native_worker=$(bounded 25s docker create "${runtime[@]}" --memory 2g --memory-swap 2g --tmpfs /tmp:rw,exec,size=128m --workdir /application \
-  --mount "type=bind,src=$backend,dst=/application,readonly" --mount "type=bind,src=$ops/ci,dst=/ci-tools,readonly" "$app_image" \
-  env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp PYTHONDONTWRITEBYTECODE=1 \
-  GITHUB_ACTIONS=true GITHUB_REPOSITORY=ilovedrrealty/realty-api ILDR_BROWSER_CI_NONCE="$nonce" \
-  python -I -B /ci-tools/signup-email-history-browser/serve_fixture.py native) || die NATIVE_WORKER_CREATE_FAILED
-bounded 20s docker start "$native_worker" >/dev/null || die NATIVE_WORKER_START_FAILED
-native_exit=$(bounded 600s docker wait "$native_worker") || die NATIVE_WORKER_DEADLINE
-native_running=$(bounded 5s docker inspect --format '{{.State.Running}}' "$native_worker") || die NATIVE_WORKER_PROCESS_REQUIRED
-native_oom=$(bounded 5s docker inspect --format '{{.State.OOMKilled}}' "$native_worker") || die NATIVE_WORKER_PROCESS_REQUIRED
-[[ "$native_exit" =~ ^[0-9]{1,3}$ && "$native_running" =~ ^(true|false)$ &&
-   "$native_oom" =~ ^(true|false)$ && "$native_running" == false ]] || die NATIVE_WORKER_PROCESS_REQUIRED
-bounded 10s docker logs "$native_worker" >"$state/native21.log" 2>&1 || die NATIVE_LOG_REQUIRED
-native_ok=0
-python3 -I -B "$tools/check-result.py" native "$state/native21.log" "$native_exit" || native_ok=$?
-[[ $(bounded 6s docker exec "$pg" psql -XAt -h 127.0.0.1 -p 55449 -U postgres -d postgres -v ON_ERROR_STOP=1 \
-   -c "SELECT shobj_description(oid,'pg_database') FROM pg_database WHERE datname='$native_db'") == "$native_marker" ]] || die NATIVE_DROP_OWNERSHIP_REQUIRED
-bounded 10s docker exec "$pg" psql -X -h 127.0.0.1 -p 55449 -U postgres -d postgres -v ON_ERROR_STOP=1 \
-  -c "DROP DATABASE $native_db" >/dev/null || die NATIVE_DROP_REQUIRED
-[[ $(bounded 6s docker exec "$pg" psql -XAt -h 127.0.0.1 -p 55449 -U postgres -d postgres -v ON_ERROR_STOP=1 \
-   -c "SELECT count(*) FROM pg_database WHERE datname='$native_db'") == 0 ]] || die NATIVE_DATABASE_ABSENCE_REQUIRED
-bounded 15s docker rm -v "$native_worker" >/dev/null || die NATIVE_WORKER_REMOVAL_REQUIRED
-printf 'SIGNUP_HISTORY_NATIVE_PROCESS native=%s running=%s oom=%s database_removed=true\n' "$native_exit" "$native_running" "$native_oom"
-[[ "$native_ok" == 0 && "$native_exit" == 0 && "$native_oom" == false ]] || die ACTUAL_NATIVE21_REQUIRED
+# Actual same-source native21 model-schema/route proof; overall prior browser run failed.
+printf 'SIGNUP_HISTORY_RETAINED_NATIVE tested_commit=26ca867a1008868f7dc5f322d28dc289a7763980 tested_tree=3a30b7e8c5b53827b97374c18806a7cb03ef9c5c tests=21 errors=0 failures=0 skipped=0 providers=0 current_native_tests=false run=45914574770 job=140230615311 primary_sha256=4246446edd27d15f895a679e9f5eb93a4b71e9f1d9268b4661ff0ca50b21e4d8 independent_phase_receipt_sha256=167b65b4918f3c091396b85155cf3fabab1ea00928a52c3f9403b48c7267d754\n'
 
 dashboard=$(bounded 25s docker create "${runtime[@]}" --memory 192m --memory-swap 192m \
   --tmpfs /tmp:rw,size=32m --mount "type=bind,src=$state/frontend-work/apps/dashboard/dist,dst=/dashboard-dist,readonly" \
@@ -610,5 +586,5 @@ PY_LANDING
   verify_source || die BROWSER_ALTERED_FRONTEND_SOURCE
   [[ -z $(git -C "$backend" status --porcelain=v1 --untracked-files=all) ]] || die BROWSER_ALTERED_BACKEND_SOURCE
 done
-printf 'SIGNUP_HISTORY_HOSTED_RESULT operations=%s frontend=%s backend=%s retained_native162_run=45652164070 current_native_tests=21 frontend_tests=retained555 standalone_strict=retained_pass dashboard=current landing=current browser=exact_checker_pass authoritative_fixture=exact_checker_pass live_provider_calls=0 run=%s attempt=1\n' \
+printf 'SIGNUP_HISTORY_HOSTED_RESULT operations=%s frontend=%s backend=%s retained_native162_run=45652164070 current_native_tests=false retained_native_tests=21 frontend_tests=retained555 standalone_strict=retained_pass dashboard=current landing=current browser=exact_checker_pass authoritative_fixture=exact_checker_pass live_provider_calls=0 run=%s attempt=1\n' \
   "$GITHUB_SHA" "$frontend_commit" "$backend_commit" "$GITHUB_RUN_ID"

@@ -1,8 +1,8 @@
 {
-  "status": "PREPARED_SOURCE_ONLY_V2_PENDING_ROOT_COLD_REVIEW_NOT_RUN",
+  "status": "PREPARED_SOURCE_ONLY_V3_DIAGNOSTIC_FOR_ROOT_AND_RELEASE_REVIEW_NOT_RUN",
   "date": "2026-11-26",
   "namespace": "signup-email-history-browser",
-  "parent_operations": "77e58508596c04dfba3d7d169e10add91473b765",
+  "parent_operations": "df96182794e007935be1ce9b71cb8dd04ec9a7e3",
   "inherited_tuples": 431,
   "new_paths": 0,
   "expected_total_paths": 431,
@@ -30,10 +30,10 @@
       "source_review": "Root and Groups FULL source accepted; root exact isolated source firstpush verified26Nov. No production publication."
     }
   },
-  "scope": "Fresh acceptance only for Admin account signup-email history, with existing communication flows preserved. No new mail sending, historical replay, Gmail/WhatsApp/call synchronization, account grants or production changes.",
+  "scope": "Failure-only numeric control census; exact existing browser assertions, product source, metadata/privacy and current106 read-only ledger retained. Fresh browser artifacts required; actual unchanged555/TSC and native21 phases retained, not rerun.",
   "source_ownership": {
     "workflow_plan_runner_driver": "google_browser_resume",
-    "fixture_checker": "groups_browser_resume",
+    "fixture_checker": "Groups authored original fixture/checker; v3 leaves fixture exact and google_browser_resume owns only the failure-census checker branch.",
     "commits": "one coordinated freeze only after both full crossreviews",
     "push_and_hosted_execution": "root only"
   },
@@ -46,7 +46,7 @@
     "source": "Exact unchanged de4d/622 source and manifests; actual555/66 and standalone Dashboard tsc are retained from the unique failed native run. Fresh Vite still produces the owned current artifact; Next/browser were not reached and remain required."
   },
   "native21": {
-    "actual_required": true,
+    "actual_required": false,
     "suite": "CustomerDeliveryTests",
     "current_definitions": 21,
     "old_definitions": 19,
@@ -56,8 +56,9 @@
     "port": 55449,
     "marker": "ildr-signup-history-native-ci:<nonce>",
     "scope": "The existing test class creates an isolated model schema and removes it. This is actual PG route/unit coverage, not a claim of genuine full106 migration parity.",
-    "process": "Separate fresh owned database and child process; actual config/provider guards before imports. Run original actual21 case methods, no source rewrite/count lowering. The test-only child supplies the existing required display_name for the three synthetic role readers; all21 case names/order/assertions remain exact.",
-    "cleanup": "Observe typed exit/running/OOM values and require the worker stopped before cleanup. Export bounded native results, then marker-check/drop/absence-check the owned database and remove the container before applying unchanged zero-OOM/exit/check acceptance. No canonical browser snapshot is shared with this test class."
+    "process": "Not executed in v3. Retain the actual isolated native21 child-process and model-schema proof from45914574770 on exact26ca; the complete current106 browser migration remains fresh.",
+    "cleanup": "Previous45914574770 native0/stopped/no-OOM/model-schema/public-security preservation and marker DB removal actually passed. V3 creates no native worker or fixed native database.",
+    "execution": "Not run in v3; immutable26ca native21 actual PASS retained below. Genuine106 browser migration/verification remains fresh and independent."
   },
   "browser_schema": {
     "chain": "Genuine8957/c4 old99 \u2192179/d8 current106 \u2192c4de/e8 same106, using pinned accepted read-only helpers and current source.",
@@ -165,7 +166,7 @@
       "scope": "Unchanged Group author components only."
     },
     "communications": {
-      "scope": "Original generic route/client/page/outbox/template and enqueue functions stay exact accepted parent bytes; all21 native cases freshly run, actual unchanged FE555 retained. No old live delivery proof is relabeled as current send."
+      "scope": "Original generic route/client/page/outbox/template and enqueue functions unchanged; actual native21 and unchangedFE555/TSC retained. No email send or browser106 acceptance inferred."
     },
     "current_frontend": {
       "run": 45913356146,
@@ -181,6 +182,23 @@
       "root_phase_receipt_bytes": 2631,
       "root_phase_receipt_sha256": "9079166de72d3b96eebe468e4c84d32303811d70314642fae035ae4bc02266a2",
       "scope": "Only actual same-source555/66 and separate tsc passing phases. Overall run FAILED native21; no native/Next/browser acceptance retained."
+    },
+    "current_native21": {
+      "run": 45914574770,
+      "job": 140230615311,
+      "commit": "26ca867a1008868f7dc5f322d28dc289a7763980",
+      "tree": "3a30b7e8c5b53827b97374c18806a7cb03ef9c5c",
+      "tests": 21,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "providers": 0,
+      "primary_bytes": 119137,
+      "primary_sha256": "4246446edd27d15f895a679e9f5eb93a4b71e9f1d9268b4661ff0ca50b21e4d8",
+      "independent_receipt": "signup-history-45914574770-release-failure-and-native-build-acceptance.json",
+      "independent_receipt_bytes": 4991,
+      "independent_receipt_sha256": "167b65b4918f3c091396b85155cf3fabab1ea00928a52c3f9403b48c7267d754",
+      "scope": "Actual21 PG tests/no-skips/provider0/model-schema-public-security cleanup/stopped no-OOM marker DB removal. Prior overall run FAILED browser; no browser106 acceptance retained."
     }
   },
   "runtime_reuse": {
@@ -192,19 +210,20 @@
   "results": "Finite exact keysets/counters derive from final written fixture/driver/checker. Failure-only numeric markers must always fail; no screenshots, private payload logs or uploaded artifacts.",
   "source_only_validation": {
     "status": "PASS_SOURCE_ONLY_NOT_HOSTED_ACCEPTANCE",
-    "inline_python_ast_programs": 10,
-    "fixture_ast": 1,
-    "changed_backend_composition_guard_exit": 0,
-    "frontend_guard_byteexact_parent": true,
-    "whole_driver_checker_byteexact_parent": true,
-    "whole_runtime_tools_through_cleanup_byteexact_parent": true,
-    "fixture_identity_only_two_constant_reversal": true,
-    "parser_controls": "Original3positive/73negative/6safe-output retained on byte-identical checker; no rerun.",
-    "checkout_depths": {
-      "frontend": 23,
-      "backend": 12
-    },
-    "fresh_native_build_browser": "UNRUN"
+    "positive_parser_baselines": 3,
+    "diagnostic_always_fail_and_negative_controls": 32,
+    "safe_export_controls": 2,
+    "pure_javascript_helper_controls": 7,
+    "inline_python_ast": 10,
+    "checker_ast": 1,
+    "node_syntax_exit": 0,
+    "whole_driver_and_checker_reversals_exact_parent": true,
+    "whole_fixture_and_browser_runtime_tail_exact_parent": true,
+    "whole_backend_frontend_composition_guards_exact_parent": true,
+    "native_worker_invocation_removed": true,
+    "controls_receipt": "signup-history-v3-numeric-census-source-controls-20261126.json",
+    "controls_sha256": "ea296d87f78d3c2d7b446bf480d8ea7fd348f05621c90c6a13b5c11e6745c0ec",
+    "app_native_browser_database_build_install_provider_runtime": false
   },
   "operations_scope": {
     "local_source_only": true,
@@ -214,15 +233,47 @@
     "no_push": true
   },
   "final_freeze_requires": [
-    "Root and Release FULL finite source acceptance and root first push of the test-only BE child.",
-    "Root and independent FULL/composed four-path operations review against unchanged77e driver/checker and427 other tuples.",
-    "Root alone first-pushes the unique v2 ref; no local app/native/browser/build/DB/provider work."
+    "Root and Release FULL/composed finite source review before root first push.",
+    "Original all12journeys/20geometry/16boundaries/full106/privacy/ownedcleanup remain required; no diagnostic implies acceptance.",
+    "No product CSS correction until actual numeric evidence identifies the offender."
   ],
   "changed_paths": [
     ".github/workflows/signup-email-history-browser.yml",
     "ci/signup-email-history-browser/PLAN.json",
-    "ci/signup-email-history-browser/run-hosted.sh",
-    "ci/signup-email-history-browser/serve_fixture.py"
+    "ci/signup-email-history-browser/check-result.py",
+    "ci/signup-email-history-browser/run-browser.mjs",
+    "ci/signup-email-history-browser/run-hosted.sh"
   ],
-  "unchanged_parent_tuples": 427
+  "unchanged_parent_tuples": 426,
+  "numeric_control_diagnostic": {
+    "prefix": "SIGNUP_HISTORY_BROWSER_CONTROL_CENSUS",
+    "when": "Only after the original raw CONTROL_OVERFLOW conjunction fails, then its unchanged assertion throws.",
+    "measurement": "Same existing control rectangle evaluation adds numeric positive ordinal and fixed tag code only; no second DOM read or extra request.",
+    "keys": [
+      "positive_count",
+      "outside_count",
+      "rows"
+    ],
+    "row_keys": [
+      "ordinal",
+      "tagCode",
+      "left",
+      "right",
+      "width"
+    ],
+    "tag_codes": {
+      "input": 0,
+      "select": 1,
+      "textarea": 2,
+      "button": 3
+    },
+    "max_rows": 8,
+    "max_bytes": 2048,
+    "count_and_ordinal_cap": 1000000,
+    "coordinate_cap": 100000,
+    "bounds": "Original predicate and counts use raw geometry. Only diagnostic output uses outward integer bounds floor(left), ceil(right), ceil(width), saturated at the documented coordinate cap; not exact beyond saturation.",
+    "count_only_failure": "More than200 positive controls with no outside bounds still emits the total count and empty rows.",
+    "privacy": "No DOM text, attributes, IDs, classes, URLs, values, cookies, headers, errors or HTML.",
+    "acceptance": "Strict exact typed validator/unknown field refusal; any valid census ALWAYS refuses acceptance even beside PASS. Safe exporter only echoes validated numeric data."
+  }
 }

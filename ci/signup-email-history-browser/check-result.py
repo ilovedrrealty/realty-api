@@ -241,6 +241,22 @@ def fixture_failure(value):
     assert value["sqlstate"] == "unavailable" or type(value["sqlstate"]) is str and re.fullmatch(r"[0-9A-Z]{5}", value["sqlstate"])
 
 
+def control_census(value):
+    assert value.keys() == {"positive_count", "outside_count", "rows"}
+    assert integer(value["positive_count"], 0, 1000000)
+    assert integer(value["outside_count"], 0, value["positive_count"])
+    assert type(value["rows"]) is list and len(value["rows"]) == min(8, value["outside_count"])
+    assert value["positive_count"] > 200 or value["outside_count"] > 0
+    prior = -1
+    for row in value["rows"]:
+        assert type(row) is dict and row.keys() == {"ordinal", "tagCode", "left", "right", "width"}
+        assert integer(row["ordinal"], 0, value["positive_count"] - 1) and row["ordinal"] > prior
+        prior = row["ordinal"]
+        assert integer(row["tagCode"], 0, 3)
+        assert integer(row["left"], -100000, 100000) and integer(row["right"], -100000, 100000)
+        assert integer(row["width"], 0, 100000) and row["left"] <= row["right"]
+
+
 def check(mode, contents, native_exit):
     assert mode in {"native", "api", "browser"} and type(native_exit) is int and native_exit == 0
     assert type(contents) is str and len(contents.encode("utf-8")) <= 2 * 1024 * 1024
@@ -266,6 +282,11 @@ def check(mode, contents, native_exit):
             seen.add(prefix)
             fields = raw.split(" ")
             assert len(fields) == 2 and fields[0] in BROWSER_PHASES and fields[1] in BROWSER_REASONS
+            raise AssertionError()
+        if prefix == "SIGNUP_HISTORY_BROWSER_CONTROL_CENSUS":
+            assert mode == "browser" and prefix not in seen
+            seen.add(prefix)
+            control_census(object_json(raw, 2048))
             raise AssertionError()
         if prefix == "SIGNUP_HISTORY_BROWSER_OBSERVATION":
             assert prefix not in seen
@@ -361,6 +382,9 @@ def emit_safe(mode, contents):
             elif prefix in {"SIGNUP_HISTORY_FIXTURE_FAILURE", "SIGNUP_HISTORY_FIXTURE_GUARD"}:
                 value = object_json(raw, 512)
                 fixture_failure(value)
+            elif prefix == "SIGNUP_HISTORY_BROWSER_CONTROL_CENSUS" and mode == "browser":
+                value = object_json(raw, 2048)
+                control_census(value)
             elif prefix == "SIGNUP_HISTORY_BROWSER_OBSERVATION" and mode == "browser":
                 value = object_json(raw, 256)
                 assert value.keys() == {"kind", "status"} and value["kind"] in {"read", "login"} and integer(value["status"], 100, 599)

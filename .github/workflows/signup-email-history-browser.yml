@@ -1,7 +1,7 @@
 name: Isolated read-only account signup email history
 on:
   push:
-    branches: [codex-ci-signup-email-history-browser-v2-20261126]
+    branches: [codex-ci-signup-email-history-browser-v3-20261126]
 permissions:
   contents: read
 concurrency:
@@ -72,7 +72,7 @@ jobs:
           path: profile-baseline106
           fetch-depth: 6
           persist-credentials: false
-      - name: Run native21, fresh builds and account browser; retain exact555 and typecheck
+      - name: Run fresh builds and diagnostic account browser; retain native21 and exact555
         shell: bash
         run: |
           set -euo pipefail
