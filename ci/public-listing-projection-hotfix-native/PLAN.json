@@ -1,0 +1,427 @@
+{
+  "status": "SOURCE_ONLY_CODE_PRIVACY_HOTFIX_OLD_RUNTIME16_PENDING_REVIEW_UNRUN",
+  "operations_parent": "51f6d1d7c16b2f68a826e3bcd49d64363f8345e1",
+  "operations_parent_tree": "ca23cd51871376817842d671e976403d7809154f",
+  "ref": "codex-ci-public-listing-projection-hotfix-native-20261127",
+  "inherited_tuples": 446,
+  "final_tuples": 451,
+  "new_paths": [
+    ".github/workflows/public-listing-projection-hotfix-native.yml",
+    "ci/public-listing-projection-hotfix-native/PLAN.json",
+    "ci/public-listing-projection-hotfix-native/run-hosted.sh",
+    "ci/public-listing-projection-hotfix-native/verify.py",
+    "ci/public-listing-projection-hotfix-native/check-result.py"
+  ],
+  "application": {
+    "commit": "e4d1c21883557ea743e427d588e7e194bb6dd961",
+    "tree": "601e9ae2b19c6591f564ea8d3ab1e077bb74a757",
+    "parent": "8957b18520d15dac503e0e4a5ce4b2455135d601",
+    "parent_tree": "11ab69db36eb30881e4f3086578201f584c4092d",
+    "paths": 356,
+    "parent_paths": 355,
+    "changed": {
+      "schemas/listing.py": {
+        "bytes": 13001,
+        "sha256": "2be050572971a65d9fa45b239b0c6c55c270cd615c14fa77abc2c75fd76c02bc"
+      },
+      "tests/test_public_listing_projection.py": {
+        "bytes": 5688,
+        "sha256": "795e400a0651f0e6f456f279cb9cd84eb19a7d7990656be49101c50c9136eac0"
+      }
+    },
+    "all354_other_tuples_exact": true
+  },
+  "suites": {
+    "pure": {
+      "file": "tests/test_public_listing_projection.py",
+      "class": "PublicListingProjectionTests",
+      "sha256": "795e400a0651f0e6f456f279cb9cd84eb19a7d7990656be49101c50c9136eac0",
+      "all_source_methods": [
+        "test_public_projection_never_reads_private_orm_attributes",
+        "test_private_response_retains_operational_values_but_public_output_does_not",
+        "test_page_and_detail_preserve_public_prices_media_location_and_contact_contract"
+      ],
+      "methods": [
+        "test_public_projection_never_reads_private_orm_attributes",
+        "test_private_response_retains_operational_values_but_public_output_does_not",
+        "test_page_and_detail_preserve_public_prices_media_location_and_contact_contract"
+      ],
+      "count": 3,
+      "selection": "Exact current selected method bodies unmodified; no omitted method reported as passed."
+    },
+    "search": {
+      "file": "tests/test_listing_search.py",
+      "class": "ListingSearchTests",
+      "sha256": "2637014b1ae9140e134da39ae79b5d684afa939e1098eca1826eb723f5dccc1a",
+      "all_source_methods": [
+        "test_spatial_radius_applies_ordinary_filters_before_pages_median_and_privacy_counts",
+        "test_spatial_polygon_includes_edges_and_respects_concavity_and_separate_viewport",
+        "test_spatial_polygon_edges_match_web_mercator_shape",
+        "test_spatial_radius_wraps_antimeridian_and_great_circle_distance_is_bounded",
+        "test_spatial_malformed_or_repeated_criterion_fails_closed",
+        "test_map_covers_all_public_matches_beyond_card_pagination_and_exposes_only_whitelisted_fields",
+        "test_map_uses_the_exact_card_filter_and_currency_contract_including_multiple_areas_and_rental_periods",
+        "test_map_limits_and_viewport_are_explicit_while_full_filter_totals_and_area_counts_remain_global",
+        "test_multiple_locations_and_types_use_or_within_and_across",
+        "test_normalization_legacy_links_and_multi_precedence",
+        "test_location_wildcards_are_literals",
+        "test_explicit_sale_rent_and_omitted_purpose",
+        "test_count_pagination_and_tied_sort_stay_consistent",
+        "test_filter_options_merge_variants_exclude_inactive_and_remain_compact",
+        "test_sale_prices_convert_dop_and_apply_same_budget_sort_median",
+        "test_monthly_and_daily_rental_prices_are_never_generic_price",
+        "test_target_dop_changes_comparison_currency_without_editing_native_prices",
+        "test_clients_omitting_price_currency_keep_legacy_price_contract",
+        "test_untrusted_list_and_currency_inputs_are_bounded"
+      ],
+      "methods": [
+        "test_sale_prices_convert_dop_and_apply_same_budget_sort_median",
+        "test_monthly_and_daily_rental_prices_are_never_generic_price",
+        "test_target_dop_changes_comparison_currency_without_editing_native_prices",
+        "test_clients_omitting_price_currency_keep_legacy_price_contract"
+      ],
+      "count": 4,
+      "selection": "Exact current selected method bodies unmodified; no omitted method reported as passed."
+    },
+    "location": {
+      "file": "tests/test_location_review.py",
+      "class": "LocationReviewTests",
+      "sha256": "6e5f35afcd83a791242bbf600c8f74ac9f94356450dcd7251376f733c421a2b2",
+      "all_source_methods": [
+        "test_admin_only_no_store_and_private_validation",
+        "test_summary_preserves_legacy_points_without_claiming_review",
+        "test_legacy_map_link_without_saved_pair_is_not_exposed_as_area_location",
+        "test_verified_exact_point_has_canonical_public_link_and_private_evidence",
+        "test_actual_admin_create_stages_candidate_before_active_public_response",
+        "test_created_candidates_publish_only_after_explicit_precision_review",
+        "test_create_review_failure_rolls_back_listing_review_and_events_together",
+        "test_new_create_rejects_partial_or_invalid_position_before_share_generation",
+        "test_unchanged_legacy_pair_remains_public_without_fabricating_a_review",
+        "test_same_candidate_round_trip_preserves_review_and_public_precision",
+        "test_explicit_nulls_clear_legacy_or_private_reviewed_coordinates",
+        "test_actual_import_worker_commits_only_private_candidate_then_review_can_publish",
+        "test_import_review_failure_rolls_back_new_listing_before_worker_commit",
+        "test_import_duplicate_keeps_real_legacy_coordinates_without_review_or_provider_calls",
+        "test_area_precision_retains_raw_only_in_private_table",
+        "test_hidden_precision_removes_exact_and_approximate_map_display",
+        "test_pending_review_does_not_publish_new_point",
+        "test_stale_versions_never_overwrite_and_other_listing_changes_conflict",
+        "test_simultaneous_reviews_cannot_both_accept_the_same_version",
+        "test_generic_admin_edit_invalidates_and_does_not_reveal_private_pair",
+        "test_pending_edit_approval_preserves_hidden_policy",
+        "test_viewport_or_mismatched_destination_cannot_be_verification_evidence",
+        "test_invalid_pairs_confirmation_and_urls_are_rejected_without_echo",
+        "test_worksheet_is_bounded_formula_safe_and_has_no_private_evidence",
+        "test_projection_mismatch_is_redacted_without_mutating_evidence",
+        "test_migration_is_idempotent_private_and_non_destructive"
+      ],
+      "methods": [
+        "test_legacy_map_link_without_saved_pair_is_not_exposed_as_area_location",
+        "test_verified_exact_point_has_canonical_public_link_and_private_evidence",
+        "test_area_precision_retains_raw_only_in_private_table",
+        "test_hidden_precision_removes_exact_and_approximate_map_display"
+      ],
+      "count": 4,
+      "selection": "Exact current selected method bodies unmodified; no omitted method reported as passed."
+    },
+    "room_tour": {
+      "file": "tests/test_listing_room_tour.py",
+      "class": "ListingRoomPhotoTourTests",
+      "sha256": "bfdf82377a837f59f484b15248877bff93f1d7e4d49d77e339da81e2c3ddea09",
+      "all_source_methods": [
+        "test_approved_detail_only_and_explicit_clear",
+        "test_pending_scope_and_current_assignment",
+        "test_allow_only_exact_approved_public_gallery_urls_and_metadata",
+        "test_gallery_changes_permanently_invalidate_old_approval_and_pending",
+        "test_migration_old_rows_and_archive_close_pending"
+      ],
+      "methods": [
+        "test_approved_detail_only_and_explicit_clear",
+        "test_pending_scope_and_current_assignment"
+      ],
+      "count": 2,
+      "selection": "Exact current selected method bodies unmodified; no omitted method reported as passed."
+    },
+    "workspace": {
+      "file": "tests/test_admin_workspace_access.py",
+      "class": "AdminWorkspaceAccessTests",
+      "sha256": "2a085b1fdf9ee8175daf0b028b4c8a64d6719c0b3e748bef338a293bf9009eb5",
+      "all_source_methods": [
+        "test_admin_identity_is_unchanged_in_every_workspace",
+        "test_admin_own_listings_union_and_pagination_exclude_other_accounts",
+        "test_every_admin_has_self_access_without_receiving_another_admins_records",
+        "test_personal_saved_homes_inquiries_bookings_and_leads_remain_private",
+        "test_owner_and_realtor_activity_uses_only_admin_related_properties",
+        "test_workspace_parameter_never_grants_non_admin_privileges",
+        "test_admin_can_request_deal_for_own_property_but_not_unrelated_property"
+      ],
+      "methods": [
+        "test_admin_own_listings_union_and_pagination_exclude_other_accounts",
+        "test_workspace_parameter_never_grants_non_admin_privileges"
+      ],
+      "count": 2,
+      "selection": "Exact current selected method bodies unmodified; no omitted method reported as passed."
+    },
+    "canary": {
+      "file": "tests/test_location_review.py",
+      "class": "LocationReviewTests",
+      "sha256": "6e5f35afcd83a791242bbf600c8f74ac9f94356450dcd7251376f733c421a2b2",
+      "all_source_methods": [
+        "test_admin_only_no_store_and_private_validation",
+        "test_summary_preserves_legacy_points_without_claiming_review",
+        "test_legacy_map_link_without_saved_pair_is_not_exposed_as_area_location",
+        "test_verified_exact_point_has_canonical_public_link_and_private_evidence",
+        "test_actual_admin_create_stages_candidate_before_active_public_response",
+        "test_created_candidates_publish_only_after_explicit_precision_review",
+        "test_create_review_failure_rolls_back_listing_review_and_events_together",
+        "test_new_create_rejects_partial_or_invalid_position_before_share_generation",
+        "test_unchanged_legacy_pair_remains_public_without_fabricating_a_review",
+        "test_same_candidate_round_trip_preserves_review_and_public_precision",
+        "test_explicit_nulls_clear_legacy_or_private_reviewed_coordinates",
+        "test_actual_import_worker_commits_only_private_candidate_then_review_can_publish",
+        "test_import_review_failure_rolls_back_new_listing_before_worker_commit",
+        "test_import_duplicate_keeps_real_legacy_coordinates_without_review_or_provider_calls",
+        "test_area_precision_retains_raw_only_in_private_table",
+        "test_hidden_precision_removes_exact_and_approximate_map_display",
+        "test_pending_review_does_not_publish_new_point",
+        "test_stale_versions_never_overwrite_and_other_listing_changes_conflict",
+        "test_simultaneous_reviews_cannot_both_accept_the_same_version",
+        "test_generic_admin_edit_invalidates_and_does_not_reveal_private_pair",
+        "test_pending_edit_approval_preserves_hidden_policy",
+        "test_viewport_or_mismatched_destination_cannot_be_verification_evidence",
+        "test_invalid_pairs_confirmation_and_urls_are_rejected_without_echo",
+        "test_worksheet_is_bounded_formula_safe_and_has_no_private_evidence",
+        "test_projection_mismatch_is_redacted_without_mutating_evidence",
+        "test_migration_is_idempotent_private_and_non_destructive"
+      ],
+      "methods": [
+        "test_anonymous_projection_and_authorized_private_retention"
+      ],
+      "count": 1,
+      "selection": "New owned subclass case only; unchanged LocationReview setUpClass/setUp/tearDownClass inherited."
+    }
+  },
+  "public_keys": [
+    "id",
+    "title",
+    "description",
+    "description_es",
+    "type",
+    "transaction",
+    "price",
+    "location",
+    "bedrooms",
+    "bathrooms",
+    "area_sqft",
+    "lot_size_sqft",
+    "roi",
+    "seller_financing",
+    "hoa",
+    "hoa_fee",
+    "tax_exempt",
+    "gated_community",
+    "construction_status",
+    "year_built",
+    "features",
+    "maps_url",
+    "latitude",
+    "longitude",
+    "tag",
+    "tags",
+    "video_links",
+    "tour_3d_url",
+    "utilities",
+    "included_utilities",
+    "association_fee",
+    "deposit_policy",
+    "images",
+    "share_image_url",
+    "status",
+    "is_deal",
+    "deal_discount_value",
+    "deal_discount_type",
+    "view_count",
+    "co_listing_enabled",
+    "co_listing_brokerage",
+    "co_listing_agent_name",
+    "co_listing_agent_contact",
+    "co_listing_agent_email",
+    "co_listing_brokerage_email",
+    "co_listing_brokerage_phone",
+    "currency",
+    "search_price",
+    "search_price_currency",
+    "search_price_period",
+    "price_per_day",
+    "price_per_month",
+    "created_at",
+    "updated_at",
+    "submitted_by_name",
+    "location_precision",
+    "location_verified",
+    "submitted_by_email"
+  ],
+  "removed_public_keys": [
+    "assigned_realtor_id",
+    "co_listing_agreement_accepted",
+    "co_listing_agreement_url",
+    "co_listing_commission_split",
+    "co_listing_notes",
+    "co_listing_status",
+    "has_pending_deal_request",
+    "has_pending_edit",
+    "leads_count",
+    "owner_id",
+    "owner_paypal_email",
+    "rejection_reason",
+    "source_ref",
+    "submitted_by"
+  ],
+  "helper_pins": {
+    "ci/native-inbox/verify.py": "388fcae33bf63234df9739ac7405c1a2d49b4914af2a32d56e9023fdb7ed144e",
+    "ci/social-groups-browser/serve_social_groups_fixture.py": "e0c5f0971c7c13ed47063907f01fa6ef01590b00fa2855eb1ecb16a38b99463e",
+    "ci/social-groups-native/catalog.py": "5869dcbd30dc659a649fc6c2bbbe2de1337904ef11e4b91d6ad1992ef7ea9c2f",
+    "ci/social-groups-native/records.py": "bffdf8900f286079807ba43e8db5c09160caaf139b1e934449b90e577c1cb5cf",
+    "ci/assignment-notifications-native/verify.py": "3241db2946da0f331fe1b8beb3f256ba8e1911a50384166a7a9f59ee00c1519e",
+    "ci/assignment-notifications-native/PLAN.json": "4a5bc624072da4c10661a48c420a2696f25cf24f877aa67ca3f84822b1117a6e"
+  },
+  "runtime": {
+    "python_digest": "sha256:673719e071ecf27434fd2635bbd8d00f49f4fdd81f243143438a42ced8bedf60",
+    "postgres_image": "docker.io/library/postgres:17.6@sha256:b86568d3e0fe1dfaeff52714f9da36f206a30e4c49131b82bf96982d78627409",
+    "dockerfile_sha256": "e546d8c5668b87ef28e604107bbb330e6f4b3873cf0208b4d24ca378bd0851f9",
+    "dependency_commit": "01695530df670a94ac28f8b3bf36cc34b5b7a942",
+    "dependency_tree": "e88ea0c57f9fac39545322532a5992d5a2927676",
+    "recipe_commit": "c193a925ba57ea2d67ea48c44e5262817885c8a2",
+    "recipe_tree": "10edb138fba1d201e66042d25ba022313b300cc2",
+    "pydantic": "2.8.0",
+    "client_memory_MiB": 1536,
+    "client_pids": 192,
+    "client_tmpfs_MiB": 128,
+    "postgres_memory_MiB": 768,
+    "postgres_pids": 96,
+    "postgres_tmpfs_MiB": 384,
+    "phase_seconds": 180,
+    "workflow_minutes": 40,
+    "all_clients_readonly_capdrop_all": true,
+    "postgres_initialization_exception": "Same inherited pinned loopback initializer; no read-only root/cap-dropALL claimed for PG."
+  },
+  "actual_scope": {
+    "total": 16,
+    "pure_DTO": 3,
+    "existing_search": 4,
+    "existing_location": 4,
+    "existing_room_tour": 2,
+    "existing_workspace": 2,
+    "new_route_canary": 1,
+    "six_separate_processes_and_fresh_marked_DB_per_mode": true,
+    "model_created_schema_modes": 5,
+    "genuine108_retested": false,
+    "canary_public_routes": 3,
+    "canary_private_retention_routes": 4,
+    "canary_auth_denial_routes": 3,
+    "canary_reads_leave_own_row_exact": true,
+    "live_provider_attempts": 0,
+    "mocked_provider_calls": 0,
+    "no_frontend_build": true,
+    "modeled_table_count_expected": 98,
+    "genuine99_retested": false,
+    "genuine_old_database_runtime_claim": false
+  },
+  "purity": "Three unchanged new pure test bodies import only schemas.listing/listing_room_tour/Pydantic; worker additionally performs separate owned-DB claim/preservation and dependency/provider safety checks. No config/database/main/routes imports allowed after pure tests. Do not describe the entire harness process as DB-free.",
+  "retained_not_rerun": {
+    "parent_51f6_focused_recipe": {
+      "commit": "51f6d1d7c16b2f68a826e3bcd49d64363f8345e1",
+      "all446_tuples_unchanged": true,
+      "same16_method_bodies_and_6_modes": true,
+      "source_cold": {
+        "path": "outputs/public-listing-projection-hosted-20261127/public-listing-native-51f6-release-full-nonauthor-cold-review-20261127.json",
+        "bytes": 5489,
+        "sha256": "5ca0068f8ca60e119c7f120540868dc0d2a34d6c4ff1fe50f7a7292ee85daa47"
+      }
+    },
+    "unrelated_future_genuine108": "Historical c511 acceptance covers f931/model107 future source, not this production-baseline98-model source. Inherited runner genuine108=retained_not_rerun text is cross-lane metadata only; every current result must retain genuine108_claim=false.",
+    "old_genuine99": "Separate evidence, not repeated or established by these model-created fixture modes. Existing old source has three Alembic heads; no migration/stamp/startup/downgrade is requested or tested.",
+    "assignment53": true,
+    "signup21": true,
+    "directory37_catalog7_fallback6": true,
+    "browser_packages": "All preserved; no frontend build or browser rerun in this source-specific DTO lane."
+  },
+  "privacy": "All actual private strings remain in suppressed owned test buffers only. Strict worker/checker emit finite counts/booleans/known method names/reasons/SQLSTATE. No raw response, assertion, trace, recipient/UUID/body/credential output, screenshots or artifacts. Existing business co-broker contact fields intentionally preserved.",
+  "cleanup": "Per mode fresh fixed-name DB has exact nonce+mode comment; stopped client and marker required before DROP, assert absence, remove client even if checker refuses. Same PG start/security/public tables/sequences/namespaces unchanged after random-schema fixture teardown; labels/image/scratch removed via inherited trap.",
+  "required_before_push": [
+    "Root exact hotfix source full review, independent cold, and source ref availability",
+    "Finite complete5file counterpart review and independent nonauthor cold retaining original51f6 full source review",
+    "Freeze exact5new additions/all446 inherited mode/type/blob tuples unchanged",
+    "Root identity/absence-ref/hash review and Root-owned firstpush only"
+  ],
+  "unrun": [
+    "All16 actual focused cases on exact old-baseline hotfix source",
+    "Actual98-model registration and model-created route fixture runtime",
+    "Native/app imports locally",
+    "Hosted images/install/DB",
+    "Old genuine99 migrations/startup",
+    "Liveproviders",
+    "Production"
+  ],
+  "whole_goal_complete": false,
+  "local_checks": {
+    "status": "SOURCE_ONLY_FINITE_CONTROLS_PASS",
+    "unchanged_full_parent_checker_controls": {
+      "positive": 6,
+      "negative": 32,
+      "safe_exports": 3,
+      "not_repeated": true,
+      "receipt": {
+        "path": "outputs/public-listing-projection-hosted-20261127/PARSER-CONTROLS.json",
+        "bytes": 1443,
+        "sha256": "babc9cbf35945cc77584fa10ffd20a579711458578d9616197fe690ef11279ba"
+      }
+    },
+    "Bash_syntax": "UNRUN locally; required hosted bash -n",
+    "application_native_DB_install_build_browser_provider": false,
+    "changed_worker_AST": 1,
+    "changed_inline_source_guard_AST": 1,
+    "new_model_reason_valid_failure_always_rejected": 1,
+    "old_model_reason_invalid_rejected": 1,
+    "exact_workflow_runner_worker_reversals": true,
+    "checker_byte_exact": true,
+    "all_six_suites_and16_method_inventories_exact": true,
+    "source_controls": {
+      "path": "outputs/public-listing-projection-hotfix-hosted-20261127/FINITE-SOURCE-CONTROLS.json",
+      "bytes": 1396,
+      "sha256": "a561595f8f32d68397845587fb91e07768f767c4aff3e957dd918ea75259fe4b"
+    }
+  },
+  "code_only_hotfix_boundary": {
+    "purpose": "Focused hosted proof for exact875 public ListingDTO privacy correction copied onto actual8957 production-code base. No staged future release, auth/recovery prerequisite bypass or production action is implied.",
+    "old_model_count": "98 literal source tables, including explicit TradeContact registration. Actual runtime registration is unverified until this owned run asserts98.",
+    "private_and_existing_route_test_sources_exact875": true,
+    "all18_listing_Admin_function_ASTs_exact": "Whole older Admin module differs elsewhere; use exact source compatibility evidence, not a whole-module equivalence claim.",
+    "existing_migration_heads": [
+      "bc364345c64b",
+      "c4e2a7319b60",
+      "e5f6a7b8c9d1"
+    ],
+    "no_migration_or_startup_execution": true,
+    "source_proposal": {
+      "path": "outputs/public-listing-privacy-production-baseline-20261127-google/SOURCE-PROPOSAL.json",
+      "bytes": 5654,
+      "sha256": "b87c510b95618ff2f95efbf72dcb83ccd1c5e2d86141a14e385c50386969b838"
+    },
+    "compatibility_inventory": {
+      "path": "outputs/public-listing-privacy-production-baseline-20261127-google/COMPATIBILITY-INVENTORY.json",
+      "bytes": 16427,
+      "sha256": "cc276d5282e570f67e781fdd9e15d0837ad709ac651669239c9dad5680aff941"
+    },
+    "owned_proof_plan": {
+      "path": "outputs/public-listing-privacy-production-baseline-20261127-google/OWNED-HOSTED-PROOF-PLAN.json",
+      "bytes": 2943,
+      "sha256": "09d9ecef19d074c7f25e66d093fab9ea126726fa449e6f51230c73cdfec26603"
+    },
+    "independent_literal_models_and_selected_file_check": {
+      "path": "outputs/public-listing-projection-hotfix-hosted-20261127/STATIC-SOURCE-COMPATIBILITY.json",
+      "bytes": 14581,
+      "sha256": "270d5a41318261773d83b5259dd5536d125632ea433d61de30e458b419b5bc40"
+    }
+  }
+}
