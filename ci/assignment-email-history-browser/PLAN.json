@@ -1,0 +1,555 @@
+{
+  "status": "PREPARED_SOURCE_ONLY_PENDING_FULL_REVIEW_NOT_RUN",
+  "schema": 1,
+  "operations": {
+    "parent": "2cfb0169f9fc904f374c209d6b8c0a21e80583b1",
+    "parent_tree": "95d3a88254d630eccf2d2670b37c7a8a3cf92dc2",
+    "ref": "codex-ci-assignment-email-history-browser-v2-20261127",
+    "new_paths": 6,
+    "inherited_tuples": 431,
+    "final_tuples": 437,
+    "all_inherited_immutable": true
+  },
+  "sources": {
+    "operations_base": "2cfb0169f9fc904f374c209d6b8c0a21e80583b1",
+    "frontend": "461dacb888e492ec6e7f17e29ddaa73719c611d7",
+    "backend": "4880569cd1efefcc63b129bffa9e31373d5d5960",
+    "fixed_checkouts": {
+      "backend": [
+        "4880569cd1efefcc63b129bffa9e31373d5d5960",
+        "e1476f7efa3ea3a270234da23122916aff86751a"
+      ],
+      "frontend": [
+        "461dacb888e492ec6e7f17e29ddaa73719c611d7",
+        "a079d5c88433987db6957eec5b523651e7de8c86"
+      ],
+      "baseline": [
+        "01695530df670a94ac28f8b3bf36cc34b5b7a942",
+        "e88ea0c57f9fac39545322532a5992d5a2927676"
+      ],
+      "migration": [
+        "c193a925ba57ea2d67ea48c44e5262817885c8a2",
+        "10edb138fba1d201e66042d25ba022313b300cc2"
+      ],
+      "relay": [
+        "3007728fd67c5889a8373e41ff3ffa5cc50d839b",
+        "80868dce147c2cd4609e303493669d0a19f09741"
+      ],
+      "previous": [
+        "8957b18520d15dac503e0e4a5ce4b2455135d601",
+        "11ab69db36eb30881e4f3086578201f584c4092d"
+      ],
+      "reference": [
+        "26ca867a1008868f7dc5f322d28dc289a7763980",
+        "3a30b7e8c5b53827b97374c18806a7cb03ef9c5c"
+      ]
+    },
+    "frontend_overlay": {
+      "apps/dashboard/src/api/admin.ts": {
+        "tuple": "100644 blob 957caa4837735aab87efc5ff9258dac006b21468",
+        "sha256": "9c60e4e8279e8c6c7fea681f757d6d711e3d3a794bba95ecda8a3231ea61d944"
+      },
+      "apps/dashboard/src/api/assignments.ts": {
+        "tuple": "100644 blob 4035107c3cad6a85f84cda324c4458d185e5a98c",
+        "sha256": "5e45a98248ab76459ab90886fe76c4c3d3b3639f636721054bf34c3e0872199f"
+      },
+      "apps/dashboard/src/api/leads.ts": {
+        "tuple": "100644 blob a9569df8cf6938294a773674dfbd378d37e2a1d7",
+        "sha256": "1145c13a7d9032e9c3cce6264906cc3bb9080ade98e0e6007226cddec7a9225e"
+      },
+      "apps/dashboard/src/components/admin/AssignmentHistory.tsx": {
+        "tuple": "100644 blob d97116a35dcabcfdc56f5bea7891c8620cbc9d83",
+        "sha256": "6a5246ff6d88d793908e42f9ad9dd40d69c68f3937d5ffefcf24d2fec1f81b7c"
+      },
+      "apps/dashboard/src/components/admin/AssignmentPanel.tsx": {
+        "tuple": "100644 blob 2348e2562acf04e59975331974024f1510164f1b",
+        "sha256": "3c75ce78776dfb16bde7c9ac31febe6bd1c62a68aff0105dd53b24692feaab79"
+      },
+      "apps/dashboard/src/components/admin/LeadDetailPanel.tsx": {
+        "tuple": "100644 blob a71d932b4ec6b609c0a63f7b002cab888f800818",
+        "sha256": "0321cdae48d45f9f49f3bff190894661e3ab1b075360e101bd945892a3569d2a"
+      },
+      "apps/dashboard/src/components/admin/UserDetailPanel.tsx": {
+        "tuple": "100644 blob 62f08e54ced4a7a3382ebcbaa576aaa28fb3fdef",
+        "sha256": "f577158e8207c836bc2e750d464116c529227e95b548fec3962d39085d3690b3"
+      },
+      "apps/dashboard/src/locale/en/communications.json": {
+        "tuple": "100644 blob 06353f9f11cf9fa208b89c5ab234c1f28ab771c2",
+        "sha256": "8d0c9d12e569118b8cd2c933983decf4a6dc01ef305a9b05d25347f1e76727f5"
+      },
+      "apps/dashboard/src/locale/es/communications.json": {
+        "tuple": "100644 blob e85a1ebb1ec02e2876abc928bbe837a6bdc68578",
+        "sha256": "12c5bb628f40f321da0de313b98d37a0470a13d679612d8f1180718c906d04d3"
+      },
+      "apps/dashboard/src/pages/admin/Leads.tsx": {
+        "tuple": "100644 blob ec6e3305695e097d79926f263c01aa8933ae4498",
+        "sha256": "eb40ea1c52afff71fb6f3e328fe951a946d80fc5c1041bcf6a245c7a41311e2e"
+      },
+      "apps/dashboard/src/pages/admin/Users.tsx": {
+        "tuple": "100644 blob fb6d5ac3575a0c6c3cc3158613aec0c60720f24e",
+        "sha256": "1c13a09492b06c29f0bb285aa67def67b1118ed01d0c847edfe08f5104a597df"
+      },
+      "tests/assignment-history.test.cjs": {
+        "tuple": "100644 blob 02255792a14d376a5200207527376d9779372cd7",
+        "sha256": "11975d3ee8f17aeb1c443b6a14fa2f3effbae2092f7ff667d3dbafb0318c38cf"
+      }
+    },
+    "backend_overlay": {
+      "alembic/versions/f7a9c3e2d114_private_assignment_notifications.py": {
+        "tuple": "100644 blob f1c04d094346f1e5f78988d26d92d0db52899d4c",
+        "sha256": "6cbdd85c7b6fe9b63c55818591f5803513942df85ffad3925691133e60acabd9"
+      },
+      "main.py": {
+        "tuple": "100644 blob 83e65f26ce079aabae976d7dee8339916e16d45f",
+        "sha256": "e6a8cc2b9d8fd408aeecedc9143c95d418af5f3b94a307a5897bee8c86cac694"
+      },
+      "models/__init__.py": {
+        "tuple": "100644 blob 2fd25e733b8cce339c3fe3db88891473df8a785d",
+        "sha256": "1da999625e990a4bdf1d9f1dde05356f59ee1cef111c515cf5887ffd69723514"
+      },
+      "models/assignment_notification.py": {
+        "tuple": "100644 blob 3a08dd4ec30393ca727811c3f21d5bf2980045f4",
+        "sha256": "e579077d9c04ab32af9ff3a5da8ef2b46feedc364b345514b250bfb8216d2a63"
+      },
+      "routes/admin.py": {
+        "tuple": "100644 blob 6e0324d8b486def7fb00c568b2da16919e668d2e",
+        "sha256": "520e4cf875c83b211a7e76d207a46943294b23ecbaa7cd69765c9a50eac1a752"
+      },
+      "routes/assignment_notification.py": {
+        "tuple": "100644 blob 9acc7993d99e5af046e5a81f252a5253376c74bc",
+        "sha256": "09728650341a02fb1c73aaeff9283a3685e638f46a2ba860c0470fc971536d88"
+      },
+      "routes/leads.py": {
+        "tuple": "100644 blob 56aef5adfa46fcfbd37b917bf1a1a3c09c5fc17a",
+        "sha256": "48f6e6972f2c0f52083f8028767463074a4053ad0246bcfe83a596c8fc3d918b"
+      },
+      "schemas/assignment_notification.py": {
+        "tuple": "100644 blob 2fcce33f140a809d39152c9a06b6b52eb2c296f8",
+        "sha256": "4ab39353f4ad5aadf0897449d31e999e1df1cd2387a671ddf7ad2c7830851336"
+      },
+      "services/assignment_notification.py": {
+        "tuple": "100644 blob febcfe67c96a32f4319a967063d98a4071ada02b",
+        "sha256": "22832c315580c4092c65d68087b54ee180e0f0e080f7a60765edc920aa82339c"
+      },
+      "tests/test_assignment_notification.py": {
+        "tuple": "100644 blob 5205eeef150050f06a4c0deb443e15aafc54bb3d",
+        "sha256": "85cda108835c079212aafc4eca48d4f0376c59923d4be21601511b02e35ba4ba"
+      },
+      "tests/test_lead_tracking.py": {
+        "tuple": "100644 blob 7c238193a9078d186ca7d1f6641dafa1b33aab28",
+        "sha256": "885c5f518158255799f97638e49cf85573994ff3aea7e625a3f2ba0f70e886b0"
+      },
+      "tests/test_professional_catalog.py": {
+        "tuple": "100644 blob b5e4fbd16394a30cabe43f79ce5aac3be4ee88e9",
+        "sha256": "8c7de9593848e891fbbbff5d30d1c5e4010c0a2e3bb378a6133cbba399eb1a62"
+      },
+      "utils/assignment_messages.py": {
+        "tuple": "100644 blob 1a5f83b1668f513e8add7dad68605106f375236d",
+        "sha256": "c6d29396513d4be88bea8c4e935ece2f624c6b903641f41246bc4918c5f9a1e9"
+      },
+      "utils/professional_options.py": {
+        "tuple": "100644 blob 8efc2ca62bdb3bd9c14f2435123e5ceacef38069",
+        "sha256": "82a64f1b31b96aa7038f638a6b6a95ad766497113f7c414d832c8ef1e264ef22"
+      }
+    }
+  },
+  "current_product_publication_claim": false,
+  "contracts": [
+    {
+      "path": "outputs/assignment-email-history-handoff-20261126-google/IMPLEMENTATION-CONTRACT-v1-20261127.json",
+      "sha256": "3a6f594eb3791e555aebb19e78566bb96d76b3cc5780bc0a08eacfe70a367866"
+    },
+    {
+      "path": "outputs/assignment-email-history-handoff-20261126-google/IMPLEMENTATION-CONTRACT-v1-PRECISION-20261127.json",
+      "sha256": "1dceeb4d2ae02f9f7ebb1ab6a40b0beaed15b5116744eb97a44516f25239f7d7"
+    }
+  ],
+  "required_before_execution": {
+    "root_full_review": null,
+    "independent_full_cold": null,
+    "current_assignment_native53": {
+      "source": "4880569cd1efefcc63b129bffa9e31373d5d5960",
+      "status": "ACTUAL_SEPARATE_NATIVE53_AND_GENUINE108_ACCEPTED",
+      "run": 45927195017,
+      "job": 140271195854,
+      "required_actual_terminal_pass": true,
+      "definitions": {
+        "assignment": 28,
+        "admin_assignment": 8,
+        "lead_tracking": 17
+      },
+      "not_run_by_this_browser_lane": true,
+      "root_acceptance": {
+        "path": "outputs/property-network-20261101/assignment-native-e6dd-45927195017-root-acceptance-20261127.json",
+        "bytes": 4786,
+        "sha256": "fe84fb8175127283e216528a469172e1674d343dbb37684ef37483846858496b"
+      },
+      "release_independent_acceptance": {
+        "path": "outputs/property-network-20261101/assignment-native-e6dd-45927195017-release-independent-acceptance-20261127.json",
+        "bytes": 9888,
+        "sha256": "f6628a6723eb7da0b0bf93cb9de84d3f1aa7652f7e9c7d211d21d3844370c294"
+      },
+      "qualification": "19 actual async MockTransport calls, zero live provider calls. Genuine108 canonical proof is distinct from three model-created unit-schema suites. No browser571/build/private production data/publication proof."
+    }
+  },
+  "retained_scope": {
+    "native_signup21": {
+      "path": "outputs/property-network-20261101/signup-history-df961-45914574770-root-failure-and-native-phase-acceptance-20261127.json",
+      "bytes": 2324,
+      "sha256": "657dbf71b6b87890cde5c9415f26e6fa909d1dd88d3233780cc0f3bd17495827"
+    },
+    "accepted_original_signup_browser": {
+      "path": "outputs/property-network-20261101/signup-history-responsive-45917827187-root-acceptance-20261127.json",
+      "bytes": 3992,
+      "sha256": "d18ade6a697f2770ecea5b0e1c9ab6b1e51bd37b5fd8b0a5ac45ae4fd71aa5d5"
+    },
+    "accepted_overlay": {
+      "path": "outputs/property-network-20261101/publication-2e1f-26ca-root-accepted-overlay-20261127.json",
+      "bytes": 6589,
+      "sha256": "d227d3da1d5d406720382626080c33a2c57bf5dba2a3a342e3b1d108c4bc23c1"
+    },
+    "qualification": "Native21 is retained only for unchanged old signup code/test/model-created schema on26ca. It proves no current assignment53 or genuine108 migration. Original Profile/Group162 lanes are not rerun or counted here. The current account/lead parent and old signup UI are exercised again at the final FE source.",
+    "old_component_unchanged": "SignupCommunicationHistory.tsx and signup-history.test.cjs are outside the exact12-path frontend overlay."
+  },
+  "fresh_required": {
+    "frontend_tests": 571,
+    "frontend_test_files": 67,
+    "skipped": 0,
+    "cancelled": 0,
+    "todo": 0,
+    "standalone_dashboard_tsc": true,
+    "dashboard_vite": true,
+    "landing_next_exports": [
+      "login",
+      "signup",
+      "verify",
+      "team",
+      "blog",
+      "calculator"
+    ],
+    "browser_engines": [
+      "Chromium"
+    ],
+    "optional_webkit_claim": false,
+    "two_sequential_locales": [
+      "en",
+      "es"
+    ]
+  },
+  "genuine_database": {
+    "chain": [
+      "8957/c4 actual bootstrap",
+      "26ca/e8 actual106 migration",
+      "488/f7 actual108 migration"
+    ],
+    "models": 107,
+    "catalog_tables": 108,
+    "original106_application_tables": 105,
+    "version_row_expected": "f7a9c3e2d114",
+    "explicit_trade_contact_model_registration": true,
+    "no_model_create_all": true,
+    "chronology": "Compare original99 old-column rows/sequences after the106 migration; compare all106 seeded rows/catalog/sequences/security across f7 except its version row and only additive two-table/functions/type DDL. Add all declared UI fixtures and real producer statuses BEFORE the final UI baseline. Compare final108 catalog/functions/ACL/roles/sequences exactly afterward.",
+    "canonical_old106_read_only_except": [
+      "three new synthetic leads: assignment/status/first assigned_at",
+      "one Buyer: seller-only role promotion and assignment mirror",
+      "Owner assigned_realtor_id assign then clear",
+      "two exact account ActivityLog UUID rows"
+    ],
+    "all_other_tables": "102 old application tables are raw-equal, plus old version checked explicitly; users/leads/activity_log are compared with exact independent row/column allowances. The two added assignment tables have a separate explicit append-only ledger.",
+    "all_sequences": "Exact definitions and values across all108; activity_log uses UUIDs, so declared activity inserts do not justify a sequence increment.",
+    "protected": {
+      "owner_contacts": 82,
+      "private_professional_drafts": 46,
+      "original_accepted_jobs": 9,
+      "additional_signup_jobs": 11,
+      "cms_version": 7,
+      "floorplans": 2,
+      "all7_inbox_empty": true
+    }
+  },
+  "per_locale_seed": {
+    "actors": [
+      "admin",
+      "buyer",
+      "owner",
+      "realtor"
+    ],
+    "original_account_roles_unchanged": true,
+    "new_users": 0,
+    "new_leads": [
+      "main buyer_interest without customer",
+      "empty buyer_interest",
+      "structured valuation seller_interest with own intake",
+      "ordinary seller_interest"
+    ],
+    "signup_jobs": {
+      "count": 11,
+      "canonical_steps": [
+        "email_1",
+        "email_2",
+        "email_3",
+        "email_4",
+        "email_5",
+        "email_6",
+        "email_7",
+        "email_8",
+        "email_9",
+        "email_10",
+        "customer_email"
+      ],
+      "order": "Actual stored created_at DESC/id DESC. Same created timestamp plus explicit UUID permutation; private facts bind actual SQL10/1 ordering, not an assumed Welcome position."
+    },
+    "assignment_seed": {
+      "events": 11,
+      "notices": 11,
+      "producer": "Actual routes.leads.admin_assign_lead with an owned Request/Admin/Session; this setup is not an HTTP authentication claim.",
+      "same_agent_cycle": 1,
+      "real_prebaseline_batches": 3,
+      "mock_transport_calls": 3,
+      "live_provider_calls": 0,
+      "outcomes": {
+        "accepted1": 1,
+        "failed1": 1,
+        "needs_review1": 1,
+        "pending0": 8
+      },
+      "qualification": "These are actual queued notice states processed by owned async httpx.MockTransport before baseline; they are not live-provider receipts. Processing/skipped display states remain focused source/native scope, not claimed as browser-seeded states."
+    },
+    "ui_runtime": "lead_delivery_enabled=false, resend_api_key empty, lifespan off; no automatic worker. External httpx/requests/urllib/resend/SMTP transports refuse and count attempts."
+  },
+  "per_locale_request_ledger": [
+    {
+      "index": 0,
+      "action": "Main A save, real204 committed then original response aborted",
+      "events": 1,
+      "notices": 1,
+      "cycle": 1
+    },
+    {
+      "index": 1,
+      "action": "Second actual Admin page assigns Main B with fresh UUID",
+      "events": 1,
+      "notices": 1,
+      "cycle": 2
+    },
+    {
+      "index": 2,
+      "action": "Original page resolves exact old A UUID/body after B;204 replay, fresh current GET shows B",
+      "events": 0,
+      "notices": 0,
+      "no_database_change": true
+    },
+    {
+      "index": 3,
+      "action": "Fresh Main A204; current GET aborted; only GET Refresh restores authoritative A",
+      "events": 1,
+      "notices": 1,
+      "cycle": 3
+    },
+    {
+      "index": 4,
+      "action": "Selected A temporarily unverified; real404 refusal while target/current history remain available",
+      "events": 0,
+      "notices": 0,
+      "no_database_change": true
+    },
+    {
+      "index": 5,
+      "action": "Owner account assign A",
+      "events": 1,
+      "notices": 0,
+      "activity": 1,
+      "cycle": 1
+    },
+    {
+      "index": 6,
+      "action": "Owner account clear",
+      "events": 1,
+      "notices": 0,
+      "activity": 1,
+      "cycle": 2
+    },
+    {
+      "index": 7,
+      "action": "Structured valuation assignment A; Buyer remains Buyer and no account mirror",
+      "events": 1,
+      "notices": 1,
+      "owner_promotions": 0
+    },
+    {
+      "index": 8,
+      "action": "Ordinary seller assignment A after actual owner-access confirmation",
+      "events": 1,
+      "notices": 3,
+      "owner_promotions": 1,
+      "account_mirrors": 1
+    }
+  ],
+  "per_locale_totals": {
+    "requests": 9,
+    "real204_responses": 8,
+    "real404_refusals": 1,
+    "distinct_request_uuids": 8,
+    "persisted_new_events": 7,
+    "new_notices": 7,
+    "exact_replays": 1,
+    "final_events": 18,
+    "final_notices": 18,
+    "main_history_total": 14,
+    "activity_additions": 2,
+    "transient_controls": [
+      "agent_unverified",
+      "agent_verified"
+    ],
+    "controls_restore_immediate_prestate": true,
+    "controls_note": "Only the known synthetic selected agent email_verified Boolean changes and is restored. No limiter reset, role grant, real security setting or provider configuration change."
+  },
+  "independent_ledger": "Before invoking each actual assignment route, confine actor/target/body/UUID/order; compare every108-table/sequence snapshot afterward against exact allowed columns and append counts. Replay/refusal must leave the entire108 snapshot equal. Final events are keyed by known request UUID/source/actor/previous/current agent/cycle/action/digest. Notice recipients/kinds/payload templates are rebuilt from known synthetic inputs and immutable pure template functions, not copied from after rows. Immutable seed events/jobs remain exact.",
+  "browser_per_locale": {
+    "journeys": 16,
+    "geometry": 26,
+    "contexts": 5,
+    "actual_logins": 4,
+    "admin_pages_created": 2,
+    "presence": 2,
+    "boundary_reads": 16,
+    "assignment_ui_page_checks": 2,
+    "signup_ui_page_checks": 2,
+    "canceled_history_reads": 2,
+    "account_no_email_events": 2,
+    "valuation_notice_count": 1,
+    "seller_notice_count": 3,
+    "auth_loss_checks": 1,
+    "keyboard_saves": 1,
+    "new_history_geometry_labels": [
+      "lead_controls",
+      "assignment_loading",
+      "assignment_history",
+      "assignment_uncertain",
+      "assignment_current_error",
+      "assignment_refused",
+      "account_no_email",
+      "seller_three_notices"
+    ],
+    "existing_parent_signup_geometry_labels": [
+      "users",
+      "signup_loading",
+      "signup_tracked",
+      "signup_untracked",
+      "signup_error"
+    ],
+    "widths": [
+      320,
+      390
+    ],
+    "total_both_locales_geometry": 52,
+    "total_both_locales_journeys": 32
+  },
+  "journeys": [
+    "real sessions and actual boundaries",
+    "lazy history and keyboard entry",
+    "actual loading and11-row10/1 paging",
+    "history hide cancels held request before harness release",
+    "panel close/target change cancels held request before new empty target",
+    "real commit then response abort with visible unlocked Resolve barrier",
+    "real later B then old A exact replay reads current B",
+    "known204/current read failure, GET-only Refresh",
+    "real selected-agent404 refusal keeps valid current/history",
+    "account assign/clear shows zero-email records",
+    "valuation keeps Buyer and one queued notice",
+    "ordinary seller promotes Owner and three queued notices",
+    "old signup real SQL-derived10/1 and dates/statuses",
+    "old signup no-record case",
+    "old signup actual GET failure/error and normal Refresh",
+    "real current401 after clearing only owned Admin browser cookies; new current/history projections cleared"
+  ],
+  "per_locale_boundaries": {
+    "per_scope": [
+      "Admin200",
+      "anonymous401",
+      "Buyer403",
+      "Owner403",
+      "Realtor403",
+      "unknown target404",
+      "invalid target422",
+      "invalid paging422"
+    ],
+    "scopes": [
+      "lead assignment-history",
+      "account assignment-history"
+    ],
+    "no_store_required": true,
+    "before_seller_promotion": true,
+    "legacy_signup_full16_boundary_rerun": false
+  },
+  "resource_bounds": {
+    "workflow_minutes": 55,
+    "postgres_memory_MiB": 768,
+    "postgres_pids": 96,
+    "postgres_tmpfs_MiB": 384,
+    "api_memory_MiB": 2048,
+    "api_pids": 256,
+    "browser_memory_MiB": 2048,
+    "browser_pids": 256,
+    "browser_shm_MiB": 256,
+    "browser_outer_seconds_per_locale": 600,
+    "api_graceful_stop_seconds": 25,
+    "build_prepare_memory_GiB": 8,
+    "read_only_root": true,
+    "no_new_privileges": true,
+    "all_capabilities_dropped": true,
+    "loopback_network_namespace": true,
+    "browser_named_container": "Observe actual stopped/exit/OOM before removal. No increased runtime cap, timeout or optional engine skip."
+  },
+  "cleanup": {
+    "per_locale": "Stop API; collect bounded safe receipts and process states; verify marker; DROP own nonce DB and assert absence even after browser failure; remove API/browser/Landing containers; assert private facts inode removed.",
+    "global": "Owner-label checked containers/volumes/image plus validated private scratch removed by inherited exact cleanup trap. No raw private browser/API log or screenshots uploaded. No artifacts requested."
+  },
+  "diagnostics": {
+    "bounded_browser_frames": 8,
+    "observation": "Actual kind/status only;256bytes; any diagnostic always fails.",
+    "api": "Source-owned phase/error type/reason/SQLSTATE only;512bytes; main cause emitted before cleanup.",
+    "browser_receipt_bytes": 2048,
+    "api_receipt_bytes": 2048,
+    "geometry_presence_safe_export": true
+  },
+  "local_checks": {
+    "status": "PASS_FILE_AND_PARSER_ONLY",
+    "positive": 4,
+    "negative": 48,
+    "valid_diagnostics_always_fail": 4,
+    "safe_exports": 3,
+    "python_sources_ast": 2,
+    "inline_python_ast": 14,
+    "exact_source_composition_guards": 4,
+    "browser_reasons": 79,
+    "api_reasons": 83,
+    "checker": {
+      "bytes": 16734,
+      "sha256": "951ca870c9c774881827bbf861827c08b5d87fb68a3c2c75e5b9d7b420e7dcfe"
+    },
+    "local_windows_worktree_comparison": "Git text files normalized CRLF to LF for these source-only overlay checks; hosted raw-byte guards remain unchanged and unrun",
+    "application_imports": false,
+    "sql": false,
+    "browser": false,
+    "build": false,
+    "native": false,
+    "provider_calls": false
+  },
+  "unrun_in_this_lane": [
+    "application imports",
+    "SQL and owned schema runtime",
+    "571 full frontend tests",
+    "standalone TSC",
+    "Vite and Next builds",
+    "Chromium real UI",
+    "providers",
+    "production"
+  ],
+  "required_before_hosted_first_push": [
+    "Root FULL source review and independent FULL cold review",
+    "Freeze exact six additions and all431 immutable parent tuples; full patch/proposal/hash receipt",
+    "Root identity/hash/first-ref verification and Root-owned first push"
+  ],
+  "whole_owner_goal_complete": false
+}
