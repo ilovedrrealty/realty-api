@@ -1,0 +1,53 @@
+name: Isolated Gateway transport unit proof
+on:
+  push:
+    branches: [codex-ci-assistant-gateway-unit-20261127]
+permissions:
+  contents: read
+concurrency:
+  group: assistant-gateway-unit-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  unit:
+    if: >-
+      github.repository == 'ilovedrrealty/realty-api' && github.event.repository.private == false &&
+      github.event.created == true && github.event.deleted == false && github.event.forced == false &&
+      github.event.before == '0000000000000000000000000000000000000000' && github.run_attempt == 1 &&
+      github.event.after == github.sha && github.workflow_sha == github.sha
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Read exact operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          path: gateway-ops
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Read disabled transport source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 43f3b2d760b52c8ab449fcd5e6cd22f3118e6173
+          path: gateway-app
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Read pinned dependency baseline
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 01695530df670a94ac28f8b3bf36cc34b5b7a942
+          path: gateway-dependencies
+          persist-credentials: false
+      - name: Read accepted Python recipe
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: c193a925ba57ea2d67ea48c44e5262817885c8a2
+          path: gateway-recipe
+          persist-credentials: false
+      - name: Run only twelve owned synthetic transport cases
+        shell: bash
+        run: |
+          set -euo pipefail
+          runner="$GITHUB_WORKSPACE/gateway-ops/ci/assistant-gateway-unit/run-hosted.sh"
+          bash --noprofile --norc -n "$runner"
+          exec bash --noprofile --norc "$runner" "$GITHUB_WORKSPACE/gateway-ops" \
+            "$GITHUB_WORKSPACE/gateway-app" "$GITHUB_WORKSPACE/gateway-dependencies" "$GITHUB_WORKSPACE/gateway-recipe"

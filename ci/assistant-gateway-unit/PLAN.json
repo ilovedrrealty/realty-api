@@ -1,0 +1,135 @@
+{
+  "status": "FROZEN_SOURCE_ONLY_PENDING_REVIEW_ALL12_UNRUN",
+  "operations_parent": "2a474ccc8b6b5188a79a460fa059cf4080fdefe7",
+  "operations_parent_tree": "dab774530f4c3b962482924e7a52ef7ab94cca33",
+  "ref": "codex-ci-assistant-gateway-unit-20261127",
+  "inherited451_immutable": true,
+  "total456": true,
+  "five_new_paths": [
+    ".github/workflows/assistant-gateway-unit.yml",
+    "ci/assistant-gateway-unit/PLAN.json",
+    "ci/assistant-gateway-unit/verify.py",
+    "ci/assistant-gateway-unit/check-result.py",
+    "ci/assistant-gateway-unit/run-hosted.sh"
+  ],
+  "application": {
+    "commit": "43f3b2d760b52c8ab449fcd5e6cd22f3118e6173",
+    "tree": "0e3a1add5efb5e027f9498788e4101e59da5b15f",
+    "parent": "9a422618139ad3a01bc8c0b3fd38ae5dd7f42f41",
+    "parent_tree": "b09f1c01af1260225778f915dc3cd79b10807525",
+    "total385": true,
+    "all383_parent_tuples_exact": true
+  },
+  "source_files": {
+    "services/assistant_gateway_transport.py": {
+      "tuple": "100644 blob 137ca0cc69e5e9122e54321ae710fe8c2e8a4f4b",
+      "bytes": 11861,
+      "sha256": "da678b51989b0cb7d52866a9550dbd4fbd99853e960d7c5e4314347c8ae27f03"
+    },
+    "tests/test_assistant_gateway_transport.py": {
+      "tuple": "100644 blob d1b3932cf8d1c33306586727e0cc2dd3f33491dd",
+      "bytes": 11837,
+      "sha256": "1136720a2d0396e404ce0ab485caa3df0502bed7e722c7243130af94ae4f4238"
+    },
+    "services/__init__.py": {
+      "tuple": "100644 blob e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "suite": {
+    "file": "tests/test_assistant_gateway_transport.py",
+    "class": "GatewayTransportTests",
+    "count": 12,
+    "methods": [
+      "test_default_disabled_and_unverified_binding_never_make_a_request",
+      "test_fixed_endpoint_bearer_single_turn_and_bounded_text_result",
+      "test_single_tool_is_returned_as_untrusted_data_and_duplicate_id_is_rejected",
+      "test_parallel_unknown_duplicate_json_and_extra_arguments_are_rejected",
+      "test_tool_receipt_history_is_linked_and_old_call_cannot_be_repeated",
+      "test_invalid_server_history_schema_or_oversized_input_never_sends",
+      "test_http_errors_and_redirects_are_finite_and_never_retried",
+      "test_body_encoding_size_and_duplicate_envelope_refuse_without_raw_errors",
+      "test_absolute_deadline_cancels_stalled_response_headers",
+      "test_absolute_deadline_closes_slow_body",
+      "test_caller_cancellation_propagates_without_retry_or_false_answer",
+      "test_model_choices_refusal_and_incomplete_generation_fail_closed"
+    ]
+  },
+  "dependencies": {
+    "commit": "01695530df670a94ac28f8b3bf36cc34b5b7a942",
+    "tree": "e88ea0c57f9fac39545322532a5992d5a2927676",
+    "requirements_sha256": "d96f6782adb8ffaf24c4729e88c6086f533ff2caed1c55efd8c096c09f429308"
+  },
+  "recipe": {
+    "commit": "c193a925ba57ea2d67ea48c44e5262817885c8a2",
+    "tree": "10edb138fba1d201e66042d25ba022313b300cc2",
+    "dockerfile_sha256": "e546d8c5668b87ef28e604107bbb330e6f4b3873cf0208b4d24ca378bd0851f9"
+  },
+  "runtime": {
+    "python_digest": "sha256:673719e071ecf27434fd2635bbd8d00f49f4fdd81f243143438a42ced8bedf60",
+    "python": "3.11",
+    "httpx": "0.27.0",
+    "client_memory_MiB": 384,
+    "client_swap_additional_MiB": 0,
+    "client_pids": 96,
+    "client_cpus": 1,
+    "tmpfs_MiB": 64,
+    "phase_seconds": 90,
+    "workflow_minutes": 20,
+    "network": "none",
+    "read_only_root_and_mounts": true,
+    "cap_drop": "ALL",
+    "no_new_privileges": true,
+    "env": "env-i PATH HOME PYTHONDONTWRITEBYTECODE only; no credentials/config/env values read or forwarded"
+  },
+  "scope": "Exactly12 unchanged isolated HTTPXMockTransport test definitions. No PG/DB/app/server/browser/model/router/auth/production, no unrelated25/593/TSC/16/21/43/53 rerun. Existing full Python recipe is reused only for pinned HTTPX dependencies; this is not a claim to exercise all installed packages or full app compatibility.",
+  "network_policy": "Refuse socket.connect/connect_ex/create_connection/getaddrinfo and real HTTPX sync/async transport handlers. Instrument actual MockTransport sync/async handles, require1..128 total and positive async. These calls are synthetic fixture activity, never provider usage. loopback event-loop socketpair is permitted, no outbound network is provided.",
+  "protocol": {
+    "prefix": "GATEWAY_UNIT_",
+    "counts": {
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "raw_capture_max_bytes": 2097152,
+    "private_log_max_bytes": 4194304,
+    "line_max_bytes": 4096,
+    "records_max": 16,
+    "known_method_names_only": true,
+    "diagnostics_always_fail": true,
+    "mock_call_counts": "typed dynamic sync0..128/async1..128,total<=128; not a fabricated pre-run actual count"
+  },
+  "isolation": "Four read-only exact checkouts. Locked source parent/new2/all385 guard and methods; no .env file accepted. Online dependency build uses only exact recipe+baseline requirements in private scratch, with no source/config/secret context. Sole actual test container network-none/read-only/nonroot/capdrop/resource bounded, fresh env. No app entrypoint invoked.",
+  "cleanup": "Label+nonce ownership before removal, typed attach/native/running/OOM facts. Client stopped and removed even on checker failure; cleanup trap removes only exact labeled containers/image and verified owned scratch prefix and checks absence. No DB exists in this lane.",
+  "required_actual_acceptance": "12run/12pass zero errors/failures/skips/expected-failures; exact typed result/source preservation/no forbidden appimports/zero real HTTP/socket/model attempts; positive measured MockTransport fixture activity; process0/stopped/noOOM, client removed, final marker and ownedcleanup, artifacts[].",
+  "evidence_not_claimed": [
+    "Live Gateway/model auth/team entitlement/privacy/pricing or zero new spend availability.",
+    "One client attempt guarantees no Gateway upstream work/cost.",
+    "Real API route/orchestrator/session/auth/user UI or DB migration.",
+    "Actual provider output/schema support or deployment/recovery/backup."
+  ],
+  "source_review": {
+    "transport_Root_full_source_accepted": "outputs/property-network-20261101/assistant-transport-43f3-root-full-independent-source-review-20261127.json",
+    "source_packet": "outputs/assistant-gateway-transport-source-20261127/SOURCE-PROPOSAL.json",
+    "all12_source_test_definitions": "UNRUN until this focused hosted lane"
+  },
+  "local_checks": {
+    "AST": 2,
+    "inline_source_guard_AST": 1,
+    "synthetic_parser_positive": 1,
+    "synthetic_parser_negative": 26,
+    "typed_process_refusals": 4,
+    "no_raw_private_string_echo": true,
+    "application_HTTPX_test_imports": false,
+    "all12_actual_test_definitions": "UNRUN",
+    "bash_syntax": "NOT_RUN_LOCALLY; required hosted bash-n",
+    "receipt": {
+      "path": "outputs/assistant-gateway-unit-hosted-20261127/SOURCE-CONTROLS.json",
+      "bytes": 2425,
+      "sha256": "9a17b13f6f0d7fc98480f1a1acf659e747c920cfb0268eafaf52d56ce09b6c9a"
+    }
+  },
+  "push": "Root alone after full operations plus one independent isolation review, exact one-time absentref; expected productionmain e4d remains unchanged. This workflow cannot deploy or promote."
+}
