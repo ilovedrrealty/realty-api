@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, model_serializer, model_validator
+from pydantic import BaseModel, Field, computed_field, model_serializer, model_validator
 from typing import Annotated, Optional, List, Literal
 from decimal import Decimal
 from datetime import datetime
@@ -217,9 +217,74 @@ class ListingPageResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class PublicListingResponse(ListingResponse):
+class PublicListingResponse(BaseModel):
+    """Public facts only; private listing fields must never be inherited here."""
+
+    id: uuid.UUID
+    title: str
+    description: Optional[str]
+    description_es: Optional[str] = None
+    type: str
+    transaction: str
+    price: Decimal
+    location: str
+    bedrooms: Optional[int]
+    bathrooms: Optional[float]
+    area_sqft: Optional[int]
+    lot_size_sqft: Optional[int]
+    roi: Optional[Decimal]
+    seller_financing: bool
+    hoa: bool
+    hoa_fee: Optional[Decimal]
+    tax_exempt: bool
+    gated_community: bool
+    construction_status: Optional[str]
+    year_built: Optional[int]
+    features: List[str]
+    maps_url: Optional[str]
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    tag: Optional[str]
+    tags: List[str] = []
+    video_links: List[str] = []
+    tour_3d_url: Optional[str] = None
+    utilities: Optional[str] = None
+    included_utilities: List[str] = []
+    association_fee: Optional[Decimal] = None
+    deposit_policy: Optional[str] = None
+    images: List[str]
+    share_image_url: Optional[str] = None
+    status: str
+    is_deal: bool = False
+    deal_discount_value: Optional[Decimal] = None
+    deal_discount_type: str = 'pct'
+    view_count: int = 0
+    co_listing_enabled: bool = False
+    co_listing_brokerage: Optional[str] = None
+    co_listing_agent_name: Optional[str] = None
+    co_listing_agent_contact: Optional[str] = None
+    co_listing_agent_email: Optional[str] = None
+    co_listing_brokerage_email: Optional[str] = None
+    co_listing_brokerage_phone: Optional[str] = None
+    currency: str = "USD"
+    search_price: Optional[Decimal] = None
+    search_price_currency: Optional[str] = None
+    search_price_period: Optional[str] = None
+    price_per_day: Optional[Decimal] = None
+    price_per_month: Optional[Decimal] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    submitted_by_name: Optional[str] = None
     location_precision: Literal["exact", "area", "hidden"] = "exact"
     location_verified: bool = False
+
+    model_config = {"from_attributes": True}
+
+    @computed_field
+    @property
+    def submitted_by_email(self) -> None:
+        # Preserve the current nullable public UI key without reading an account email.
+        return None
 
 
 class PublicListingDetailResponse(PublicListingResponse):
