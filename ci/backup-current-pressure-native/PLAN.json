@@ -1,0 +1,2618 @@
+{
+  "status": "SOURCE_ONLY_UNRUN_CURRENT_NUMERIC_SHAPE_NOT_PRODUCTION_CAPTURE",
+  "operations_parent": "4c9375958aac2b84307c6f5c862bd1d124a67ff6",
+  "operations_parent_tree": "c13180cdae9279cce0f212edd16b5e7c96c20b14",
+  "operations_baseline": "13ff2233072e842e7e2c2f228028a044b90d6a5c",
+  "new_paths": 5,
+  "old224_immutable": true,
+  "total229": true,
+  "ref": "codex-ci-backup-current-pressure-native-20261127",
+  "tables": [
+    "activity_log",
+    "alembic_version",
+    "anonymous_leads",
+    "bookings",
+    "bulk_import_jobs",
+    "client_shortlist_grants",
+    "client_shortlist_items",
+    "client_shortlists",
+    "deal_requests",
+    "development_inventories",
+    "development_inventory_events",
+    "development_inventory_revisions",
+    "editorial_events",
+    "editorial_pages",
+    "editorial_revisions",
+    "inquiries",
+    "lead_delivery_jobs",
+    "lead_delivery_worker_state",
+    "leads",
+    "listing_arrival_guides",
+    "listing_daily_views",
+    "listing_edits",
+    "listing_events",
+    "listing_floor_plans",
+    "listing_location_review_revisions",
+    "listing_location_reviews",
+    "listing_performance_entries",
+    "listing_view_coverage",
+    "listings",
+    "network_audit",
+    "network_blocks",
+    "network_due_work_actions",
+    "network_due_work_dispositions",
+    "network_due_work_preferences",
+    "network_group_actions",
+    "network_group_comments",
+    "network_group_invite_links",
+    "network_group_media",
+    "network_group_memberships",
+    "network_group_posts",
+    "network_groups",
+    "network_history_share_actions",
+    "network_history_shares",
+    "network_maintenance_actions",
+    "network_maintenance_occurrences",
+    "network_maintenance_preferences",
+    "network_maintenance_schedules",
+    "network_media",
+    "network_milestones",
+    "network_post_comments",
+    "network_posts",
+    "network_project_comments",
+    "network_project_members",
+    "network_project_updates",
+    "network_projects",
+    "network_properties",
+    "network_property_custody_actions",
+    "network_property_custody_transfers",
+    "network_service_actions",
+    "network_service_conversation_messages",
+    "network_service_favorites",
+    "network_service_negotiation_messages",
+    "network_service_preferences",
+    "network_service_proposals",
+    "network_service_recipients",
+    "network_service_referral_events",
+    "network_service_referrals",
+    "network_service_requests",
+    "network_service_reviews",
+    "network_service_work",
+    "network_service_work_actions",
+    "pending_users",
+    "professional_profile_revisions",
+    "professional_profiles",
+    "property_management_records",
+    "property_management_revisions",
+    "property_viewings",
+    "research_workspaces",
+    "saved_homes",
+    "seller_valuation_comparables",
+    "seller_valuation_follow_ups",
+    "seller_valuation_intakes",
+    "seller_valuation_workspaces",
+    "settings",
+    "social_network_profiles",
+    "trade_contact_sources",
+    "trade_contacts",
+    "transaction_document_versions",
+    "transaction_documents",
+    "transaction_room_events",
+    "transaction_room_grants",
+    "transaction_room_milestones",
+    "transaction_room_tasks",
+    "transaction_rooms",
+    "upgrade_requests",
+    "users",
+    "viewing_itineraries",
+    "website_settings",
+    "website_settings_revisions"
+  ],
+  "pressure_profile": [
+    {
+      "table": "activity_log",
+      "minimum": [
+        144,
+        42380,
+        45548,
+        335,
+        357,
+        144,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [
+        {
+          "rows": 125,
+          "bytes": 335
+        },
+        {
+          "rows": 1,
+          "bytes": 136
+        },
+        {
+          "rows": 17,
+          "bytes": 2
+        },
+        {
+          "rows": 1,
+          "bytes": 335
+        }
+      ],
+      "quote_ratio": [
+        11387,
+        10595
+      ]
+    },
+    {
+      "table": "alembic_version",
+      "minimum": [
+        1,
+        31,
+        37,
+        31,
+        37,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [
+        {
+          "rows": 1,
+          "bytes": 31
+        }
+      ],
+      "quote_ratio": [
+        37,
+        31
+      ]
+    },
+    {
+      "table": "anonymous_leads",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "bookings",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "bulk_import_jobs",
+      "minimum": [
+        18,
+        420745,
+        462317,
+        247684,
+        271990,
+        6,
+        2,
+        7,
+        2,
+        1,
+        0
+      ],
+      "groups": [
+        {
+          "rows": 6,
+          "bytes": 1024
+        },
+        {
+          "rows": 2,
+          "bytes": 4096
+        },
+        {
+          "rows": 7,
+          "bytes": 16384
+        },
+        {
+          "rows": 1,
+          "bytes": 27652
+        },
+        {
+          "rows": 1,
+          "bytes": 16385
+        },
+        {
+          "rows": 1,
+          "bytes": 247684
+        }
+      ],
+      "quote_ratio": [
+        462317,
+        420745
+      ]
+    },
+    {
+      "table": "client_shortlist_grants",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "client_shortlist_items",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "client_shortlists",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "deal_requests",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "development_inventories",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "development_inventory_events",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "development_inventory_revisions",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "editorial_events",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "editorial_pages",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "editorial_revisions",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "inquiries",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "lead_delivery_jobs",
+      "minimum": [
+        15,
+        36846,
+        39652,
+        3646,
+        3915,
+        1,
+        14,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [
+        {
+          "rows": 1,
+          "bytes": 1024
+        },
+        {
+          "rows": 7,
+          "bytes": 3646
+        },
+        {
+          "rows": 1,
+          "bytes": 1529
+        },
+        {
+          "rows": 5,
+          "bytes": 1025
+        },
+        {
+          "rows": 1,
+          "bytes": 3646
+        }
+      ],
+      "quote_ratio": [
+        862,
+        801
+      ]
+    },
+    {
+      "table": "lead_delivery_worker_state",
+      "minimum": [
+        1,
+        161,
+        177,
+        161,
+        177,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [
+        {
+          "rows": 1,
+          "bytes": 161
+        }
+      ],
+      "quote_ratio": [
+        177,
+        161
+      ]
+    },
+    {
+      "table": "leads",
+      "minimum": [
+        19,
+        14572,
+        15811,
+        1064,
+        1160,
+        18,
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [
+        {
+          "rows": 13,
+          "bytes": 1024
+        },
+        {
+          "rows": 1,
+          "bytes": 188
+        },
+        {
+          "rows": 4,
+          "bytes": 2
+        },
+        {
+          "rows": 1,
+          "bytes": 1064
+        }
+      ],
+      "quote_ratio": [
+        145,
+        133
+      ]
+    },
+    {
+      "table": "listing_arrival_guides",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "listing_daily_views",
+      "minimum": [
+        6,
+        588,
+        660,
+        98,
+        110,
+        6,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [
+        {
+          "rows": 6,
+          "bytes": 98
+        }
+      ],
+      "quote_ratio": [
+        55,
+        49
+      ]
+    },
+    {
+      "table": "listing_edits",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "listing_events",
+      "minimum": [
+        2803,
+        853903,
+        937733,
+        314,
+        344,
+        2803,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [
+        {
+          "rows": 2717,
+          "bytes": 314
+        },
+        {
+          "rows": 1,
+          "bytes": 283
+        },
+        {
+          "rows": 84,
+          "bytes": 2
+        },
+        {
+          "rows": 1,
+          "bytes": 314
+        }
+      ],
+      "quote_ratio": [
+        937733,
+        853903
+      ]
+    },
+    {
+      "table": "listing_floor_plans",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "listing_location_review_revisions",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "listing_location_reviews",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "listing_performance_entries",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "listing_view_coverage",
+      "minimum": [
+        1,
+        59,
+        67,
+        59,
+        67,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [
+        {
+          "rows": 1,
+          "bytes": 59
+        }
+      ],
+      "quote_ratio": [
+        67,
+        59
+      ]
+    },
+    {
+      "table": "listings",
+      "minimum": [
+        2687,
+        13905570,
+        14443664,
+        11483,
+        11757,
+        0,
+        456,
+        2231,
+        0,
+        0,
+        0
+      ],
+      "groups": [
+        {
+          "rows": 456,
+          "bytes": 4096
+        },
+        {
+          "rows": 391,
+          "bytes": 11483
+        },
+        {
+          "rows": 1,
+          "bytes": 6172
+        },
+        {
+          "rows": 1838,
+          "bytes": 4097
+        },
+        {
+          "rows": 1,
+          "bytes": 11483
+        }
+      ],
+      "quote_ratio": [
+        7221832,
+        6952785
+      ]
+    },
+    {
+      "table": "network_audit",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "network_blocks",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "network_due_work_actions",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "network_due_work_dispositions",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "network_due_work_preferences",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "network_group_actions",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "network_group_comments",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "network_group_invite_links",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "network_group_media",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "network_group_memberships",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "network_group_posts",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "network_groups",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "network_history_share_actions",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "network_history_shares",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "network_maintenance_actions",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "network_maintenance_occurrences",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "network_maintenance_preferences",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "network_maintenance_schedules",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "network_media",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "network_milestones",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "network_post_comments",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "network_posts",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "network_project_comments",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "network_project_members",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "network_project_updates",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "network_projects",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "network_properties",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "network_property_custody_actions",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "network_property_custody_transfers",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "network_service_actions",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "network_service_conversation_messages",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "network_service_favorites",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "network_service_negotiation_messages",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "network_service_preferences",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "network_service_proposals",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "network_service_recipients",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "network_service_referral_events",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "network_service_referrals",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "network_service_requests",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "network_service_reviews",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "network_service_work",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "network_service_work_actions",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "pending_users",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "professional_profile_revisions",
+      "minimum": [
+        67,
+        84887,
+        91271,
+        1545,
+        1651,
+        0,
+        67,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [
+        {
+          "rows": 30,
+          "bytes": 1545
+        },
+        {
+          "rows": 1,
+          "bytes": 1117
+        },
+        {
+          "rows": 35,
+          "bytes": 1025
+        },
+        {
+          "rows": 1,
+          "bytes": 1545
+        }
+      ],
+      "quote_ratio": [
+        91271,
+        84887
+      ]
+    },
+    {
+      "table": "professional_profiles",
+      "minimum": [
+        46,
+        46498,
+        50812,
+        1334,
+        1438,
+        34,
+        12,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [
+        {
+          "rows": 33,
+          "bytes": 1024
+        },
+        {
+          "rows": 1,
+          "bytes": 97
+        },
+        {
+          "rows": 11,
+          "bytes": 1025
+        },
+        {
+          "rows": 1,
+          "bytes": 1334
+        }
+      ],
+      "quote_ratio": [
+        25406,
+        23249
+      ]
+    },
+    {
+      "table": "property_management_records",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "property_management_revisions",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "property_viewings",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "research_workspaces",
+      "minimum": [
+        1,
+        600,
+        646,
+        600,
+        646,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [
+        {
+          "rows": 1,
+          "bytes": 600
+        }
+      ],
+      "quote_ratio": [
+        323,
+        300
+      ]
+    },
+    {
+      "table": "saved_homes",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "seller_valuation_comparables",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "seller_valuation_follow_ups",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "seller_valuation_intakes",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "seller_valuation_workspaces",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "settings",
+      "minimum": [
+        1,
+        215,
+        229,
+        215,
+        229,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [
+        {
+          "rows": 1,
+          "bytes": 215
+        }
+      ],
+      "quote_ratio": [
+        229,
+        215
+      ]
+    },
+    {
+      "table": "social_network_profiles",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "trade_contact_sources",
+      "minimum": [
+        5640,
+        8731909,
+        9481197,
+        2768,
+        2974,
+        2791,
+        2849,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [
+        {
+          "rows": 2791,
+          "bytes": 1024
+        },
+        {
+          "rows": 1700,
+          "bytes": 2768
+        },
+        {
+          "rows": 1,
+          "bytes": 1162
+        },
+        {
+          "rows": 1147,
+          "bytes": 1025
+        },
+        {
+          "rows": 1,
+          "bytes": 2768
+        }
+      ],
+      "quote_ratio": [
+        9481197,
+        8731909
+      ]
+    },
+    {
+      "table": "trade_contacts",
+      "minimum": [
+        5633,
+        9306384,
+        10118698,
+        2956,
+        3174,
+        599,
+        5034,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [
+        {
+          "rows": 599,
+          "bytes": 1024
+        },
+        {
+          "rows": 1834,
+          "bytes": 2956
+        },
+        {
+          "rows": 1,
+          "bytes": 2064
+        },
+        {
+          "rows": 3198,
+          "bytes": 1025
+        },
+        {
+          "rows": 1,
+          "bytes": 2956
+        }
+      ],
+      "quote_ratio": [
+        5059349,
+        4653192
+      ]
+    },
+    {
+      "table": "transaction_document_versions",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "transaction_documents",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "transaction_room_events",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "transaction_room_grants",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "transaction_room_milestones",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "transaction_room_tasks",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "transaction_rooms",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "upgrade_requests",
+      "minimum": [
+        5,
+        2256,
+        2480,
+        467,
+        515,
+        5,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [
+        {
+          "rows": 3,
+          "bytes": 467
+        },
+        {
+          "rows": 1,
+          "bytes": 388
+        },
+        {
+          "rows": 1,
+          "bytes": 467
+        }
+      ],
+      "quote_ratio": [
+        515,
+        467
+      ]
+    },
+    {
+      "table": "users",
+      "minimum": [
+        26,
+        19504,
+        21130,
+        1751,
+        1813,
+        25,
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [
+        {
+          "rows": 17,
+          "bytes": 1024
+        },
+        {
+          "rows": 1,
+          "bytes": 331
+        },
+        {
+          "rows": 7,
+          "bytes": 2
+        },
+        {
+          "rows": 1,
+          "bytes": 1751
+        }
+      ],
+      "quote_ratio": [
+        10565,
+        9752
+      ]
+    },
+    {
+      "table": "viewing_itineraries",
+      "minimum": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [],
+      "quote_ratio": [
+        1,
+        1
+      ]
+    },
+    {
+      "table": "website_settings",
+      "minimum": [
+        1,
+        28591,
+        30859,
+        28591,
+        30859,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      "groups": [
+        {
+          "rows": 1,
+          "bytes": 28591
+        }
+      ],
+      "quote_ratio": [
+        30859,
+        28591
+      ]
+    },
+    {
+      "table": "website_settings_revisions",
+      "minimum": [
+        8,
+        182014,
+        196396,
+        28584,
+        30850,
+        1,
+        0,
+        0,
+        7,
+        0,
+        0
+      ],
+      "groups": [
+        {
+          "rows": 1,
+          "bytes": 1024
+        },
+        {
+          "rows": 4,
+          "bytes": 28584
+        },
+        {
+          "rows": 1,
+          "bytes": 21685
+        },
+        {
+          "rows": 1,
+          "bytes": 16385
+        },
+        {
+          "rows": 1,
+          "bytes": 28584
+        }
+      ],
+      "quote_ratio": [
+        15425,
+        14292
+      ]
+    }
+  ],
+  "storage_profile": [
+    {
+      "table": "storage.objects",
+      "minimum": [
+        34315,
+        13371736,
+        14812966,
+        399,
+        441,
+        34315,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [
+        {
+          "rows": 33508,
+          "bytes": 399
+        },
+        {
+          "rows": 1,
+          "bytes": 35
+        },
+        {
+          "rows": 805,
+          "bytes": 2
+        },
+        {
+          "rows": 1,
+          "bytes": 399
+        }
+      ],
+      "quote_ratio": [
+        1058069,
+        955124
+      ]
+    },
+    {
+      "table": "storage.buckets",
+      "minimum": [
+        2,
+        856,
+        942,
+        445,
+        489,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "groups": [
+        {
+          "rows": 1,
+          "bytes": 411
+        },
+        {
+          "rows": 1,
+          "bytes": 445
+        }
+      ],
+      "quote_ratio": [
+        471,
+        428
+      ]
+    }
+  ],
+  "measured": {
+    "public_summary": {
+      "path": "outputs/property-network-20261101/backup-shape-actual-20261127/public-actual-summary.json",
+      "bytes": 55820,
+      "sha256": "7ba877952d482b1d502a3d16e2a2e6e54c36d8ce508d821426a7b0d9ea3601e8"
+    },
+    "storage_summary": {
+      "path": "outputs/property-network-20261101/backup-shape-actual-20261127/storage-actual-summary.json",
+      "bytes": 2011,
+      "sha256": "ce5c96368d156ae82c227b9eb8ac73ad497121c074371063dc166e9c759ad901"
+    },
+    "root_actual": {
+      "path": "outputs/property-network-20261101/backup-shape-actual-20261127/ROOT-ACTUAL-MEASUREMENT.json",
+      "bytes": 3290,
+      "sha256": "5817dd21a0d8147b5dddc092498d0e251cd6ad75ad224dc41b549e368fb9a3ed"
+    },
+    "public_bundle": {
+      "path": "outputs/property-network-20261101/backup-shape-actual-20261127/public-actual-bundle.json",
+      "bytes": 63613,
+      "sha256": "4b743e9f20591002a78b47cc201a98a51284199346906701a7e85a8d64b79a05"
+    },
+    "storage_bundle": {
+      "path": "outputs/property-network-20261101/backup-shape-actual-20261127/storage-actual-bundle.json",
+      "bytes": 2732,
+      "sha256": "4246292a84ba655fbcd4f571f3deec02dc54acd47f4de362b28e10444ad7595e"
+    }
+  },
+  "selected_budgets": {
+    "synthetic_raw_row_reserve": {
+      "table": "bookings",
+      "rows": 256,
+      "row_bytes": 32768,
+      "bytes": 8388608
+    },
+    "required_observed_whole_phase_headroom_bytes": 134217728,
+    "qualification": "Selected test budgets, not measured schema/envelope/allocator/background requirements or a production-safe guarantee."
+  },
+  "preservation": "Exact13ff JSONworker/capture/guard/generators/receiver/finalizer and all17+7sourcepins immutable; only dynamic load_v5 fixture-data seed_trade/seed_storage seams wrapped. Existing V5.run/state/prepare/downstream/poststate/drop and JSON transport/cipher/decoder/receiver/finalizer bodies unmodified.",
+  "fixed_metric_distinction": "Inherited strict stress rowSUM9,317,650/8,743,189 equals measured contacts/sources payload_array_bytes(S+2*N), NOT measured rowSUM9,306,384/8,731,909. They remain selected conservative synthetic rowSUM targets and original assertions stay exact.",
+  "fixture_scope": "Owned synthetic simplified99-table fixture, not actual current production schema or reproduction of contents. Rebuild selected nonempty synthetic tables with matching rowcount/group size bands; preserve alembic syntheticrow and2binarysentinels; other original sparsefixture rows may remain as explicit extra coverage. Add a stress-only padding text column on selected synthetic tables; contacts/evidence/storage use one synthetic JSONtext field.",
+  "quote_scope": "Numerator/denominator=max(measured Q/S, measured maxQ/maxS). Per-row SQL fills a bounded synthetic text using distinct MD5 blocks and enough quote characters to cover that ratio. Actual server measurement must independently confirm all99 count/SUM/quoted/max/sixbin minima; no planned shape substitutes for actual evidence.",
+  "resource_bounds": {
+    "PG_memory_bytes": 1073741824,
+    "PG_extra_swap_bytes": 0,
+    "PG_pids": 96,
+    "PG_cpus": 1,
+    "client_memory_bytes": 1073741824,
+    "client_pids": 128,
+    "client_cpus": 2,
+    "SQL_seconds": 60,
+    "phase_seconds": 480,
+    "source_stage1_compact_guards": "Retained actual45965805357, not rerun; only fresh stress is selected."
+  },
+  "required_actual": "Current PROFILE before capture plus unchanged original RESULT stress, actual1GiB/swap0/cgroup/process/start/source gates and>=128MiB wholephase headroom, full original receiver/finalizer bytes/hash and cleanup. Any failure/OOM/timeout or insufficient headroom refuses, no cap raise or retry.",
+  "limits": [
+    "Input measurements are99+storage separate non-atomic intervals, not current exact contents/state preservation.",
+    "8MiB synthetic raw-row reserve exercises additional serialization/compression/allocator pressure but is not an actual measurement of production catalog/maps/outer/encryption or background requirements.",
+    "128MiB required observed headroom is a selected budget; nominal provider1GB is not verified exact1GiB cgroup/freeRAM and no production-safe guarantee follows.",
+    "Two binary rows are additional owned decoder coverage, not current floorplan-table reproduction.",
+    "Storage metadata projections only; no object filebytes/media recovery.",
+    "No production SQL/capture/keys/provider/config/paid changes or new capture engine.",
+    "Single future actual stress replay after source review, not a rerun ofStage1/17/12/25."
+  ],
+  "metric_order": [
+    "rows",
+    "row_JSON_SUM",
+    "quoted_row_JSON_SUM",
+    "max_row_JSON",
+    "max_quoted_row_JSON",
+    "bin1",
+    "bin2",
+    "bin3",
+    "bin4",
+    "bin5",
+    "bin6"
+  ]
+}

@@ -1,0 +1,41 @@
+name: Current numeric-shape backup stress at declared one GiB capacity
+on:
+  push:
+    branches: [codex-ci-backup-current-pressure-native-20261127]
+permissions:
+  contents: read
+concurrency:
+  group: backup-current-pressure-native-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  synthetic:
+    if: >-
+      github.repository == 'ilovedrrealty/realty-api' &&
+      github.event.repository.private == false &&
+      github.event.created == true && github.event.deleted == false &&
+      github.event.forced == false &&
+      github.event.before == '0000000000000000000000000000000000000000' &&
+      github.run_attempt == 1 && github.event.after == github.sha && github.workflow_sha == github.sha
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Read exact isolated reviewed operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          path: backup-ops
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Read unchanged accepted dependency recipe
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: c193a925ba57ea2d67ea48c44e5262817885c8a2
+          path: migration-recipe
+          persist-credentials: false
+      - name: Run calibrated owned stress with selected reserve and observed headroom
+        shell: bash
+        run: |
+          set -euo pipefail
+          runner="$GITHUB_WORKSPACE/backup-ops/ci/backup-current-pressure-native/run-hosted.sh"
+          bash --noprofile --norc -n "$runner"
+          exec bash --noprofile --norc "$runner" "$GITHUB_WORKSPACE/backup-ops" "$GITHUB_WORKSPACE/migration-recipe"
