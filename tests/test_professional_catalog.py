@@ -90,7 +90,7 @@ class ProfessionalCatalogTests(unittest.TestCase):
         self.assertIn("property_management", CATEGORY_IDS)
 
     def test_existing_geographic_matching_is_unchanged(self):
-        self.assertEqual(len(AREAS), 19)
+        self.assertEqual(len(AREAS), 51)
         self.assertEqual(matching_areas("nationwide"), {"nationwide"})
         self.assertEqual(matching_areas("cabarete"), {"cabarete", "north_coast", "nationwide"})
         self.assertEqual(matching_areas("north_coast"),
