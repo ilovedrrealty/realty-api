@@ -1,0 +1,33 @@
+name: Isolated held-route cancellation observations
+on:
+  push:
+    branches: [codex-ci-held-route-cancellation-probe-20261127]
+permissions:
+  contents: read
+concurrency:
+  group: held-route-cancellation-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  observe:
+    if: >-
+      github.repository == 'ilovedrrealty/realty-api' && github.event.repository.private == false &&
+      github.event.created == true && github.event.deleted == false && github.event.forced == false &&
+      github.event.before == '0000000000000000000000000000000000000000' &&
+      github.run_attempt == 1 && github.event.after == github.sha && github.workflow_sha == github.sha
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Read exact isolated probe source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          path: probe-ops
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Observe three synthetic lifecycle actions
+        shell: bash
+        run: |
+          set -euo pipefail
+          runner="$GITHUB_WORKSPACE/probe-ops/ci/held-route-cancellation-probe/run-hosted.sh"
+          bash --noprofile --norc -n "$runner"
+          exec bash --noprofile --norc "$runner" "$GITHUB_WORKSPACE/probe-ops"

@@ -1,0 +1,107 @@
+{
+  "status": "SOURCE_ONLY_OBSERVATION_PROBE_UNRUN_NOT_PRODUCT_ACCEPTANCE",
+  "operations_parent": "4f121400809cf95e9d46c108ae0247b388d9488e",
+  "operations_parent_tree": "df956cd4ea946973ce37fd071d38e04fb6e6de39",
+  "old_paths_immutable": 455,
+  "new_paths": 4,
+  "total_paths": 459,
+  "cases": [
+    "abort",
+    "reload",
+    "close"
+  ],
+  "product_acceptance": false,
+  "purpose": "Measure exact original browser-request cancellation event timing around release of a held real200 response. Do not change application assertions or infer product privacy acceptance.",
+  "trigger": {
+    "run": 45954614125,
+    "job": 140358089128,
+    "stage": "en_workflow_own_access_loss",
+    "primitive": "waitCanceled requestfailed waiter at driver258, before heldActualGET.release at552",
+    "qualification": "Original request exact event was not observed within that waiter. Current /auth/me403 is not identified as the timed-out primitive. No application bug or lifecycle cause is proven by this alone."
+  },
+  "runtime": {
+    "playwright_core": "1.64.1",
+    "package_url": "https://registry.npmjs.org/playwright-core/-/playwright-core-1.64.1.tgz",
+    "package_sha512_base64": "BC4s8y6SEVA6Q1rSxZTto8hI1KUI3xXlHGZgvGqP4IqPdI/a6FX9H29IDNz7vKo9l21b6LfYosScPL6M3xxyDQ==",
+    "browser_image": "mcr.microsoft.com/playwright@sha256:ee15712262f017b8157421b212b12099146645f44b1bc5c0514cbbe6a229b1d0",
+    "package_reuse": "Identical accepted download/version/integrity/member extraction guards; no npm install/new dependency. Hosted download absolute90s/max20MiB,90MiB unpacked/6000members.",
+    "download_or_browser_run_locally": false
+  },
+  "synthetic_only": {
+    "servers": [
+      "127.0.0.1:4175 static owned HTML",
+      "127.0.0.1:8918 fixed owned /data real200"
+    ],
+    "source": "Node built-in http, static literal HTML/native XHR+AbortController only; no React/app/DB/auth/private data/fixtures.",
+    "data": "One fixed synthetic old-value sentinel, never printed. No real identifiers/contact/body/cookies/headers/URLs/errors in result records.",
+    "network": "Container networknone; browser only two exact loopback origins/paths allowed; all other routed requests abort/count; expected external0.",
+    "credentials": "Runtime env-i only fixed PATH/HOME/CI/browser location/Node memory. No credentials/app/env file/source mounts."
+  },
+  "sequence": {
+    "each_case": "New context/page; real browser XHR routed and originalRequest identity captured; route.fetch actual200 with maxRetries0/maxRedirects0/timeout15s; original route remains paused at a gate. Listeners for exact original context/page requestfailed/requestfinished/response are armed before request.",
+    "actions": "Abort case user clicks native AbortController button which calls real XHR.abort via actual signal; reload uses page.reload; close uses page.close then opens a fresh static page. No route.abort is used to manufacture target-request cancellation.",
+    "ordering": "Start lifecycle action, observe exact events up to1s while original route remains held, snapshot booleans/counts/action-settled state, then release the same real200 once and await handler disposal/cleanup. Observe terminal events up to2s after release plus live-document protocol roundtrip. Never assume failure event exists in either window.",
+    "fulfill": "If actual original.failure exists, record not_attempted_failed; otherwise call route.fulfill with the exact actual response. Finite returned/target_closed/other_error outcomes are observations, not proof that response reached browser.",
+    "retirement": "Abort action requires actual native onabort observation and no oldvalue rendered. Reload/close require a different server document generation, oldpage closed onlyclose, freshpage onlyclose, no stalevalue in live replacement. No private UI implementation exists in this synthetic probe.",
+    "total": "Exactly3 real server data fetches/3 contexts closed, browser and2servers closed; no screenshots/artifacts."
+  },
+  "record_contract": {
+    "prefixes": [
+      "HELD_ROUTE_PROBE_CASE",
+      "HELD_ROUTE_PROBE_RESULT",
+      "HELD_ROUTE_PROBE_FAILURE"
+    ],
+    "limits": "Each record<=1024B; wholeprivate log<=32768B; exact keys/types, unique ordered3cases, exact finite OBSERVED result, bounded integers, no arbitrary messages.",
+    "observations": "before/after exact context/page failed event counts0..1, actual request.failure Boolean, finished counts0..1, original browser response status null|200, finite fulfill return outcome, handler/disposal booleans, actual nativeabort Boolean|null, action completion before release, oldpage closure/document retirement/newpage/stalevalue flags, measured observation elapsedms.",
+    "acceptance": "Only structural observation completion with all3 genuine actions/source-controlled cleanup and process0/stopped/nonOOM. FAILURE always prevents completion even with later RESULT. No test requires cancellation true/false or invents canceled states. Product_acceptance permanentlyfalse."
+  },
+  "caps": {
+    "browser_memory_MiB": 2048,
+    "browser_pids": 256,
+    "cpus": 2,
+    "shm_MiB": 256,
+    "tmp_MiB": 256,
+    "read_only": true,
+    "cap_drop": "ALL",
+    "no_new_privileges": true,
+    "node_heap_MiB": 1536,
+    "default_action_navigation_ms": 15000,
+    "real_route_fetch_ms": 15000,
+    "node_global_ms": 60000,
+    "host_attach_seconds": 90,
+    "workflow_minutes": 10,
+    "observation_windows_ms": [
+      1000,
+      2000
+    ]
+  },
+  "cleanup": "Unique run+nonce ownership label; validate container ownership/networknone before start; inspect typed actual client/native/Running/OOM before stop; stop if necessary; EXITtrap removes only matching owned containers and proves absence, validates/removes owned scratch. Pinned shared image is pulled, not rebuilt/tagged/deleted; no image ownership claimed.",
+  "references": [
+    {
+      "url": "https://playwright.dev/docs/api/class-route#route-fetch",
+      "scope": "Fetch gets response without fulfilling original route."
+    },
+    {
+      "url": "https://raw.githubusercontent.com/microsoft/playwright/v1.64.1/packages/playwright-core/src/client/network.ts",
+      "lines": "335-338,340-350,400-406",
+      "scope": "APIRequestContext fetch and separate route fulfillment."
+    },
+    {
+      "url": "https://raw.githubusercontent.com/microsoft/playwright/v1.64.1/packages/playwright-core/src/server/chromium/crNetworkManager.ts",
+      "lines": "455-491,645-679",
+      "scope": "requestfailed originates loadingFailed; already-canceled protocol interception can be tolerated."
+    },
+    {
+      "url": "https://raw.githubusercontent.com/microsoft/playwright/v1.64.1/tests/page/page-route.spec.ts",
+      "lines": "486-498",
+      "scope": "Official canceled-frame test resolves route later; no guarantee that requestfailed must precede route resolution."
+    }
+  ],
+  "unrun": [
+    "Hosted Chromium cases",
+    "Browser or application runtime",
+    "Database/native/build/provider tests",
+    "Bash syntax locally"
+  ],
+  "next": "Root+independent Release source review, Root-only unique firstpush and actual observation review before choosing any full-browser harness correction."
+}
