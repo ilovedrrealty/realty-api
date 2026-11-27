@@ -29,6 +29,7 @@ BASE_TREE = '3a30b7e8c5b53827b97374c18806a7cb03ef9c5c'
 HEAD = 'f7a9c3e2d114'
 TOOLS = Path(__file__).resolve().parent.parent
 FACTS = Path('/browser-fixtures/fixtures.json')
+BROWSER_PHASE = Path('/browser-fixtures/browser-phase.json')
 ROLES = {'admin':'admin','buyer':'buyer','owner':'owner','realtor':'realtor'}
 NEW_TABLES = ('assignment_email_jobs', 'assignment_events')
 INSIDE = ContextVar('owned_assignment_metadata', default=False)
@@ -410,6 +411,7 @@ def run():
     global STAGE,GUARD,REPORTED
     require(len(sys.argv)==2 and sys.argv[1] in ('en','es'), 'explicit_locale_required')
     locale = sys.argv[1]
+    require(not BROWSER_PHASE.exists() and not BROWSER_PHASE.is_symlink(), 'workflow_phase_initially_absent_required')
     logging.disable(logging.CRITICAL)
     old,native,base = helpers()
     old.inventory()
@@ -422,7 +424,8 @@ def run():
     observed = {'logins':Counter(),'commands':[],'controls':[],'boundaries':Counter(),'pages':Counter(),'safe_selects':0,'refused':0,
         'profile_commands':[],'workflow_controls':[],'workflow_control_times':{},'workflow_boundaries':Counter(),
         'workflow_directory_queries':Counter(),'workflow_denial_routes':set(),'workflow_public_reads':[],
-        'workflow_public_read_control_counts':[]}
+        'workflow_public_read_control_counts':[],'workflow_build_reads':[],
+        'workflow_phase_identity':None,'workflow_phase_owned':owned}
     try:
         for item in patches:
             item.start()
@@ -470,6 +473,7 @@ def run():
             for number,handler in previous.items():
                 signal.signal(number,handler)
         STAGE = 'final_preservation'
+        require(browser_phase(facts,observed), 'workflow_final_browser_phase_required')
         require(not GUARD and not observed['refused'] and not old.ATTEMPTS, 'no_guard_or_provider_attempt_required')
         require(observed['logins']==Counter({actor:1 for actor in ROLES}) and len(observed['commands'])==9
             and observed['controls']==['agent_unverified','agent_verified'], 'exact_login_command_control_ledger_required')
@@ -501,8 +505,8 @@ def run():
             info = path.lstat()
             require(stat.S_ISREG(info.st_mode) and not path.is_symlink() and (info.st_dev,info.st_ino)==(device,inode), 'owned_facts_inode_required')
             path.unlink()
-        require(not FACTS.exists() and not FACTS.is_symlink(), 'private_facts_absence_required')
-    require(len(owned)==1, 'exact_one_private_facts_removed_required')
+        require(all(not path.exists() and not path.is_symlink() for path in (FACTS,BROWSER_PHASE)), 'private_facts_absence_required')
+    require(len(owned)==2, 'exact_two_private_facts_removed_required')
     print('CUSTOMER_WORKFLOWS_FIXTURE_RESULT '+canonical({'status':'PASS','locale':locale,'catalog_tables':108,'model_tables':107,
         'genuine99_to106_to108':True,'all_unrelated106_rows_unchanged':True,'all_catalog_sequences_acl_roles_unchanged':True,
         'current_head_unchanged':True,'server_start_unchanged':True,'private_rls_acl':True,'protected_owner_contacts':82,
@@ -511,14 +515,15 @@ def run():
         'exact_replays':1,'agent_refusals':1,'account_events':2,'account_notices':0,'valuation_notices':1,'seller_notices':3,
         'owner_promotions':1,'assignment_mirrors':1,'activity_additions':2,'controls':2,'controls_restored':True,
         'boundaries':16,'seed_mock_calls':3,'ui_provider_dispatch':False,'external_provider_attempts':0,
-        'unexpected_mutations':0,'inbox_writes':0,'private_files_removed':1,
+        'unexpected_mutations':0,'inbox_writes':0,'private_files_removed':2,
         'workflow_profile_requests':10,'workflow_profile_saves':6,'workflow_legacy_omissions':2,
         'workflow_stale_refusals':2,'workflow_auth_refusals':2,'workflow_control_saves':2,
         'workflow_new_revisions':8,'workflow_controls':14,'workflow_boundaries':12,
         'workflow_old46_profiles_revisions_unchanged':True,'workflow_published_snapshots_unchanged':True,
         'workflow_directory_cases':6,'workflow_list_map_snapshots_exact':True,'workflow_detected_denial_routes':4,
         'workflow_manual_mutations':0,'workflow_controls_restored':True,
-        'workflow_public_reads':3,'workflow_withdrawn_refusal_complete':True}),flush=True)
+        'workflow_public_reads':3,'workflow_withdrawn_refusal_complete':True,
+        'workflow_build_public_reads':1,'workflow_browser_phase_attested':True}),flush=True)
 
 
 # The functions below keep all HTTP facts independent of the UI receipt. The
@@ -599,6 +604,39 @@ def boundary_specs(facts):
         result[scope+'_invalid']=('admin',scope,facts['invalid_id'],'',422)
         result[scope+'_bounds']=('admin',scope,target,'limit=51' if scope=='lead' else 'offset=10001',422)
     return result
+
+
+def browser_phase(facts,observed):
+    # The host writes this once only after successful Next export+landingready.
+    # It is never an HTTP control or an instruction from browser/model data.
+    try:
+        fd=os.open(BROWSER_PHASE,os.O_RDONLY|os.O_NOFOLLOW)
+    except FileNotFoundError:
+        require(observed['workflow_phase_identity'] is None, 'workflow_phase_cannot_disappear_required')
+        return False
+    try:
+        info=os.fstat(fd)
+        require(stat.S_ISREG(info.st_mode) and info.st_uid==os.getuid() and info.st_nlink==1
+            and stat.S_IMODE(info.st_mode)==0o600 and 0<info.st_size<=512, 'workflow_owned_regular_phase_required')
+        raw=os.read(fd,513)
+    finally:
+        os.close(fd)
+    operations=os.environ.get('ILDR_BROWSER_CI_OPERATIONS','')
+    frontend=os.environ.get('ILDR_BROWSER_CI_FRONTEND','')
+    nonce=os.environ.get('ILDR_BROWSER_CI_NONCE','')
+    require(re.fullmatch('[a-f0-9]{40}',operations) and re.fullmatch('[a-f0-9]{32}',nonce)
+        and frontend=='ab704882398a9d71dcd060ca54bd0b6b17ca4e9c', 'workflow_phase_source_identity_required')
+    expected={'phase':'browser','locale':facts['locale'],'nonce':nonce,'operations':operations,
+        'frontend':frontend,'backend':COMMIT,'fixture_sha256':sha256(Path(__file__).read_bytes()).hexdigest()}
+    require(raw==(canonical(expected)+'\n').encode() and len(raw)==info.st_size, 'workflow_exact_phase_marker_required')
+    identity=(info.st_dev,info.st_ino,sha256(raw).hexdigest())
+    if observed['workflow_phase_identity'] is None:
+        observed['workflow_phase_identity']=identity
+        observed['workflow_phase_owned'].append((BROWSER_PHASE,info.st_dev,info.st_ino))
+    else:
+        require(observed['workflow_phase_identity']==identity, 'workflow_phase_identity_stable_required')
+    require(observed['workflow_build_reads']==[{'status':200,'complete':True}], 'workflow_exact_completed_build_read_required')
+    return True
 
 
 def confined(app,old,base,catalog,database,accounts,identities,facts,observed,tables):
@@ -962,6 +1000,29 @@ async def workflow_request(app, scope, receive, send, request, actor, base, cata
             require('draft' not in value and 'review_note' not in value, 'workflow_no_private_draft_projection_required')
         observed['workflow_boundaries'][label]+=1
         return True
+    # Static export fetches the same public listing before the host starts UI.
+    # Keep its single real200 receipt separate; never reset or trim the UI ledger.
+    if method=='GET' and path=='/listings/'+facts['workflows']['manual']['valid']['property_id'] and not browser_phase(facts,observed):
+        require(not observed['workflow_build_reads'] and not observed['workflow_public_reads'] and not observed['workflow_controls']
+            and actor is None and not scope['query_string'] and 'cookie' not in request.headers
+            and 'authorization' not in request.headers and 'sec-purpose' not in request.headers,
+            'workflow_exact_anonymous_build_read_required')
+        receipt={'status':200,'complete':False};observed['workflow_build_reads'].append(receipt)
+        starts=[];final=False
+        async def build_send(message):
+            nonlocal final
+            if message['type']=='http.response.start':
+                require(not starts and message['status']==200 and dict(message['headers']).get(b'cache-control')==b'no-store',
+                        'workflow_build_status_no_store_required')
+                starts.append(200)
+            elif message['type']=='http.response.body':
+                require(starts==[200] and not final, 'workflow_build_frame_order_required')
+                final=message.get('more_body',False) is False
+            await send(message)
+        await app(scope,receive,build_send)
+        require(starts==[200] and final, 'workflow_build_final_frame_required')
+        receipt['complete']=True
+        return True
     # Only the three real anonymous UI listing reads; tagged boundary reads above
     # keep their existing independent ledger. Forward the SAME ASGI messages.
     if method=='GET' and path=='/listings/'+facts['workflows']['manual']['valid']['property_id']:
@@ -1084,6 +1145,7 @@ async def workflow_request(app, scope, receive, send, request, actor, base, cata
 
 
 def verify_workflows(catalog,database,facts,observed,baseline):
+    require(browser_phase(facts,observed), 'workflow_final_browser_phase_required')
     require(observed['workflow_public_reads']==[{'status':status,'complete':True} for status in (200,200,404)],
             'workflow_three_public_reads_same_response_complete_required')
     require(len(observed['profile_commands'])==10 and observed['workflow_controls']==list(WORKFLOW_CONTROL_ORDER),

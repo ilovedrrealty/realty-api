@@ -6,7 +6,7 @@ die() { printf 'CUSTOMER_WORKFLOWS_REFUSED %s\n' "$1" >&2; exit 1; }
 bounded() { timeout --kill-after=8s "$@"; }
 [[ $# == 8 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 &&
-   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-customer-workflows-browser-v8-20261127 &&
+   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-customer-workflows-browser-v9-fixed-20261127 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die HOSTED_EXACT_EVENT_REQUIRED
 ops="$1"; frontend="$2"; baseline="$3"; backend="$4"; migration="$5"; relay="$6"; previous="$7"; reference="$8"
 [[ "$ops" == "$GITHUB_WORKSPACE/build-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-source" &&
@@ -23,20 +23,20 @@ import subprocess,sys
 root=Path(sys.argv[1])
 def git(*args):return subprocess.check_output(['git','-C',str(root),*args])
 def tree(commit):return dict((line.split(b'\t',1)[1].decode(),line.split(b'\t',1)[0]) for line in git('ls-tree','-rz',commit).split(b'\0') if line)
-base='7b87a3d79f2e245826d80d57bde82f67876fabba'
+base='52ea74cf9d625bf96577ac233c11ea7a1dd8cb64'
 modified={
  'ci/customer-workflows-browser-v6/PLAN.json','ci/customer-workflows-browser-v6/run-hosted.sh',
  'ci/customer-workflows-browser-v6/check-result.py',
  'ci/customer-workflows-browser/serve_fixture.py'}
-added={'.github/workflows/customer-workflows-browser-v8.yml'}
+added={'.github/workflows/customer-workflows-browser-v9.yml'}
 assert git('rev-parse','HEAD').decode().strip()==sys.argv[2]
 assert git('show','-s','--format=%P','HEAD').decode().strip()==base
-assert git('rev-parse',base+'^{tree}').decode().strip()=='adccc662233b604e96f6e31f8ccc5de87ae93085'
+assert git('rev-parse',base+'^{tree}').decode().strip()=='2128725748348e146cb049949184d12336673916'
 old,new=tree(base),tree('HEAD')
-assert len(old)==474 and len(new)==475 and new.keys()-old.keys()==added and not old.keys()-new.keys()
+assert len(old)==475 and len(new)==476 and new.keys()-old.keys()==added and not old.keys()-new.keys()
 assert {name for name in old if old[name]!=new[name]}==modified
 assert all(new[name]==value for name,value in old.items() if name not in modified)
-assert len(old.keys()-modified)==470
+assert len(old.keys()-modified)==471
 assert set(git('diff','--name-only',base,'HEAD').decode().splitlines())==modified|added
 assert set(git('diff','--diff-filter=M','--name-only',base,'HEAD').decode().splitlines())==modified
 assert set(git('diff','--diff-filter=A','--name-only',base,'HEAD').decode().splitlines())==added
@@ -574,7 +574,7 @@ from pathlib import Path
 import sys
 source=Path('/ci-tools/customer-workflows-browser/serve_fixture.py')
 if not (source.is_file() and not source.is_symlink() and os.statvfs(source).f_flag & os.ST_RDONLY
-        and sha256(source.read_bytes()).hexdigest()=='685140596f959083e73c5fe67088c12056db12c0eab6b54f15d3cffbb32f97e1'):
+        and sha256(source.read_bytes()).hexdigest()=='a2fdaf8f36b6750c767944de0551a189903e728680e098bb08cc80d8dc1994d1'):
     raise SystemExit(1)
 spec=spec_from_file_location('owned_customer_fixture_875',source)
 module=module_from_spec(spec)
@@ -711,11 +711,13 @@ for index in "${!phases[@]}"; do
   bounded 10s docker exec "$pg" psql -X -h 127.0.0.1 -p 55449 -U postgres -d postgres -v ON_ERROR_STOP=1 \
     -c "CREATE DATABASE $db" -c "COMMENT ON DATABASE $db IS '$marker'" >/dev/null || die OWNED_PHASE_DATABASE_REQUIRED
   mkdir "$state/fixtures/$phase"
+  [[ ! -e "$state/fixtures/$phase/browser-phase.json" && ! -L "$state/fixtures/$phase/browser-phase.json" ]] || die INITIAL_BROWSER_PHASE_ABSENCE_REQUIRED
   api=$(bounded 25s docker create "${runtime[@]}" --memory 2g --memory-swap 2g --tmpfs /tmp:rw,exec,size=128m \
     --mount "type=bind,src=$backend,dst=/application,readonly" --mount "type=bind,src=$previous,dst=/previous,readonly" --mount "type=bind,src=$reference,dst=/baseline106,readonly" --mount "type=bind,src=$ops/ci,dst=/ci-tools,readonly" \
     --mount "type=bind,src=$state/fixtures/$phase,dst=/browser-fixtures" --mount "type=bind,src=$state/fixture-launch.py,dst=/fixture-launch.py,readonly" "$app_image" \
     env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp PYTHONDONTWRITEBYTECODE=1 \
     GITHUB_ACTIONS=true GITHUB_REPOSITORY=ilovedrrealty/realty-api ILDR_BROWSER_CI_NONCE="$phase_nonce" \
+    ILDR_BROWSER_CI_OPERATIONS="$GITHUB_SHA" ILDR_BROWSER_CI_FRONTEND="$frontend_commit" \
     python -I -B /fixture-launch.py "$phase") || die API_CREATE_FAILED
   bounded 20s docker start "$api" >/dev/null || die API_START_FAILED
   ready=0
@@ -768,6 +770,30 @@ PY_LANDING
   bounded 10s docker exec "$api" python -I -B -c \
     'import urllib.request; assert urllib.request.urlopen("http://127.0.0.1:8917/team/",timeout=5).status==200' \
     >/dev/null || die ACTUAL_LANDING_SIGNUP_REQUIRED
+  # Export and landing readiness are complete. One host-owned filesystem marker
+  # starts the browser phase without an extra API request or reset of any ledger.
+  python3 -I -B - "$state/fixtures/$phase" "$phase_nonce" "$phase" "$GITHUB_SHA" "$frontend_commit" "$backend_commit" "$ops/ci/customer-workflows-browser/serve_fixture.py" <<'PY_BROWSER_PHASE' || die OWNED_BROWSER_PHASE_REQUIRED
+from pathlib import Path
+from hashlib import sha256
+import json,os,re,stat,sys
+directory=Path(sys.argv[1]);nonce,locale,operations,frontend,backend=sys.argv[2:7];source=Path(sys.argv[7])
+assert directory.is_absolute() and directory.resolve(strict=True)==directory and directory.is_dir() and not directory.is_symlink()
+assert directory.stat().st_uid==os.getuid() and stat.S_IMODE(directory.stat().st_mode)==0o700
+assert re.fullmatch('[a-f0-9]{32}',nonce) and locale in ('en','es') and re.fullmatch('[a-f0-9]{40}',operations)
+assert frontend=='ab704882398a9d71dcd060ca54bd0b6b17ca4e9c' and backend=='875ade946f633ce71bec23cd0c2f6bf79b7dc2ed'
+assert source.is_file() and not source.is_symlink()
+marker=directory/'browser-phase.json'
+assert not marker.exists() and not marker.is_symlink()
+value={'phase':'browser','locale':locale,'nonce':nonce,'operations':operations,'frontend':frontend,'backend':backend,'fixture_sha256':sha256(source.read_bytes()).hexdigest()}
+raw=(json.dumps(value,sort_keys=True,separators=(',',':'))+'\n').encode()
+assert 0<len(raw)<=512
+fd=os.open(marker,os.O_WRONLY|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW,0o600)
+with os.fdopen(fd,'wb') as stream:
+    stream.write(raw);stream.flush();os.fsync(stream.fileno())
+info=marker.lstat()
+assert stat.S_ISREG(info.st_mode) and info.st_uid==os.getuid() and info.st_nlink==1 and stat.S_IMODE(info.st_mode)==0o600 and marker.read_bytes()==raw
+print('CUSTOMER_WORKFLOWS_BROWSER_PHASE_READY phase='+locale+' source_bound=true expected_build_reads=1')
+PY_BROWSER_PHASE
   browser_native=0
   browser=$(bounded 25s docker create "${runtime[@]}" --memory 2g --memory-swap 2g --shm-size 256m \
     --tmpfs /tmp:rw,exec,size=256m --workdir /browser-run \
@@ -811,7 +837,8 @@ PY_LANDING
   bounded 25s docker stop --time 10 "$landing" >/dev/null || die LANDING_STOP_REQUIRED
   bounded 15s docker rm -v "$landing" >/dev/null || die LANDING_REMOVAL_REQUIRED
   [[ "$browser_ok" == 0 && "$api_ok" == 0 && "$api_oom" == false && "$pg_oom" == false && "$browser_exit" == 0 && "$browser_running" == false && "$browser_oom" == false &&
-     ! -e "$state/fixtures/$phase/fixtures.json" && ! -L "$state/fixtures/$phase/fixtures.json" ]] || die EXACT_BROWSER_AND_AUTHORITATIVE_FACTS_REQUIRED
+     ! -e "$state/fixtures/$phase/fixtures.json" && ! -L "$state/fixtures/$phase/fixtures.json" &&
+     ! -e "$state/fixtures/$phase/browser-phase.json" && ! -L "$state/fixtures/$phase/browser-phase.json" ]] || die EXACT_BROWSER_AND_AUTHORITATIVE_FACTS_REQUIRED
   verify_source || die BROWSER_ALTERED_FRONTEND_SOURCE
   [[ -z $(git -C "$backend" status --porcelain=v1 --untracked-files=all) ]] || die BROWSER_ALTERED_BACKEND_SOURCE
 done

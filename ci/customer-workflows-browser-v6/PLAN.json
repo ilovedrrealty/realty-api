@@ -2,9 +2,9 @@
   "status": "SOURCE_ONLY_FROZEN_PENDING_ROOT_AND_NONAUTHOR_REVIEW_NOT_RUN",
   "schema": 1,
   "operations": {
-    "parent": "7b87a3d79f2e245826d80d57bde82f67876fabba",
-    "parent_tree": "adccc662233b604e96f6e31f8ccc5de87ae93085",
-    "ref": "codex-ci-customer-workflows-browser-v8-20261127",
+    "parent": "52ea74cf9d625bf96577ac233c11ea7a1dd8cb64",
+    "parent_tree": "2128725748348e146cb049949184d12336673916",
+    "ref": "codex-ci-customer-workflows-browser-v9-fixed-20261127",
     "modified_paths": [
       "ci/customer-workflows-browser-v6/PLAN.json",
       "ci/customer-workflows-browser-v6/run-hosted.sh",
@@ -12,17 +12,17 @@
       "ci/customer-workflows-browser/serve_fixture.py"
     ],
     "added_paths": [
-      ".github/workflows/customer-workflows-browser-v8.yml"
+      ".github/workflows/customer-workflows-browser-v9.yml"
     ],
+    "inherited_tuples": 475,
+    "unmodified_inherited_tuples": 471,
+    "final_tuples": 476,
     "new_paths": 1,
-    "inherited_tuples": 474,
-    "unmodified_inherited_tuples": 470,
-    "final_tuples": 475,
     "all_inherited_immutable": false,
-    "scope": "Four explicit inherited-file changes and one unique one-time workflow; every other470 parent tuple exact. Driver and all application sources are unchanged."
+    "scope": "Exactly4 modifications and1 new one-time workflow;471 other parent tuples exact. Driver and copied V6fixture unchanged."
   },
   "sources": {
-    "operations_base": "7b87a3d79f2e245826d80d57bde82f67876fabba",
+    "operations_base": "52ea74cf9d625bf96577ac233c11ea7a1dd8cb64",
     "frontend": "ab704882398a9d71dcd060ca54bd0b6b17ca4e9c",
     "backend": "875ade946f633ce71bec23cd0c2f6bf79b7dc2ed",
     "fixed_checkouts": {
@@ -725,7 +725,7 @@
     "browser_named_container": "Observe actual stopped/exit/OOM before removal. No increased runtime cap, timeout or optional engine skip."
   },
   "cleanup": {
-    "per_locale": "Stop API; collect bounded safe receipts and process states; verify marker; DROP own nonce DB and assert absence even after browser failure; remove API/browser/Landing containers; assert private facts inode removed.",
+    "per_locale": "Stop API; collect bounded safe receipts and process states; verify marker; DROP own nonce DB and assert absence even after browser failure; remove API/browser/Landing containers; assert private facts inode removed. Phase marker is validated at finalpreservation, added once to exact inode-owned files and removed with facts; both files must be absent before final acceptance (private_files_removed=2).",
     "global": "Owner-label checked containers/volumes/image plus validated private scratch removed by inherited exact cleanup trap. No raw private browser/API log or screenshots uploaded. No artifacts requested."
   },
   "diagnostics": {
@@ -738,31 +738,20 @@
     "api_public_chronology": "Failure-only exact eight fields;512-byte JSON cap; ordinal/prior slot statuses/completed/control counts and boolean flags only; safe export at most once; any diagnostic always refuses acceptance."
   },
   "local_checks": {
-    "status": "PASS_SOURCE_ONLY_NO_APP_RUNTIME",
-    "positive_baseline_protocols": 2,
-    "valid_new_census_shapes": 4,
-    "malformed_new_census_refused": 55,
-    "diagnostics_always_refuse_beside_success": 16,
-    "actual_emitted_dictionary_synthetic_metadata_controls": 4,
-    "safe_cli_exports": 1,
-    "safe_cli_native": 1,
-    "safe_cli_output_bytes": 278,
-    "python_source_AST": 2,
-    "inline_python_AST": 17,
-    "whole_fixture_inverse_exact": true,
-    "whole_checker_inverse_exact": true,
-    "whole_runner_inverse_exact": true,
-    "workflow_inverse_exact": true,
-    "whole_driver_exact_parent": true,
-    "bash_n": "NOT_RUN_LOCALLY_REQUIRED_HOSTED",
-    "no_app_DB_browser_provider_native_build_execution": true,
-    "changed_only_proof": {
-      "path": "outputs/customer-workflows-browser-v8-source-20261127-release/CHANGED-SOURCE-CONTROLS.json",
-      "bytes": 1223,
-      "sha256": "24e34f2d30009870ff2ee3aa9cd738c5be1461a82f0735d3d69d3f1391863def"
-    },
-    "scope": "Two baseline protocol shapes and only changed diagnostic shape/refusal/export/source controls; no repeated accepted app/native/browser tests. No new ASGI/app simulation was executed.",
-    "inline_program_count_qualification": "Actual17 here-doc Python programs counted including delimiters followed by shell failure suffixes. Historical retained_v7_local_checks.inline_python_AST13 is retained historical metadata, not the current measured count."
+    "status": "SOURCE_ONLY_EXTRACTED_PHASE_CONTROLS_PASS_NOT_APP_RUNTIME",
+    "ASGI_phase_positive": 1,
+    "ASGI_phase_negative": 17,
+    "parser_positive": 2,
+    "parser_negative": 16,
+    "same_ASGI_message_object_forwarding": true,
+    "no_200_body_retention": true,
+    "Linux_file_semantics": "NOT_RUN locally. fd/stat were fake for source branch controls; actual LinuxNOFOLLOW/UID/inode/regular/exclusive file checks required hosted.",
+    "Python_AST": 2,
+    "changed_new_inline_AST": 3,
+    "driver": "Unchanged exact52ea GitLF; no repeated syntax or browser tests.",
+    "no_app_DB_browser_native_build_provider_execution": true,
+    "bash_syntax": "NOT_RUN locally, required hosted bash-n",
+    "exact_cleanup_count_predicate": "Correctedlenowned2/facts+phase; only changed predicate controls, old phase/parser controls retained."
   },
   "unrun_in_this_lane": [
     "All593/69",
@@ -774,9 +763,9 @@
     "Production"
   ],
   "required_before_hosted_first_push": [
-    "Root finite composed review and Groups independent finite cold of the five changed paths, retaining prior whole-source reviews.",
-    "Exact7b87 parent/tree;474→475 tuples;470 unchanged outside four modifications; all canonical LF hashes and explicit reversals bound.",
-    "Root owns unique first push and actual current-main verification; author performs no push/runtime."
+    "Root fullfinite/composed review and Release sole nonauthor cold after HTTP18ops freeze.",
+    "Exact52ea parent475→476/4M+1A/471old immutable; all5canonicalLF+fullpatch/whole reversals and markerstartup/order/source/ownedcleanup verified.",
+    "Root unique firstpush/currentmain guard and one authorized owned hosted replay only; no author runtime/push."
   ],
   "whole_owner_goal_complete": false,
   "workflow_extension": {
@@ -817,7 +806,7 @@
     "manual_targets": "Two separate synthetic assigned leads; valid explicitE164 and raw extension-bearing invalid phone, same existing public ownedlisting. No modifications to old Main/valuation/seller notice inputs.",
     "directory": "Approved snapshot ORwithin/ANDacross facet cases, actual list/map parity; private drafts diverge and stay private. Real own+managed UI selections/explicitclear, actual legacy omission,409 and detected403+retired old callbacks.",
     "manual": "Actual Admin/current-assignee fresh server authorization and editable ENES draft. Native ownedclipboard success+readback and separately identified controlled rejection; request-only URL capture, never external navigation/sending. Public active/withdrawn anonymous reads, oldtarget/contact/assignee/session loss reset.",
-    "driver_metrics": "Strict57-key browser/58-key API receipts including locale; adds only2 required SAMEpublicresponse fields. All previous counts unchanged; no current acceptance claim.",
+    "driver_metrics": "Browser57 fields unchanged; API60 fields includinglocale with2 mandatory phase/build facts. UI counts/actions/privacy unchanged.",
     "retained_old_scope": "All original perlocale16journeys26geometry9PUT7events7jobs16boundaries, role promotion, signup10/1, private source/process/cleanup predicates required unchanged.",
     "no_paused_API_substitution": "Paused fallback503 source cannot satisfy this active assignment lane; its startup/retention proof remains separate.",
     "browser_per_locale": {
@@ -945,25 +934,25 @@
     }
   },
   "source_hashes_without_self": {
-    ".github/workflows/customer-workflows-browser-v8.yml": {
-      "bytes": 3676,
-      "sha256": "75a1b013864973f8da2544f660e72814c9fd0a92605e42959f19d8a387b3a573"
+    ".github/workflows/customer-workflows-browser-v9.yml": {
+      "bytes": 3688,
+      "sha256": "85496e843cd17e3de7b2d5b8a9ea45788530ec8a98a0fe819c07aac7a41c7906"
     },
     "ci/customer-workflows-browser-v6/run-hosted.sh": {
-      "bytes": 76798,
-      "sha256": "a74cc7b324755bb27fe1f9497b87ffd65b41120e3cbdcfe52d6b53d0e9aa0537"
+      "bytes": 79071,
+      "sha256": "f467bfdb1a6f21132d33900cc61d17ae5a586cce274a30a65cf7215eb74061fa"
+    },
+    "ci/customer-workflows-browser-v6/check-result.py": {
+      "bytes": 30788,
+      "sha256": "4062d22393367496b8cd3c7fafb9d9d175fdb7d9a10d57d0dbd530d7cc87649c"
+    },
+    "ci/customer-workflows-browser/serve_fixture.py": {
+      "bytes": 84417,
+      "sha256": "a2fdaf8f36b6750c767944de0551a189903e728680e098bb08cc80d8dc1994d1"
     },
     "ci/customer-workflows-browser-v6/run-browser.mjs": {
       "bytes": 84253,
       "sha256": "5cd3f65d8799efd310580ccdad6ecdd6820130fc975e028be1ca93cca9a96156"
-    },
-    "ci/customer-workflows-browser-v6/check-result.py": {
-      "bytes": 30202,
-      "sha256": "0f04cb1c2134e18eb57af0fca26dc6be535517cbd11c0f206920a8f9bad2eaca"
-    },
-    "ci/customer-workflows-browser/serve_fixture.py": {
-      "bytes": 80328,
-      "sha256": "685140596f959083e73c5fe67088c12056db12c0eab6b54f15d3cffbb32f97e1"
     },
     "ci/customer-workflows-browser-v6/serve_fixture.py": {
       "bytes": 76495,
@@ -1141,7 +1130,7 @@
     "all373_old_outside_schema_exact": true,
     "live_e4d_serializer_bytes_same": true,
     "models_migrations_routes_requirements_unchanged": true,
-    "fixture_adapter": "Inline ownedstate script verifies current reviewed original fixture at ci/customer-workflows-browser/serve_fixture.py with literal SHA below; original __file__/TOOLS imports, old COMMIT/TREE assertions, ONLYtwo identity overrides and original run/exception reporting remain exact. The copied V6 fixture remains unused historicalb62. All old108/private/action predicates preserved, plus same-response public-refusal completion ledger.",
+    "fixture_adapter": "Same original__file__/TOOLS/helpers, old f931 assertions and ONLYtwo identity overrides to875; unchangedmainexceptiontail. Only fixtureSHA literal changes. Added runtime source IDs let actual fixture validate host phase marker, not actor or HTTP data. UnusedcopiedV6fixture remains historicalb62.",
     "source_fetch_depth": 20,
     "oldest_required_8957_shortest_ancestry_distance": 16,
     "retained_projection16": {
@@ -1152,8 +1141,8 @@
     },
     "imported_fixture": {
       "path": "ci/customer-workflows-browser/serve_fixture.py",
-      "sha256": "0d247b28fc33b439c189a7b95976b7f0cf601ba27a99d665754836dcec6ff680",
-      "changes": "Only additive same-owned-public-GET passthrough metadata/body validation plus two required final receipt fields; no successful200 bodies retained."
+      "sha256": "a2fdaf8f36b6750c767944de0551a189903e728680e098bb08cc80d8dc1994d1",
+      "changes": "Existing V7/V8 exact3 UI receipt retained plus separate exact1 pre-browser staticexport200 and host-owned phase marker; all old DB/UI/control/private predicates remain. No200body retention."
     },
     "unused_copied_fixture": {
       "path": "ci/customer-workflows-browser-v6/serve_fixture.py",
@@ -1258,5 +1247,37 @@
       "sha256": "90ed40ef1b1ce937aec7a9ece52904ab6e1762c9c3709e82d738982af0012d77"
     },
     "no_cause_claim": "Static source found one wrapper and matching tagged branch, with three explicit manual fetch call sites. No exact origin of unexpected runtime chronology is established."
+  },
+  "static_export_phase_correction": {
+    "source_finding": {
+      "path": "outputs/customer-workflows-browser-v8-source-20261127-release/ROOT-STATIC-EXPORT-PHASE-FINDING.json",
+      "bytes": 2552,
+      "sha256": "17ae29abaecaf45d3b1adff1f72f5b2eebdbcd50206b424f6829f461a4bfcaae"
+    },
+    "actual_failure": {
+      "run": 45980340293,
+      "job": 140442334889,
+      "primary_sha256": "ded35f42af740d3b82c658a982050cd62531a650582d623426f84929b796fc9b",
+      "prior_completed200_controlcounts": [
+        0,
+        8
+      ]
+    },
+    "source_bound_timing": "API/seed precede staticexport; exactcurrent Nextlistingpage/getListing performs one deduplicated matching anonymous propertyGET before browsercontainer exists. Actualcontrol0 read supports phase mixup, not a direct wire-initiator trace.",
+    "build_ledger": "Exactly1 unmarked/pre-browser anonymous knownproperty200/noStore/finalASGI frame; no body retained. Extra pre-browser reads or any prior UI/control state refuse. Never ignore unbounded reads or reset UI ledger.",
+    "phase_marker": "Exclusive regular0600 file, currentUID/singlelink/<=512bytes/noFollow/exact canonical JSON binding nonce/locale/ops/FE/API/actualfixtureSHA. Host creates after successful Next+landingready and before browsercreate. Absent at startup; stable identity/no disappearance; valid finalpresence and inode-owned removal required. No newHTTPrequest/control/action/retry/cap/timeout.",
+    "UI_ledger": "Exactly original3 UI200/200/404, same response/refusal/privacy/nohandoff guards and actions; browser driver byteexactV8.",
+    "API_additions": {
+      "workflow_build_public_reads": 1,
+      "workflow_browser_phase_attested": true
+    },
+    "private_files_removed": 2,
+    "all_old108_data_security_controls_preserved": true
+  },
+  "review_correction": {
+    "preserved_unaccepted_sibling": "00ded45c38a9aeb4d151c452b4f53e7dd3d7e519",
+    "same_immutable_base": "52ea74cf9d625bf96577ac233c11ea7a1dd8cb64",
+    "finding": "Release found final lenowned1 inconsistent with facts+validatedphase inodes; successfulnewpath would fail after cleanup.",
+    "fix": "Only count2 + exact_two_private_facts_removed_required reason, corresponding strict enum/hash/ref/metadata. Old pure phase controls retained; no app/runtime/unchanged helper rerun."
   }
 }
