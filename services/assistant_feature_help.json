@@ -1,0 +1,794 @@
+{
+  "schema": 1,
+  "guide_state": "unpublished_source",
+  "frontend_source": "ab704882398a9d71dcd060ca54bd0b6b17ca4e9c",
+  "api_source": "625cc7a372faf1edaf668d80ab635f78937263b9",
+  "scope": "Navigation and step guidance only; no FAQ, role grant, record access, action, AI invocation or live availability claim.",
+  "actor_contract": "Future caller must derive a fresh active/email-verified current User from existing server authentication on every call. Model JSON never supplies role/actor/workspace. Selector is not authentication and does not replace target-level authorization.",
+  "entries": [
+    {
+      "id": "buying",
+      "audiences": [
+        "public"
+      ],
+      "links": {
+        "default": [
+          {
+            "surface": "landing",
+            "path": "/buying",
+            "label": {
+              "en": "Buying",
+              "es": "Comprar"
+            }
+          },
+          {
+            "surface": "landing",
+            "path": "/search",
+            "label": {
+              "en": "Search",
+              "es": "Buscar"
+            }
+          }
+        ]
+      },
+      "text": {
+        "en": {
+          "title": "Start a property search",
+          "steps": [
+            "Open Buying for the buying guide, or Search for current published properties.",
+            "Choose the available search filters and open a property to read its current details.",
+            "Use the property inquiry form for questions or a viewing request. Review contact consent and use its actual receipt; publication is not confirmed availability."
+          ]
+        },
+        "es": {
+          "title": "Comenzar una búsqueda de propiedades",
+          "steps": [
+            "Abre Comprar para ver la guía de compra, o Buscar para consultar las propiedades publicadas.",
+            "Elige los filtros disponibles y abre una propiedad para consultar sus datos actuales.",
+            "Usa el formulario de consulta para preguntas o una solicitud de visita. Revisa el consentimiento de contacto y el comprobante real; estar publicada no confirma disponibilidad."
+          ]
+        }
+      },
+      "source_refs": [
+        "landing_navigation",
+        "public_search",
+        "public_inquiry"
+      ]
+    },
+    {
+      "id": "selling",
+      "audiences": [
+        "public"
+      ],
+      "links": {
+        "default": [
+          {
+            "surface": "landing",
+            "path": "/selling",
+            "label": {
+              "en": "Selling",
+              "es": "Vender"
+            }
+          },
+          {
+            "surface": "landing",
+            "path": "/contact",
+            "label": {
+              "en": "Contact",
+              "es": "Contacto"
+            }
+          }
+        ]
+      },
+      "text": {
+        "en": {
+          "title": "Ask about selling a property",
+          "steps": [
+            "Open Selling to review the seller information.",
+            "Use the seller/contact form and describe the property and the help you want.",
+            "Review your contact details and consent before submitting. A saved inquiry is not an approved listing, valuation or promised sale."
+          ]
+        },
+        "es": {
+          "title": "Consultar sobre la venta de una propiedad",
+          "steps": [
+            "Abre Vender para consultar la información para vendedores.",
+            "Usa el formulario para vendedores o de contacto y describe la propiedad y la ayuda que necesitas.",
+            "Revisa tus datos y el consentimiento antes de enviar. Una consulta guardada no es una publicación aprobada, un avalúo ni una venta prometida."
+          ]
+        }
+      },
+      "source_refs": [
+        "landing_navigation",
+        "seller_page",
+        "public_inquiry"
+      ]
+    },
+    {
+      "id": "renting",
+      "audiences": [
+        "public"
+      ],
+      "links": {
+        "default": [
+          {
+            "surface": "landing",
+            "path": "/rentals",
+            "label": {
+              "en": "Renting",
+              "es": "Alquilar"
+            }
+          },
+          {
+            "surface": "landing",
+            "path": "/search",
+            "label": {
+              "en": "Search",
+              "es": "Buscar"
+            }
+          }
+        ]
+      },
+      "text": {
+        "en": {
+          "title": "Find a rental",
+          "steps": [
+            "Open Renting or Search and choose the rental search controls.",
+            "Check the displayed currency and daily or monthly rate on the property details.",
+            "Send a property or rental inquiry with your intended dates. Confirm availability and terms through the actual response; a listing is not a reservation."
+          ]
+        },
+        "es": {
+          "title": "Buscar un alquiler",
+          "steps": [
+            "Abre Alquilar o Buscar y elige los controles de búsqueda de alquileres.",
+            "Revisa la moneda y la tarifa diaria o mensual mostradas en los datos de la propiedad.",
+            "Envía una consulta sobre la propiedad o el alquiler con las fechas deseadas. Confirma disponibilidad y condiciones mediante la respuesta real; un anuncio no es una reserva."
+          ]
+        }
+      },
+      "source_refs": [
+        "landing_navigation",
+        "rental_page",
+        "public_search",
+        "public_inquiry"
+      ]
+    },
+    {
+      "id": "contact",
+      "audiences": [
+        "public"
+      ],
+      "links": {
+        "default": [
+          {
+            "surface": "landing",
+            "path": "/contact",
+            "label": {
+              "en": "Contact",
+              "es": "Contacto"
+            }
+          }
+        ]
+      },
+      "text": {
+        "en": {
+          "title": "Send a question to the team",
+          "steps": [
+            "Open Contact and choose the buying or selling section that fits your question.",
+            "Enter the contact details and message you want to share, then review the contact consent.",
+            "Use Send message and follow the actual confirmation. This guide cannot send a message or guarantee a reply time."
+          ]
+        },
+        "es": {
+          "title": "Enviar una pregunta al equipo",
+          "steps": [
+            "Abre Contacto y elige la sección de compra o venta que corresponda a tu consulta.",
+            "Introduce los datos de contacto y el mensaje que quieras compartir, y revisa el consentimiento de contacto.",
+            "Usa Enviar mensaje y sigue la confirmación real. Esta guía no puede enviar un mensaje ni garantizar un plazo de respuesta."
+          ]
+        }
+      },
+      "source_refs": [
+        "landing_navigation",
+        "contact_page",
+        "public_inquiry"
+      ]
+    },
+    {
+      "id": "signup",
+      "audiences": [
+        "public"
+      ],
+      "links": {
+        "default": [
+          {
+            "surface": "landing",
+            "path": "/signup",
+            "label": {
+              "en": "Sign up",
+              "es": "Registrarse"
+            }
+          }
+        ]
+      },
+      "text": {
+        "en": {
+          "title": "Create and verify an account",
+          "steps": [
+            "Open Sign up and complete the account form and its displayed terms/privacy choices.",
+            "Follow the verification step shown after submission; check the actual result rather than assuming email delivery.",
+            "Log in after verification. Account creation does not grant staff permissions or publish a professional profile."
+          ]
+        },
+        "es": {
+          "title": "Crear y verificar una cuenta",
+          "steps": [
+            "Abre Registrarse y completa el formulario y las opciones de términos y privacidad que se muestran.",
+            "Sigue el paso de verificación indicado después del envío; revisa el resultado real sin dar por hecho que llegó un correo.",
+            "Ingresa después de verificar la cuenta. Crear una cuenta no concede permisos de personal ni publica un perfil profesional."
+          ]
+        }
+      },
+      "source_refs": [
+        "landing_navigation",
+        "signup_page",
+        "auth_policy"
+      ]
+    },
+    {
+      "id": "lead_assignment",
+      "audiences": [
+        "admin"
+      ],
+      "links": {
+        "admin": [
+          {
+            "surface": "dashboard",
+            "path": "/leads?workspace=admin",
+            "label": {
+              "en": "Leads",
+              "es": "Contactos"
+            }
+          }
+        ]
+      },
+      "text": {
+        "en": {
+          "title": "Assign a lead to a Realtor",
+          "steps": [
+            "Open Leads in the Admin workspace and open the authorized lead.",
+            "Review the available Realtor selection and the assignment confirmation before saving.",
+            "Check the current assignment and its history. If the result is uncertain, use the existing check-result/refresh controls instead of submitting a new assignment blindly; a queued email is not verified delivery."
+          ]
+        },
+        "es": {
+          "title": "Asignar un contacto a un agente",
+          "steps": [
+            "Abre Contactos en el espacio de administración y abre el contacto autorizado.",
+            "Revisa el agente disponible y la confirmación de asignación antes de guardar.",
+            "Comprueba la asignación actual y su historial. Si el resultado no está confirmado, usa los controles existentes para comprobar o actualizar antes de enviar otra asignación; un correo en cola no confirma su entrega."
+          ]
+        }
+      },
+      "source_refs": [
+        "dashboard_navigation",
+        "admin_views",
+        "assignment_ui",
+        "assignment_policy"
+      ]
+    },
+    {
+      "id": "manual_follow_up",
+      "audiences": [
+        "admin",
+        "realtor"
+      ],
+      "links": {
+        "admin": [
+          {
+            "surface": "dashboard",
+            "path": "/leads?workspace=admin",
+            "label": {
+              "en": "Leads",
+              "es": "Contactos"
+            }
+          }
+        ],
+        "realtor": [
+          {
+            "surface": "dashboard",
+            "path": "/leads",
+            "label": {
+              "en": "Leads",
+              "es": "Contactos"
+            }
+          }
+        ]
+      },
+      "text": {
+        "en": {
+          "title": "Prepare a customer follow-up draft",
+          "steps": [
+            "Open an authorized lead and choose Prepare a customer message. Realtors can use only currently assigned leads.",
+            "Review the current recipient, message language, starting point and exact editable preview. A public property link requires its separate check and opt-in.",
+            "Copy the draft or choose the available email/WhatsApp/call opener yourself. Opening an app is not sending or delivery; drafts are discarded on target change, refresh or leaving."
+          ]
+        },
+        "es": {
+          "title": "Preparar un borrador de seguimiento",
+          "steps": [
+            "Abre un contacto autorizado y elige Preparar mensaje para el cliente. Los agentes solo pueden usar los contactos que tengan asignados actualmente.",
+            "Revisa el destinatario actual, el idioma, el punto de partida y la vista previa editable. Un enlace público de propiedad requiere su comprobación y selección aparte.",
+            "Copia el borrador o elige tú la opción disponible para abrir correo, WhatsApp o llamada. Abrir una aplicación no confirma envío ni entrega; cambiar de contacto, actualizar o salir descarta el borrador."
+          ]
+        }
+      },
+      "source_refs": [
+        "dashboard_navigation",
+        "manual_follow_up",
+        "manual_policy"
+      ]
+    },
+    {
+      "id": "professionals_search",
+      "audiences": [
+        "buyer",
+        "owner",
+        "realtor",
+        "admin"
+      ],
+      "links": {
+        "default": [
+          {
+            "surface": "dashboard",
+            "path": "/professional-directory",
+            "label": {
+              "en": "Find a professional",
+              "es": "Buscar profesional"
+            }
+          }
+        ]
+      },
+      "text": {
+        "en": {
+          "title": "Find a published professional",
+          "steps": [
+            "While signed in, open Find a professional.",
+            "Apply the available declared-service, area, language and other filters; inspect the current published profile.",
+            "Use only the contact options the profile actually publishes. Directory membership is not proof of licensing, availability or a private project relationship."
+          ]
+        },
+        "es": {
+          "title": "Buscar un profesional publicado",
+          "steps": [
+            "Con la sesión iniciada, abre Buscar profesional.",
+            "Aplica los filtros disponibles de servicios declarados, zona, idioma y otros criterios; consulta el perfil publicado actual.",
+            "Usa únicamente las opciones de contacto que el perfil publique. Aparecer en el directorio no acredita licencia, disponibilidad ni una relación con un proyecto privado."
+          ]
+        }
+      },
+      "source_refs": [
+        "dashboard_navigation",
+        "shared_views",
+        "professional_directory",
+        "professional_policy"
+      ]
+    },
+    {
+      "id": "professional_profile",
+      "audiences": [
+        "buyer",
+        "owner",
+        "realtor",
+        "admin"
+      ],
+      "links": {
+        "default": [
+          {
+            "surface": "dashboard",
+            "path": "/professional-profile",
+            "label": {
+              "en": "My professional profile",
+              "es": "Mi perfil profesional"
+            }
+          }
+        ]
+      },
+      "text": {
+        "en": {
+          "title": "Prepare your professional profile",
+          "steps": [
+            "Open My professional profile and complete your own draft and declared services.",
+            "Review contact consent and the preview, then save. Saving a draft does not publish it.",
+            "Request review using the available control when ready. Publication/review and withdrawal are separate states; do not assume approval from a saved draft."
+          ]
+        },
+        "es": {
+          "title": "Preparar tu perfil profesional",
+          "steps": [
+            "Abre Mi perfil profesional y completa tu borrador y los servicios que declaras.",
+            "Revisa el consentimiento de contacto y la vista previa antes de guardar. Guardar un borrador no lo publica.",
+            "Solicita revisión con el control disponible cuando esté listo. La publicación, revisión y retirada son estados distintos; guardar no significa aprobación."
+          ]
+        }
+      },
+      "source_refs": [
+        "dashboard_navigation",
+        "professional_editor",
+        "professional_policy"
+      ]
+    },
+    {
+      "id": "contact_import",
+      "audiences": [
+        "admin"
+      ],
+      "links": {
+        "admin": [
+          {
+            "surface": "dashboard",
+            "path": "/trade-contacts?workspace=admin",
+            "label": {
+              "en": "Trade contacts",
+              "es": "Contactos de oficios"
+            }
+          }
+        ]
+      },
+      "text": {
+        "en": {
+          "title": "Preview a business-contact import",
+          "steps": [
+            "Open Trade contacts in the Admin workspace and use its file-import controls.",
+            "Review column mapping, source evidence, invalid rows and duplicate results in the preview.",
+            "Use a confirmed import only within the current authorized workflow. An imported contact does not create an account, publish a professional profile or send outreach."
+          ]
+        },
+        "es": {
+          "title": "Revisar una importación de contactos comerciales",
+          "steps": [
+            "Abre Contactos de oficios en el espacio de administración y usa los controles de importación de archivos.",
+            "Revisa la asignación de columnas, las fuentes, las filas inválidas y los duplicados en la vista previa.",
+            "Confirma una importación solo dentro del flujo autorizado actual. Importar un contacto no crea una cuenta, publica un perfil profesional ni envía mensajes."
+          ]
+        }
+      },
+      "source_refs": [
+        "dashboard_navigation",
+        "admin_views",
+        "contact_import_ui",
+        "contact_import_policy"
+      ]
+    },
+    {
+      "id": "member_profile",
+      "audiences": [
+        "buyer",
+        "owner",
+        "realtor",
+        "admin"
+      ],
+      "links": {
+        "default": [
+          {
+            "surface": "dashboard",
+            "path": "/property-network?tab=my-profile",
+            "label": {
+              "en": "My network profile",
+              "es": "Mi perfil en la red"
+            }
+          }
+        ]
+      },
+      "text": {
+        "en": {
+          "title": "Set up your member profile",
+          "steps": [
+            "Open Projects & member community, then My network profile.",
+            "Choose the member display name, profile content and visibility offered by the page; review picture/audience guidance before saving.",
+            "This member profile is separate from the professional directory. Private projects and contact records do not become public because you save it."
+          ]
+        },
+        "es": {
+          "title": "Configurar tu perfil de miembro",
+          "steps": [
+            "Abre Proyectos y comunidad de miembros y después Mi perfil en la red.",
+            "Elige el nombre visible, el contenido y la visibilidad disponibles; revisa la información sobre imagen y audiencia antes de guardar.",
+            "Este perfil es independiente del directorio profesional. Guardarlo no hace públicos los proyectos privados ni los registros de contacto."
+          ]
+        }
+      },
+      "source_refs": [
+        "dashboard_navigation",
+        "network_views",
+        "network_copy",
+        "network_policy"
+      ]
+    },
+    {
+      "id": "groups",
+      "audiences": [
+        "buyer",
+        "owner",
+        "realtor",
+        "admin"
+      ],
+      "links": {
+        "default": [
+          {
+            "surface": "dashboard",
+            "path": "/property-network?tab=groups",
+            "label": {
+              "en": "Groups",
+              "es": "Grupos"
+            }
+          }
+        ]
+      },
+      "text": {
+        "en": {
+          "title": "Use Groups",
+          "steps": [
+            "Open Projects & member community, then Groups, and choose a group you can access.",
+            "Follow the group invitation/joining controls and choose the name you share in that group.",
+            "Posting and comments depend on current membership and moderation. A chosen author picture also follows its profile visibility; joining a group does not grant access to unrelated private projects."
+          ]
+        },
+        "es": {
+          "title": "Usar los grupos",
+          "steps": [
+            "Abre Proyectos y comunidad de miembros, después Grupos, y elige un grupo al que tengas acceso.",
+            "Sigue los controles de invitación o ingreso y elige el nombre que compartes en ese grupo.",
+            "Las publicaciones y comentarios dependen de tu membresía y de la moderación actuales. La imagen del autor también sigue la visibilidad de su perfil; entrar a un grupo no da acceso a proyectos privados ajenos."
+          ]
+        }
+      },
+      "source_refs": [
+        "dashboard_navigation",
+        "network_views",
+        "network_copy",
+        "groups_policy"
+      ]
+    },
+    {
+      "id": "property_work",
+      "audiences": [
+        "buyer",
+        "owner",
+        "realtor",
+        "admin"
+      ],
+      "links": {
+        "default": [
+          {
+            "surface": "dashboard",
+            "path": "/property-network?tab=projects",
+            "label": {
+              "en": "Property projects",
+              "es": "Proyectos de propiedades"
+            }
+          }
+        ]
+      },
+      "text": {
+        "en": {
+          "title": "Navigate private property work",
+          "steps": [
+            "Open Projects & member community, then Property projects, and select an accessible project.",
+            "Read the progress timeline, milestones and project-team sections that are available to you.",
+            "Use only the creation, update or photo controls your current access permits. Project access is separate from public listings, groups and member-profile visibility."
+          ]
+        },
+        "es": {
+          "title": "Consultar el trabajo privado de una propiedad",
+          "steps": [
+            "Abre Proyectos y comunidad de miembros, después Proyectos de propiedades, y selecciona un proyecto accesible.",
+            "Consulta la cronología de progreso, los hitos y el equipo del proyecto que estén disponibles.",
+            "Usa únicamente los controles de creación, cambios o fotos que tu acceso actual permita. El acceso al proyecto es independiente de los anuncios públicos, grupos y visibilidad del perfil de miembro."
+          ]
+        }
+      },
+      "source_refs": [
+        "dashboard_navigation",
+        "network_views",
+        "network_copy",
+        "network_policy"
+      ]
+    }
+  ],
+  "source_pins": {
+    "landing_navigation": {
+      "source": "frontend",
+      "commit": "ab704882398a9d71dcd060ca54bd0b6b17ca4e9c",
+      "path": "apps/landing/src/locales/en/common.json",
+      "sha256": "631ed8988fb1b8abecc125cbee128b2dac34ee12e4a034cee3b8f174149b6105"
+    },
+    "public_search": {
+      "source": "frontend",
+      "commit": "ab704882398a9d71dcd060ca54bd0b6b17ca4e9c",
+      "path": "apps/landing/src/views/Search.tsx",
+      "sha256": "438d9b878fd91cfab7c2b4957bc6652d17a35c211bedc09f3b775bc0b18608d1"
+    },
+    "public_inquiry": {
+      "source": "api",
+      "commit": "625cc7a372faf1edaf668d80ab635f78937263b9",
+      "path": "routes/leads.py",
+      "sha256": "48f6e6972f2c0f52083f8028767463074a4053ad0246bcfe83a596c8fc3d918b"
+    },
+    "seller_page": {
+      "source": "frontend",
+      "commit": "ab704882398a9d71dcd060ca54bd0b6b17ca4e9c",
+      "path": "apps/landing/src/views/Selling.tsx",
+      "sha256": "22f9fb2cea80c8bc163ce87006c7b61ebe8de145c51415aac11934bf3a09fe16"
+    },
+    "rental_page": {
+      "source": "frontend",
+      "commit": "ab704882398a9d71dcd060ca54bd0b6b17ca4e9c",
+      "path": "apps/landing/src/views/Rentals.tsx",
+      "sha256": "c448c7dd0851ca3ff4995e58bbaea75009d6a112a0d141d74105db4b796c4813"
+    },
+    "contact_page": {
+      "source": "frontend",
+      "commit": "ab704882398a9d71dcd060ca54bd0b6b17ca4e9c",
+      "path": "apps/landing/src/views/Contact.tsx",
+      "sha256": "000229ced4652973760f46ea64c5a5e8ad27afb50a14bfdf8cf4765354c486da"
+    },
+    "signup_page": {
+      "source": "frontend",
+      "commit": "ab704882398a9d71dcd060ca54bd0b6b17ca4e9c",
+      "path": "apps/landing/src/locales/en/auth.json",
+      "sha256": "b0f585cf46f1349276b6a467ba32ecd681ee664e2d8772e299a3cc30d3581a83"
+    },
+    "auth_policy": {
+      "source": "api",
+      "commit": "625cc7a372faf1edaf668d80ab635f78937263b9",
+      "path": "utils/auth.py",
+      "sha256": "26327b9f16a8a803f2e2f1317a6e87a78168e0c34eeea8efd78775483643d936"
+    },
+    "dashboard_navigation": {
+      "source": "frontend",
+      "commit": "ab704882398a9d71dcd060ca54bd0b6b17ca4e9c",
+      "path": "apps/dashboard/src/layouts/DashLayout.tsx",
+      "sha256": "c0a4157fdcf33bf9f77276bdc7bb5e896d5f29c97317369fb64cf53aaa8999fa"
+    },
+    "admin_views": {
+      "source": "frontend",
+      "commit": "ab704882398a9d71dcd060ca54bd0b6b17ca4e9c",
+      "path": "apps/dashboard/src/pages/AdminDash.tsx",
+      "sha256": "83bb80d86e2a1b08bdee4821fd0a870f96d403837ae5626a792f551638d6a5c1"
+    },
+    "shared_views": {
+      "source": "frontend",
+      "commit": "ab704882398a9d71dcd060ca54bd0b6b17ca4e9c",
+      "path": "apps/dashboard/src/pages/Dashboard.tsx",
+      "sha256": "74898bc9727bf4a63a1f7edead0608f7e1c01a07e388dccc4f6c670010df16f7"
+    },
+    "assignment_ui": {
+      "source": "frontend",
+      "commit": "ab704882398a9d71dcd060ca54bd0b6b17ca4e9c",
+      "path": "apps/dashboard/src/components/admin/AssignmentPanel.tsx",
+      "sha256": "3c75ce78776dfb16bde7c9ac31febe6bd1c62a68aff0105dd53b24692feaab79"
+    },
+    "assignment_policy": {
+      "source": "api",
+      "commit": "625cc7a372faf1edaf668d80ab635f78937263b9",
+      "path": "routes/leads.py",
+      "sha256": "48f6e6972f2c0f52083f8028767463074a4053ad0246bcfe83a596c8fc3d918b"
+    },
+    "manual_follow_up": {
+      "source": "frontend",
+      "commit": "ab704882398a9d71dcd060ca54bd0b6b17ca4e9c",
+      "path": "apps/dashboard/src/components/admin/LeadFollowUp.tsx",
+      "sha256": "a4c47e500401f9ed3e2e9bc8049fb641be232de4118ec5311cbad1af4dddb548"
+    },
+    "manual_policy": {
+      "source": "api",
+      "commit": "625cc7a372faf1edaf668d80ab635f78937263b9",
+      "path": "routes/leads.py",
+      "sha256": "48f6e6972f2c0f52083f8028767463074a4053ad0246bcfe83a596c8fc3d918b"
+    },
+    "professional_directory": {
+      "source": "frontend",
+      "commit": "ab704882398a9d71dcd060ca54bd0b6b17ca4e9c",
+      "path": "apps/dashboard/src/pages/shared/ProfessionalDirectory.tsx",
+      "sha256": "9ec1d1ef0dace756f5efdfca5ac9b5dcf1cc69046c3d8dfa8ff9404a5ef13749"
+    },
+    "professional_editor": {
+      "source": "frontend",
+      "commit": "ab704882398a9d71dcd060ca54bd0b6b17ca4e9c",
+      "path": "apps/dashboard/src/pages/shared/ProfessionalProfile.tsx",
+      "sha256": "9f53d147d713caf37e3b0efd2a82086605183455f6c53bccf168150d1b90a0ec"
+    },
+    "professional_policy": {
+      "source": "api",
+      "commit": "625cc7a372faf1edaf668d80ab635f78937263b9",
+      "path": "routes/professionals.py",
+      "sha256": "92f0b5363aa234d0ba71945689b0cb186cc9a358368e3a50c5fd4f34f05d4652"
+    },
+    "contact_import_ui": {
+      "source": "frontend",
+      "commit": "ab704882398a9d71dcd060ca54bd0b6b17ca4e9c",
+      "path": "apps/dashboard/src/components/admin/ContactFileImport.tsx",
+      "sha256": "3d3ea80ca3b177f5a1b20e0a25bbdbecadbf2296646b3038bf67d6648c51a3e9"
+    },
+    "contact_import_policy": {
+      "source": "api",
+      "commit": "625cc7a372faf1edaf668d80ab635f78937263b9",
+      "path": "routes/trade_contacts.py",
+      "sha256": "c50039f86fbb32f608cdb784de3b09d31fcb8c9a04d298ccd928c604b299edbb"
+    },
+    "network_views": {
+      "source": "frontend",
+      "commit": "ab704882398a9d71dcd060ca54bd0b6b17ca4e9c",
+      "path": "apps/dashboard/src/pages/shared/PropertyNetwork.tsx",
+      "sha256": "036eff5291815ee62311428889bf16e4f19b6f533ebdb199d50e3a56211154ec"
+    },
+    "network_copy": {
+      "source": "frontend",
+      "commit": "ab704882398a9d71dcd060ca54bd0b6b17ca4e9c",
+      "path": "apps/dashboard/src/locale/en/property_network.json",
+      "sha256": "21295196c6cc4529c92975768c21ba7c75324c70c7b68aaf6d969b4d0cad64e1"
+    },
+    "network_policy": {
+      "source": "api",
+      "commit": "625cc7a372faf1edaf668d80ab635f78937263b9",
+      "path": "routes/property_network.py",
+      "sha256": "749bc141967640eb9c100268e516e3b4dbd5bc32908bc9edca7d810921940026"
+    },
+    "groups_policy": {
+      "source": "api",
+      "commit": "625cc7a372faf1edaf668d80ab635f78937263b9",
+      "path": "routes/social_groups.py",
+      "sha256": "3f10962199d3a6366e65d12d15e82986efb783e699c835f73fcaae8f1b66758d"
+    },
+    "en_navigation": {
+      "source": "frontend",
+      "commit": "ab704882398a9d71dcd060ca54bd0b6b17ca4e9c",
+      "path": "apps/dashboard/src/locale/en/nav.json",
+      "sha256": "2d123d20092f466d9806b813eedae4f6e9b90549206858f20e67e85fa34cd4ca"
+    },
+    "en_network": {
+      "source": "frontend",
+      "commit": "ab704882398a9d71dcd060ca54bd0b6b17ca4e9c",
+      "path": "apps/dashboard/src/locale/en/property_network.json",
+      "sha256": "21295196c6cc4529c92975768c21ba7c75324c70c7b68aaf6d969b4d0cad64e1"
+    },
+    "en_manual": {
+      "source": "frontend",
+      "commit": "ab704882398a9d71dcd060ca54bd0b6b17ca4e9c",
+      "path": "apps/dashboard/src/locale/en/admin.json",
+      "sha256": "1686018b334d312a7a7a3a787eb2f57a8588c2df7dc6aecfda4e0bf636b1cf4a"
+    },
+    "en_public": {
+      "source": "frontend",
+      "commit": "ab704882398a9d71dcd060ca54bd0b6b17ca4e9c",
+      "path": "apps/landing/src/locales/en/common.json",
+      "sha256": "631ed8988fb1b8abecc125cbee128b2dac34ee12e4a034cee3b8f174149b6105"
+    },
+    "es_navigation": {
+      "source": "frontend",
+      "commit": "ab704882398a9d71dcd060ca54bd0b6b17ca4e9c",
+      "path": "apps/dashboard/src/locale/es/nav.json",
+      "sha256": "fbbc4ad0595852cfe7ac21f1de3c511b1f297aa6b78bad80e7f4b091263e93a0"
+    },
+    "es_network": {
+      "source": "frontend",
+      "commit": "ab704882398a9d71dcd060ca54bd0b6b17ca4e9c",
+      "path": "apps/dashboard/src/locale/es/property_network.json",
+      "sha256": "0b6792d51c989a58f215a107a0e0a819d6b0a9ee6cf814c25368c9b846a3ea50"
+    },
+    "es_manual": {
+      "source": "frontend",
+      "commit": "ab704882398a9d71dcd060ca54bd0b6b17ca4e9c",
+      "path": "apps/dashboard/src/locale/es/admin.json",
+      "sha256": "277337f3d1c6f3166a9c120bba63c74488e1980aa29b7b444f9112ab65f0535e"
+    },
+    "es_public": {
+      "source": "frontend",
+      "commit": "ab704882398a9d71dcd060ca54bd0b6b17ca4e9c",
+      "path": "apps/landing/src/locales/es/common.json",
+      "sha256": "c3952ffc257eaa300411f90ee026f847280b64590b60ae5ea96a46c722ff4128"
+    }
+  }
+}
