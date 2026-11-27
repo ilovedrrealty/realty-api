@@ -89,6 +89,7 @@ class LeadTrackingTests(unittest.TestCase):
 
     def setUp(self):
         with self.engine.begin() as connection:
+            connection.execute(text("TRUNCATE assignment_email_jobs, assignment_events"))
             connection.execute(text("DELETE FROM leads"))
         self.crm_patch = patch.object(leads.ghl, "create_contact")
         self.email_patch = patch.object(leads, "send_lead_notification")
