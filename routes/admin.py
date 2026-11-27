@@ -670,6 +670,7 @@ class AssignRealtorBody(BaseModel):
 @router.put("/users/{user_id}/assign-realtor", status_code=204)
 def assign_realtor_to_owner(user_id: str, body: AssignRealtorBody, request: Request, admin=Depends(require_admin), db: Session = Depends(get_db)):
     require_json_mutation(request)
+    raise HTTPException(status_code=503, detail="Assignment changes are temporarily paused", headers={"Cache-Control": "no-store"})
     prior, request_id, body_hash, target_id, agent_id = assignment_notification.prepare_request(
         db, actor_id=admin.id, source_kind="account", source_id=user_id,
         agent_id=body.realtor_id or None, request_id=body.request_id)

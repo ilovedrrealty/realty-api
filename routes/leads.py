@@ -532,6 +532,7 @@ def admin_assign_lead(
     db: Session = Depends(get_db),
 ):
     require_json_mutation(request)
+    raise HTTPException(status_code=503, detail="Assignment changes are temporarily paused", headers={"Cache-Control": "no-store"})
     prior, request_id, body_hash, target_id, agent_id = assignment_notification.prepare_request(
         db, actor_id=user.id, source_kind="lead", source_id=lead_id,
         agent_id=body.realtor_id, request_id=body.request_id)
