@@ -1,0 +1,1074 @@
+{
+  "status": "SOURCE_ONLY_FROZEN_PENDING_ROOT_AND_NONAUTHOR_REVIEW_NOT_RUN",
+  "schema": 1,
+  "operations": {
+    "parent": "bfa91f44832ce34ccf16173f9a58f210b83095b4",
+    "parent_tree": "cd95766659dd4ed02b269ee867df2c934c9e8cd3",
+    "ref": "codex-ci-customer-workflows-browser-v5-20261127",
+    "new_paths": 6,
+    "inherited_tuples": 461,
+    "final_tuples": 467,
+    "all_inherited_immutable": true
+  },
+  "sources": {
+    "operations_base": "a2854f24068ed5b6715a5e6e94ccc32fbf4cf9cb",
+    "frontend": "ab704882398a9d71dcd060ca54bd0b6b17ca4e9c",
+    "backend": "f9315a9fee76f46df7ecbf8e5d67d26de1bd2d4b",
+    "fixed_checkouts": {
+      "backend": [
+        "f9315a9fee76f46df7ecbf8e5d67d26de1bd2d4b",
+        "e48d0e9b22bf66b5a921befb2ad2e892378e242f"
+      ],
+      "frontend": [
+        "ab704882398a9d71dcd060ca54bd0b6b17ca4e9c",
+        "f085a47f49bca34058e2f9d230ead05388fa63a4"
+      ],
+      "baseline": [
+        "01695530df670a94ac28f8b3bf36cc34b5b7a942",
+        "e88ea0c57f9fac39545322532a5992d5a2927676"
+      ],
+      "migration": [
+        "c193a925ba57ea2d67ea48c44e5262817885c8a2",
+        "10edb138fba1d201e66042d25ba022313b300cc2"
+      ],
+      "relay": [
+        "3007728fd67c5889a8373e41ff3ffa5cc50d839b",
+        "80868dce147c2cd4609e303493669d0a19f09741"
+      ],
+      "previous": [
+        "8957b18520d15dac503e0e4a5ce4b2455135d601",
+        "11ab69db36eb30881e4f3086578201f584c4092d"
+      ],
+      "reference": [
+        "26ca867a1008868f7dc5f322d28dc289a7763980",
+        "3a30b7e8c5b53827b97374c18806a7cb03ef9c5c"
+      ]
+    },
+    "frontend_overlay": {
+      "apps/dashboard/src/api/admin.ts": {
+        "tuple": "100644 blob 957caa4837735aab87efc5ff9258dac006b21468",
+        "sha256": "9c60e4e8279e8c6c7fea681f757d6d711e3d3a794bba95ecda8a3231ea61d944"
+      },
+      "apps/dashboard/src/api/assignments.ts": {
+        "tuple": "100644 blob 4035107c3cad6a85f84cda324c4458d185e5a98c",
+        "sha256": "5e45a98248ab76459ab90886fe76c4c3d3b3639f636721054bf34c3e0872199f"
+      },
+      "apps/dashboard/src/api/leads.ts": {
+        "tuple": "100644 blob a9569df8cf6938294a773674dfbd378d37e2a1d7",
+        "sha256": "1145c13a7d9032e9c3cce6264906cc3bb9080ade98e0e6007226cddec7a9225e"
+      },
+      "apps/dashboard/src/components/admin/AssignmentHistory.tsx": {
+        "tuple": "100644 blob d97116a35dcabcfdc56f5bea7891c8620cbc9d83",
+        "sha256": "6a5246ff6d88d793908e42f9ad9dd40d69c68f3937d5ffefcf24d2fec1f81b7c"
+      },
+      "apps/dashboard/src/components/admin/AssignmentPanel.tsx": {
+        "tuple": "100644 blob 2348e2562acf04e59975331974024f1510164f1b",
+        "sha256": "3c75ce78776dfb16bde7c9ac31febe6bd1c62a68aff0105dd53b24692feaab79"
+      },
+      "apps/dashboard/src/components/admin/LeadDetailPanel.tsx": {
+        "tuple": "100644 blob a71d932b4ec6b609c0a63f7b002cab888f800818",
+        "sha256": "0321cdae48d45f9f49f3bff190894661e3ab1b075360e101bd945892a3569d2a"
+      },
+      "apps/dashboard/src/components/admin/UserDetailPanel.tsx": {
+        "tuple": "100644 blob 62f08e54ced4a7a3382ebcbaa576aaa28fb3fdef",
+        "sha256": "f577158e8207c836bc2e750d464116c529227e95b548fec3962d39085d3690b3"
+      },
+      "apps/dashboard/src/locale/en/communications.json": {
+        "tuple": "100644 blob 06353f9f11cf9fa208b89c5ab234c1f28ab771c2",
+        "sha256": "8d0c9d12e569118b8cd2c933983decf4a6dc01ef305a9b05d25347f1e76727f5"
+      },
+      "apps/dashboard/src/locale/es/communications.json": {
+        "tuple": "100644 blob e85a1ebb1ec02e2876abc928bbe837a6bdc68578",
+        "sha256": "12c5bb628f40f321da0de313b98d37a0470a13d679612d8f1180718c906d04d3"
+      },
+      "apps/dashboard/src/pages/admin/Leads.tsx": {
+        "tuple": "100644 blob ec6e3305695e097d79926f263c01aa8933ae4498",
+        "sha256": "eb40ea1c52afff71fb6f3e328fe951a946d80fc5c1041bcf6a245c7a41311e2e"
+      },
+      "apps/dashboard/src/pages/admin/Users.tsx": {
+        "tuple": "100644 blob fb6d5ac3575a0c6c3cc3158613aec0c60720f24e",
+        "sha256": "1c13a09492b06c29f0bb285aa67def67b1118ed01d0c847edfe08f5104a597df"
+      },
+      "tests/assignment-history.test.cjs": {
+        "tuple": "100644 blob 02255792a14d376a5200207527376d9779372cd7",
+        "sha256": "11975d3ee8f17aeb1c443b6a14fa2f3effbae2092f7ff667d3dbafb0318c38cf"
+      }
+    },
+    "backend_overlay": {
+      "alembic/versions/f7a9c3e2d114_private_assignment_notifications.py": {
+        "tuple": "100644 blob f1c04d094346f1e5f78988d26d92d0db52899d4c",
+        "sha256": "6cbdd85c7b6fe9b63c55818591f5803513942df85ffad3925691133e60acabd9"
+      },
+      "main.py": {
+        "tuple": "100644 blob 83e65f26ce079aabae976d7dee8339916e16d45f",
+        "sha256": "e6a8cc2b9d8fd408aeecedc9143c95d418af5f3b94a307a5897bee8c86cac694"
+      },
+      "models/__init__.py": {
+        "tuple": "100644 blob 2fd25e733b8cce339c3fe3db88891473df8a785d",
+        "sha256": "1da999625e990a4bdf1d9f1dde05356f59ee1cef111c515cf5887ffd69723514"
+      },
+      "models/assignment_notification.py": {
+        "tuple": "100644 blob 3a08dd4ec30393ca727811c3f21d5bf2980045f4",
+        "sha256": "e579077d9c04ab32af9ff3a5da8ef2b46feedc364b345514b250bfb8216d2a63"
+      },
+      "routes/admin.py": {
+        "tuple": "100644 blob 6e0324d8b486def7fb00c568b2da16919e668d2e",
+        "sha256": "520e4cf875c83b211a7e76d207a46943294b23ecbaa7cd69765c9a50eac1a752"
+      },
+      "routes/assignment_notification.py": {
+        "tuple": "100644 blob 9acc7993d99e5af046e5a81f252a5253376c74bc",
+        "sha256": "09728650341a02fb1c73aaeff9283a3685e638f46a2ba860c0470fc971536d88"
+      },
+      "routes/leads.py": {
+        "tuple": "100644 blob 56aef5adfa46fcfbd37b917bf1a1a3c09c5fc17a",
+        "sha256": "48f6e6972f2c0f52083f8028767463074a4053ad0246bcfe83a596c8fc3d918b"
+      },
+      "schemas/assignment_notification.py": {
+        "tuple": "100644 blob 2fcce33f140a809d39152c9a06b6b52eb2c296f8",
+        "sha256": "4ab39353f4ad5aadf0897449d31e999e1df1cd2387a671ddf7ad2c7830851336"
+      },
+      "services/assignment_notification.py": {
+        "tuple": "100644 blob febcfe67c96a32f4319a967063d98a4071ada02b",
+        "sha256": "22832c315580c4092c65d68087b54ee180e0f0e080f7a60765edc920aa82339c"
+      },
+      "tests/test_assignment_notification.py": {
+        "tuple": "100644 blob 5205eeef150050f06a4c0deb443e15aafc54bb3d",
+        "sha256": "85cda108835c079212aafc4eca48d4f0376c59923d4be21601511b02e35ba4ba"
+      },
+      "tests/test_lead_tracking.py": {
+        "tuple": "100644 blob 7c238193a9078d186ca7d1f6641dafa1b33aab28",
+        "sha256": "885c5f518158255799f97638e49cf85573994ff3aea7e625a3f2ba0f70e886b0"
+      },
+      "tests/test_professional_catalog.py": {
+        "tuple": "100644 blob b5e4fbd16394a30cabe43f79ce5aac3be4ee88e9",
+        "sha256": "8c7de9593848e891fbbbff5d30d1c5e4010c0a2e3bb378a6133cbba399eb1a62"
+      },
+      "utils/assignment_messages.py": {
+        "tuple": "100644 blob 1a5f83b1668f513e8add7dad68605106f375236d",
+        "sha256": "c6d29396513d4be88bea8c4e935ece2f624c6b903641f41246bc4918c5f9a1e9"
+      },
+      "utils/professional_options.py": {
+        "tuple": "100644 blob 8efc2ca62bdb3bd9c14f2435123e5ceacef38069",
+        "sha256": "82a64f1b31b96aa7038f638a6b6a95ad766497113f7c414d832c8ef1e264ef22"
+      }
+    },
+    "backend_tree": "e48d0e9b22bf66b5a921befb2ad2e892378e242f",
+    "frontend_extension_pins": {
+      "manual": {
+        "apps/dashboard/src/api/leadFollowUp.ts": {
+          "tuple": "100644 blob 1f72dad01d5c942a71a70fa5cde8c0ba7140a689",
+          "sha256": "19919a4e2692025becf0b9aa4463b0db1bce0e222e7e690d0babc0de880c3755"
+        },
+        "apps/dashboard/src/components/admin/LeadDetailPanel.tsx": {
+          "tuple": "100644 blob ee38df841070e1eb4b7cb6d3425ceea24d64f31b",
+          "sha256": "b2f1b834aa5db88e27ac4d3124b50e7b4680a7e4e9d88b2083d187e8d5e2e097"
+        },
+        "apps/dashboard/src/components/admin/LeadFollowUp.tsx": {
+          "tuple": "100644 blob 3a541b6d6a5e7dc9d9f9ecbdb5ab5c9a0ca3c59d",
+          "sha256": "a4c47e500401f9ed3e2e9bc8049fb641be232de4118ec5311cbad1af4dddb548"
+        },
+        "apps/dashboard/src/lib/leadFollowUp.ts": {
+          "tuple": "100644 blob 2aeec79aeb09fa4bb7920c1aa7e70ece92833359",
+          "sha256": "d03c4855af9264c015c81d5bbb88c11e402dad3a220c0d97ce2d40654cd4df5b"
+        },
+        "apps/dashboard/src/locale/en/admin.json": {
+          "tuple": "100644 blob e2b26ea0b7e70a7dc6393febd207811e9cba784f",
+          "sha256": "1686018b334d312a7a7a3a787eb2f57a8588c2df7dc6aecfda4e0bf636b1cf4a"
+        },
+        "apps/dashboard/src/locale/es/admin.json": {
+          "tuple": "100644 blob 433d52eff13ac40d7aab109dcee8eaf51c6aadb9",
+          "sha256": "277337f3d1c6f3166a9c120bba63c74488e1980aa29b7b444f9112ab65f0535e"
+        },
+        "apps/dashboard/src/pages/admin/Leads.tsx": {
+          "tuple": "100644 blob 10123179c3a04d9d04367a001d7ccc35127ce0d1",
+          "sha256": "82787bda9d40225492bd8db16550ca4ba5eb8d97b96311145481eb91e62d6730"
+        },
+        "apps/dashboard/src/pages/realtor/Leads.tsx": {
+          "tuple": "100644 blob 27dd3f0e80994c92bbd53e87f0491a967a60ef91",
+          "sha256": "d413439d5fc3ca9b8a8945e796e3d1c188cab7dcf58566e4c303c76a76b2d659"
+        },
+        "apps/dashboard/src/pages/realtor/Pipeline.tsx": {
+          "tuple": "100644 blob f69d9db5b2384019753ad34a42861c22e49de6aa",
+          "sha256": "c80c6e31a6af10bb91e16c8de579dd8efb8e8fe2761a6f7fda0bc62a24b6c061"
+        },
+        "tests/lead-follow-up.test.cjs": {
+          "tuple": "100644 blob 7058c22029c9b24af18c334a83fa29dd0b87d500",
+          "sha256": "ede3e5cb3c77af0924053434caf796585fca7daf4c185ceedd5173914e5461b6"
+        }
+      },
+      "directory": {
+        "apps/dashboard/src/api/directoryMaps.ts": {
+          "tuple": "100644 blob 4112d9c7a650eab5188124941b806b82ef130f1d",
+          "sha256": "ee97cd0ef0b8a7c2227f31eafc9c9faf6df33345f5dfabb925810bc39e487680"
+        },
+        "apps/dashboard/src/api/professionals.ts": {
+          "tuple": "100644 blob 80d369b33368723b9dcbc7d384144684cea15b31",
+          "sha256": "aae2df6c16bbe4b19fbf737a14b0ab4539e362c780ab87decfa78768887e698c"
+        },
+        "apps/dashboard/src/components/admin/ManagedProfessionalEditor.tsx": {
+          "tuple": "100644 blob 8ace03bd10005f74681e85a8928cb9537f2fbd4f",
+          "sha256": "58cb176af6fd12434011aa9602beacc772d54f82c559e1910405b280753af168"
+        },
+        "apps/dashboard/src/components/shared/ProfessionalDraftFields.tsx": {
+          "tuple": "100644 blob 522d4eaeb68ce9d9ece65b8c68db2586a5318bfb",
+          "sha256": "4f2cade1937fb584a2e4f83cffb7d0e444ea38b75db6d384d5eba55b780ec29b"
+        },
+        "apps/dashboard/src/components/shared/ProfessionalFacets.tsx": {
+          "tuple": "100644 blob 2a271da9465e90df6981a48b32f4fd1fd1a372bc",
+          "sha256": "9866b5a1634673aa5fe2d3d657aec1b5f43283e40e22d1203a5395eeb02897a0"
+        },
+        "apps/dashboard/src/components/shared/ProfessionalFields.tsx": {
+          "tuple": "100644 blob f5139c77a3b0b996b434c67dce3312f0b40337e1",
+          "sha256": "6d6124ac507c541d97f2f7646980434408f59185622fe5e86374936cbeb47cad"
+        },
+        "apps/dashboard/src/components/shared/ProfessionalPreview.tsx": {
+          "tuple": "100644 blob 0588d04084e81e2734e9611b1f9bbe88afd41523",
+          "sha256": "fc6d2f2e58b3faea86cc4269bd692a7e33b514fdc7afe2e66f9688e72c76e7df"
+        },
+        "apps/dashboard/src/locale/en/professionals.json": {
+          "tuple": "100644 blob 7d195730dcf068e3dfb34fee9d492685615cf507",
+          "sha256": "5f62a1d3537355712450acdadec9821a8286a60627af3a79a6e806498c82bce3"
+        },
+        "apps/dashboard/src/locale/es/professionals.json": {
+          "tuple": "100644 blob 2ab91a857966022c15fb98da57691473c3e2f5dd",
+          "sha256": "41866b55c26341f9d91285f4f677dad3223b7ab625fd17eb395aab18af690033"
+        },
+        "apps/dashboard/src/pages/admin/Professionals.tsx": {
+          "tuple": "100644 blob 97d270f72b8a00c2fa6d02f8adb4db9cbc236b68",
+          "sha256": "4fcd70fd0ffe0cf72ec8b7f471bef33d85a16861c9ea02557499650137a267fd"
+        },
+        "apps/dashboard/src/pages/shared/ProfessionalDirectory.tsx": {
+          "tuple": "100644 blob 2ea720352c1a1b37f1aa3aa08bb1e98f6e0410b8",
+          "sha256": "9ec1d1ef0dace756f5efdfca5ac9b5dcf1cc69046c3d8dfa8ff9404a5ef13749"
+        },
+        "apps/dashboard/src/pages/shared/ProfessionalProfile.tsx": {
+          "tuple": "100644 blob fa1cd0a6835991307f7f54722738f34553fc174b",
+          "sha256": "9f53d147d713caf37e3b0efd2a82086605183455f6c53bccf168150d1b90a0ec"
+        },
+        "packages/professionals/src/index.ts": {
+          "tuple": "100644 blob e32c4d515807456081781733be1580237267ee5b",
+          "sha256": "460ff74f9601b564a66024d7be5b9c5f82b5722ca263e0c37e28dfbcef1e8a8b"
+        },
+        "tests/professionals-facets.test.cjs": {
+          "tuple": "100644 blob 722e7b334d3e28adb2413a1d22f1a9badf58cdbe",
+          "sha256": "e5dd7f78f43c12c054f43309b1d0e071405240e343c8f991ba7e4607b7a70540"
+        }
+      }
+    },
+    "backend_professional_extension_pins": {
+      "routes/professionals.py": {
+        "tuple": "100644 blob 03b0e5fc0c40938cf732e91990cd38864038f7fb",
+        "sha256": "92f0b5363aa234d0ba71945689b0cb186cc9a358368e3a50c5fd4f34f05d4652"
+      },
+      "schemas/professionals.py": {
+        "tuple": "100644 blob 49080f4fac8aa5af72b829838cbf0b56b0569766",
+        "sha256": "3888211aec7b6a76b7c4888fc8068e87e88647c56e44ab17ee9c5ec12017b2b1"
+      },
+      "tests/test_professional_catalog.py": {
+        "tuple": "100644 blob 5a8f4c7c3482df27de234457bb2f963942faa0d5",
+        "sha256": "2f40570ffd73cc4e1220f20ad8811c2aa75853015f25d59fe845195ab7d7b24a"
+      },
+      "tests/test_professionals.py": {
+        "tuple": "100644 blob fa49be533c4bb8ae47c521aeb644e02cd51d0848",
+        "sha256": "53036f2ffeac78d1fe56bb71282c5366f02a58e85ba30ff27fa3c28bfae2ca49"
+      },
+      "utils/professional_options.py": {
+        "tuple": "100644 blob 915280ebe02b6eaadc73c4f98c252b4a4f994f99",
+        "sha256": "58572d907288317ba095599a5cebee7c8bf4e0115a8e980a26fecda8c3dfa8b0"
+      }
+    },
+    "frontend_tree": "f085a47f49bca34058e2f9d230ead05388fa63a4",
+    "retained_853_frontend_extension_parents": {
+      "scope": "Exact retained853 parent composition, not current child HEAD identity",
+      "commit": "853ec16dfd05438855d8cf765cfad84e5ac509a9",
+      "tree": "247545c254583c0b5374f56054c216eb0766de96",
+      "actual_parent": "7ad86f33f6af9286d44244d07b4bdc50ad0c8edb",
+      "intermediate_tree": "5b68c97f9dbbc240b912c22bf2fe47c0553dff2c",
+      "intermediate_parent": "fa7b52f28ca9c2e896777257e4d5d9e163d9222c",
+      "component_manual": "fa7b52f28ca9c2e896777257e4d5d9e163d9222c",
+      "component_directory": "e85494a365c1b308a78bb3125904ded57d92977c",
+      "composition": "Two serialized exact overlays: twelve base directory paths, then seven privacy-child paths. All632 mode/type/blob tuples equal disjoint manual10+directory14 union; all608 others exact461.",
+      "hosted_component_availability": "Original directory ddeca/e854 are documentary reviewed identities, not remote ancestors. Hosted guard uses literal reviewed base12/final14 tuple+SHA manifests against actual7ad/853. Manualfa7b and all its reviewed parents are actual853 ancestors."
+    },
+    "frontend_test_adapter_child": {
+      "commit": "ab704882398a9d71dcd060ca54bd0b6b17ca4e9c",
+      "tree": "f085a47f49bca34058e2f9d230ead05388fa63a4",
+      "parent": "853ec16dfd05438855d8cf765cfad84e5ac509a9",
+      "path": "tests/professionals-google-links.test.cjs",
+      "bytes": 12872,
+      "sha256": "48aeccef7208162a562afc9adcc76ab27250e7d17cb96340a54399213d8bb7ff",
+      "total_tuples": 632,
+      "outside_exact": 631,
+      "case_names_and_original_assertions": 9,
+      "whole_helpers_and_two_map_entries_reversal": true,
+      "qualification": "One existing test adapter changes. All products and other68 test files exact853. Original67 earlier test files must not be described as wholly byte-exact on this child."
+    }
+  },
+  "current_product_publication_claim": "NONE: owned synthetic debug only; f931 still has the old publicDTO and is not the future publication source.",
+  "contracts": [
+    {
+      "path": "outputs/assignment-email-history-handoff-20261126-google/IMPLEMENTATION-CONTRACT-v1-20261127.json",
+      "sha256": "3a6f594eb3791e555aebb19e78566bb96d76b3cc5780bc0a08eacfe70a367866"
+    },
+    {
+      "path": "outputs/assignment-email-history-handoff-20261126-google/IMPLEMENTATION-CONTRACT-v1-PRECISION-20261127.json",
+      "sha256": "1dceeb4d2ae02f9f7ebb1ab6a40b0beaed15b5116744eb97a44516f25239f7d7"
+    }
+  ],
+  "required_before_execution": {
+    "root_full_review": null,
+    "independent_full_cold": null,
+    "current_assignment_native53": {
+      "source": "4880569cd1efefcc63b129bffa9e31373d5d5960",
+      "status": "ACTUAL_SEPARATE_NATIVE53_AND_GENUINE108_ACCEPTED",
+      "run": 45927195017,
+      "job": 140271195854,
+      "required_actual_terminal_pass": true,
+      "definitions": {
+        "assignment": 28,
+        "admin_assignment": 8,
+        "lead_tracking": 17
+      },
+      "not_run_by_this_browser_lane": true,
+      "root_acceptance": {
+        "path": "outputs/property-network-20261101/assignment-native-e6dd-45927195017-root-acceptance-20261127.json",
+        "bytes": 4786,
+        "sha256": "fe84fb8175127283e216528a469172e1674d343dbb37684ef37483846858496b"
+      },
+      "release_independent_acceptance": {
+        "path": "outputs/property-network-20261101/assignment-native-e6dd-45927195017-release-independent-acceptance-20261127.json",
+        "bytes": 9888,
+        "sha256": "f6628a6723eb7da0b0bf93cb9de84d3f1aa7652f7e9c7d211d21d3844370c294"
+      },
+      "qualification": "19 actual async MockTransport calls, zero live provider calls. Genuine108 canonical proof is distinct from three model-created unit-schema suites. No browser571/build/private production data/publication proof."
+    },
+    "current_professional_native": {
+      "source": "f9315a9fee76f46df7ecbf8e5d67d26de1bd2d4b",
+      "status": "ACTUAL_SEPARATE_NATIVE37_CATALOG7_AND_GENUINE108_ACCEPTED",
+      "professional_cases": 37,
+      "catalog_cases": 7,
+      "not_run_here": true,
+      "paused_fallback6_separate": true,
+      "run": 45945871950,
+      "job": 140330315020,
+      "root_acceptance": {
+        "path": "outputs/property-network-20261101/native-c511-45945871950-root-actual-acceptance-20261127.json",
+        "bytes": 4580,
+        "sha256": "623e8b036bcc3e023c0173f0c11c307faec08246ea2af9cb8bb0ef5e0b47793e"
+      },
+      "qualification": "Separate accepted actual37 professional cases,6 paused-fallback cases and7 pure catalog cases; genuine108 retention/source-switch proof. No repeat in this browser lane, no current browser or production claim."
+    }
+  },
+  "retained_scope": {
+    "native_signup21": {
+      "path": "outputs/property-network-20261101/signup-history-df961-45914574770-root-failure-and-native-phase-acceptance-20261127.json",
+      "bytes": 2324,
+      "sha256": "657dbf71b6b87890cde5c9415f26e6fa909d1dd88d3233780cc0f3bd17495827"
+    },
+    "accepted_original_signup_browser": {
+      "path": "outputs/property-network-20261101/signup-history-responsive-45917827187-root-acceptance-20261127.json",
+      "bytes": 3992,
+      "sha256": "d18ade6a697f2770ecea5b0e1c9ab6b1e51bd37b5fd8b0a5ac45ae4fd71aa5d5"
+    },
+    "accepted_overlay": {
+      "path": "outputs/property-network-20261101/publication-2e1f-26ca-root-accepted-overlay-20261127.json",
+      "bytes": 6589,
+      "sha256": "d227d3da1d5d406720382626080c33a2c57bf5dba2a3a342e3b1d108c4bc23c1"
+    },
+    "qualification": "Native21 is retained only for unchanged old signup code/test/model-created schema on26ca. It proves no current assignment53 or genuine108 migration. Original Profile/Group162 lanes are not rerun or counted here. The current account/lead parent and old signup UI are exercised again at the final FE source.",
+    "old_component_unchanged": "SignupCommunicationHistory.tsx and signup-history.test.cjs are outside the exact12-path frontend overlay.",
+    "current_frontend_593_and_standalone_tsc": {
+      "frontend_commit": "ab704882398a9d71dcd060ca54bd0b6b17ca4e9c",
+      "frontend_tree": "f085a47f49bca34058e2f9d230ead05388fa63a4",
+      "run": 45954614125,
+      "job": 140358089128,
+      "actual_tests": 593,
+      "actual_test_files": 69,
+      "contracts_native": 0,
+      "standalone_tsc_native": 0,
+      "primary": {
+        "path": "outputs/customer-workflows-browser-v3-source-20261127/customer-workflows-4f1214-45954614125-release-primary.log",
+        "bytes": 123951,
+        "sha256": "59956680762c2094b0eeaab2f1561fa7959c00782a53b85ef3a081e7bbd1458e"
+      },
+      "independent_failure_and_passed_phase_receipt": {
+        "path": "outputs/customer-workflows-browser-v3-source-20261127/customer-workflows-4f1214-45954614125-release-independent-failure-20261127.json",
+        "bytes": 8984,
+        "sha256": "f9fc046ba963976acfc3ca0a50a5637851a46d00d4ec015a251f77078fd543d7"
+      },
+      "source_equivalence": "Exact same632 mode/type/blob source, all dependency manifests, Node image and fixed explicit sourcecomposition guards; only operations driver readiness changes. No current frontend test or standaloneTSC rerun/claim.",
+      "not_accepted": "The prior run failed the EN browser readiness check; final EN/ES browser/API privacy/retention ledgers remain required now."
+    }
+  },
+  "fresh_required": {
+    "dashboard_vite": true,
+    "landing_next_exports": [
+      "login",
+      "signup",
+      "verify",
+      "team",
+      "blog",
+      "calculator"
+    ],
+    "browser_engines": [
+      "Chromium"
+    ],
+    "optional_webkit_claim": false,
+    "two_sequential_locales": [
+      "en",
+      "es"
+    ]
+  },
+  "genuine_database": {
+    "chain": [
+      "8957/c4 actual bootstrap",
+      "26ca/e8 actual106 migration",
+      "f931/f7 actual108 migration (assignment/schema identical488; directory source overlay only)"
+    ],
+    "models": 107,
+    "catalog_tables": 108,
+    "original106_application_tables": 105,
+    "version_row_expected": "f7a9c3e2d114",
+    "explicit_trade_contact_model_registration": true,
+    "no_model_create_all": true,
+    "chronology": "Compare original99 old-column rows/sequences after the106 migration; compare all106 seeded rows/catalog/sequences/security across f7 except its version row and only additive two-table/functions/type DDL. Add all declared UI fixtures and real producer statuses BEFORE the final UI baseline. Compare final108 catalog/functions/ACL/roles/sequences exactly afterward.",
+    "canonical_old106_read_only_except": [
+      "three new synthetic leads: assignment/status/first assigned_at",
+      "one Buyer: seller-only role promotion and assignment mirror",
+      "Owner assigned_realtor_id assign then clear",
+      "two exact account ActivityLog UUID rows",
+      "Only2 declared NEW synthetic professional profiles: exact3 successful request saves and one actual-source CAS control save each, with8 exact appended source revisions; all46 original profiles/revisions unchanged."
+    ],
+    "all_other_tables": "Exactly100 old application tables are raw-equal. users/leads/activity_log retain the accepted exact assignment ledger. professional_profiles/revisions retain all46 original rows byte-exact, plus5 declared baseline-only synthetic rows/revisions and exactly8 new revisions across only2 known synthetic profiles. Separate exact known field/time/actor/version/snapshot oracles apply per event and finally. The two assignment tables retain their original append-only request ledger. No blanket table exclusion.",
+    "all_sequences": "Exact definitions and values across all108; activity_log uses UUIDs, so declared activity inserts do not justify a sequence increment.",
+    "protected": {
+      "owner_contacts": 82,
+      "private_professional_drafts": 46,
+      "original_accepted_jobs": 9,
+      "additional_signup_jobs": 11,
+      "cms_version": 7,
+      "floorplans": 2,
+      "all7_inbox_empty": true
+    }
+  },
+  "per_locale_seed": {
+    "actors": [
+      "admin",
+      "buyer",
+      "owner",
+      "realtor"
+    ],
+    "original_account_roles_unchanged": true,
+    "new_users": 0,
+    "new_leads": [
+      "main buyer_interest without customer",
+      "empty buyer_interest",
+      "structured valuation seller_interest with own intake",
+      "ordinary seller_interest"
+    ],
+    "signup_jobs": {
+      "count": 11,
+      "canonical_steps": [
+        "email_1",
+        "email_2",
+        "email_3",
+        "email_4",
+        "email_5",
+        "email_6",
+        "email_7",
+        "email_8",
+        "email_9",
+        "email_10",
+        "customer_email"
+      ],
+      "order": "Actual stored created_at DESC/id DESC. Same created timestamp plus explicit UUID permutation; private facts bind actual SQL10/1 ordering, not an assumed Welcome position."
+    },
+    "assignment_seed": {
+      "events": 11,
+      "notices": 11,
+      "producer": "Actual routes.leads.admin_assign_lead with an owned Request/Admin/Session; this setup is not an HTTP authentication claim.",
+      "same_agent_cycle": 1,
+      "real_prebaseline_batches": 3,
+      "mock_transport_calls": 3,
+      "live_provider_calls": 0,
+      "outcomes": {
+        "accepted1": 1,
+        "failed1": 1,
+        "needs_review1": 1,
+        "pending0": 8
+      },
+      "qualification": "These are actual queued notice states processed by owned async httpx.MockTransport before baseline; they are not live-provider receipts. Processing/skipped display states remain focused source/native scope, not claimed as browser-seeded states."
+    },
+    "ui_runtime": "lead_delivery_enabled=false, resend_api_key empty, lifespan off; no automatic worker. External httpx/requests/urllib/resend/SMTP transports refuse and count attempts."
+  },
+  "per_locale_request_ledger": [
+    {
+      "index": 0,
+      "action": "Main A save, real204 committed then original response aborted",
+      "events": 1,
+      "notices": 1,
+      "cycle": 1
+    },
+    {
+      "index": 1,
+      "action": "Second actual Admin page assigns Main B with fresh UUID",
+      "events": 1,
+      "notices": 1,
+      "cycle": 2
+    },
+    {
+      "index": 2,
+      "action": "Original page resolves exact old A UUID/body after B;204 replay, fresh current GET shows B",
+      "events": 0,
+      "notices": 0,
+      "no_database_change": true
+    },
+    {
+      "index": 3,
+      "action": "Fresh Main A204; current GET aborted; only GET Refresh restores authoritative A",
+      "events": 1,
+      "notices": 1,
+      "cycle": 3
+    },
+    {
+      "index": 4,
+      "action": "Selected A temporarily unverified; real404 refusal while target/current history remain available",
+      "events": 0,
+      "notices": 0,
+      "no_database_change": true
+    },
+    {
+      "index": 5,
+      "action": "Owner account assign A",
+      "events": 1,
+      "notices": 0,
+      "activity": 1,
+      "cycle": 1
+    },
+    {
+      "index": 6,
+      "action": "Owner account clear",
+      "events": 1,
+      "notices": 0,
+      "activity": 1,
+      "cycle": 2
+    },
+    {
+      "index": 7,
+      "action": "Structured valuation assignment A; Buyer remains Buyer and no account mirror",
+      "events": 1,
+      "notices": 1,
+      "owner_promotions": 0
+    },
+    {
+      "index": 8,
+      "action": "Ordinary seller assignment A after actual owner-access confirmation",
+      "events": 1,
+      "notices": 3,
+      "owner_promotions": 1,
+      "account_mirrors": 1
+    }
+  ],
+  "per_locale_totals": {
+    "requests": 9,
+    "real204_responses": 8,
+    "real404_refusals": 1,
+    "distinct_request_uuids": 8,
+    "persisted_new_events": 7,
+    "new_notices": 7,
+    "exact_replays": 1,
+    "final_events": 18,
+    "final_notices": 18,
+    "main_history_total": 14,
+    "activity_additions": 2,
+    "transient_controls": [
+      "agent_unverified",
+      "agent_verified"
+    ],
+    "controls_restore_immediate_prestate": true,
+    "controls_note": "Only the known synthetic selected agent email_verified Boolean changes and is restored. No limiter reset, role grant, real security setting or provider configuration change."
+  },
+  "independent_ledger": "Before invoking each actual assignment route, confine actor/target/body/UUID/order; compare every108-table/sequence snapshot afterward against exact allowed columns and append counts. Replay/refusal must leave the entire108 snapshot equal. Final events are keyed by known request UUID/source/actor/previous/current agent/cycle/action/digest. Notice recipients/kinds/payload templates are rebuilt from known synthetic inputs and immutable pure template functions, not copied from after rows. Immutable seed events/jobs remain exact.",
+  "browser_per_locale": {
+    "journeys": 16,
+    "geometry": 26,
+    "contexts": 5,
+    "actual_logins": 4,
+    "admin_pages_created": 2,
+    "presence": 2,
+    "boundary_reads": 16,
+    "assignment_ui_page_checks": 2,
+    "signup_ui_page_checks": 2,
+    "canceled_history_reads": 2,
+    "account_no_email_events": 2,
+    "valuation_notice_count": 1,
+    "seller_notice_count": 3,
+    "auth_loss_checks": 1,
+    "keyboard_saves": 1,
+    "new_history_geometry_labels": [
+      "lead_controls",
+      "assignment_loading",
+      "assignment_history",
+      "assignment_uncertain",
+      "assignment_current_error",
+      "assignment_refused",
+      "account_no_email",
+      "seller_three_notices"
+    ],
+    "existing_parent_signup_geometry_labels": [
+      "users",
+      "signup_loading",
+      "signup_tracked",
+      "signup_untracked",
+      "signup_error"
+    ],
+    "widths": [
+      320,
+      390
+    ],
+    "total_both_locales_geometry": 52,
+    "total_both_locales_journeys": 32
+  },
+  "journeys": [
+    "real sessions and actual boundaries",
+    "lazy history and keyboard entry",
+    "actual loading and11-row10/1 paging",
+    "history hide cancels held request before harness release",
+    "panel close/target change cancels held request before new empty target",
+    "real commit then response abort with visible unlocked Resolve barrier",
+    "real later B then old A exact replay reads current B",
+    "known204/current read failure, GET-only Refresh",
+    "real selected-agent404 refusal keeps valid current/history",
+    "account assign/clear shows zero-email records",
+    "valuation keeps Buyer and one queued notice",
+    "ordinary seller promotes Owner and three queued notices",
+    "old signup real SQL-derived10/1 and dates/statuses",
+    "old signup no-record case",
+    "old signup actual GET failure/error and normal Refresh",
+    "real current401 after clearing only owned Admin browser cookies; new current/history projections cleared"
+  ],
+  "per_locale_boundaries": {
+    "per_scope": [
+      "Admin200",
+      "anonymous401",
+      "Buyer403",
+      "Owner403",
+      "Realtor403",
+      "unknown target404",
+      "invalid target422",
+      "invalid paging422"
+    ],
+    "scopes": [
+      "lead assignment-history",
+      "account assignment-history"
+    ],
+    "no_store_required": true,
+    "before_seller_promotion": true,
+    "legacy_signup_full16_boundary_rerun": false
+  },
+  "resource_bounds": {
+    "workflow_minutes": 55,
+    "postgres_memory_MiB": 768,
+    "postgres_pids": 96,
+    "postgres_tmpfs_MiB": 384,
+    "api_memory_MiB": 2048,
+    "api_pids": 256,
+    "browser_memory_MiB": 2048,
+    "browser_pids": 256,
+    "browser_shm_MiB": 256,
+    "browser_outer_seconds_per_locale": 600,
+    "api_graceful_stop_seconds": 25,
+    "build_prepare_memory_GiB": 8,
+    "read_only_root": {
+      "build_API_browser_static_servers": true,
+      "postgres_initialization": false,
+      "qualification": "Inherited pinned Postgres initializer retains its existing writable initialization root; its data directory is bounded tmpfs and its network has loopback only."
+    },
+    "no_new_privileges": true,
+    "all_capabilities_dropped": {
+      "build_API_browser_static_servers": true,
+      "postgres_initialization": false,
+      "qualification": "Inherited Postgres initialization command is unchanged and does not set cap-drop ALL. No runtime cap or security-setting change is introduced."
+    },
+    "loopback_network_namespace": true,
+    "browser_named_container": "Observe actual stopped/exit/OOM before removal. No increased runtime cap, timeout or optional engine skip."
+  },
+  "cleanup": {
+    "per_locale": "Stop API; collect bounded safe receipts and process states; verify marker; DROP own nonce DB and assert absence even after browser failure; remove API/browser/Landing containers; assert private facts inode removed.",
+    "global": "Owner-label checked containers/volumes/image plus validated private scratch removed by inherited exact cleanup trap. No raw private browser/API log or screenshots uploaded. No artifacts requested."
+  },
+  "diagnostics": {
+    "bounded_browser_frames": 8,
+    "observation": "Actual kind/status only;256bytes; any diagnostic always fails.",
+    "api": "Source-owned phase/error type/reason/SQLSTATE only;512bytes; main cause emitted before cleanup.",
+    "browser_receipt_bytes": 2048,
+    "api_receipt_bytes": 2048,
+    "geometry_presence_safe_export": true
+  },
+  "local_checks": {
+    "status": "SOURCE_ONLY_BOUNDED_CONTROLS_PASS_NO_APP_RUNTIME",
+    "new_operations_AST": 1,
+    "runner_whole_normalized_inverse_exact_bfa91": true,
+    "workflow_whole_namespace_inverse_exact_bfa91": true,
+    "driver_checker_whole_exact_Root_Release_accepted_b8fd8": true,
+    "fixture_whole_exact_bfa91": true,
+    "unchanged_app_source_guards_and_runtime_business_blocks_retained_not_rerun": true,
+    "diagnostic_purecontrols_retained_exact": {
+      "path": "outputs/customer-workflows-public-await-diagnostic-20261127-google/SOURCE-CONTROLS.json",
+      "bytes": 451,
+      "sha256": "10ed1df1bfef2946c7c50f53306bc3d1d9b586ca20c14e7c149c7a8653a71b2d"
+    },
+    "bash_syntax": "NOT_RUN_LOCALLY_REQUIRED_HOSTED_BASH_N",
+    "no_app_native_DB_build_browser_provider_execution": true
+  },
+  "unrun_in_this_lane": [
+    "All593/69",
+    "StandaloneTSC",
+    "Vite/Next",
+    "RealChromium",
+    "Genuine108 fixture",
+    "Providers",
+    "Production"
+  ],
+  "required_before_hosted_first_push": [
+    "Root finite normalized-delta/composition review and independent Release cold, retaining fullbfa91 and acceptedb8fd8 source reads.",
+    "Freeze only6newnamespace paths and all461 immutable inherited tuples with all6GitLF hashes/patch/proposal.",
+    "Root unique absent-ref firstpush/current main e4d verification; no production or future publication authorized."
+  ],
+  "whole_owner_goal_complete": false,
+  "workflow_extension": {
+    "source_only": true,
+    "profile_seed": {
+      "new_rows": 5,
+      "new_seed_revisions": 5,
+      "original46_profiles_and_revisions_exact": true,
+      "only2_new_synthetic_profiles_mutable": true
+    },
+    "per_locale_profile_ledger": {
+      "requests": 10,
+      "successful_UI_saves": 4,
+      "successful_legacy_API_saves": 2,
+      "stale409": 2,
+      "auth403": 2,
+      "actual_control_saves": 2,
+      "new_revisions": 8,
+      "final2_versions": 5
+    },
+    "control_order": [
+      "own_version_advance",
+      "own_unverified",
+      "own_verified",
+      "managed_version_advance",
+      "admin_unverified",
+      "admin_verified",
+      "manual_contact_change",
+      "manual_contact_restore",
+      "manual_property_withdrawn",
+      "manual_property_restore",
+      "manual_assignee_admin",
+      "manual_assignee_restore",
+      "manual_realtor_unverified",
+      "manual_realtor_verified"
+    ],
+    "additional_boundaries_per_locale": 12,
+    "manual_targets": "Two separate synthetic assigned leads; valid explicitE164 and raw extension-bearing invalid phone, same existing public ownedlisting. No modifications to old Main/valuation/seller notice inputs.",
+    "directory": "Approved snapshot ORwithin/ANDacross facet cases, actual list/map parity; private drafts diverge and stay private. Real own+managed UI selections/explicitclear, actual legacy omission,409 and detected403+retired old callbacks.",
+    "manual": "Actual Admin/current-assignee fresh server authorization and editable ENES draft. Native ownedclipboard success+readback and separately identified controlled rejection; request-only URL capture, never external navigation/sending. Public active/withdrawn anonymous reads, oldtarget/contact/assignee/session loss reset.",
+    "driver_metrics": "Current actual source binds strict57-key browser/56-key API receipts, final literal driver enums, all original and additional independent per-locale counts. No runtime claim.",
+    "retained_old_scope": "All original perlocale16journeys26geometry9PUT7events7jobs16boundaries, role promotion, signup10/1, private source/process/cleanup predicates required unchanged.",
+    "no_paused_API_substitution": "Paused fallback503 source cannot satisfy this active assignment lane; its startup/retention proof remains separate.",
+    "browser_per_locale": {
+      "journeys": 15,
+      "geometry": 32,
+      "presence": 3,
+      "contexts_added": 0,
+      "logins_added": 0,
+      "control_transitions": 14,
+      "boundaries": 12,
+      "asserted_read_checks": 42,
+      "profile_UI_requests": 8,
+      "legacy_API_requests": 2,
+      "directory_scope_checks": 14,
+      "url_navigation": 2,
+      "Admin_private_draft_filter": 1,
+      "manual_templates": 12,
+      "manual_destination_requests_only": 5,
+      "manual_native_clipboard_successes": 1,
+      "controlled_clipboard_refusals": 1,
+      "keyboard_actions": 2,
+      "manual_auth_current_resets": 5,
+      "manual_target_resets": 1,
+      "public_link_checks": 3,
+      "denial_clear_checks": 7,
+      "retired_client_abort_checks": 3
+    },
+    "revision_actions": {
+      "owned": "save",
+      "managed": "admin_save",
+      "same_source_control_saves": true,
+      "other_version_actor_snapshot_count_checks_unchanged": true
+    }
+  },
+  "source_review_evidence": {
+    "fixture_managed_action_correction": {
+      "path": "outputs/customer-workflows-browser-source-20261127/FIXTURE-MANAGED-ACTION-CORRECTION.json",
+      "bytes": 2138,
+      "sha256": "1e539caa76896b96bc35fa25e77c5ae8952fe4a5c84468066e2677e251390f42"
+    },
+    "pure_parser_controls": {
+      "path": "outputs/customer-workflows-browser-source-20261127/PARSER-CONTROLS.json",
+      "bytes": 2205,
+      "sha256": "7d752d138479dc007eb144e0ffad88dc45fa2dbf3fb22e901f7d128dfea0c8d0"
+    },
+    "fixture_checker_original_full_read": {
+      "path": "outputs/customer-workflows-browser-source-20261127/customer-workflows-two-source-google-full-read-20261127.json",
+      "bytes": 7295,
+      "sha256": "52045a9cb8407ecd79e2d836a805ed0b8e01967264d119e6a1f2ebbdf6212416"
+    },
+    "fixture_checker_finite_closure": {
+      "path": "outputs/customer-workflows-browser-source-20261127/customer-workflows-managed-action-google-finite-closure-20261127.json",
+      "bytes": 3217,
+      "sha256": "c1754bb71f7ebd26ae4efae953e4423b3889681fae51b61d9355aa87592345f5"
+    },
+    "runtime3_retained_full_read_checkpoint": {
+      "path": "outputs/customer-workflows-browser-source-20261127/customer-workflows-runtime3-release-full-read-checkpoint-20261127.json",
+      "bytes": 4817,
+      "sha256": "00305b8fe96f94119570136fe982fece2cebd23ac26e1dce4b99e18ff4905f50"
+    },
+    "driver_full_read_with_authorship_scope": {
+      "path": "outputs/customer-workflows-browser-source-20261127/DRIVER-GROUPS-FULL-SOURCE-REVIEW.json",
+      "bytes": 3752,
+      "sha256": "fe13e18cf771c1634c7ae376b9f1df500767d87e970c2df73862219141b7dc9d"
+    },
+    "full_source_preflight": {
+      "path": "outputs/customer-workflows-browser-source-20261127/FINAL-SOURCE-PREFLIGHT.json",
+      "bytes": 2383,
+      "sha256": "e8a1495fd99df1a15dc7f380a6da41f47bb9d41485e15a57608611373e42b696"
+    },
+    "finite_reachability_source_preflight": {
+      "path": "outputs/customer-workflows-browser-source-20261127/FINAL-SOURCE-PREFLIGHT-v2.json",
+      "bytes": 2023,
+      "sha256": "e7b2786004b464174aced3922294827879de7461dd7cc85e2e72880ba4656fa7"
+    },
+    "runtime_reachability_correction": {
+      "path": "outputs/customer-workflows-browser-source-20261127/RUNTIME-REACHABILITY-CORRECTION.json",
+      "bytes": 1469,
+      "sha256": "e0c4a88f595167126a889879b5727ead45cb88427d300e81225d2c164ffa407d"
+    },
+    "retained_853_FE_composition": {
+      "path": "outputs/customer-workflows-browser-source-20261127/frontend-853ec-groups-exact-composition-review-20261127.json",
+      "bytes": 9114,
+      "sha256": "4aa1289c878dbe3635521a1b0ba8612e8e5559620835598e8c35b85721b91309"
+    },
+    "retained_853_root_FE_source_push": {
+      "path": "outputs/property-network-20261101/customer-workflows-853-root-source-first-push-20261127.json",
+      "bytes": 1433,
+      "sha256": "6a4f71c4412f8c5f43efb4b4a1c76dc115a51bbd8081a59ef67eef70ee6de9f9"
+    },
+    "current_test_only_child": {
+      "path": "outputs/professional-google-leaf-adapters-20261127/SOURCE-PROPOSAL.json",
+      "bytes": 2822,
+      "sha256": "9e77042146d69ca712f80381a660a2ab73b25936525d78bc9c86f230495f2418"
+    },
+    "actual_targeted9_only": {
+      "path": "outputs/professional-google-leaf-adapters-20261127/ACTUAL-TARGETED-RESULT.json",
+      "bytes": 1883,
+      "sha256": "a499bb6400a0b93526f7ac852c2cf8aa4692c1d9955e0e13537ab36016c46683"
+    },
+    "current_ab704_root_source_firstpush": {
+      "path": "outputs/property-network-20261101/frontend-ab704-root-source-first-push-20261127.json",
+      "bytes": 964,
+      "sha256": "3ae6667d70904aaa151b0e4fd7cdd44fdec0e2ff97cfca0bcebf7185503ae9ee"
+    },
+    "a285_actual_failure": {
+      "path": "outputs/customer-workflows-browser-v2-source-20261127/customer-workflows-a285-45951892465-groups-independent-failure-20261127.json",
+      "bytes": 6441,
+      "sha256": "acdace07837e354289145eca28c9cf7fa48c64dafb5840edfa9080285bd2633e"
+    },
+    "facet_order_correction_proposal": {
+      "path": "outputs/customer-workflows-facet-order-driver-v3-20261127-google/SOURCE-PROPOSAL.json",
+      "bytes": 3506,
+      "sha256": "007615b8ca433a44535f00bc6eec59c5b0bfddde0c88996e4194e6622f28a566"
+    },
+    "facet_order_source_finding": {
+      "path": "outputs/customer-workflows-facet-order-driver-v3-20261127-google/SOURCE-FINDING.json",
+      "bytes": 4574,
+      "sha256": "9002e4a4b70168b135f641dd040c1ab929d03a545512765f3fd74aa62c03cca2"
+    },
+    "facet_order_bounded_source_simulation": {
+      "path": "outputs/customer-workflows-facet-order-driver-v3-20261127-google/SOURCE-SIMULATION.json",
+      "bytes": 4153,
+      "sha256": "26e768997c892689510c712e2108c55adf51e0b3f27c890e6c1ba1eb31f9bc1a"
+    }
+  },
+  "source_hashes_without_self": {
+    ".github/workflows/customer-workflows-browser-v5.yml": {
+      "bytes": 3676,
+      "sha256": "f5ac48780ed53d2140a69b111ceb7fbf6a68e8a149fac9d166b40a559ef0396c"
+    },
+    "ci/customer-workflows-browser-v5/run-hosted.sh": {
+      "bytes": 72965,
+      "sha256": "9cb563c8c6105df176129bc84eb2ffd8c10dc5c42ba15eb5e203f186243f635d"
+    },
+    "ci/customer-workflows-browser-v5/run-browser.mjs": {
+      "bytes": 83485,
+      "sha256": "0d22e74817d7a6e5f5ec81fe6b6a9c8f4d159718addd154e142c0a1a4b3fee5d"
+    },
+    "ci/customer-workflows-browser-v5/check-result.py": {
+      "bytes": 28058,
+      "sha256": "b33de2e8def90c561624f2c52ac48e7b9757a1b286a91ed8152a2b0872bee021"
+    },
+    "ci/customer-workflows-browser-v5/serve_fixture.py": {
+      "bytes": 76495,
+      "sha256": "b62dc0e20df2824e0a5532d30c9431f45e5afa01bf2fb9ac3a93b0d0c4a6e69a"
+    }
+  },
+  "retained_ab77_ops": {
+    "commit": "ab77edc4ed343eb0b2a5b0877d56695d271edec1",
+    "tree": "19759eb1ab96fcd4d8176852b0ea144804971eae",
+    "all443_tuples_immutable": true,
+    "current593_strict_build_browser_proof": "Historical ab77 first run stopped at591pass2fail; that old source is not current593 acceptance. The unchanged current frontend later passed593 and standaloneTSC in a285, whose browser/API phase failed as separately recorded."
+  },
+  "retained_a285_ops": {
+    "commit": "a2854f24068ed5b6715a5e6e94ccc32fbf4cf9cb",
+    "tree": "e3df2d2157d9cf7a6deb0c58420e7aab91037783",
+    "all449_tuples_immutable": true,
+    "prior_complete_source_review": {
+      "path": "outputs/customer-workflows-browser-v2-source-20261127/customer-workflows-a285-groups-finite-cold-review-20261127.json",
+      "bytes": 3431,
+      "sha256": "e9895fe7dcd4338a3a11262c60fa34025c116972da8c496fdd4cabe51de7bbd2"
+    },
+    "actual_failure": {
+      "path": "outputs/customer-workflows-browser-v2-source-20261127/customer-workflows-a285-45951892465-groups-independent-failure-20261127.json",
+      "bytes": 6441,
+      "sha256": "acdace07837e354289145eca28c9cf7fa48c64dafb5840edfa9080285bd2633e"
+    },
+    "actual_run": 45951892465,
+    "actual_job": 140349425115,
+    "actual_head_exact": true,
+    "passed": {
+      "frontend_tests": 593,
+      "frontend_files": 69,
+      "standalone_tsc": 0,
+      "dashboard_vite": 0,
+      "en_landing_next": 0,
+      "en_required_exports": 6
+    },
+    "failure": {
+      "stage": "en_workflow_own_editor",
+      "browser": "TIMEOUT",
+      "fixture": "workflow_exact_declared_profile_intent_required"
+    },
+    "not_accepted": [
+      "complete EN browser/API preservation",
+      "remaining EN profile/manual flows",
+      "all ES phases"
+    ],
+    "fresh_current_full_test_and_both_browser_phases_still_required": "Historical v3 requirement; current v4 retains later actual4f593/TSC on identical app source and still requires fresh complete browsers/builds.",
+    "unchanged_fixture_checker_retained_exact": true
+  },
+  "facet_order_correction": {
+    "source_author": "google_browser_resume",
+    "frozen_driver_only_commit": "5b26e552c5918dfe279a2c6b4928f81aa0a4e1ac",
+    "tree": "90e910faece910499c8c91c82a4e504f31dcdbc3",
+    "not_an_ops_parent_or_runnable_workflow": true,
+    "approved_delta": "In existing setFacets only, uncheck every known real checkbox, assert zero selected, then reselect desired IDs in the exact declared order. Preserve all existing all-selected/count/zero-disabled assertions and the strict fixture request-body oracle.",
+    "whole_driver_reversal_to_a285_exact": true,
+    "fixture_checker_exact_a285": true,
+    "no_product_change": true,
+    "no_browser_success_claim": true,
+    "correction_proposal": {
+      "path": "outputs/customer-workflows-facet-order-driver-v3-20261127-google/SOURCE-PROPOSAL.json",
+      "bytes": 3506,
+      "sha256": "007615b8ca433a44535f00bc6eec59c5b0bfddde0c88996e4194e6622f28a566"
+    },
+    "source_finding": {
+      "path": "outputs/customer-workflows-facet-order-driver-v3-20261127-google/SOURCE-FINDING.json",
+      "bytes": 4574,
+      "sha256": "9002e4a4b70168b135f641dd040c1ab929d03a545512765f3fd74aa62c03cca2"
+    },
+    "bounded_source_simulation": {
+      "path": "outputs/customer-workflows-facet-order-driver-v3-20261127-google/SOURCE-SIMULATION.json",
+      "bytes": 4153,
+      "sha256": "26e768997c892689510c712e2108c55adf51e0b3f27c890e6c1ba1eb31f9bc1a"
+    },
+    "simulation_scope": "Pure exact function plus finite append/filter state model; no React/Playwright/DOM/API/DB proof. Existing native/HTTP action counts remain unchanged; full original two-locale hosted proof is still required."
+  },
+  "retained_4f_ops": {
+    "commit": "4f121400809cf95e9d46c108ae0247b388d9488e",
+    "tree": "df956cd4ea946973ce37fd071d38e04fb6e6de39",
+    "all455_tuples_immutable": true,
+    "passed_frontend_scope": {
+      "frontend_commit": "ab704882398a9d71dcd060ca54bd0b6b17ca4e9c",
+      "frontend_tree": "f085a47f49bca34058e2f9d230ead05388fa63a4",
+      "run": 45954614125,
+      "job": 140358089128,
+      "actual_tests": 593,
+      "actual_test_files": 69,
+      "contracts_native": 0,
+      "standalone_tsc_native": 0,
+      "primary": {
+        "path": "outputs/customer-workflows-browser-v3-source-20261127/customer-workflows-4f1214-45954614125-release-primary.log",
+        "bytes": 123951,
+        "sha256": "59956680762c2094b0eeaab2f1561fa7959c00782a53b85ef3a081e7bbd1458e"
+      },
+      "independent_failure_and_passed_phase_receipt": {
+        "path": "outputs/customer-workflows-browser-v3-source-20261127/customer-workflows-4f1214-45954614125-release-independent-failure-20261127.json",
+        "bytes": 8984,
+        "sha256": "f9fc046ba963976acfc3ca0a50a5637851a46d00d4ec015a251f77078fd543d7"
+      },
+      "source_equivalence": "Exact same632 mode/type/blob source, all dependency manifests, Node image and fixed explicit sourcecomposition guards; only operations driver readiness changes. No current frontend test or standaloneTSC rerun/claim.",
+      "not_accepted": "The prior run failed the EN browser readiness check; final EN/ES browser/API privacy/retention ledgers remain required now."
+    },
+    "failure": "Own accessloss fullreload incorrectly waited for exact requestfailed; no whole-browser acceptance."
+  },
+  "reload_readiness_correction": {
+    "driver_commit": "fce0914579ab184288d351ef0416b5c5b2c690f4",
+    "source_packet": {
+      "path": "outputs/customer-workflows-reload-readiness-driver-20261127-google/SOURCE-PROPOSAL.json",
+      "bytes": 4388,
+      "sha256": "e77841ce0b6aafa0b09510ff12dddc97f4f0f167c8c112dea7a2574e4809c253"
+    },
+    "same_actual_reload": true,
+    "four_spa_abort_calls_exact": true,
+    "exact_original_request_mainframe_path_bound": true,
+    "actual_navigation_200_and_new_finite_timeOrigin": true,
+    "actual_auth403_and_all_private_late_response_assertions_unchanged": true,
+    "new_requests": 0,
+    "new_writes": 0,
+    "new_retries": 0,
+    "fixture_checker_exact_parent": true,
+    "close_probe_incomplete_not_accepted": true,
+    "documentation_precision": "The driver packet next_ops_contract says106+private by typo; actual fixture and current full authoritative ledger remain108 catalog/107 modeled. No ledger/predicate exception or change."
+  },
+  "public_await_diagnostic": {
+    "source_commit": "b8fd8d9d684cec9949a239635d88b68445a884eb",
+    "source_packet": {
+      "path": "outputs/customer-workflows-public-await-diagnostic-20261127-google/SOURCE-PROPOSAL.json",
+      "bytes": 5869,
+      "sha256": "ef442957a7cd4c91ae07b7c2842c6c16879505a6798635fcc983d1f5da0078e4"
+    },
+    "whole_driver_checker_exact": true,
+    "fixture_whole_exact_bfa91": true,
+    "failure_only_prefix": "CUSTOMER_WORKFLOWS_BROWSER_PUBLIC_CHECKPOINT",
+    "max_json_bytes": 1024,
+    "fields": 6,
+    "finite_primitive_values": 23,
+    "all_original_success_predicates_actions_counts_timeouts_unchanged": true,
+    "every_diagnostic_always_refuses_success": true,
+    "whole_owner_goal_complete": false
+  },
+  "retained_bfa91_ops": {
+    "commit": "bfa91f44832ce34ccf16173f9a58f210b83095b4",
+    "tree": "cd95766659dd4ed02b269ee867df2c934c9e8cd3",
+    "all461_tuples_immutable": true,
+    "actual_failure": {
+      "path": "outputs/customer-workflows-browser-v4-source-20261127-google/customer-workflows-bfa91f-45961176520-google-failure-source-finding-20261127.json",
+      "bytes": 4729,
+      "sha256": "791ea77fd0d6be5e2c6f81cf6cfd55a11e62624ec59a9c4a30c79e135daf9826"
+    },
+    "actual_run": 45961176520,
+    "current_complete_browser_acceptance": false
+  },
+  "publication_source_followup": "Separate future Root-reviewed exactf931+875 publicDTO overlay/sourceguards and required compatibility proof; this diagnostic does not silently verify that different source."
+}
