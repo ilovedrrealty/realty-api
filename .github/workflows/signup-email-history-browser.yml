@@ -1,7 +1,7 @@
 name: Isolated read-only account signup email history
 on:
   push:
-    branches: [codex-ci-signup-email-history-browser-v3-20261126]
+    branches: [codex-ci-signup-email-history-browser-v4-20261126]
 permissions:
   contents: read
 concurrency:
@@ -30,9 +30,9 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: ilovedrrealty/iLoveDRRealty
-          ref: de4d2b21f8e08720211407eb1449d6f85cfa9b34
+          ref: 2e1fce3cb9373724c9c34cecf5ab43f2451bed40
           path: frontend-source
-          fetch-depth: 23
+          fetch-depth: 24
           persist-credentials: false
       - name: Read exact reviewed profile customization API
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -72,7 +72,7 @@ jobs:
           path: profile-baseline106
           fetch-depth: 6
           persist-credentials: false
-      - name: Run fresh builds and diagnostic account browser; retain native21 and exact555
+      - name: Run current555, standalone typecheck, fresh builds and account browser; retain native21
         shell: bash
         run: |
           set -euo pipefail

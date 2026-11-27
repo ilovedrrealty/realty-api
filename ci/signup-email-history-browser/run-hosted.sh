@@ -6,7 +6,7 @@ die() { printf 'SIGNUP_HISTORY_REFUSED %s\n' "$1" >&2; exit 1; }
 bounded() { timeout --kill-after=8s "$@"; }
 [[ $# == 8 && ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == ilovedrrealty/realty-api &&
    ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 &&
-   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-signup-email-history-browser-v3-20261126 &&
+   ${GITHUB_RUN_ATTEMPT:-} == 1 && ${GITHUB_REF:-} == refs/heads/codex-ci-signup-email-history-browser-v4-20261126 &&
    ${GITHUB_SHA:-} =~ ^[a-f0-9]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]{0,19}$ ]] || die HOSTED_EXACT_EVENT_REQUIRED
 ops="$1"; frontend="$2"; baseline="$3"; backend="$4"; migration="$5"; relay="$6"; previous="$7"; reference="$8"
 [[ "$ops" == "$GITHUB_WORKSPACE/build-ops" && "$frontend" == "$GITHUB_WORKSPACE/frontend-source" &&
@@ -20,14 +20,12 @@ done
 expected_operations=$(cat <<'EXACT_OPERATIONS'
 .github/workflows/signup-email-history-browser.yml
 ci/signup-email-history-browser/PLAN.json
-ci/signup-email-history-browser/check-result.py
-ci/signup-email-history-browser/run-browser.mjs
 ci/signup-email-history-browser/run-hosted.sh
 EXACT_OPERATIONS
 )
 operations_delta=$(git -C "$ops" diff-tree --no-commit-id --name-only -r HEAD^ HEAD) || die OPERATIONS_DIFF_REQUIRED
 [[ $(git -C "$ops" rev-parse HEAD) == "$GITHUB_SHA" &&
-   $(git -C "$ops" show -s --format=%P HEAD) == df96182794e007935be1ce9b71cb8dd04ec9a7e3 &&
+   $(git -C "$ops" show -s --format=%P HEAD) == 1bea5657249790d13ccd3cb2a3afb514ecb66481 &&
    "$operations_delta" == "$expected_operations" ]] || die EXACT_OPERATIONS_REQUIRED
 python3 -I -B - "$ops" <<'PY_OPERATIONS_REUSE'
 from pathlib import Path
@@ -36,23 +34,24 @@ root=Path(sys.argv[1])
 def git(*args):return subprocess.check_output(['git','-C',str(root),*args])
 def tree(commit):return dict((line.split(b'\t',1)[1].decode(),line.split(b'\t',1)[0]) for line in git('ls-tree','-rz',commit).split(b'\0') if line)
 old,new=tree('HEAD^'),tree('HEAD')
-paths={'.github/workflows/signup-email-history-browser.yml','ci/signup-email-history-browser/PLAN.json','ci/signup-email-history-browser/run-hosted.sh','ci/signup-email-history-browser/run-browser.mjs','ci/signup-email-history-browser/check-result.py'}
+paths={'.github/workflows/signup-email-history-browser.yml','ci/signup-email-history-browser/PLAN.json','ci/signup-email-history-browser/run-hosted.sh'}
 assert len(old)==len(new)==431 and old.keys()==new.keys()
 assert {name for name in old if old[name]!=new[name]}==paths
 assert all(new[name]==value for name,value in old.items() if name not in paths)
 for name in paths:assert (root/name).is_file() and not (root/name).is_symlink()
-for name in ('ci/signup-email-history-browser/serve_fixture.py',):
+for name in ('ci/signup-email-history-browser/serve_fixture.py','ci/signup-email-history-browser/run-browser.mjs','ci/signup-email-history-browser/check-result.py'):
     assert old[name]==new[name]
 PY_OPERATIONS_REUSE
 backend_commit=26ca867a1008868f7dc5f322d28dc289a7763980
 backend_tree=3a30b7e8c5b53827b97374c18806a7cb03ef9c5c
-frontend_commit=de4d2b21f8e08720211407eb1449d6f85cfa9b34
-frontend_tree=145410287b963a3e80dbe162a1978c5dd50ab352
+frontend_commit=2e1fce3cb9373724c9c34cecf5ab43f2451bed40
+frontend_tree=34ea2cfc7810d13c7c40c29ac5a26ed032f2456a
 frontend_paths=622
 [[ $(git -C "$backend" rev-parse HEAD) == "$backend_commit" && $(git -C "$backend" rev-parse HEAD^{tree}) == "$backend_tree" &&
    $(git -C "$frontend" rev-parse HEAD) == "$frontend_commit" && $(git -C "$frontend" rev-parse HEAD^{tree}) == "$frontend_tree" &&
-   $(git -C "$frontend" show -s --format=%P HEAD) == 95077fb8e5cb784ed47be6a78d9632e62a0b9bf4 &&
-   $(git -C "$frontend" show -s --format=%P HEAD^) == a8069c847a75823fc5a62101895a80d8fc1f8b1d &&
+   $(git -C "$frontend" show -s --format=%P HEAD) == de4d2b21f8e08720211407eb1449d6f85cfa9b34 &&
+   $(git -C "$frontend" show -s --format=%P HEAD^) == 95077fb8e5cb784ed47be6a78d9632e62a0b9bf4 &&
+   $(git -C "$frontend" show -s --format=%P HEAD^^) == a8069c847a75823fc5a62101895a80d8fc1f8b1d &&
    $(git -C "$frontend" show -s --format=%P a8069c847a75823fc5a62101895a80d8fc1f8b1d) == "ee32af9f5c0db6f79412c7c089e7f9f7143f42d3 0bc3fc968199490344c79c9cbed44afb0875eb18" &&
    $(git -C "$frontend" show -s --format=%P 5ecb7c6e16268f1e8edd1b54d70f11e605e57a02) == "bb4a9c626fb96f93ae6d6bc55b5a2a67f85411ba 44a3fdae157039f42fad562bde281f7205ca19f3" &&
    $(git -C "$baseline" rev-parse HEAD) == 01695530df670a94ac28f8b3bf36cc34b5b7a942 &&
@@ -223,19 +222,37 @@ expected[ui]=final[ui]
 assert len(expected)==620 and final==expected and all(final[name]==value for name,value in common_tree.items() if name not in union)
 # Only the reviewed signup-history source overlays the proven accepted parent.
 history_pins={'apps/dashboard/src/api/communications.ts': '82f38392b480ee92fe0baeca2a27b2b9f4e779e4f452533a66c63431627b51fe', 'apps/dashboard/src/components/admin/SignupCommunicationHistory.tsx': '2302401d3d21661641dff010ba6a81a413b736e56de35d0f025fec6c473b1bd4', 'apps/dashboard/src/components/admin/UserDetailPanel.tsx': '7d8c5b9ae5569b1be473adb73ee6039cb6a79cc78014250331b89946ac6913b7', 'apps/dashboard/src/locale/en/communications.json': 'b1d38157e414e2463c2b5c3f69e270470376492a3834254ff695098e0897c97f', 'apps/dashboard/src/locale/es/communications.json': 'babc8466d2a2c6d7f3b8fbd76aa5c1ce12c0a59fea7041e1c517027ed4c0c556', 'tests/signup-history.test.cjs': 'dffb6e496292626799f029b9e4e549349e51c346a59334bc88ddf79d5055156d'}
-history_parent=tree('a8069c847a75823fc5a62101895a80d8fc1f8b1d');history_current=tree('HEAD')
+history_parent=tree('a8069c847a75823fc5a62101895a80d8fc1f8b1d');history_current=tree('de4d2b21f8e08720211407eb1449d6f85cfa9b34')
 assert len(history_parent)==620 and len(history_current)==622
 assert {k for k in set(history_parent)|set(history_current) if history_parent.get(k)!=history_current.get(k)}==set(history_pins)
 assert all(history_current[k]==v for k,v in history_parent.items() if k not in history_pins)
-for name,digest in history_pins.items():assert sha256(git('show','HEAD:'+name)).hexdigest()==digest
-assert git('show','-s','--format=%P','HEAD').decode().strip()=='95077fb8e5cb784ed47be6a78d9632e62a0b9bf4'
+for name,digest in history_pins.items():assert sha256(git('show','de4d2b21f8e08720211407eb1449d6f85cfa9b34:'+name)).hexdigest()==digest
+assert git('show','-s','--format=%P','de4d2b21f8e08720211407eb1449d6f85cfa9b34').decode().strip()=='95077fb8e5cb784ed47be6a78d9632e62a0b9bf4'
 assert git('show','-s','--format=%P','95077fb8e5cb784ed47be6a78d9632e62a0b9bf4').decode().strip()=='a8069c847a75823fc5a62101895a80d8fc1f8b1d'
 intermediate=tree('95077fb8e5cb784ed47be6a78d9632e62a0b9bf4')
 child_paths={'apps/dashboard/src/components/admin/SignupCommunicationHistory.tsx','apps/dashboard/src/locale/en/communications.json','apps/dashboard/src/locale/es/communications.json','tests/signup-history.test.cjs'}
 assert len(intermediate)==622 and {k for k in intermediate if intermediate[k]!=history_current[k]}==child_paths
 
+# Exact responsive toolbar-only child; all other621 source tuples are retained.
+assert git('show','-s','--format=%P','HEAD').decode().strip()=='de4d2b21f8e08720211407eb1449d6f85cfa9b34'
+assert git('rev-parse','HEAD^{tree}').decode().strip()=='34ea2cfc7810d13c7c40c29ac5a26ed032f2456a'
+prior=tree('de4d2b21f8e08720211407eb1449d6f85cfa9b34');toolbar=tree('HEAD');name='apps/dashboard/src/pages/admin/Users.tsx'
+assert len(prior)==len(toolbar)==622 and prior.keys()==toolbar.keys()
+assert {path for path in prior if prior[path]!=toolbar[path]}=={name}
+assert all(toolbar[path]==value for path,value in prior.items() if path!=name)
+body=git('show','HEAD:'+name)
+assert sha256(body).hexdigest()=='b75e7d70349ca7998ee95f08aae8c9c4197550f749181f28a0c83f7c505d048b'
+reversals=[
+ (b'flex w-full min-w-0 flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:items-center',b'flex items-center gap-2'),
+ (b'flex w-full min-w-0 items-center gap-2 px-3 py-1.5 rounded-lg border border-line bg-white sm:w-55',b'flex items-center gap-2 px-3 py-1.5 rounded-lg border border-line bg-white w-55'),
+ (b'text-xs border-0 outline-none bg-transparent text-ink placeholder:text-dim flex-1 min-w-0',b'text-xs border-0 outline-none bg-transparent text-ink placeholder:text-dim flex-1')]
+for current,old in reversals:
+    assert body.count(current)==1
+    body=body.replace(current,old,1)
+assert body==git('show','de4d2b21f8e08720211407eb1449d6f85cfa9b34:'+name)
+
 PY_FRONTEND_COMPOSITION
-printf 'SIGNUP_HISTORY_BUILD_SCOPE current_tests=false retained_tests=555 retained_files=66 current_standalone_typecheck=false retained_standalone_typecheck=pass fresh_dashboard_build=required fresh_landing_build=required native162=retained_unchanged_sources profile24_32=retained_unchanged_components group12_16=retained_unchanged_components native21=retained_actual_pass\n'
+printf 'SIGNUP_HISTORY_BUILD_SCOPE current_tests=555 current_files=66 current_standalone_typecheck=required fresh_dashboard_build=required fresh_landing_build=required native162=retained_unchanged_sources profile24_32=retained_unchanged_components group12_16=retained_unchanged_components native21=retained_actual_pass\n'
 python3 -I -B - "$baseline/requirements.txt" "$backend/requirements.txt" <<'PY_REQUIREMENTS'
 from pathlib import Path
 import sys
@@ -349,9 +366,40 @@ assert sys.argv[2] == "0"
 PY
 verify_source || die INSTALLED_FRONTEND_MISMATCH
 
-# Actual same-FE passing phases from the failed native21 run; no current re-execution claim.
-printf 'SIGNUP_HISTORY_RETAINED_FRONTEND tested_commit=de4d2b21f8e08720211407eb1449d6f85cfa9b34 tested_tree=145410287b963a3e80dbe162a1978c5dd50ab352 tests=555 files=66 standalone_typecheck=pass current_tests=false current_standalone_typecheck=false run=45913356146 job=140226669833 primary_sha256=865ce421123f20184520282fc531da85c0737e22ab606ae04228af4e8c7184f7 root_phase_receipt_sha256=9079166de72d3b96eebe468e4c84d32303811d70314642fae035ae4bc02266a2\n'
-verify_source || die RETAINED_PROOF_FRONTEND_MISMATCH
+native=0
+bounded 360s docker run "${prepare[@]}" --network none \
+  --mount "type=bind,src=$state/frontend-work,dst=/work" "$node_image" \
+  env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp CI=true NODE_OPTIONS=--max-old-space-size=1536 \
+  sh -c 'node --test --test-reporter=tap tests/*.test.cjs' >"$state/contracts.log" 2>&1 || native=$?
+python3 -I -B - "$state/contracts.log" "$native" <<'PY_CONTRACTS' || die ACTUAL_555_CONTRACTS_REQUIRED
+from pathlib import Path
+import re,sys
+raw=Path(sys.argv[1]).read_bytes()
+assert len(raw)<=4*1024*1024
+counts={key.decode():int(value) for key,value in re.findall(rb'(?m)^# (tests|pass|fail|cancelled|skipped|todo) ([0-9]+)\s*$',raw)}
+print('SIGNUP_HISTORY_FRONTEND_CONTRACTS native='+sys.argv[2]+' '+str(counts))
+if sys.argv[2]!='0':
+    for name,line,col in re.findall(rb"location: '/work/(tests/[A-Za-z0-9_.-]+\.cjs):([0-9]+):([0-9]+)'",raw)[:12]:
+        print('SIGNUP_HISTORY_CONTRACT_LOCATION '+name.decode()+':'+line.decode()+':'+col.decode())
+assert sys.argv[2]=='0' and counts=={'tests':555,'pass':555,'fail':0,'cancelled':0,'skipped':0,'todo':0}
+PY_CONTRACTS
+verify_source || die CONTRACTS_ALTERED_FRONTEND_SOURCE
+native=0
+bounded 360s docker run "${prepare[@]}" --network none \
+  --mount "type=bind,src=$state/frontend-work,dst=/work" "$node_image" \
+  env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp CI=true NODE_OPTIONS=--max-old-space-size=1536 \
+  sh -c 'npm run typecheck --workspace=dashboard' >"$state/strict.log" 2>&1 || native=$?
+python3 -I -B - "$state/strict.log" "$native" <<'PY_STRICT' || die ACTUAL_STRICT_DASHBOARD_REQUIRED
+from pathlib import Path
+import re,sys
+raw=Path(sys.argv[1]).read_bytes()
+assert len(raw)<=1048576
+for file,line,col,code in re.findall(rb'(?m)^((?:src|\.\./\.\./packages)/[A-Za-z0-9_./-]+\.(?:ts|tsx))\(([0-9]{1,5}),([0-9]{1,5})\): error (TS[0-9]{4}):',raw)[:12]:
+    print('SIGNUP_HISTORY_STRICT_DIAGNOSTIC '+file.decode()+':'+line.decode()+':'+col.decode()+' '+code.decode())
+print('SIGNUP_HISTORY_STRICT_DASHBOARD native='+sys.argv[2])
+assert sys.argv[2]=='0'
+PY_STRICT
+verify_source || die STRICT_ALTERED_FRONTEND_SOURCE
 
 native=0
 bounded 360s docker run "${prepare[@]}" --network none \
@@ -379,7 +427,7 @@ if sys.argv[3] != "0":
     raise SystemExit(1)
 assert b"vite build" in data and index.is_file() and not index.is_symlink()
 assert b"127.0.0.1:8918" in b"".join(f.read_bytes() for f in index.parent.glob("assets/*.js") if f.is_file())
-print("SIGNUP_HISTORY_DASHBOARD native=0 build=success standalone_typecheck=retained_actual_phase")
+print("SIGNUP_HISTORY_DASHBOARD native=0 build=success standalone_typecheck=separate_current_phase")
 PY
 verify_source || die DASHBOARD_ALTERED_SOURCE
 
@@ -586,5 +634,5 @@ PY_LANDING
   verify_source || die BROWSER_ALTERED_FRONTEND_SOURCE
   [[ -z $(git -C "$backend" status --porcelain=v1 --untracked-files=all) ]] || die BROWSER_ALTERED_BACKEND_SOURCE
 done
-printf 'SIGNUP_HISTORY_HOSTED_RESULT operations=%s frontend=%s backend=%s retained_native162_run=45652164070 current_native_tests=false retained_native_tests=21 frontend_tests=retained555 standalone_strict=retained_pass dashboard=current landing=current browser=exact_checker_pass authoritative_fixture=exact_checker_pass live_provider_calls=0 run=%s attempt=1\n' \
+printf 'SIGNUP_HISTORY_HOSTED_RESULT operations=%s frontend=%s backend=%s retained_native162_run=45652164070 current_native_tests=false retained_native_tests=21 frontend_tests=555 standalone_strict=current dashboard=current landing=current browser=exact_checker_pass authoritative_fixture=exact_checker_pass live_provider_calls=0 run=%s attempt=1\n' \
   "$GITHUB_SHA" "$frontend_commit" "$backend_commit" "$GITHUB_RUN_ID"

@@ -1,8 +1,8 @@
 {
-  "status": "PREPARED_SOURCE_ONLY_V3_DIAGNOSTIC_FOR_ROOT_AND_RELEASE_REVIEW_NOT_RUN",
+  "status": "PREPARED_SOURCE_ONLY_V4_FOR_ROOT_AND_RELEASE_REVIEW_NOT_RUN",
   "date": "2026-11-26",
   "namespace": "signup-email-history-browser",
-  "parent_operations": "df96182794e007935be1ce9b71cb8dd04ec9a7e3",
+  "parent_operations": "1bea5657249790d13ccd3cb2a3afb514ecb66481",
   "inherited_tuples": 431,
   "new_paths": 0,
   "expected_total_paths": 431,
@@ -20,17 +20,21 @@
       "aggregate_base": "6ef69b249c573eedaea962dad530eaed0a612b24"
     },
     "frontend": {
-      "commit": "de4d2b21f8e08720211407eb1449d6f85cfa9b34",
-      "tree": "145410287b963a3e80dbe162a1978c5dd50ab352",
-      "parent": "95077fb8e5cb784ed47be6a78d9632e62a0b9bf4",
+      "commit": "2e1fce3cb9373724c9c34cecf5ab43f2451bed40",
+      "tree": "34ea2cfc7810d13c7c40c29ac5a26ed032f2456a",
+      "parent": "de4d2b21f8e08720211407eb1449d6f85cfa9b34",
       "aggregate_base": "a8069c847a75823fc5a62101895a80d8fc1f8b1d",
       "path_count": 622,
-      "aggregate_paths": 6,
-      "unmodified_base_tuples": 616,
-      "source_review": "Root and Groups FULL source accepted; root exact isolated source firstpush verified26Nov. No production publication."
+      "aggregate_paths": 7,
+      "unmodified_base_tuples": 615,
+      "source_review": "Narrow3class-only child under root/Release finite FULL review; no product change outside this toolbar.",
+      "immediate_changed_paths": [
+        "apps/dashboard/src/pages/admin/Users.tsx"
+      ],
+      "immediate_unmodified_parent_tuples": 621
     }
   },
-  "scope": "Failure-only numeric control census; exact existing browser assertions, product source, metadata/privacy and current106 read-only ledger retained. Fresh browser artifacts required; actual unchanged555/TSC and native21 phases retained, not rerun.",
+  "scope": "Exact narrow responsive toolbar child plus fresh555/TSC/builds and complete original account-history browser/106 checks. Numeric failure-only census remains unchanged; native21 actually passed on unchanged26ca and is retained.",
   "source_ownership": {
     "workflow_plan_runner_driver": "google_browser_resume",
     "fixture_checker": "Groups authored original fixture/checker; v3 leaves fixture exact and google_browser_resume owns only the failure-census checker branch.",
@@ -38,12 +42,12 @@
     "push_and_hosted_execution": "root only"
   },
   "fresh_frontend": {
-    "contract_tests": false,
-    "full_dashboard_standalone_typecheck": false,
+    "contract_tests": 555,
     "test_files": 66,
+    "full_dashboard_standalone_typecheck": true,
     "vite_build": true,
     "landing_next_build": true,
-    "source": "Exact unchanged de4d/622 source and manifests; actual555/66 and standalone Dashboard tsc are retained from the unique failed native run. Fresh Vite still produces the owned current artifact; Next/browser were not reached and remain required."
+    "source": "Current exact toolbar child; all full555/66 and separate Dashboard tsc must freshly pass. Prior de4d555/TSC cannot substitute on changedFE."
   },
   "native21": {
     "actual_required": false,
@@ -166,22 +170,7 @@
       "scope": "Unchanged Group author components only."
     },
     "communications": {
-      "scope": "Original generic route/client/page/outbox/template and enqueue functions unchanged; actual native21 and unchangedFE555/TSC retained. No email send or browser106 acceptance inferred."
-    },
-    "current_frontend": {
-      "run": 45913356146,
-      "job": 140226669833,
-      "commit": "de4d2b21f8e08720211407eb1449d6f85cfa9b34",
-      "tree": "145410287b963a3e80dbe162a1978c5dd50ab352",
-      "tests": 555,
-      "files": 66,
-      "standalone_dashboard_tsc_exit": 0,
-      "primary_bytes": 117793,
-      "primary_sha256": "865ce421123f20184520282fc531da85c0737e22ab606ae04228af4e8c7184f7",
-      "root_phase_receipt": "signup-history-77e585-45913356146-root-failure-and-frontend-phase-acceptance.json",
-      "root_phase_receipt_bytes": 2631,
-      "root_phase_receipt_sha256": "9079166de72d3b96eebe468e4c84d32303811d70314642fae035ae4bc02266a2",
-      "scope": "Only actual same-source555/66 and separate tsc passing phases. Overall run FAILED native21; no native/Next/browser acceptance retained."
+      "scope": "Original generic route/client/page/outbox/template and enqueue functions unchanged; actual native21 retained. CurrentFE555/TSC/builds freshly required. No send/browser106 acceptance inferred."
     },
     "current_native21": {
       "run": 45914574770,
@@ -199,6 +188,21 @@
       "independent_receipt_bytes": 4991,
       "independent_receipt_sha256": "167b65b4918f3c091396b85155cf3fabab1ea00928a52c3f9403b48c7267d754",
       "scope": "Actual21 PG tests/no-skips/provider0/model-schema-public-security cleanup/stopped no-OOM marker DB removal. Prior overall run FAILED browser; no browser106 acceptance retained."
+    },
+    "previous_frontend_phase": {
+      "run": 45913356146,
+      "job": 140226669833,
+      "commit": "de4d2b21f8e08720211407eb1449d6f85cfa9b34",
+      "tree": "145410287b963a3e80dbe162a1978c5dd50ab352",
+      "tests": 555,
+      "files": 66,
+      "standalone_dashboard_tsc_exit": 0,
+      "primary_bytes": 117793,
+      "primary_sha256": "865ce421123f20184520282fc531da85c0737e22ab606ae04228af4e8c7184f7",
+      "root_phase_receipt": "signup-history-77e585-45913356146-root-failure-and-frontend-phase-acceptance.json",
+      "root_phase_receipt_bytes": 2631,
+      "root_phase_receipt_sha256": "9079166de72d3b96eebe468e4c84d32303811d70314642fae035ae4bc02266a2",
+      "scope": "Historical actual de4d555/TSC only; NOT substituted for current changedFE. Current full555/TSC freshly required."
     }
   },
   "runtime_reuse": {
@@ -210,20 +214,17 @@
   "results": "Finite exact keysets/counters derive from final written fixture/driver/checker. Failure-only numeric markers must always fail; no screenshots, private payload logs or uploaded artifacts.",
   "source_only_validation": {
     "status": "PASS_SOURCE_ONLY_NOT_HOSTED_ACCEPTANCE",
-    "positive_parser_baselines": 3,
-    "diagnostic_always_fail_and_negative_controls": 32,
-    "safe_export_controls": 2,
-    "pure_javascript_helper_controls": 7,
-    "inline_python_ast": 10,
-    "checker_ast": 1,
-    "node_syntax_exit": 0,
-    "whole_driver_and_checker_reversals_exact_parent": true,
-    "whole_fixture_and_browser_runtime_tail_exact_parent": true,
-    "whole_backend_frontend_composition_guards_exact_parent": true,
-    "native_worker_invocation_removed": true,
-    "controls_receipt": "signup-history-v3-numeric-census-source-controls-20261126.json",
-    "controls_sha256": "ea296d87f78d3c2d7b446bf480d8ea7fd348f05621c90c6a13b5c11e6745c0ec",
-    "app_native_browser_database_build_install_provider_runtime": false
+    "inline_python_ast": 12,
+    "new_frontend_git_only_guard_exit": 0,
+    "backend_guard_byteexact_parent": true,
+    "fresh_full555_and_standalone_tsc_block_byteexact77e": true,
+    "whole_driver_checker_fixture_and_runtime_tools_to_cleanup_exact_parent": true,
+    "diagnostic_pure_controls": "Original current3baseline/32diagnostic-negatives/2safeexport/7helper retained on unchanged files; no rerun.",
+    "checkout_depths": {
+      "frontend": 24,
+      "backend": 12
+    },
+    "app_native_browser_build_database_install_provider_runtime": false
   },
   "operations_scope": {
     "local_source_only": true,
@@ -233,18 +234,16 @@
     "no_push": true
   },
   "final_freeze_requires": [
-    "Root and Release FULL/composed finite source review before root first push.",
-    "Original all12journeys/20geometry/16boundaries/full106/privacy/ownedcleanup remain required; no diagnostic implies acceptance.",
-    "No product CSS correction until actual numeric evidence identifies the offender."
+    "Root and Release FULL finite toolbar source acceptance and root first source push before any operations push/execution; source-only preparation may freeze for parallel review.",
+    "Root and Release FULL/composed three-path ops review, fresh555/TSC/builds and unchanged all12/20/16/full106/privacy/cleanup gates.",
+    "Root alone first-pushes unique v4 ref; no local runtime or provider activity."
   ],
   "changed_paths": [
     ".github/workflows/signup-email-history-browser.yml",
     "ci/signup-email-history-browser/PLAN.json",
-    "ci/signup-email-history-browser/check-result.py",
-    "ci/signup-email-history-browser/run-browser.mjs",
     "ci/signup-email-history-browser/run-hosted.sh"
   ],
-  "unchanged_parent_tuples": 426,
+  "unchanged_parent_tuples": 428,
   "numeric_control_diagnostic": {
     "prefix": "SIGNUP_HISTORY_BROWSER_CONTROL_CENSUS",
     "when": "Only after the original raw CONTROL_OVERFLOW conjunction fails, then its unchanged assertion throws.",
