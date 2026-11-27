@@ -1,23 +1,23 @@
 {
-  "status": "PREPARED_FOR_ROOT_REVIEW_NOT_RUN",
+  "status": "PREPARED_SOURCE_ONLY_V2_PENDING_ROOT_COLD_REVIEW_NOT_RUN",
   "date": "2026-11-26",
   "namespace": "signup-email-history-browser",
-  "parent_operations": "215de538b85dc0f09f0d7c53f1d281f645411568",
-  "inherited_tuples": 425,
-  "new_paths": 6,
+  "parent_operations": "77e58508596c04dfba3d7d169e10add91473b765",
+  "inherited_tuples": 431,
+  "new_paths": 0,
   "expected_total_paths": 431,
   "source_pins": {
     "backend": {
-      "commit": "c4de3e2e25fd3699ccb776c740d6413b402ed317",
-      "tree": "916d590cd72af5c3f68778441010aa41b59661ea",
-      "parent": "6ef69b249c573eedaea962dad530eaed0a612b24",
+      "commit": "26ca867a1008868f7dc5f322d28dc289a7763980",
+      "tree": "3a30b7e8c5b53827b97374c18806a7cb03ef9c5c",
+      "parent": "c4de3e2e25fd3699ccb776c740d6413b402ed317",
       "path_count": 367,
       "changed_paths": [
-        "routes/lead_delivery.py",
         "tests/test_customer_delivery.py"
       ],
-      "unmodified_parent_tuples": 365,
-      "source_review": "Root and Groups FULL source accepted; root exact isolated source firstpush verified26Nov. No production publication."
+      "unmodified_parent_tuples": 366,
+      "source_review": "Root and Release FULL finite source accepted; root exact first isolated26ca review-ref push verified26Nov; main unchanged.",
+      "aggregate_base": "6ef69b249c573eedaea962dad530eaed0a612b24"
     },
     "frontend": {
       "commit": "de4d2b21f8e08720211407eb1449d6f85cfa9b34",
@@ -38,13 +38,12 @@
     "push_and_hosted_execution": "root only"
   },
   "fresh_frontend": {
-    "contract_tests": 555,
+    "contract_tests": false,
+    "full_dashboard_standalone_typecheck": false,
     "test_files": 66,
-    "full_dashboard_standalone_typecheck": true,
     "vite_build": true,
     "landing_next_build": true,
-    "prior549_not_substituted": true,
-    "source": "Current exact FE child; these counts are expected, not an execution result."
+    "source": "Exact unchanged de4d/622 source and manifests; actual555/66 and standalone Dashboard tsc are retained from the unique failed native run. Fresh Vite still produces the owned current artifact; Next/browser were not reached and remain required."
   },
   "native21": {
     "actual_required": true,
@@ -57,11 +56,11 @@
     "port": 55449,
     "marker": "ildr-signup-history-native-ci:<nonce>",
     "scope": "The existing test class creates an isolated model schema and removes it. This is actual PG route/unit coverage, not a claim of genuine full106 migration parity.",
-    "process": "Separate fresh owned database and child process; actual config/provider guards before imports. Run original actual21 case methods, no source rewrite/count lowering.",
+    "process": "Separate fresh owned database and child process; actual config/provider guards before imports. Run original actual21 case methods, no source rewrite/count lowering. The test-only child supplies the existing required display_name for the three synthetic role readers; all21 case names/order/assertions remain exact.",
     "cleanup": "Observe typed exit/running/OOM values and require the worker stopped before cleanup. Export bounded native results, then marker-check/drop/absence-check the owned database and remove the container before applying unchanged zero-OOM/exit/check acceptance. No canonical browser snapshot is shared with this test class."
   },
   "browser_schema": {
-    "chain": "Genuine8957/c4 old99 →179/d8 current106 →c4de/e8 same106, using pinned accepted read-only helpers and current source.",
+    "chain": "Genuine8957/c4 old99 \u2192179/d8 current106 \u2192c4de/e8 same106, using pinned accepted read-only helpers and current source.",
     "source_readonly_mounts": [
       "/application",
       "/previous",
@@ -166,7 +165,22 @@
       "scope": "Unchanged Group author components only."
     },
     "communications": {
-      "scope": "Original generic route/client/page/outbox/template and enqueue functions stay exact accepted parent bytes; all old19 native cases and fresh full555 still run. No old live delivery proof is relabeled as current send."
+      "scope": "Original generic route/client/page/outbox/template and enqueue functions stay exact accepted parent bytes; all21 native cases freshly run, actual unchanged FE555 retained. No old live delivery proof is relabeled as current send."
+    },
+    "current_frontend": {
+      "run": 45913356146,
+      "job": 140226669833,
+      "commit": "de4d2b21f8e08720211407eb1449d6f85cfa9b34",
+      "tree": "145410287b963a3e80dbe162a1978c5dd50ab352",
+      "tests": 555,
+      "files": 66,
+      "standalone_dashboard_tsc_exit": 0,
+      "primary_bytes": 117793,
+      "primary_sha256": "865ce421123f20184520282fc531da85c0737e22ab606ae04228af4e8c7184f7",
+      "root_phase_receipt": "signup-history-77e585-45913356146-root-failure-and-frontend-phase-acceptance.json",
+      "root_phase_receipt_bytes": 2631,
+      "root_phase_receipt_sha256": "9079166de72d3b96eebe468e4c84d32303811d70314642fae035ae4bc02266a2",
+      "scope": "Only actual same-source555/66 and separate tsc passing phases. Overall run FAILED native21; no native/Next/browser acceptance retained."
     }
   },
   "runtime_reuse": {
@@ -177,15 +191,20 @@
   },
   "results": "Finite exact keysets/counters derive from final written fixture/driver/checker. Failure-only numeric markers must always fail; no screenshots, private payload logs or uploaded artifacts.",
   "source_only_validation": {
-    "inline_python_ast_programs": 12,
-    "fixture_checker_python_ast": 2,
-    "driver_node_syntax": "PASS; syntax only, no browser execution",
-    "driver_literal_inventory": {"phases": 34, "reasons": 52},
-    "parser_controls": {"positive": 3, "negative": 73, "safe_output": 6, "receipt": "signup-history-browser-parser-controls-20261126.json", "sha256": "a2dc0ac1d21982a76e81933320df714e884e132f458a493f9b473623dc8f3492"},
-    "read_only_git_composition_guards": "Both actual backend and frontend guard blocks passed against exact c4de/de4d source; no app imports or runtime.",
-    "checkout_depths": {"frontend": 23, "backend": 12},
-    "primary_receipts": "Strict validated native/API/browser results plus every unique bounded geometry/presence observation are exported; no private raw-log output.",
-    "fresh_hosted_tests_builds_browser": "PENDING; source preparation and parser controls are not hosted acceptance"
+    "status": "PASS_SOURCE_ONLY_NOT_HOSTED_ACCEPTANCE",
+    "inline_python_ast_programs": 10,
+    "fixture_ast": 1,
+    "changed_backend_composition_guard_exit": 0,
+    "frontend_guard_byteexact_parent": true,
+    "whole_driver_checker_byteexact_parent": true,
+    "whole_runtime_tools_through_cleanup_byteexact_parent": true,
+    "fixture_identity_only_two_constant_reversal": true,
+    "parser_controls": "Original3positive/73negative/6safe-output retained on byte-identical checker; no rerun.",
+    "checkout_depths": {
+      "frontend": 23,
+      "backend": 12
+    },
+    "fresh_native_build_browser": "UNRUN"
   },
   "operations_scope": {
     "local_source_only": true,
@@ -195,8 +214,15 @@
     "no_push": true
   },
   "final_freeze_requires": [
-    "Root and independent FULL source acceptance of BEc4de and finalFEde4d child, with root exact source push readback.",
-    "Both full crossreviews of these six new paths, source/old425tuple guards, finite native/browser/API contracts and bounded parser/AST controls.",
-    "Root FULL operations review before root first push; actual acceptance cannot be inferred from preparation."
-  ]
+    "Root and Release FULL finite source acceptance and root first push of the test-only BE child.",
+    "Root and independent FULL/composed four-path operations review against unchanged77e driver/checker and427 other tuples.",
+    "Root alone first-pushes the unique v2 ref; no local app/native/browser/build/DB/provider work."
+  ],
+  "changed_paths": [
+    ".github/workflows/signup-email-history-browser.yml",
+    "ci/signup-email-history-browser/PLAN.json",
+    "ci/signup-email-history-browser/run-hosted.sh",
+    "ci/signup-email-history-browser/serve_fixture.py"
+  ],
+  "unchanged_parent_tuples": 427
 }

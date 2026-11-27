@@ -23,8 +23,8 @@ from urllib import request as urllib_request
 from unittest.mock import patch
 from uuid import UUID
 
-COMMIT = "c4de3e2e25fd3699ccb776c740d6413b402ed317"
-TREE = "916d590cd72af5c3f68778441010aa41b59661ea"
+COMMIT = "26ca867a1008868f7dc5f322d28dc289a7763980"
+TREE = "3a30b7e8c5b53827b97374c18806a7cb03ef9c5c"
 BASE_COMMIT = "17943ba1714673c51c43cdbb800106f91612f527"
 BASE_TREE = "ff940a7b6e983d4c669202746d9676b4b82e9a06"
 HEAD = "e8b5a3d1f907"

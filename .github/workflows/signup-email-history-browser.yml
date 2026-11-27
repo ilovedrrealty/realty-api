@@ -1,7 +1,7 @@
 name: Isolated read-only account signup email history
 on:
   push:
-    branches: [codex-ci-signup-email-history-browser-20261126]
+    branches: [codex-ci-signup-email-history-browser-v2-20261126]
 permissions:
   contents: read
 concurrency:
@@ -37,7 +37,7 @@ jobs:
       - name: Read exact reviewed profile customization API
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: c4de3e2e25fd3699ccb776c740d6413b402ed317
+          ref: 26ca867a1008868f7dc5f322d28dc289a7763980
           path: browser-backend
           fetch-depth: 12
           persist-credentials: false
@@ -72,7 +72,7 @@ jobs:
           path: profile-baseline106
           fetch-depth: 6
           persist-credentials: false
-      - name: Run current555, standalone typecheck, native21 and read-only account browser
+      - name: Run native21, fresh builds and account browser; retain exact555 and typecheck
         shell: bash
         run: |
           set -euo pipefail
