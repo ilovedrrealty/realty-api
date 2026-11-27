@@ -1,0 +1,53 @@
+name: Isolated public assistant orchestration unit proof
+on:
+  push:
+    branches: [codex-ci-assistant-orchestration-unit-20261127]
+permissions:
+  contents: read
+concurrency:
+  group: assistant-orchestration-unit-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  unit:
+    if: >-
+      github.repository == 'ilovedrrealty/realty-api' && github.event.repository.private == false &&
+      github.event.created == true && github.event.deleted == false && github.event.forced == false &&
+      github.event.before == '0000000000000000000000000000000000000000' && github.run_attempt == 1 &&
+      github.event.after == github.sha && github.workflow_sha == github.sha
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Read exact operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          path: orchestration-ops
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Read exact orchestrator and composition source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ef72afc550d25ebbfebfa247cd977ca27f492d20
+          path: orchestration-app
+          fetch-depth: 3
+          persist-credentials: false
+      - name: Read pinned dependency baseline
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 01695530df670a94ac28f8b3bf36cc34b5b7a942
+          path: orchestration-dependencies
+          persist-credentials: false
+      - name: Read accepted Python recipe
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: c193a925ba57ea2d67ea48c44e5262817885c8a2
+          path: orchestration-recipe
+          persist-credentials: false
+      - name: Run fourteen authority units and three actual transport compositions
+        shell: bash
+        run: |
+          set -euo pipefail
+          runner="$GITHUB_WORKSPACE/orchestration-ops/ci/assistant-orchestration-unit/run-hosted.sh"
+          bash --noprofile --norc -n "$runner"
+          exec bash --noprofile --norc "$runner" "$GITHUB_WORKSPACE/orchestration-ops" \
+            "$GITHUB_WORKSPACE/orchestration-app" "$GITHUB_WORKSPACE/orchestration-dependencies" "$GITHUB_WORKSPACE/orchestration-recipe"

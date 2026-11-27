@@ -1,0 +1,188 @@
+{
+  "status": "FROZEN_SOURCE_ONLY_ALL17_UNRUN",
+  "operations_parent": "2af70db05b5a3dbf55529520450b0d22a9cc78bf",
+  "operations_parent_tree": "faea859447cddf46a33f6c89a241f6a0174148ae",
+  "ref": "codex-ci-assistant-orchestration-unit-20261127",
+  "five_new_paths": [
+    ".github/workflows/assistant-orchestration-unit.yml",
+    "ci/assistant-orchestration-unit/PLAN.json",
+    "ci/assistant-orchestration-unit/verify.py",
+    "ci/assistant-orchestration-unit/check-result.py",
+    "ci/assistant-orchestration-unit/run-hosted.sh"
+  ],
+  "application": {
+    "commit": "ef72afc550d25ebbfebfa247cd977ca27f492d20",
+    "tree": "7d6abfdd5086cb228b50d7f3d1a8e7c9b7a071ef",
+    "parent": "4007819af02961a14d4acf75bdd902d619e49aab",
+    "parent_tree": "a74233030d6d5ba96682ad75e4a15d110fed537e",
+    "transport_base": "43f3b2d760b52c8ab449fcd5e6cd22f3118e6173",
+    "transport_tree": "0e3a1add5efb5e027f9498788e4101e59da5b15f",
+    "all385_transport_parent_tuples_in400_exact": true,
+    "all387_parent_tuples_in388_exact": true
+  },
+  "source_files": {
+    "services/public_assistant_orchestrator.py": {
+      "tuple": "100644 blob 227c770c1bc876a6c949528c9e4de3faf9907665",
+      "bytes": 13227,
+      "sha256": "3801946580d68062422957fe9bd3a7bd80d2f20dd537952736663c01d30b7dde"
+    },
+    "tests/test_public_assistant_orchestrator.py": {
+      "tuple": "100644 blob 4818153f9e04df30d54a89d1de29b78736023136",
+      "bytes": 13129,
+      "sha256": "64c854dc7125f495347c80af0a811ca16c8a5ee32f9c4f98b33c394f8ec2dc06"
+    },
+    "tests/test_public_assistant_transport_composition.py": {
+      "tuple": "100644 blob 900174ff7d77bd36fdb19ddc21422ac3779565c7",
+      "bytes": 9393,
+      "sha256": "7681bf0e2859472dbb5c62284a7995564874a7b3d2c81e2c210428ccdbbc48ec"
+    },
+    "services/assistant_gateway_transport.py": {
+      "tuple": "100644 blob 137ca0cc69e5e9122e54321ae710fe8c2e8a4f4b",
+      "bytes": 11861,
+      "sha256": "da678b51989b0cb7d52866a9550dbd4fbd99853e960d7c5e4314347c8ae27f03"
+    },
+    "schemas/public_assistant_listing.py": {
+      "tuple": "100644 blob cababfb23cbf643c8db63df7b44b60d4605f80b5",
+      "bytes": 4616,
+      "sha256": "920e8ce79bc48d5659d91f74f7245507fda780acb4ed9f5b39d3a9f680ce1866"
+    },
+    "services/public_assistant_listing.py": {
+      "tuple": "100644 blob fc898736ea8510948cafb3ecade29a9a1fbb0029",
+      "bytes": 9740,
+      "sha256": "c8dc55255a90056bc2f6e1fc20bf093d6d25f25c57d90ce0b26456f9005a29df"
+    },
+    "services/assistant_feature_help.py": {
+      "tuple": "100644 blob edbcd96b82e631b3cf818e98a796a7a13af0bf12",
+      "bytes": 6059,
+      "sha256": "56a8cd83476bcd694bc6032a893a28642dd1db386f02193115e54c2f73217a81"
+    },
+    "services/assistant_feature_help.json": {
+      "tuple": "100644 blob f4ecc87716b04210e51be80e6cb1d78a6d74b35f",
+      "bytes": 29547,
+      "sha256": "f3f44242f5722e758e40d676bca4c875cfc7d51a773c352deed12c1f9c6edd4e"
+    },
+    "services/__init__.py": {
+      "tuple": "100644 blob e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "schemas/__init__.py": {
+      "tuple": "100644 blob e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "dependencies": {
+    "commit": "01695530df670a94ac28f8b3bf36cc34b5b7a942",
+    "tree": "e88ea0c57f9fac39545322532a5992d5a2927676",
+    "requirements_sha256": "d96f6782adb8ffaf24c4729e88c6086f533ff2caed1c55efd8c096c09f429308"
+  },
+  "recipe": {
+    "commit": "c193a925ba57ea2d67ea48c44e5262817885c8a2",
+    "tree": "10edb138fba1d201e66042d25ba022313b300cc2",
+    "dockerfile_sha256": "e546d8c5668b87ef28e604107bbb330e6f4b3873cf0208b4d24ca378bd0851f9"
+  },
+  "runtime": {
+    "python_digest": "sha256:673719e071ecf27434fd2635bbd8d00f49f4fdd81f243143438a42ced8bedf60",
+    "python": "3.11",
+    "httpx": "0.27.0",
+    "client_memory_MiB": 384,
+    "client_swap_additional_MiB": 0,
+    "client_pids": 96,
+    "client_cpus": 1,
+    "tmpfs_MiB": 64,
+    "phase_seconds": 90,
+    "workflow_minutes": 20,
+    "network": "none",
+    "read_only_root_and_mounts": true,
+    "cap_drop": "ALL",
+    "no_new_privileges": true,
+    "env": "env-i PATH HOME PYTHONDONTWRITEBYTECODE only; no credentials/config/env values read or forwarded",
+    "pydantic": "2.8.0"
+  },
+  "scope": "Exactly14 existing orchestrator authority units with Gateway/typed-reader doubles plus3 actual400+43f transport compositions through owned HTTPXMockTransport and typed readers/realanonymoushelp. No accepted12/25 rerun. No PG/DB/app route/browser/live model/provider.",
+  "network_policy": "Same accepted12 realHTTPX/socket/DNS refusals and network-none container. Count controlledGatewaydouble calls, actual43f.complete invocations and HTTPXMockTransport calls independently. Positive double+actualtransport+asyncMock counts, zero realHTTP/socket attempts. Mock calls are owned fixture activity, not provider usage.",
+  "protocol": {
+    "prefix": "ORCHESTRATOR_UNIT_",
+    "counts": {
+      "authority": 14,
+      "composition": 3
+    },
+    "raw_capture_max_bytes": 2097152,
+    "private_log_max_bytes": 4194304,
+    "line_max_bytes": 4096,
+    "records_max": 22,
+    "known_method_names_only": true,
+    "diagnostics_always_fail": true,
+    "mock_call_counts": "Dynamic sync0..128/async1..128 total<=128, Gatewaydouble1..128 and actualtransport1..128. No guessed pre-run count."
+  },
+  "isolation": "Exact source parent chain ef72->400->43f and every385 transport-base tuple/387 parent tuple+new1;10 selected module/data hashes and17 methods. Same pinned recipe/image/no source in onlinebuild; one network-none/read-only/env-i/nonroot/capdrop bounded client, no PG.",
+  "cleanup": "Label+nonce ownership before removal, typed attach/native/running/OOM facts. Client stopped and removed even on checker failure; cleanup trap removes only exact labeled containers/image and verified owned scratch prefix and checks absence. No DB exists in this lane.",
+  "required_actual_acceptance": "Counts14+3 actualrun with zero failures/errors/skips/expectedFailures/unexpectedSuccesses, exactresult17, positive separately observed Gatewaydouble/actual43fcomplete/MockTransport activity, zero realHTTP/socket/model attempts, no forbidden app/DB imports or actualreader module, sourcepreserved, client0/stopped/noOOM/removed/final+ownedcleanup, artifacts[].",
+  "evidence_not_claimed": [
+    "Live model/Gateway authorization/team entitlement/privacy/pricing/zero-new-spend availability.",
+    "ActualPG/current handler reads from14+3 typedreader doubles; accepted25 retained separately.",
+    "Publicroute/chatUI/auth/serveractor/leadwrites/production publication.",
+    "Unchanged12/25 rerun or upstream provider cancellation/cost guarantee."
+  ],
+  "source_review": {
+    "orchestrator_base": "outputs/public-assistant-orchestration-20261127-google/SOURCE-PROPOSAL.json",
+    "composition_child": "outputs/public-assistant-transport-composition-20261127/SOURCE-PROPOSAL.json",
+    "transport_source": "outputs/assistant-gateway-transport-source-20261127/SOURCE-PROPOSAL.json",
+    "accepted12": "outputs/assistant-gateway-unit-hosted-20261127/gateway-unit-45964481831-release-independent-acceptance-20261127.json",
+    "all17_definitions": "UNRUN"
+  },
+  "push": "Root alone after full operations plus one independent isolation review, exact one-time absentref; expected productionmain e4d remains unchanged. This workflow cannot deploy or promote.",
+  "inherited456_immutable": true,
+  "total461": true,
+  "suites": {
+    "authority": {
+      "file": "tests/test_public_assistant_orchestrator.py",
+      "class": "PublicAssistantOrchestratorTests",
+      "count": 14,
+      "methods": [
+        "test_disabled_and_unverified_entitlement_do_not_invoke_model_or_tools",
+        "test_strict_raw_input_rejects_duplicate_actor_unknown_and_oversize_before_gateway",
+        "test_async_caller_is_refused_without_blocking_event_loop",
+        "test_real_anonymous_help_is_a_tool_after_model_call_and_never_actor_authority",
+        "test_raw_search_then_detail_and_final_freshness_preserve_existing_context",
+        "test_spanish_locale_is_bound_for_every_tool_and_final_citation",
+        "test_duplicate_unknown_nonfinite_and_url_tool_inputs_never_reach_reader",
+        "test_unknown_write_tools_duplicate_ids_and_parallel_calls_fail_closed",
+        "test_three_tools_allow_fourth_final_step_but_no_fourth_tool",
+        "test_final_foreign_citation_urls_omitted_sources_and_oversize_are_refused",
+        "test_withdrawn_final_read_never_returns_cached_answer_or_source_error",
+        "test_changed_final_prices_or_conflicting_tool_facts_refuse_stale_answer",
+        "test_full_dto_or_raw_private_record_cannot_enter_model_tool_messages",
+        "test_transport_failure_has_no_faq_fallback_or_private_exception_projection"
+      ]
+    },
+    "composition": {
+      "file": "tests/test_public_assistant_transport_composition.py",
+      "class": "PublicAssistantTransportCompositionTests",
+      "count": 3,
+      "methods": [
+        "test_en_actual_transport_search_detail_final_preserves_raw_arguments_and_fresh_citations",
+        "test_es_actual_transport_anonymous_help_binds_locale_and_refuses_model_actor",
+        "test_actual_transport_withdrawal_changed_facts_errors_and_disabled_turn_never_return_cached_answer"
+      ]
+    }
+  },
+  "local_checks": {
+    "AST": 2,
+    "inline_source_AST": 1,
+    "worker_checker_result_key_sets_exact": true,
+    "synthetic_parser_positive": 1,
+    "synthetic_parser_negative": 37,
+    "typed_process_refusals": 4,
+    "private_values_never_echoed": true,
+    "actual_selected_cases": "UNRUN",
+    "application_HTTPX_Pydantic_test_imports": false,
+    "receipt": {
+      "path": "outputs/assistant-orchestration-unit-hosted-20261127/SOURCE-CONTROLS.json",
+      "bytes": 571,
+      "sha256": "d5075d7bfe09b2a09c6fff29369c1ac46cf2069c8aed4b282a1958df21f3d206"
+    },
+    "bash_syntax": "NOT_RUN_LOCALLY; requiredhostedbash-n"
+  }
+}
