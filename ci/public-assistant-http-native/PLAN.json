@@ -1,0 +1,180 @@
+{
+  "status": "SOURCE_ONLY_UNRUN_FOCUSED18_NO_ACTIVATION",
+  "operations_parent": "9b139c4b540c81084ad725002bf04839e53ef0fb",
+  "operations_parent_tree": "e4359795736d107b7ed92fc4c0fdbb9495623e5c",
+  "ref": "codex-ci-public-assistant-http-native-20261127",
+  "inherited_paths": 456,
+  "total_paths": 461,
+  "new_paths": 5,
+  "application": {
+    "commit": "7cf753ec5dc3fb984e05316ce125f94ced77de30",
+    "tree": "64f61ef1ceda737bb046ffc48c1f86074302381f",
+    "parent": "a26c8db19f6c06a487f418f58510c623e8bf5c8c",
+    "parent_tree": "31c028ab81d706a07445ca70043f734a39ce869f",
+    "aggregate_base": "cb746abe45216576a88fb1036a9351f70a63d9fc",
+    "aggregate_base_tree": "f5fbe0a7d67df22b925f7637530dbf7c938e5b96",
+    "old_paths": 390,
+    "paths": 394,
+    "all388_outside_aggregate_exact": true,
+    "all393_outside_child_exact": true,
+    "files": {
+      "config.py": {
+        "tuple": "100644 blob bc613ed44a17109bca1b740c0321b1960adb3b31",
+        "bytes": 1901,
+        "sha256": "bdd277d8a48915e56951a639f72c932e371e7c02a785c5d1c0fdbb63a6bb52f2"
+      },
+      "main.py": {
+        "tuple": "100644 blob 189bc43227482f1bd6284f9d7d3eb9dc8e44afe7",
+        "bytes": 10260,
+        "sha256": "fa225fc0edd03b2d47812c7f855c2d69e5507dea0fae4af703d3063a04ca71b9"
+      },
+      "routes/public_assistant_http.py": {
+        "tuple": "100644 blob 0f8aa092a34e8c9493bccdcc778d446b63ecac4a",
+        "bytes": 5092,
+        "sha256": "ac47cb46ed602617f1a2c85de9e5ddb8edb78413997bbea7a6de22e2e3d72371"
+      },
+      "schemas/public_assistant_http.py": {
+        "tuple": "100644 blob 5dbdc8009c0d7783fe869eb0b4f02ac48dae8a30",
+        "bytes": 1869,
+        "sha256": "5ca5a61d968ab9a56dc28b528ae241e7aad23746abd4095ca31af5265420a023"
+      },
+      "services/public_assistant_http.py": {
+        "tuple": "100644 blob f5dcdf8c5958d41eb3dc85f56553db952badf907",
+        "bytes": 10378,
+        "sha256": "058d2892fc1c656b2542ec9b9179d41bdfc4bb51971e97daafd20686ef2b1be8"
+      },
+      "tests/test_public_assistant_http.py": {
+        "tuple": "100644 blob 2cc4cafafdf318132109b96c8b1d1e87afd0e237",
+        "bytes": 22833,
+        "sha256": "14dead5b1517cd590d29866692f0487106bde920c4617f95d628d9a02c2f609f"
+      }
+    },
+    "expected_models": 107
+  },
+  "suites": {
+    "http": {
+      "file": "tests/test_public_assistant_http.py",
+      "sha256": "14dead5b1517cd590d29866692f0487106bde920c4617f95d628d9a02c2f609f",
+      "class": "PublicAssistantHTTPTests",
+      "count": 18,
+      "methods": [
+        "test_default_disabled_session_and_routes_never_invoke_model_or_write",
+        "test_session_is_host_only_httponly_production_secure_lax_and_reused",
+        "test_origin_missing_null_foreign_duplicate_and_production_http_refused",
+        "test_no_session_wrong_csrf_and_other_customer_token_cannot_confirm",
+        "test_expired_and_tampered_session_inputs_are_finite",
+        "test_duplicate_unknown_nonfinite_oversize_and_content_type_refused",
+        "test_review_normalizes_en_es_and_never_writes_or_enters_model",
+        "test_only_explicit_true_and_unchanged_signed_review_can_write",
+        "test_exact_replay_from_fresh_http_request_preserves_one_lead_and_jobs",
+        "test_withdrawn_property_blocks_new_command_and_does_not_backfill",
+        "test_lost_postcommit_receipt_is_unknown_then_same_review_replays",
+        "test_expiry_does_not_reprepare_retry_or_claim_prior_write_absent",
+        "test_contact_error_after_actual_commit_projection_is_conservatively_unknown",
+        "test_actual_rate_limit_six_preparations_then429_without_writes",
+        "test_actual_worker_slot_remains_owned_until_worker_finishes",
+        "test_model_route_runs_in_worker_and_never_exposes_transport_metadata",
+        "test_actual_transport_public_reader_and_http_projection_with_private_canaries",
+        "test_actual_cors_allows_only_configured_origin_and_csrf_header"
+      ],
+      "all_source_methods": [
+        "test_default_disabled_session_and_routes_never_invoke_model_or_write",
+        "test_session_is_host_only_httponly_production_secure_lax_and_reused",
+        "test_origin_missing_null_foreign_duplicate_and_production_http_refused",
+        "test_no_session_wrong_csrf_and_other_customer_token_cannot_confirm",
+        "test_expired_and_tampered_session_inputs_are_finite",
+        "test_duplicate_unknown_nonfinite_oversize_and_content_type_refused",
+        "test_review_normalizes_en_es_and_never_writes_or_enters_model",
+        "test_only_explicit_true_and_unchanged_signed_review_can_write",
+        "test_exact_replay_from_fresh_http_request_preserves_one_lead_and_jobs",
+        "test_withdrawn_property_blocks_new_command_and_does_not_backfill",
+        "test_lost_postcommit_receipt_is_unknown_then_same_review_replays",
+        "test_expiry_does_not_reprepare_retry_or_claim_prior_write_absent",
+        "test_contact_error_after_actual_commit_projection_is_conservatively_unknown",
+        "test_actual_rate_limit_six_preparations_then429_without_writes",
+        "test_actual_worker_slot_remains_owned_until_worker_finishes",
+        "test_model_route_runs_in_worker_and_never_exposes_transport_metadata",
+        "test_actual_transport_public_reader_and_http_projection_with_private_canaries",
+        "test_actual_cors_allows_only_configured_origin_and_csrf_header"
+      ]
+    }
+  },
+  "helper_pins": {
+    "ci/native-inbox/verify.py": "388fcae33bf63234df9739ac7405c1a2d49b4914af2a32d56e9023fdb7ed144e",
+    "ci/social-groups-browser/serve_social_groups_fixture.py": "e0c5f0971c7c13ed47063907f01fa6ef01590b00fa2855eb1ecb16a38b99463e",
+    "ci/social-groups-native/catalog.py": "5869dcbd30dc659a649fc6c2bbbe2de1337904ef11e4b91d6ad1992ef7ea9c2f",
+    "ci/social-groups-native/records.py": "bffdf8900f286079807ba43e8db5c09160caaf139b1e934449b90e577c1cb5cf",
+    "ci/assignment-notifications-native/verify.py": "3241db2946da0f331fe1b8beb3f256ba8e1911a50384166a7a9f59ee00c1519e",
+    "ci/assignment-notifications-native/PLAN.json": "4a5bc624072da4c10661a48c420a2696f25cf24f877aa67ca3f84822b1117a6e"
+  },
+  "runtime": {
+    "python_digest": "sha256:673719e071ecf27434fd2635bbd8d00f49f4fdd81f243143438a42ced8bedf60",
+    "postgres_image": "docker.io/library/postgres:17.6@sha256:b86568d3e0fe1dfaeff52714f9da36f206a30e4c49131b82bf96982d78627409",
+    "dockerfile_sha256": "e546d8c5668b87ef28e604107bbb330e6f4b3873cf0208b4d24ca378bd0851f9",
+    "dependency_commit": "01695530df670a94ac28f8b3bf36cc34b5b7a942",
+    "dependency_tree": "e88ea0c57f9fac39545322532a5992d5a2927676",
+    "recipe_commit": "c193a925ba57ea2d67ea48c44e5262817885c8a2",
+    "recipe_tree": "10edb138fba1d201e66042d25ba022313b300cc2",
+    "pydantic": "2.8.0",
+    "client_memory_MiB": 1536,
+    "client_pids": 192,
+    "client_tmpfs_MiB": 128,
+    "postgres_memory_MiB": 768,
+    "postgres_pids": 96,
+    "postgres_tmpfs_MiB": 384,
+    "phase_seconds": 180,
+    "workflow_minutes": 40,
+    "all_clients_readonly_capdrop_all": true,
+    "postgres_initialization_exception": "Same inherited pinned loopback initializer; no read-only root/cap-dropALL claimed for PG.",
+    "httpx": "0.27.0"
+  },
+  "database": {
+    "host": "127.0.0.1",
+    "port": 55449,
+    "name": "ildr_platform_test_20261025",
+    "marker": "ildr-public-http-ci:<nonce>",
+    "class_schema": "assistant_http_test_<uuidhex>",
+    "fresh_public_and_no_custom_schemas_before": true,
+    "model_created_only": true,
+    "genuine108_migration_claim": false
+  },
+  "execution": "One fresh process/markedDB; exact18 current HTTP methods. Actual main/router/CORS/limiter through TestClient in-process ASGI, without lifespan entry. Model-created107/random schema only; no real HTTP server or genuine108 claim.",
+  "coverage": "Origin/session/CSRF, strict input/ENES review/explicit consent, actual PG atomic replay/withdrawal/lost postcommit/projection unknown, genuine six-success/seventh429 rate limit, actual worker ownership, actual transport/orchestrator/public-PG-reader/HTTP projection with two async MockTransport interactions, CORS.",
+  "truth_limits": [
+    "All18 definitions UNRUN. Actual main import required and actual app/router ASGI dispatch counted; app lifespan entry forbidden. Do not retain the old native13 main-absent assertion.",
+    "Two async MockTransport calls in the one composition case are owned fixtures, not live provider/model invocations. Require zero sync MockTransport, live providers, external sockets and worker/lifespan starts.",
+    "All model-created schemas removed; prior public relations/catalog/sequences/functions/types/schema/defaultACL/roles/namespaces/postmaster exact. Marker-owned DB drop/absence and container/image/scratch cleanup remain separate mandatory host facts.",
+    "Positive PG and ASGI dispatch counters are distinct from real external network. Only fixed127.0.0.1:55449 PG is allowed; TestClient invokes the actual app in-process, not network HTTP.",
+    "No customerUI/human action, actual paid provider entitlement, delivery, real HTTP server, production or recovery claim. Existing13/17/12/25 remain retained and are not rerun."
+  ],
+  "strict_output": "Raw unittest/stdout/stderr/PII/token/SQL assertions captured privately and never echoed. Exact finite source-owned methods/counts/errors/results only. Any diagnostic, skip, expected/unexpected failure, nonzero/running/OOM, unknown/duplicate field or invalid counter refuses; result exported only after complete process success.",
+  "safety": "Same pinned image/recipe/dependency inventory; new source only. Nonroot readonly/capdropALL/no-new-privileges client, env-i, network namespace of loopback-only isolatedPG. PG initializer exception inherited. Providers/HTTPX/requests/SMTP and sockets beyond exactloopback refused; no activation or secrets.",
+  "local_checks": {
+    "status": "PASS_SOURCE_ONLY_UNRUN18",
+    "parser_positive": 1,
+    "parser_negative_refusals": 79,
+    "process_refusals": 4,
+    "valid_failure_beside_success_refused": 1,
+    "hostile_diagnostic_refusals": 4,
+    "safe_failure_CLI_exports": 1,
+    "safe_output_bytes": 341,
+    "safe_output_sha256": "cf214ac93a8153d49eed3c54422a58ee1c5714acd1f3b60456fdc8ad34a6cc74",
+    "actual_wrapper_forwarding_positive": 1,
+    "actual_wrapper_scope_refusals": 3,
+    "AST_files": 2,
+    "embedded_python_AST": 1,
+    "result_keys": 27,
+    "worker_checker_keys_equal": true,
+    "resource_helper_pins_exact_parent": true,
+    "connection_guard_public_object_AST_exact_parent": true,
+    "app_HTTPX_Pydantic_DB_tests_provider_runtime": false,
+    "Bash_syntax": "UNRUN locally; mandatory hosted bash-n",
+    "receipt": {
+      "path": "outputs/public-assistant-http-native-hosted-20261127/SOURCE-CONTROLS.json",
+      "bytes": 765,
+      "sha256": "e62a7fd3376c5a1ef6be8996fa0100f103856dbad0749630540a95bc0ad5cf5b"
+    }
+  },
+  "whole_goal_complete": false,
+  "required_before_first_push": "Root and one independent nonauthor FULL five-source isolation review, exact frozen parent/5path/source394/case inventory binding. Root alone first push. No extra owner approval or old-suite repeat."
+}
