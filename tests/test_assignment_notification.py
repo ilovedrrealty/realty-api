@@ -459,7 +459,7 @@ class AssignmentNotificationTests(unittest.TestCase):
         def send():
             with TestClient(self.app, raise_server_exceptions=False) as client:
                 barrier.wait(timeout=5)
-                return self.assign(identity, request_id=command, transport=client).status_code
+                return self.assign(identity, request_id=command, client=client).status_code
         with ThreadPoolExecutor(max_workers=2) as pool:
             self.assertEqual(list(pool.map(lambda _value: send(), range(2))), [204, 204])
         with self.Session() as db:
