@@ -203,7 +203,8 @@ class PublicAssistantHTTPTests(unittest.TestCase):
             self.assertEqual(reply.status_code,422);self.assertEqual(set(reply.json()),{"error"})
         self.assertEqual(self.client.post("/public/assistant/contact-review",headers={**headers,"Content-Type":"application/json"},content=b'x'*8193).status_code,413)
         self.assertEqual(self.client.post("/public/assistant/contact-review",headers=headers,content="text").status_code,415)
-        self.assertEqual(self.client.post("/public/assistant/contact-review?actor=admin",headers=headers,json={"locale":"en","draft":self.draft()}).status_code,422)
+        query_client=self.client_for();query_headers,_=self.session(query_client)
+        self.assertEqual(query_client.post("/public/assistant/contact-review?actor=admin",headers=query_headers,json={"locale":"en","draft":self.draft()}).status_code,422)
         self.assertEqual(self.counts(),(0,0))
 
     def test_review_normalizes_en_es_and_never_writes_or_enters_model(self):
